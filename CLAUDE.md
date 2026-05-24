@@ -232,3 +232,11 @@ postinstall scripts may run, via `pnpm.onlyBuiltDependencies` in the root
 ```
 Add new packages here as they're introduced (e.g. `better-sqlite3` when the
 Store milestone lands — it's a native module and will need this).
+
+### 2026-05-24 — @google/generative-ai response functionCalls is a method, not a property
+
+**Symptom:** `response.response.functionCalls[0]` causes TypeScript compiler error `Property '0' does not exist on type '() => FunctionCall[] | undefined'`.
+
+**Root cause:** In the `@google/generative-ai` legacy SDK, `functionCalls` on the `EnhancedGenerateContentResponse` object is a function (getter method) that returns the list of function calls, not a direct array property.
+
+**Fix:** Call `response.response.functionCalls()` as a function, e.g. `response.response.functionCalls()?.[0]`.
