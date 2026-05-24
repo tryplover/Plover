@@ -140,11 +140,13 @@ export class TasksRepo {
              created_at, updated_at
       FROM tasks
       WHERE scheduled_start IS NOT NULL
-        AND scheduled_start >= ?
-        AND scheduled_start <= ?
+        AND (
+          (scheduled_start >= ? AND scheduled_start <= ?)
+          OR (scheduled_start < ? AND status NOT IN ('done', 'skipped'))
+        )
     `);
 
-    const rows = stmt.all(start.toISOString(), end.toISOString()) as {
+    const rows = stmt.all(start.toISOString(), end.toISOString(), start.toISOString()) as {
       id: string;
       goal_id: string;
       title: string;
@@ -184,6 +186,7 @@ export class TasksRepo {
       ...existing,
       ...patch,
       id, // ensure ID is not overwritten
+      created_at: existing.created_at, // ensure created_at is preserved
       updated_at: now,
     };
 

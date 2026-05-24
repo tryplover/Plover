@@ -16,7 +16,7 @@ export const MIGRATIONS: { version: number; sql: string }[] = [
 
       CREATE TABLE tasks (
         id TEXT PRIMARY KEY,
-        goal_id TEXT NOT NULL REFERENCES goals(id),
+        goal_id TEXT NOT NULL REFERENCES goals(id) ,
         title TEXT NOT NULL,
         estimate_minutes INTEGER NOT NULL,
         depends_on TEXT,
@@ -30,7 +30,7 @@ export const MIGRATIONS: { version: number; sql: string }[] = [
 
       CREATE TABLE sessions (
         id TEXT PRIMARY KEY,
-        task_id TEXT,
+        task_id TEXT REFERENCES tasks(id) ON DELETE SET NULL,
         started_at TEXT,
         ended_at TEXT
       );
@@ -44,11 +44,14 @@ export const MIGRATIONS: { version: number; sql: string }[] = [
 
       CREATE TABLE summaries (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        task_id TEXT,
+        task_id TEXT REFERENCES tasks(id) ON DELETE SET NULL,
         ts TEXT,
         summary TEXT,
         signal REAL
       );
+
+      CREATE INDEX idx_tasks_goal_id ON tasks(goal_id);
+      CREATE INDEX idx_tasks_scheduled_start ON tasks(scheduled_start);
     `,
   },
 ];

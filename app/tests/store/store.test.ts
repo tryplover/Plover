@@ -164,7 +164,7 @@ describe('Store Layer', () => {
       expect(retrievedAfterUpdate).toEqual(updated);
     });
 
-    it('handles listScheduledBetween inclusivity correctly', () => {
+    it('handles listScheduledBetween inclusivity and overdue correctly', () => {
       const db = new Database(':memory:');
       runMigrations(db);
       const goalsRepo = new GoalsRepo(db);
@@ -202,7 +202,7 @@ describe('Store Layer', () => {
         scheduled_end: '2026-05-24T11:30:00.000Z',
       });
 
-      tasksRepo.create({
+      const task4 = tasksRepo.create({
         goal_id: goal.id,
         title: 'Task 4',
         estimate_minutes: 30,
@@ -227,16 +227,35 @@ describe('Store Layer', () => {
         status: 'todo',
       });
 
+      tasksRepo.create({
+        goal_id: goal.id,
+        title: 'Task 7 — overdue but done',
+        estimate_minutes: 30,
+        status: 'done',
+        scheduled_start: '2026-05-24T08:00:00.000Z',
+        scheduled_end: '2026-05-24T08:30:00.000Z',
+      });
+
+      tasksRepo.create({
+        goal_id: goal.id,
+        title: 'Task 8 — overdue but skipped',
+        estimate_minutes: 30,
+        status: 'skipped',
+        scheduled_start: '2026-05-24T08:00:00.000Z',
+        scheduled_end: '2026-05-24T08:30:00.000Z',
+      });
+
       const rangeStart = new Date('2026-05-24T10:00:00.000Z');
       const rangeEnd = new Date('2026-05-24T11:00:00.000Z');
 
       const results = tasksRepo.listScheduledBetween(rangeStart, rangeEnd);
 
-      expect(results).toHaveLength(3);
+      expect(results).toHaveLength(4);
       const ids = results.map((t) => t.id);
       expect(ids).toContain(task1.id);
       expect(ids).toContain(task2.id);
       expect(ids).toContain(task3.id);
+      expect(ids).toContain(task4.id);
     });
 
     it('returns null when getting non-existent task', () => {
