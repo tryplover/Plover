@@ -1,12 +1,15 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, globalShortcut } from 'electron';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { setupIpc, type IpcHandlers } from './ipc.js';
+import { setupIpc } from './ipc.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-function createWindow(): void {
-  const win = new BrowserWindow({
+let mainWindow: BrowserWindow | null = null;
+let overlayWindow: BrowserWindow | null = null;
+
+function createMainWindow(): void {
+  mainWindow = new BrowserWindow({
     width: 1024,
     height: 720,
     title: 'Tendril',
@@ -17,111 +20,100 @@ function createWindow(): void {
     },
   });
 
+  mainWindow.on('closed', () => {
+    mainWindow = null;
+  });
+
   const devUrl = process.env['ELECTRON_RENDERER_URL'];
   if (devUrl) {
-    void win.loadURL(devUrl);
+    void mainWindow.loadURL(devUrl);
   } else {
-    void win.loadFile(join(__dirname, '../renderer/index.html'));
+    void mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
   }
 }
 
-const stubHandlers: IpcHandlers = {
-  goals: {
-    create: async (goal) => ({
-      id: 'stub-goal-id',
-      ...goal,
-      status: 'active',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }),
-    get: async () => null,
-    list: async () => [],
-    update: async (id, patch) => ({
-      id,
-      title: 'Stub Goal',
-      status: 'active',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      ...patch,
-    }),
-  },
-  tasks: {
-    create: async (task) => ({
-      id: 'stub-task-id',
-      ...task,
-      status: 'todo',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }),
-    get: async () => null,
-    listByGoal: async () => [],
-    listScheduledBetween: async () => [],
-    update: async (id, patch) => ({
-      id,
-      goal_id: 'stub-goal-id',
-      title: 'Stub Task',
-      estimate_minutes: 30,
-      status: 'todo',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      ...patch,
-    }),
-  },
-  planner: {
-    decompose: async (goalText) => ({
-      goal: {
-        title: `Decomposed: ${goalText}`,
-        description: 'Stub description',
-      },
-      subtasks: [
-        {
-          title: 'Subtask 1',
-          estimate_minutes: 60,
-        },
-      ],
-    }),
-    schedule: async ({ tasks }) =>
-      tasks.map((t) => ({
-        taskId: t.id,
-        start: new Date().toISOString(),
-        end: new Date().toISOString(),
-      })),
-  },
-  calendar: {
-    connect: async () => {
-      return;
+function createOverlayWindow(): void {
+  overlayWindow = new BrowserWindow({
+    width: 600,
+    height: 80,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    show: false,
+    resizable: false,
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      sandbox: true,
+      contextIsolation: true,
     },
-    disconnect: async () => {
-      return;
-    },
-    getConnectionStatus: async () => ({ connected: false }),
-  },
-  settings: {
-    get: async () => ({
-      workingHours: { start: '09:00', end: '18:00' },
-      horizonDays: 14,
-      pauseScheduling: false,
-    }),
-    update: async () => {
-      return;
-    },
-  },
-  overlay: {
-    hide: async () => {
-      return;
-    },
-  },
-};
+  });
+
+  const devUrl = process.env['ELECTRON_RENDERER_URL'];
+  if (devUrl) {
+    void overlayWindow.loadURL(`${devUrl}?overlay`);
+  } else {
+    void overlayWindow.loadFile(join(__dirname, '../renderer/index.html'), {
+      search: 'overlay',
+    });
+  }
+
+  overlayWindow.on('blur', () => {
+    overlayWindow?.hide();
+  });
+
+  overlayWindow.on('closed', () => {
+    overlayWindow = null;
+  });
+}
+
+function toggleOverlayWindow(): void {
+  if (!overlayWindow) {
+    createOverlayWindow();
+  }
+
+  if (overlayWindow) {
+    if (overlayWindow.isVisible()) {
+      overlayWindow.hide();
+    } else {
+      overlayWindow.setSize(600, 80);
+      overlayWindow.center();
+      overlayWindow.show();
+      overlayWindow.focus();
+      // Send a reset event to the renderer process to clear the form/subtask state
+      overlayWindow.webContents.send('overlay:reset');
+    }
+  }
+}
 
 void app.whenReady().then(() => {
-  setupIpc(stubHandlers);
-  createWindow();
+  // Register all typed IPC handlers first
+  setupIpc(() => overlayWindow);
+
+  createMainWindow();
+  createOverlayWindow();
+
+  // Register the global hotkey Option + Space
+  const registered = globalShortcut.register('Option+Space', () => {
+    toggleOverlayWindow();
+  });
+
+  if (!registered) {
+    console.error('[Main] Failed to register global shortcut Option+Space');
+  } else {
+    console.log('[Main] Registered global shortcut Option+Space');
+  }
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (mainWindow === null) createMainWindow();
   });
 });
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
+});
+
+app.on('will-quit', () => {
+  // Always clean up shortcuts to prevent leaking hooks in the OS
+  globalShortcut.unregisterAll();
 });

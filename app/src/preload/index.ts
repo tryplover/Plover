@@ -1,138 +1,125 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { Goal, Task } from '../shared/types.js';
+import { Task, Goal, CalendarEvent } from '../shared/types.js';
+
+export interface ProposedPlan {
+  goal: Omit<Goal, 'id' | 'created_at' | 'updated_at' | 'status'>;
+  subtasks: {
+    title: string;
+    estimate_minutes: number;
+    depends_on: string[];
+    scheduled_start?: string;
+    scheduled_end?: string;
+  }[];
+}
 
 export interface TendrilApi {
-  goals: {
-    create: (goal: Omit<Goal, 'id' | 'created_at' | 'updated_at'>) => Promise<Goal>;
-    get: (id: string) => Promise<Goal | null>;
-    list: (filter?: { status?: Goal['status'] }) => Promise<Goal[]>;
-    update: (id: string, patch: Partial<Goal>) => Promise<Goal>;
-  };
-  tasks: {
-    create: (task: Omit<Task, 'id' | 'created_at' | 'updated_at'>) => Promise<Task>;
-    get: (id: string) => Promise<Task | null>;
-    listByGoal: (goalId: string) => Promise<Task[]>;
-    listScheduledBetween: (start: string, end: string) => Promise<Task[]>;
-    update: (id: string, patch: Partial<Task>) => Promise<Task>;
-  };
-  planner: {
-    decompose: (goalText: string) => Promise<{
-      goal: Omit<Goal, 'id' | 'created_at' | 'updated_at' | 'status'>;
-      subtasks: Omit<
-        Task,
-        | 'id'
-        | 'goal_id'
-        | 'status'
-        | 'created_at'
-        | 'updated_at'
-        | 'scheduled_start'
-        | 'scheduled_end'
-        | 'calendar_event_id'
-      >[];
-    }>;
-    schedule: (input: {
-      tasks: Task[];
-      horizonDays?: number;
-    }) => Promise<{ taskId: string; start: string; end: string }[]>;
-  };
-  calendar: {
-    connect: () => Promise<void>;
-    disconnect: () => Promise<void>;
-    getConnectionStatus: () => Promise<{ connected: boolean; email?: string }>;
-  };
-  settings: {
-    get: () => Promise<{
+  // Main Goals & Tasks
+  getGoals: () => Promise<Goal[]>;
+  getTasks: () => Promise<Task[]>;
+  updateTaskStatus: (id: string, status: Task['status']) => Promise<Task>;
+  decomposeGoal: (goalText: string) => Promise<{
+    goal: Omit<Goal, 'id' | 'created_at' | 'updated_at' | 'status'>;
+    subtasks: Omit<
+      Task,
+      | 'id'
+      | 'goal_id'
+      | 'status'
+      | 'created_at'
+      | 'updated_at'
+      | 'scheduled_start'
+      | 'scheduled_end'
+      | 'calendar_event_id'
+    >[];
+  }>;
+  scheduleTasks: (
+    tasks: Omit<
+      Task,
+      | 'id'
+      | 'goal_id'
+      | 'status'
+      | 'created_at'
+      | 'updated_at'
+      | 'scheduled_start'
+      | 'scheduled_end'
+      | 'calendar_event_id'
+    >[],
+    calendarEvents: CalendarEvent[],
+    workingHours: { start: string; end: string },
+    horizonDays: number,
+  ) => Promise<{ taskId: string; start: string; end: string }[]>;
+  saveGoalAndTasks: (
+    goal: Omit<Goal, 'id' | 'created_at' | 'updated_at' | 'status'>,
+    tasks: Omit<
+      Task,
+      | 'id'
+      | 'goal_id'
+      | 'status'
+      | 'created_at'
+      | 'updated_at'
+      | 'scheduled_start'
+      | 'scheduled_end'
+      | 'calendar_event_id'
+    >[],
+    scheduledSlots: { tempIndex: number; start: string; end: string }[],
+  ) => Promise<{ goal: Goal; tasks: Task[] }>;
+
+  // Settings
+  getSettings: () => Promise<{
+    googleConnected: boolean;
+    workingHours: { start: string; end: string };
+    horizonDays: number;
+    pauseScheduling: boolean;
+  }>;
+  updateSettings: (
+    settings: Partial<{
+      googleConnected: boolean;
       workingHours: { start: string; end: string };
       horizonDays: number;
       pauseScheduling: boolean;
-    }>;
-    update: (
-      settings: Partial<{
-        workingHours: { start: string; end: string };
-        horizonDays: number;
-        pauseScheduling: boolean;
-      }>,
-    ) => Promise<void>;
-  };
-  overlay: {
-    hide: () => Promise<void>;
-  };
-  events: {
-    onGoalCreated: (callback: (goal: Goal) => void) => () => void;
-    onGoalUpdated: (callback: (goal: Goal) => void) => () => void;
-    onTaskScheduled: (callback: (task: Task) => void) => () => void;
-    onTaskCompleted: (callback: (task: Task) => void) => () => void;
-    onCalendarSynced: (callback: () => void) => () => void;
-  };
+    }>,
+  ) => Promise<void>;
+
+  // Calendar Sync
+  connectCalendar: () => Promise<boolean>;
+  disconnectCalendar: () => Promise<void>;
+
+  // Overlay Window API
+  proposeGoal: (goalText: string) => Promise<ProposedPlan>;
+  commitGoal: (plan: ProposedPlan) => Promise<{ goalId: string }>;
+  closeOverlay: () => Promise<void>;
+  resizeOverlay: (height: number) => Promise<void>;
+
+  // Event Subscription
+  on: (channel: string, callback: (...args: any[]) => void) => () => void;
 }
 
 const api: TendrilApi = {
-  goals: {
-    create: (goal) => ipcRenderer.invoke('goals:create', goal),
-    get: (id) => ipcRenderer.invoke('goals:get', id),
-    list: (filter) => ipcRenderer.invoke('goals:list', filter),
-    update: (id, patch) => ipcRenderer.invoke('goals:update', id, patch),
-  },
-  tasks: {
-    create: (task) => ipcRenderer.invoke('tasks:create', task),
-    get: (id) => ipcRenderer.invoke('tasks:get', id),
-    listByGoal: (goalId) => ipcRenderer.invoke('tasks:listByGoal', goalId),
-    listScheduledBetween: (start, end) =>
-      ipcRenderer.invoke('tasks:listScheduledBetween', start, end),
-    update: (id, patch) => ipcRenderer.invoke('tasks:update', id, patch),
-  },
-  planner: {
-    decompose: (goalText) => ipcRenderer.invoke('planner:decompose', goalText),
-    schedule: (input) => ipcRenderer.invoke('planner:schedule', input),
-  },
-  calendar: {
-    connect: () => ipcRenderer.invoke('calendar:connect'),
-    disconnect: () => ipcRenderer.invoke('calendar:disconnect'),
-    getConnectionStatus: () => ipcRenderer.invoke('calendar:getConnectionStatus'),
-  },
-  settings: {
-    get: () => ipcRenderer.invoke('settings:get'),
-    update: (settings) => ipcRenderer.invoke('settings:update', settings),
-  },
-  overlay: {
-    hide: () => ipcRenderer.invoke('overlay:hide'),
-  },
-  events: {
-    onGoalCreated: (callback) => {
-      const listener = (_event: unknown, goal: Goal) => callback(goal);
-      ipcRenderer.on('goal:created', listener);
-      return () => {
-        ipcRenderer.off('goal:created', listener);
-      };
-    },
-    onGoalUpdated: (callback) => {
-      const listener = (_event: unknown, goal: Goal) => callback(goal);
-      ipcRenderer.on('goal:updated', listener);
-      return () => {
-        ipcRenderer.off('goal:updated', listener);
-      };
-    },
-    onTaskScheduled: (callback) => {
-      const listener = (_event: unknown, task: Task) => callback(task);
-      ipcRenderer.on('task:scheduled', listener);
-      return () => {
-        ipcRenderer.off('task:scheduled', listener);
-      };
-    },
-    onTaskCompleted: (callback) => {
-      const listener = (_event: unknown, task: Task) => callback(task);
-      ipcRenderer.on('task:completed', listener);
-      return () => {
-        ipcRenderer.off('task:completed', listener);
-      };
-    },
-    onCalendarSynced: (callback) => {
-      const listener = () => callback();
-      ipcRenderer.on('calendar:synced', listener);
-      return () => {
-        ipcRenderer.off('calendar:synced', listener);
-      };
-    },
+  getGoals: () => ipcRenderer.invoke('goals:get'),
+  getTasks: () => ipcRenderer.invoke('tasks:get'),
+  updateTaskStatus: (id, status) => ipcRenderer.invoke('tasks:updateStatus', id, status),
+  decomposeGoal: (goalText) => ipcRenderer.invoke('goals:decompose', goalText),
+  scheduleTasks: (tasks, calendarEvents, workingHours, horizonDays) =>
+    ipcRenderer.invoke('tasks:schedule', tasks, calendarEvents, workingHours, horizonDays),
+  saveGoalAndTasks: (goal, tasks, scheduledSlots) =>
+    ipcRenderer.invoke('goals:save', goal, tasks, scheduledSlots),
+  getSettings: () => ipcRenderer.invoke('settings:get'),
+  updateSettings: (settings) => ipcRenderer.invoke('settings:update', settings),
+  connectCalendar: () => ipcRenderer.invoke('calendar:connect'),
+  disconnectCalendar: () => ipcRenderer.invoke('calendar:disconnect'),
+
+  // Overlay
+  proposeGoal: (goalText) => ipcRenderer.invoke('goal:propose', goalText),
+  commitGoal: (plan) => ipcRenderer.invoke('goal:commit', plan),
+  closeOverlay: () => ipcRenderer.invoke('overlay:close'),
+  resizeOverlay: (height) => ipcRenderer.invoke('overlay:resize', height),
+
+  // Events
+  on: (channel, callback) => {
+    const subscription = (_event: unknown, ...args: unknown[]) => callback(...args);
+    ipcRenderer.on(channel, subscription);
+    return () => {
+      ipcRenderer.off(channel, subscription);
+    };
   },
 };
 

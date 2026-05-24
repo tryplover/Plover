@@ -51,6 +51,19 @@ export const MIGRATIONS: { version: number; sql: string }[] = [
       );
     `,
   },
+  {
+    version: 2,
+    sql: `
+      CREATE TABLE settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      );
+      INSERT INTO settings (key, value) VALUES ('googleConnected', 'false');
+      INSERT INTO settings (key, value) VALUES ('workingHours', '{"start":"09:00","end":"18:00"}');
+      INSERT INTO settings (key, value) VALUES ('horizonDays', '14');
+      INSERT INTO settings (key, value) VALUES ('pauseScheduling', 'false');
+    `,
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {
