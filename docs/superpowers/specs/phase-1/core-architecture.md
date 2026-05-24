@@ -24,6 +24,96 @@ Phase 1 covers exactly:
 - Windows port
 - Multi-account, plugins, multi-device sync
 
+## Runtime flow
+
+The two diagrams below are the same Phase 1 system at different zoom levels. The flowchart names every module and the external endpoints that any outbound HTTP must come from (see "Hard constraints" below). The sequence diagram walks the canonical path: user types a goal → Gemini decomposes it → local scheduler places it → Calendar gets written.
+
+### Module map + external endpoints
+
+```mermaid
+flowchart LR
+  subgraph Renderer["Renderer (React)"]
+    UI[Today / Goals / Settings]
+    OV[Overlay QuickAdd]
+  end
+
+  subgraph Main["Main process"]
+    IPC[ipc.ts / bus.ts]
+    Planner[Planner<br/>decompose + schedule]
+    Store[(Store / SQLite<br/>better-sqlite3)]
+    Sync[Sync<br/>google-auth + calendar]
+    Nudge[Nudge<br/>stub]
+  end
+
+  subgraph External["External (allowlisted only)"]
+    Gemini[(generativelanguage.googleapis.com<br/>Gemini 2.x tool-calling)]
+    OAuth[(Google OAuth<br/>accounts.google.com)]
+    GCal[(www.googleapis.com<br/>Calendar v3)]
+    KC[(OS Keychain<br/>via keytar)]
+  end
+
+  UI -- "createGoal / listTasks" --> IPC
+  OV -- "quickAdd" --> IPC
+  IPC --> Planner
+  IPC --> Sync
+  IPC --> Store
+
+  Planner -- "decompose()" --> Gemini
+  Planner -- "writes goals/tasks" --> Store
+  Planner -- "schedule() pure, no I/O" --> Planner
+
+  Sync -- "OAuth loopback" --> OAuth
+  Sync -- "tokens" --> KC
+  Sync -- "events.insert / list" --> GCal
+  Sync -- "updates task.calendar_event_id" --> Store
+
+  Planner -. "task.scheduled" .-> IPC
+  Sync -. "calendar.synced" .-> IPC
+  IPC -. "events" .-> UI
+
+  Nudge -. "no-op in Phase 1" .-> IPC
+```
+
+### Goal → calendar sequence
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as User
+  participant R as Renderer
+  participant I as IPC / Bus
+  participant P as Planner
+  participant G as Gemini API
+  participant S as Store (SQLite)
+  participant Y as Sync
+  participant C as Google Calendar
+
+  U->>R: Type goal + deadline
+  R->>I: goal.create(text, deadline)
+  I->>P: decomposeGoal(text, ctx)
+  P->>G: generateContent + tools<br/>(generativelanguage.googleapis.com)
+  G-->>P: { goal, subtasks[] } (function call)
+  P->>S: GoalsRepo.insert / TasksRepo.insertMany
+  S-->>P: ids
+  P->>P: schedule(tasks, freeBusy) — pure
+  P->>S: TasksRepo.updateScheduledWindows
+  P-->>I: emit task.scheduled
+
+  I->>Y: syncScheduledTasks()
+  Y->>C: events.insert (per task)<br/>(www.googleapis.com)
+  C-->>Y: event ids
+  Y->>S: TasksRepo.setCalendarEventId
+  Y-->>I: emit calendar.synced
+  I-->>R: push updates (task list refresh)
+  R-->>U: Today view shows scheduled blocks
+```
+
+Notes:
+
+- Every external arrow is one of the three allowlisted hosts in "Hard constraints". Nothing else should make outbound calls.
+- `Planner.schedule` is intentionally pure — no DB, no network — which is why it has a self-loop instead of an external arrow. It's the most-tested module for that reason (see [features/scheduling.md](./features/scheduling.md)).
+- `Nudge` is wired into the bus but does nothing in Phase 1; it exists so later phases don't reshape the module graph.
+
 ## Hard constraints
 
 1. **Local-only data.** SQLite + local filesystem. No backend server. The only outbound HTTP traffic allowed is to `generativelanguage.googleapis.com` (Gemini), `www.googleapis.com` (Calendar), and the Google OAuth endpoints. Add a runtime allowlist check around the HTTP client.
