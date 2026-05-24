@@ -1,0 +1,36 @@
+{
+  "name": "tendril-workspace",
+  "private": true,
+  "version": "0.0.0",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "scripts": {
+    "prepare": "husky",
+    "typecheck": "pnpm --filter ./app typecheck",
+    "lint": "pnpm --filter ./app lint",
+    "test": "pnpm --filter ./app test",
+    "dev": "pnpm --filter ./app dev",
+    "build": "pnpm --filter ./app build"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.10"
+  },
+  "lint-staged": {
+    "app/**/*.{ts,tsx}": [
+      "pnpm --filter ./app exec eslint --fix",
+      "pnpm --filter ./app exec prettier --write"
+    ],
+    "app/**/*.{json,md,yml,yaml,css,html}": [
+      "pnpm --filter ./app exec prettier --write"
+    ]
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "electron",
+      "esbuild"
+    ]
+  }
+}
