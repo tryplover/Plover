@@ -1,7 +1,11 @@
 import { app, BrowserWindow, globalShortcut } from 'electron';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+<<<<<<< HEAD
 import { setupIpc } from './ipc.js';
+=======
+import { registerIpcHandlers } from './ipc';
+>>>>>>> feature/07-overlay-quick-add
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -88,7 +92,11 @@ function toggleOverlayWindow(): void {
 
 void app.whenReady().then(() => {
   // Register all typed IPC handlers first
+<<<<<<< HEAD
   setupIpc(() => overlayWindow);
+=======
+  registerIpcHandlers(() => overlayWindow);
+>>>>>>> feature/07-overlay-quick-add
 
   createMainWindow();
   createOverlayWindow();

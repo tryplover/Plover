@@ -234,6 +234,7 @@ Add new packages here as they're introduced (e.g. `better-sqlite3` when the
 Store milestone lands — it's a native module and will need this).
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 ### 2026-05-24 — @google/generative-ai response functionCalls is a method, not a property
 
 **Symptom:** `response.response.functionCalls[0]` causes TypeScript compiler error `Property '0' does not exist on type '() => FunctionCall[] | undefined'`.
@@ -265,3 +266,4 @@ Store milestone lands — it's a native module and will need this).
 **Root cause:** Node's `EventEmitter.prototype.removeAllListeners` checks `arguments.length` to decide whether to clear all events or just one. When `undefined` is passed explicitly, it treats it as a single argument (event name `"undefined"`) rather than no arguments.
 
 **Fix:** Explicitly branch on `event !== undefined` and call `removeAllListeners()` with no arguments to clear all events.
+
