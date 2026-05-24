@@ -1,6 +1,8 @@
 import { app, BrowserWindow } from 'electron';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { FileStore } from './store/index';
+import { setupIpcHandlers } from './ipc';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -25,6 +27,9 @@ function createWindow(): void {
 }
 
 void app.whenReady().then(() => {
+  const store = new FileStore();
+  setupIpcHandlers(store);
+
   createWindow();
 
   app.on('activate', () => {
