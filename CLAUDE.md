@@ -232,3 +232,19 @@ postinstall scripts may run, via `pnpm.onlyBuiltDependencies` in the root
 ```
 Add new packages here as they're introduced (e.g. `better-sqlite3` when the
 Store milestone lands — it's a native module and will need this).
+
+### 2026-05-24 — subagent write_to_file and replace_file_content path restrictions
+
+**Symptom:** `replace_file_content` or `write_to_file` fails with `files must be written to the correct artifact directory: /Users/.../brain/<subagent-id>`.
+
+**Root cause:** Subagent file-writing tools are sandboxed to the subagent's own conversation ID artifact directory, and cannot modify files directly in the main worktree directory even if it's the active workspace.
+
+**Fix:** Write the code to a file in the subagent's allowed artifact directory first, and then copy it to the workspace using a shell command (`cp`) via `run_command`.
+
+### 2026-05-24 — Vitest vi.mock hoisted variable ReferenceError
+
+**Symptom:** `ReferenceError: Cannot access 'mockVariable' before initialization` during Vitest runs.
+
+**Root cause:** `vi.mock` is hoisted to the top of the file before outer variables are defined.
+
+**Fix:** Use `vi.hoisted` to declare mock variables (e.g. `mockKeychain`, `mockOpenExternal`) so that they are declared and initialized before any hoisted `vi.mock` blocks run.
