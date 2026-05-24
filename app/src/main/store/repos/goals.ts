@@ -1,0 +1,137 @@
+import { randomUUID } from 'node:crypto';
+import Database from 'better-sqlite3';
+import { Goal } from '@shared/types.js';
+
+export class GoalsRepo {
+  private db: Database.Database;
+
+  constructor(db: Database.Database) {
+    this.db = db;
+  }
+
+  create(input: Omit<Goal, 'id' | 'created_at' | 'updated_at'>): Goal {
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    const goal: Goal = {
+      id,
+      title: input.title,
+      description: input.description,
+      deadline: input.deadline,
+      status: input.status,
+      created_at: now,
+      updated_at: now,
+    };
+
+    const stmt = this.db.prepare(`
+      INSERT INTO goals (id, title, description, deadline, status, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    stmt.run(
+      goal.id,
+      goal.title,
+      goal.description ?? null,
+      goal.deadline ?? null,
+      goal.status,
+      goal.created_at,
+      goal.updated_at,
+    );
+
+    return goal;
+  }
+
+  get(id: string): Goal | null {
+    const stmt = this.db.prepare(`
+      SELECT id, title, description, deadline, status, created_at, updated_at
+      FROM goals
+      WHERE id = ?
+    `);
+    const row = stmt.get(id) as
+      | {
+          id: string;
+          title: string;
+          description: string | null;
+          deadline: string | null;
+          status: string;
+          created_at: string;
+          updated_at: string;
+        }
+      | undefined;
+
+    if (!row) {
+      return null;
+    }
+
+    return {
+      id: row.id,
+      title: row.title,
+      description: row.description ?? undefined,
+      deadline: row.deadline ?? undefined,
+      status: row.status as Goal['status'],
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+    };
+  }
+
+  list(filter?: { status?: Goal['status'] }): Goal[] {
+    let query =
+      'SELECT id, title, description, deadline, status, created_at, updated_at FROM goals';
+    const params: string[] = [];
+    if (filter?.status) {
+      query += ' WHERE status = ?';
+      params.push(filter.status);
+    }
+    const stmt = this.db.prepare(query);
+    const rows = stmt.all(...params) as {
+      id: string;
+      title: string;
+      description: string | null;
+      deadline: string | null;
+      status: string;
+      created_at: string;
+      updated_at: string;
+    }[];
+
+    return rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      description: row.description ?? undefined,
+      deadline: row.deadline ?? undefined,
+      status: row.status as Goal['status'],
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+    }));
+  }
+
+  update(id: string, patch: Partial<Goal>): Goal {
+    const existing = this.get(id);
+    if (!existing) {
+      throw new Error(`Goal with id ${id} not found`);
+    }
+
+    const now = new Date().toISOString();
+    const updated: Goal = {
+      ...existing,
+      ...patch,
+      id, // ensure ID is not overwritten
+      updated_at: now,
+    };
+
+    const stmt = this.db.prepare(`
+      UPDATE goals
+      SET title = ?, description = ?, deadline = ?, status = ?, updated_at = ?
+      WHERE id = ?
+    `);
+
+    stmt.run(
+      updated.title,
+      updated.description ?? null,
+      updated.deadline ?? null,
+      updated.status,
+      updated.updated_at,
+      id,
+    );
+
+    return updated;
+  }
+}
