@@ -40,9 +40,9 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@main': resolve(__dirname, 'src/main'),
-      '@renderer': resolve(__dirname, 'src/renderer'),
-      '@shared': resolve(__dirname, 'src/shared'),
+      '@main': resolve('src/main'),
+      '@renderer': resolve('src/renderer'),
+      '@shared': resolve('src/shared'),
     },
   },
 });
