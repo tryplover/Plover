@@ -233,6 +233,7 @@ postinstall scripts may run, via `pnpm.onlyBuiltDependencies` in the root
 Add new packages here as they're introduced (e.g. `better-sqlite3` when the
 Store milestone lands — it's a native module and will need this).
 
+<<<<<<< HEAD
 ### 2026-05-24 — @google/generative-ai response functionCalls is a method, not a property
 
 **Symptom:** `response.response.functionCalls[0]` causes TypeScript compiler error `Property '0' does not exist on type '() => FunctionCall[] | undefined'`.
@@ -256,3 +257,11 @@ Store milestone lands — it's a native module and will need this).
 **Root cause:** `vi.mock` is hoisted to the top of the file before outer variables are defined.
 
 **Fix:** Use `vi.hoisted` to declare mock variables (e.g. `mockKeychain`, `mockOpenExternal`) so that they are declared and initialized before any hoisted `vi.mock` blocks run.
+
+### 2026-05-24 — EventEmitter.removeAllListeners(undefined) does not clear all events
+
+**Symptom:** In tests, calling a typed wrapper's `eventBus.removeAllListeners()` (which passed `event?: string` value of `undefined` to Node's `emitter.removeAllListeners(event)`) failed to clear listeners across tests, leading to tests running with multiple active listeners and failing.
+
+**Root cause:** Node's `EventEmitter.prototype.removeAllListeners` checks `arguments.length` to decide whether to clear all events or just one. When `undefined` is passed explicitly, it treats it as a single argument (event name `"undefined"`) rather than no arguments.
+
+**Fix:** Explicitly branch on `event !== undefined` and call `removeAllListeners()` with no arguments to clear all events.
