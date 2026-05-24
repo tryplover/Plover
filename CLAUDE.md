@@ -226,3 +226,11 @@ postinstall scripts may run, via `pnpm.onlyBuiltDependencies` in the root
 ```
 Add new packages here as they're introduced (e.g. `better-sqlite3` when the
 Store milestone lands — it's a native module and will need this).
+
+### 2026-05-24 — Preload build output filename extension mismatch in ESM packages
+
+**Symptom:** The main process loads `../preload/index.js` but the built preload script is outputted as `index.mjs`, causing a runtime file-not-found error in Electron.
+
+**Root cause:** When `"type": "module"` is set in `package.json`, Vite/Rollup defaults to building outputs as ESM (using the `.mjs` extension) even when specifying `entryFileNames: '[name].js'`.
+
+**Fix:** Configure the preload config's Rollup output options in `electron.vite.config.ts` to build in CommonJS format (`format: 'cjs'`) and set `entryFileNames: '[name].js'`.
