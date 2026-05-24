@@ -248,3 +248,11 @@ Store milestone lands — it's a native module and will need this).
 **Root cause:** These tools enforce a security/scope policy requiring all paths to be inside the active subagent's conversation ID directory. Since git worktrees created for subagents are located under the main agent's conversation directory, any workspace paths violate this check.
 
 **Fix:** Use `run_command` with Unix tools (e.g. `cat << 'EOF' > file` or `sed`) to create or edit files in the workspace directory instead of using the custom file-handling tools.
+
+### 2026-05-24 — Vitest vi.mock hoisted variable ReferenceError
+
+**Symptom:** `ReferenceError: Cannot access 'mockVariable' before initialization` during Vitest runs.
+
+**Root cause:** `vi.mock` is hoisted to the top of the file before outer variables are defined.
+
+**Fix:** Use `vi.hoisted` to declare mock variables (e.g. `mockKeychain`, `mockOpenExternal`) so that they are declared and initialized before any hoisted `vi.mock` blocks run.
