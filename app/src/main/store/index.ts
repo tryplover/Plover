@@ -14,7 +14,8 @@ try {
   userDataDir = '.';
 }
 
-export const db = initDb(join(userDataDir, 'tendril.db'));
+const dbPath = process.env.VITEST ? ':memory:' : join(userDataDir, 'tendril.db');
+export const db = initDb(dbPath);
 export const goalsRepo = new GoalsRepo(db);
 export const tasksRepo = new TasksRepo(db);
 export const settingsRepo = new SettingsRepo(db);

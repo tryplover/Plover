@@ -6,7 +6,7 @@ export interface ProposedPlan {
   subtasks: {
     title: string;
     estimate_minutes: number;
-    depends_on: string[];
+    depends_on?: string[];
     scheduled_start?: string;
     scheduled_end?: string;
   }[];
@@ -90,7 +90,7 @@ export interface TendrilApi {
   resizeOverlay: (height: number) => Promise<void>;
 
   // Event Subscription
-  on: (channel: string, callback: (...args: any[]) => void) => () => void;
+  on: (channel: string, callback: (...args: unknown[]) => void) => () => void;
 }
 
 const api: TendrilApi = {

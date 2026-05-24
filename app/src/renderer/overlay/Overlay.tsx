@@ -48,7 +48,7 @@ export function Overlay() {
 
   // Listen to overlay reset event from main process
   useEffect(() => {
-    return window.api.onReset(() => {
+    return window.api.on('overlay:reset', () => {
       setResetCounter((prev) => prev + 1);
     });
   }, []);

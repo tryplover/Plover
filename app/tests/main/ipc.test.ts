@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { registerIpcHandlers } from '../../src/main/ipc';
+import { setupIpcHandlers } from '../../src/main/ipc';
 import { ipcMain } from 'electron';
 import { ProposedPlan } from '../../src/preload/index';
 import { BrowserWindow } from 'electron';
@@ -18,6 +18,26 @@ vi.mock('electron', () => {
     BrowserWindow: vi.fn(),
   };
 });
+
+// Mock planner functions to avoid real network/Gemini API calls
+vi.mock('../../src/main/planner/decompose', () => ({
+  decomposeGoal: vi.fn().mockResolvedValue({
+    goal: { title: 'Write an essay on octopuses', description: 'desc', deadline: '2026-06-01' },
+    subtasks: [{ title: 'Research and gather sources', estimate_minutes: 90, depends_on: [] }],
+  }),
+}));
+
+vi.mock('../../src/main/planner/schedule', () => ({
+  scheduleTasks: vi
+    .fn()
+    .mockResolvedValue([
+      {
+        taskId: 'temp-0',
+        start: new Date('2026-05-24T09:30:00.000Z'),
+        end: new Date('2026-05-24T11:00:00.000Z'),
+      },
+    ]),
+}));
 
 interface MockOverlayWindow {
   hide: ReturnType<typeof vi.fn>;
@@ -45,7 +65,7 @@ describe('IPC Handlers', () => {
       focus: vi.fn(),
     };
     getOverlayWindow = () => mockOverlayWindow as unknown as BrowserWindow;
-    registerIpcHandlers(getOverlayWindow);
+    setupIpcHandlers(getOverlayWindow);
   });
 
   it('registers handlers for goal:propose, goal:commit, overlay:close, overlay:resize', () => {

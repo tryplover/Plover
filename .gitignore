@@ -29,3 +29,8 @@ Thumbs.db
 npm-debug.log*
 pnpm-debug.log*
 yarn-debug.log*
+
+# local databases (better-sqlite3 runtime files)
+app/tendril.db
+app/tendril.db-shm
+app/tendril.db-wal
