@@ -53,7 +53,7 @@ eslint+prettier on staged files at commit time.
 .
 ├── CLAUDE.md                       # context for Claude sessions
 ├── README.md                       # ← you are here
-├── docs/superpowers/specs/         # product spec + Phase 1 build prompt
+├── docs/superpowers/specs/         # product spec + Phase 1 architecture + feature specs
 ├── .github/                        # CI workflow, Dependabot, PR template
 └── app/                            # the Electron app
     ├── src/
@@ -71,14 +71,17 @@ package today — splitting only if it ever earns its weight.
 
 - **[Product spec (PRD)](docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md)** —
   vision, user flows, feature scope, architecture, milestones
-- **[Phase 1 build prompt](docs/superpowers/specs/2026-05-24-task-tracker-agent-build-prompt.md)** —
-  hard constraints, tech stack, file layout, module contracts, acceptance
-  criteria for the first ~5 weeks of work
+- **[Phase 1 core architecture](docs/superpowers/specs/phase-1/core-architecture.md)** —
+  hard constraints, tech stack, file layout, module contracts, implementation
+  order, cross-cutting acceptance criteria
+- **[Phase 1 feature specs](docs/superpowers/specs/phase-1/features/)** — one
+  doc per feature (goal capture, decomposition, scheduling, calendar sync,
+  todo views, overlay quick-add)
 - **[CLAUDE.md](CLAUDE.md)** — conventions and footguns; useful for humans too,
   not just Claude
 
-Read the build prompt before opening a PR — its "What to do first" and "What
-NOT to do" sections set the scope rules for the current phase.
+Read the core architecture doc before opening a PR — its "Implementation order"
+and "What NOT to do" sections set the scope rules for the current phase.
 
 ## Privacy posture
 

@@ -6,7 +6,7 @@ context, conventions, and known footguns.
 
 ## How to work in this repo (read this first)
 
-1. **Spec is authoritative.** The product spec and Phase 1 build prompt under
+1. **Spec is authoritative.** The product spec and the Phase 1 specs under
    [docs/superpowers/specs/](docs/superpowers/specs/) define scope, constraints,
    and the file layout. Do not scope-creep beyond the current phase.
 2. **Lessons-learned is a contract.** If you hit an error, surprise, or
@@ -29,10 +29,11 @@ finishing them. Privacy-by-design: no cloud backend, allowlisted outbound HTTP
 to Google APIs only.
 
 - **Product spec:** [docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md](docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md)
-- **Phase 1 build prompt:** [docs/superpowers/specs/2026-05-24-task-tracker-agent-build-prompt.md](docs/superpowers/specs/2026-05-24-task-tracker-agent-build-prompt.md)
+- **Phase 1 core architecture:** [docs/superpowers/specs/phase-1/core-architecture.md](docs/superpowers/specs/phase-1/core-architecture.md)
+- **Phase 1 feature specs:** [docs/superpowers/specs/phase-1/features/](docs/superpowers/specs/phase-1/features/)
 
-The build prompt's "What to do first" list (steps 1–7) is the implementation
-order. Do not jump ahead.
+The core architecture doc's "Implementation order" section (steps 1–7) is the
+implementation order. Do not jump ahead.
 
 ## Workspace layout
 
@@ -47,7 +48,11 @@ order. Do not jump ahead.
 │   ├── workflows/ci.yml            # typecheck + lint + test+coverage
 │   ├── dependabot.yml              # weekly npm + actions updates
 │   └── PULL_REQUEST_TEMPLATE.md
-├── docs/superpowers/specs/         # PRD + build prompts (authoritative)
+├── docs/superpowers/specs/         # PRD + Phase 1 specs (authoritative)
+│   ├── 2026-05-24-task-tracker-agent-product-spec.md
+│   └── phase-1/
+│       ├── core-architecture.md
+│       └── features/{typed-goal-capture,subtask-decomposition,scheduling,calendar-sync,todo-views,overlay-quick-add}.md
 └── app/                            # the Electron app (single workspace pkg)
     ├── package.json                # name: "tendril"
     ├── electron.vite.config.ts
@@ -84,10 +89,10 @@ via `pnpm --filter ./app`.
 **Always use `pnpm --filter ./app run <script>`** when the script name contains
 a colon (e.g. `test:coverage`). See lessons-learned #2.
 
-## Architecture rules (from the build prompt — load-bearing)
+## Architecture rules (load-bearing)
 
-These are not style preferences. The build prompt calls them "load-bearing"
-module boundaries. Violating them defeats the point of the design.
+These are not style preferences. The core architecture doc calls them
+"load-bearing" module boundaries. Violating them defeats the point of the design.
 
 - **Store** (`app/src/main/store/`) exposes typed repos: `Goals`, `Tasks`,
   `Sessions`, `Activity`, `Summaries`. No module reaches into raw SQLite.
@@ -146,8 +151,8 @@ module boundaries. Violating them defeats the point of the design.
 - **No backwards-compat shims** for code that hasn't shipped yet. Just change it.
 - **No new deps unless used.** Native modules (`better-sqlite3`, `keytar`) are
   added in the task that first imports them, not pre-emptively.
-- **Tests:** TDD the parts the build prompt names (Planner, Scheduler, Store).
-  Skip TDD for UI scaffolding.
+- **Tests:** TDD the parts the core architecture doc names (Planner, Scheduler,
+  Store). Skip TDD for UI scaffolding.
 - **No real network in tests.** Use recorded fixtures with `nock`.
 
 ## CI / dev tooling

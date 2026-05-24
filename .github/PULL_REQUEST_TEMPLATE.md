@@ -13,6 +13,6 @@
 
 ## Scope check
 
-- [ ] Changes stay within the current phase per [the Phase 1 build prompt](../docs/superpowers/specs/2026-05-24-task-tracker-agent-build-prompt.md)
+- [ ] Changes stay within the current phase per [the Phase 1 core architecture](../docs/superpowers/specs/phase-1/core-architecture.md)
 - [ ] No new outbound network destinations beyond the allowlist (`generativelanguage.googleapis.com`, `www.googleapis.com`, Google OAuth)
 - [ ] No new permissions requested (Screen Recording / Accessibility deferred to later phases)
