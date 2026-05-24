@@ -232,3 +232,11 @@ postinstall scripts may run, via `pnpm.onlyBuiltDependencies` in the root
 ```
 Add new packages here as they're introduced (e.g. `better-sqlite3` when the
 Store milestone lands — it's a native module and will need this).
+
+### 2026-05-24 — EventEmitter.removeAllListeners(undefined) does not clear all events
+
+**Symptom:** In tests, calling a typed wrapper's `eventBus.removeAllListeners()` (which passed `event?: string` value of `undefined` to Node's `emitter.removeAllListeners(event)`) failed to clear listeners across tests, leading to tests running with multiple active listeners and failing.
+
+**Root cause:** Node's `EventEmitter.prototype.removeAllListeners` checks `arguments.length` to decide whether to clear all events or just one. When `undefined` is passed explicitly, it treats it as a single argument (event name `"undefined"`) rather than no arguments.
+
+**Fix:** Explicitly branch on `event !== undefined` and call `removeAllListeners()` with no arguments to clear all events.
