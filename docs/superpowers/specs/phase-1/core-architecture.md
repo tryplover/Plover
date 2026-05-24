@@ -143,7 +143,7 @@ Modules communicate via the in-process event bus + typed `Store` repos. No modul
 Do the steps in this order. Each builds on the previous; don't jump ahead.
 
 1. Scaffold the Electron + Vite + TS project. Get an empty main window rendering.
-2. Add `better-sqlite3` and write the migration runner. Write `GoalsRepo` and `TasksRepo` with unit tests.
+2. Add `better-sqlite3` and write the migration runner. Write `GoalsRepo` and `TasksRepo` with unit tests. See [store-layer.md](./store-layer.md).
 3. Build `planner/gemini.ts` with a single hello-world tool-call against Gemini. Then `decomposeGoal` with a focused prompt and a JSON schema. Unit-test with a mocked Gemini client. See [features/subtask-decomposition.md](./features/subtask-decomposition.md).
 4. Build `planner/schedule.ts` as a pure function. Unit-test extensively — this is the part most likely to have edge cases. See [features/scheduling.md](./features/scheduling.md).
 5. Build the Google OAuth flow and `calendar.ts`. Use recorded fixtures with `nock` for tests. See [features/calendar-sync.md](./features/calendar-sync.md).

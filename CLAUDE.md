@@ -52,6 +52,7 @@ implementation order. Do not jump ahead.
 │   ├── 2026-05-24-task-tracker-agent-product-spec.md
 │   └── phase-1/
 │       ├── core-architecture.md
+│       ├── store-layer.md
 │       └── features/{typed-goal-capture,subtask-decomposition,scheduling,calendar-sync,todo-views,overlay-quick-add}.md
 └── app/                            # the Electron app (single workspace pkg)
     ├── package.json                # name: "tendril"
