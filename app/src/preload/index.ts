@@ -1,5 +1,4 @@
 import { contextBridge, ipcRenderer } from 'electron';
-<<<<<<< HEAD
 import { Task, Goal, CalendarEvent } from '../shared/types.js';
 
 export interface ProposedPlan {
@@ -8,25 +7,11 @@ export interface ProposedPlan {
     title: string;
     estimate_minutes: number;
     depends_on: string[];
-=======
-
-export interface ProposedPlan {
-  goal: {
-    title: string;
-    description?: string;
-    deadline?: string;
-  };
-  subtasks: {
-    title: string;
-    estimate_minutes: number;
-    depends_on?: string[];
->>>>>>> feature/07-overlay-quick-add
     scheduled_start?: string;
     scheduled_end?: string;
   }[];
 }
 
-<<<<<<< HEAD
 export interface TendrilApi {
   // Main Goals & Tasks
   getGoals: () => Promise<Goal[]>;
@@ -99,14 +84,10 @@ export interface TendrilApi {
   disconnectCalendar: () => Promise<void>;
 
   // Overlay Window API
-=======
-export interface ElectronAPI {
->>>>>>> feature/07-overlay-quick-add
   proposeGoal: (goalText: string) => Promise<ProposedPlan>;
   commitGoal: (plan: ProposedPlan) => Promise<{ goalId: string }>;
   closeOverlay: () => Promise<void>;
   resizeOverlay: (height: number) => Promise<void>;
-<<<<<<< HEAD
 
   // Event Subscription
   on: (channel: string, callback: (...args: any[]) => void) => () => void;
@@ -138,21 +119,6 @@ const api: TendrilApi = {
     ipcRenderer.on(channel, subscription);
     return () => {
       ipcRenderer.off(channel, subscription);
-=======
-  onReset: (callback: () => void) => () => void;
-}
-
-const api: ElectronAPI = {
-  proposeGoal: (goalText: string) => ipcRenderer.invoke('goal:propose', goalText),
-  commitGoal: (plan: ProposedPlan) => ipcRenderer.invoke('goal:commit', plan),
-  closeOverlay: () => ipcRenderer.invoke('overlay:close'),
-  resizeOverlay: (height: number) => ipcRenderer.invoke('overlay:resize', height),
-  onReset: (callback: () => void) => {
-    const subscription = () => callback();
-    ipcRenderer.on('overlay:reset', subscription);
-    return () => {
-      ipcRenderer.removeListener('overlay:reset', subscription);
->>>>>>> feature/07-overlay-quick-add
     };
   },
 };
@@ -161,10 +127,6 @@ contextBridge.exposeInMainWorld('api', api);
 
 declare global {
   interface Window {
-<<<<<<< HEAD
     api: TendrilApi;
-=======
-    api: ElectronAPI;
->>>>>>> feature/07-overlay-quick-add
   }
 }
