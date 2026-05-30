@@ -4,10 +4,6 @@ import { resolve } from 'node:path';
 export default defineConfig({
   test: {
     globals: true,
-    environmentMatchGlobs: [
-      ['src/renderer/**', 'jsdom'],
-      ['tests/renderer/**', 'jsdom'],
-    ],
     environment: 'node',
     include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx', 'src/**/*.test.ts', 'src/**/*.test.tsx'],
     coverage: {
