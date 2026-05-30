@@ -71,7 +71,7 @@ export class GoogleCalendarSync implements CalendarSync {
         calendarId: 'primary',
         requestBody: {
           summary: input.title,
-          description: `Synced from Tendril (Task ID: ${input.taskId})`,
+          description: `Synced from Plover (Task ID: ${input.taskId})`,
           start: {
             dateTime: input.start.toISOString(),
           },
