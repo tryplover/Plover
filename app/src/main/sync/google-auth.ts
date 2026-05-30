@@ -100,6 +100,13 @@ export class GoogleAuth {
             const error = parsedUrl.searchParams.get('error');
             const state = parsedUrl.searchParams.get('state');
 
+            // Ignore background probes or pre-connects that aren't actual OAuth redirects
+            if (!code && !error && !state) {
+              res.writeHead(400, { 'Content-Type': 'text/plain' });
+              res.end('Invalid request');
+              return;
+            }
+
             if (error) {
               res.writeHead(400, { 'Content-Type': 'text/html' });
               res.end(`<h1>Authentication failed</h1><p>Error: ${error}</p>`);
