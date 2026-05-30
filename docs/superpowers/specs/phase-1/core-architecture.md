@@ -24,6 +24,24 @@ Phase 1 covers exactly:
 - Windows port
 - Multi-account, plugins, multi-device sync
 
+## Runtime flow
+
+The two diagrams below are the same Phase 1 system at different zoom levels. The flowchart names every module and the external endpoints that any outbound HTTP must come from (see "Hard constraints" below). The sequence diagram walks the canonical path: user types a goal → Gemini decomposes it → local scheduler places it → Calendar gets written.
+
+### Module map + external endpoints
+
+![Module map + external endpoints](../../../diagrams/core-architecture.svg)
+
+### Goal → calendar sequence
+
+![Goal → calendar sequence](../../../diagrams/seq-diagram.svg)
+
+Notes:
+
+- Every external arrow is one of the three allowlisted hosts in "Hard constraints". Nothing else should make outbound calls.
+- `Planner.schedule` is intentionally pure — no DB, no network — which is why it has a self-loop instead of an external arrow. It's the most-tested module for that reason (see [features/scheduling.md](./features/scheduling.md)).
+- `Nudge` is wired into the bus but does nothing in Phase 1; it exists so later phases don't reshape the module graph.
+
 ## Hard constraints
 
 1. **Local-only data.** SQLite + local filesystem. No backend server. The only outbound HTTP traffic allowed is to `generativelanguage.googleapis.com` (Gemini), `www.googleapis.com` (Calendar), and the Google OAuth endpoints. Add a runtime allowlist check around the HTTP client.
