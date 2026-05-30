@@ -232,3 +232,22 @@ postinstall scripts may run, via `pnpm.onlyBuiltDependencies` in the root
 ```
 Add new packages here as they're introduced (e.g. `better-sqlite3` when the
 Store milestone lands — it's a native module and will need this).
+
+### 2026-05-24 — broken lockfile after merging main into a feature branch
+
+**Symptom:** CI fails on the install step with
+`ERR_PNPM_LOCKFILE_MISSING_DEPENDENCY  Broken lockfile: no entry for
+'better-sqlite3@12.10.0' in pnpm-lock.yaml`. `pnpm install --frozen-lockfile`
+reproduces locally. The package is present in `app/package.json` and in the
+lockfile's `importers:` block, but missing from the `snapshots:`/`packages:`
+sections.
+
+**Root cause:** A merge resolved `pnpm-lock.yaml` by keeping the importer-side
+edits (so the dependency is declared) but dropping the resolution snapshot
+(so pnpm can't find the resolved tarball). Classic git merge of a generated
+file. CI uses `--frozen-lockfile`, which (correctly) refuses to recompute.
+
+**Fix:** Locally run `pnpm install` (no `--frozen-lockfile`). pnpm detects
+the gap, fetches the missing resolution, and writes the snapshot back. Commit
+the regenerated `pnpm-lock.yaml`. Never resolve lockfile merge conflicts by
+hand — always re-run `pnpm install` and let pnpm own the file.
