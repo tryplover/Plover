@@ -43,7 +43,7 @@ export function App() {
       <aside className="sidebar">
         <div>
           <div className="logo-section">
-            <div className="logo-icon">T</div>
+            <div className="logo-icon">P</div>
             <span className="logo-text">Plover</span>
           </div>
 
