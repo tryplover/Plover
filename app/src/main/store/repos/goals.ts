@@ -114,6 +114,7 @@ export class GoalsRepo {
       ...existing,
       ...patch,
       id, // ensure ID is not overwritten
+      created_at: existing.created_at, // ensure created_at is preserved
       updated_at: now,
     };
 

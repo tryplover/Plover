@@ -18,6 +18,7 @@ export default defineConfig({
       exclude: [
         'src/renderer/**',
         'src/preload/**',
+        'src/shared/**',
         'src/**/index.ts',
         'src/**/*.config.ts',
         'src/**/*.d.ts',

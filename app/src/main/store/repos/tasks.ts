@@ -8,7 +8,6 @@ export class TasksRepo {
   constructor(db: Database.Database) {
     this.db = db;
   }
-
   create(input: Omit<Task, 'id' | 'created_at' | 'updated_at'> & { id?: string }): Task {
     const id = input.id || randomUUID();
     const now = new Date().toISOString();
@@ -140,11 +139,13 @@ export class TasksRepo {
              created_at, updated_at
       FROM tasks
       WHERE scheduled_start IS NOT NULL
-        AND scheduled_start >= ?
-        AND scheduled_start <= ?
+        AND (
+          (scheduled_start >= ? AND scheduled_start <= ?)
+          OR (scheduled_start < ? AND status NOT IN ('done', 'skipped'))
+        )
     `);
 
-    const rows = stmt.all(start.toISOString(), end.toISOString()) as {
+    const rows = stmt.all(start.toISOString(), end.toISOString(), start.toISOString()) as {
       id: string;
       goal_id: string;
       title: string;
@@ -184,6 +185,7 @@ export class TasksRepo {
       ...existing,
       ...patch,
       id, // ensure ID is not overwritten
+      created_at: existing.created_at, // ensure created_at is preserved
       updated_at: now,
     };
 
@@ -210,7 +212,6 @@ export class TasksRepo {
 
     return updated;
   }
-
   list(): Task[] {
     const stmt = this.db.prepare(`
       SELECT id, goal_id, title, estimate_minutes, depends_on,
