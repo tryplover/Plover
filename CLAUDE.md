@@ -90,6 +90,9 @@ via `pnpm --filter ./app`.
 **Always use `pnpm --filter ./app run <script>`** when the script name contains
 a colon (e.g. `test:coverage`). See lessons-learned #2.
 
+To run the app end-to-end locally (API keys, Google OAuth setup, manual test
+walkthrough), see [docs/RUNNING.md](docs/RUNNING.md).
+
 ## Architecture rules (load-bearing)
 
 These are not style preferences. The core architecture doc calls them
@@ -264,4 +267,12 @@ Store milestone lands — it's a native module and will need this).
 **Root cause:** Node's `EventEmitter.prototype.removeAllListeners` checks `arguments.length` to decide whether to clear all events or just one. When `undefined` is passed explicitly, it treats it as a single argument (event name `"undefined"`) rather than no arguments.
 
 **Fix:** Explicitly branch on `event !== undefined` and call `removeAllListeners()` with no arguments to clear all events.
+
+### 2026-05-30 — main-process secrets load from `app/.env` via a first-import side-effect module
+
+**Symptom:** Putting `process.loadEnvFile()` in the body of `app/src/main/index.ts` did not make `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` from `app/.env` available — OAuth still used the `mock-client-id` fallback.
+
+**Root cause:** `google-auth.ts` reads `process.env.GOOGLE_CLIENT_ID` at module-evaluation time, and ES module imports (`index.ts` → `ipc.ts` → `google-auth.ts`) are hoisted and evaluated *before* any statement in the `index.ts` body. So a body-level `process.loadEnvFile()` runs too late. (`gemini.ts` is unaffected because it reads the key lazily inside `getGeminiClient()`.)
+
+**Fix:** Load env in a dedicated side-effect module `app/src/main/load-env.ts` (guarded `try { process.loadEnvFile() } catch {}`) and import it as the **first** import in `index.ts` (`import './load-env.js';`). ESM evaluates imports in source order, so the env file loads before `google-auth.ts` is evaluated. Secrets live in `app/.env` (gitignored); see [docs/RUNNING.md](docs/RUNNING.md).
 

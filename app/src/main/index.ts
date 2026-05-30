@@ -1,3 +1,4 @@
+import './load-env.js';
 import { app, BrowserWindow, globalShortcut } from 'electron';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
