@@ -313,36 +313,37 @@ async function saveGoalAndTasksInternal(
     return { taskInput, taskId, slot, depends_on };
   });
 
-  const calendarEventIds = await Promise.all(
-    prepared.map(async ({ taskInput, taskId, slot }) => {
+  const created = prepared.map((p) => ({
+    ...p,
+    task: tasksRepo.create({
+      id: p.taskId,
+      goal_id: goal.id,
+      title: p.taskInput.title,
+      estimate_minutes: p.taskInput.estimate_minutes,
+      depends_on: p.depends_on,
+      scheduled_start: p.slot?.start || undefined,
+      scheduled_end: p.slot?.end || undefined,
+      status: p.slot && p.slot.start ? 'scheduled' : 'todo',
+    }),
+  }));
+
+  const newTasks: Task[] = await Promise.all(
+    created.map(async ({ taskInput, taskId, slot, task }) => {
       if (!isGoogleConnected || !slot || !slot.start || !slot.end) {
-        return undefined;
+        return task;
       }
       try {
-        return await calendarSync.createEvent({
+        const calendarEventId = await calendarSync.createEvent({
           taskId,
           title: taskInput.title,
           start: new Date(slot.start),
           end: new Date(slot.end),
         });
+        return tasksRepo.update(taskId, { calendar_event_id: calendarEventId });
       } catch (err) {
         console.error(`Failed to sync calendar event for task ${taskInput.title}:`, err);
-        return undefined;
+        return task;
       }
-    }),
-  );
-
-  const newTasks: Task[] = prepared.map(({ taskInput, taskId, slot, depends_on }, idx) =>
-    tasksRepo.create({
-      id: taskId,
-      goal_id: goal.id,
-      title: taskInput.title,
-      estimate_minutes: taskInput.estimate_minutes,
-      depends_on,
-      scheduled_start: slot?.start || undefined,
-      scheduled_end: slot?.end || undefined,
-      calendar_event_id: calendarEventIds[idx],
-      status: slot && slot.start ? 'scheduled' : 'todo',
     }),
   );
 

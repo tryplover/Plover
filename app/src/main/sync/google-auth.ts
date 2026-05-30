@@ -64,6 +64,9 @@ export class GoogleAuth {
         if (settled) return;
         settled = true;
         clearTimeout(timeoutHandle);
+        if (typeof server.closeAllConnections === 'function') {
+          server.closeAllConnections();
+        }
         server.close(() => fn());
       };
 
