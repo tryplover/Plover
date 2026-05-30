@@ -73,10 +73,12 @@ export function scheduleTasks(input: {
   );
   const { hours: endHours, minutes: endMinutes } = parseHHMM(workingHours.end, 'workingHours.end');
 
-  const parsedCalendarEvents = calendarEvents.map((event) => ({
-    start: new Date(event.start).getTime(),
-    end: new Date(event.end).getTime(),
-  }));
+  const parsedCalendarEvents = calendarEvents
+    .map((event) => ({
+      start: new Date(event.start).getTime(),
+      end: new Date(event.end).getTime(),
+    }))
+    .filter((event) => !Number.isNaN(event.start) && !Number.isNaN(event.end));
 
   const lastDayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + horizonDays - 1);
   const horizonEnd = new Date(
