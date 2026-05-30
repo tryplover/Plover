@@ -50,8 +50,8 @@ The planner uses the `gemini-2.0-flash` model.
 1. **Google Cloud Console** → create (or pick) a project.
 2. **Enable the Google Calendar API** for that project.
 3. **OAuth consent screen** → User type **External** → add your own email
-   (`liyu.xiao@wealthsimple.com`) as a **Test user**. This is required while the
-   app is in testing because `calendar.events` is a sensitive scope.
+   (e.g., your.email@example.com) as a **Test user**. This is required while the
+   app is in testing because calendar.events is a sensitive scope.
 4. **Credentials → Create credentials → OAuth client ID → Application type
    "Desktop app"**. The app uses a loopback redirect (`http://localhost:{port}`,
    a random port per attempt); desktop clients allow loopback redirects without
