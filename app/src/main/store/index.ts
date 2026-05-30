@@ -14,7 +14,7 @@ try {
   userDataDir = '.';
 }
 
-const dbPath = process.env.VITEST ? ':memory:' : join(userDataDir, 'tendril.db');
+const dbPath = process.env.VITEST ? ':memory:' : join(userDataDir, 'plover.db');
 export const db = initDb(dbPath);
 export const goalsRepo = new GoalsRepo(db);
 export const tasksRepo = new TasksRepo(db);

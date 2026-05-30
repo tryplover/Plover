@@ -54,8 +54,8 @@ export function App() {
       <aside className="sidebar">
         <div>
           <div className="logo-section">
-            <div className="logo-icon">T</div>
-            <span className="logo-text">Tendril</span>
+            <div className="logo-icon">P</div>
+            <span className="logo-text">Plover</span>
           </div>
 
           <nav className="nav-links">
@@ -94,7 +94,7 @@ export function App() {
             textAlign: 'center',
           }}
         >
-          Tendril v1.0.0
+          Plover v1.0.0
         </div>
       </aside>
 

@@ -1,9 +1,9 @@
-# Tendril
+# Plover
 
 A local-first desktop agent that turns vague goals into a calendar and
 shepherds you toward finishing them. Built for the 3-month Gemini hackathon.
 
-You tell Tendril what you want to get done — by voice or text. It decomposes
+You tell Plover what you want to get done — by voice or text. It decomposes
 the goal with Gemini, books time on your Google Calendar, watches your screen
 in the background, and tells you when you're on or off track. Nothing leaves
 your machine except calls to Gemini and Google APIs.
@@ -27,7 +27,7 @@ pnpm install        # one-time setup + git hooks
 pnpm dev            # launches the Electron app in dev mode
 ```
 
-You'll see a window with a "Tendril" placeholder — the scaffold renders, the
+You'll see a window with a "Plover" placeholder — the scaffold renders, the
 toolchain works, and you can start building features against it.
 
 ## Common commands
@@ -64,7 +64,7 @@ eslint+prettier on staged files at commit time.
     └── tests/
 ```
 
-The `app/` directory is a pnpm workspace package named `tendril`. Single
+The `app/` directory is a pnpm workspace package named `plover`. Single
 package today — splitting only if it ever earns its weight.
 
 ## Documentation
@@ -87,7 +87,7 @@ and "What NOT to do" sections set the scope rules for the current phase.
 
 ## Privacy posture
 
-Tendril is local-first by design:
+Plover is local-first by design:
 
 - All persistent data lives on disk (SQLite + local files). No cloud backend.
 - Outbound HTTP is allowlisted to `generativelanguage.googleapis.com`,

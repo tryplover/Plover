@@ -7,7 +7,7 @@ import { shell } from 'electron';
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'mock-client-id';
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || 'mock-client-secret';
-const KEYCHAIN_SERVICE = 'tendril';
+const KEYCHAIN_SERVICE = 'plover';
 const KEYCHAIN_ACCOUNT = 'google-refresh-token';
 
 export const CALENDAR_SCOPES = [

@@ -44,7 +44,7 @@ describe('Google Calendar Sync & OAuth', () => {
 
   describe('GoogleAuth', () => {
     it('should load saved credentials from keychain if they exist', async () => {
-      mockKeychain.set('tendril:google-refresh-token', 'saved-refresh-token');
+      mockKeychain.set('plover:google-refresh-token', 'saved-refresh-token');
       const auth = new GoogleAuth();
       const loaded = await auth.loadSavedCredentials();
       expect(loaded).toBe(true);
@@ -59,12 +59,12 @@ describe('Google Calendar Sync & OAuth', () => {
     });
 
     it('should disconnect and remove credentials from keychain', async () => {
-      mockKeychain.set('tendril:google-refresh-token', 'some-token');
+      mockKeychain.set('plover:google-refresh-token', 'some-token');
       const auth = new GoogleAuth();
       await auth.loadSavedCredentials();
 
       await auth.disconnect();
-      expect(mockKeychain.get('tendril:google-refresh-token')).toBeUndefined();
+      expect(mockKeychain.get('plover:google-refresh-token')).toBeUndefined();
       expect(auth.client.credentials.refresh_token).toBeUndefined();
     });
 
@@ -97,7 +97,7 @@ describe('Google Calendar Sync & OAuth', () => {
       await auth.authorize();
 
       expect(auth.client.credentials.refresh_token).toBe('new-refresh-token');
-      expect(mockKeychain.get('tendril:google-refresh-token')).toBe('new-refresh-token');
+      expect(mockKeychain.get('plover:google-refresh-token')).toBe('new-refresh-token');
     });
 
     it('should handle oauth errors in loopback callback', async () => {

@@ -12,7 +12,7 @@ export interface ProposedPlan {
   }[];
 }
 
-export interface TendrilApi {
+export interface PloverApi {
   // Main Goals & Tasks
   getGoals: () => Promise<Goal[]>;
   getTasks: () => Promise<Task[]>;
@@ -93,7 +93,7 @@ export interface TendrilApi {
   on: (channel: string, callback: (...args: unknown[]) => void) => () => void;
 }
 
-const api: TendrilApi = {
+const api: PloverApi = {
   getGoals: () => ipcRenderer.invoke('goals:get'),
   getTasks: () => ipcRenderer.invoke('tasks:get'),
   updateTaskStatus: (id, status) => ipcRenderer.invoke('tasks:updateStatus', id, status),
@@ -127,6 +127,6 @@ contextBridge.exposeInMainWorld('api', api);
 
 declare global {
   interface Window {
-    api: TendrilApi;
+    api: PloverApi;
   }
 }

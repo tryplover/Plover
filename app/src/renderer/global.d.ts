@@ -1,6 +1,6 @@
 import { Goal, Task } from '../shared/types';
 
-export interface TendrilAPI {
+export interface PloverAPI {
   getGoals(): Promise<Goal[]>;
   getTasks(): Promise<Task[]>;
   updateTaskStatus(id: string, status: Task['status']): Promise<Task>;
@@ -70,6 +70,6 @@ export interface TendrilAPI {
 
 declare global {
   interface Window {
-    api: TendrilAPI;
+    api: PloverAPI;
   }
 }

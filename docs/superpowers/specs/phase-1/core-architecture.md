@@ -1,6 +1,6 @@
-# Tendril — Phase 1 Core Architecture
+# Plover — Phase 1 Core Architecture
 
-Cross-cutting architecture, constraints, and conventions for **Phase 1** of Tendril. Every feature spec under [features/](./features/) assumes this doc. Read this first; the feature docs only restate what's specific to themselves.
+Cross-cutting architecture, constraints, and conventions for **Phase 1** of Plover. Every feature spec under [features/](./features/) assumes this doc. Read this first; the feature docs only restate what's specific to themselves.
 
 The product motivation lives in the [product spec](../2026-05-24-task-tracker-agent-product-spec.md).
 

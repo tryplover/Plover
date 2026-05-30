@@ -12,7 +12,7 @@ function createMainWindow(): void {
   mainWindow = new BrowserWindow({
     width: 1024,
     height: 720,
-    title: 'Tendril',
+    title: 'Plover',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: true,
