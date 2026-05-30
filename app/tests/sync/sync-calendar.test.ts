@@ -80,9 +80,11 @@ describe('Google Calendar Sync & OAuth', () => {
       mockOpenExternal.mockImplementationOnce(async (urlStr: string) => {
         const parsedUrl = new URL(urlStr);
         const redirectUri = parsedUrl.searchParams.get('redirect_uri');
+        const state = parsedUrl.searchParams.get('state');
         expect(redirectUri).toBeDefined();
+        expect(state).toBeTruthy();
 
-        const callbackUrl = `${redirectUri}?code=test-auth-code`;
+        const callbackUrl = `${redirectUri}?code=test-auth-code&state=${state}`;
         await new Promise<void>((resolve, reject) => {
           http
             .get(callbackUrl, (res) => {
@@ -98,6 +100,26 @@ describe('Google Calendar Sync & OAuth', () => {
 
       expect(auth.client.credentials.refresh_token).toBe('new-refresh-token');
       expect(mockKeychain.get('plover:google-refresh-token')).toBe('new-refresh-token');
+    });
+
+    it('should reject when callback state does not match expected state', async () => {
+      const auth = new GoogleAuth();
+
+      mockOpenExternal.mockImplementationOnce(async (urlStr: string) => {
+        const parsedUrl = new URL(urlStr);
+        const redirectUri = parsedUrl.searchParams.get('redirect_uri');
+
+        const callbackUrl = `${redirectUri}?code=test-auth-code&state=attacker-state`;
+        await new Promise<void>((resolve) => {
+          http.get(callbackUrl, (res) => {
+            expect(res.statusCode).toBe(400);
+            resolve();
+          });
+        });
+        return true;
+      });
+
+      await expect(auth.authorize()).rejects.toThrow(/state mismatch/i);
     });
 
     it('should handle oauth errors in loopback callback', async () => {
@@ -131,6 +153,7 @@ describe('Google Calendar Sync & OAuth', () => {
       mockOpenExternal.mockImplementationOnce(async (urlStr: string) => {
         const parsedUrl = new URL(urlStr);
         const redirectUri = parsedUrl.searchParams.get('redirect_uri');
+        const state = parsedUrl.searchParams.get('state');
 
         const faviconUrl = `${redirectUri}/favicon.ico`;
         await new Promise<void>((resolve) => {
@@ -140,7 +163,7 @@ describe('Google Calendar Sync & OAuth', () => {
           });
         });
 
-        const callbackUrl = `${redirectUri}?code=test-auth-code`;
+        const callbackUrl = `${redirectUri}?code=test-auth-code&state=${state}`;
         await new Promise<void>((resolve) => {
           http.get(callbackUrl, (res) => {
             expect(res.statusCode).toBe(200);

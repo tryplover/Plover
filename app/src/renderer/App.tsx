@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import TasksToday from './main/pages/TasksToday';
 import GoalsList from './main/pages/GoalsList';
 import Settings from './main/pages/Settings';
+import { isToday } from './lib/date';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<'today' | 'goals' | 'settings'>('today');
@@ -10,18 +11,6 @@ export function App() {
   const fetchTodayCount = async () => {
     try {
       const allTasks = await window.api.getTasks();
-
-      const isToday = (isoString?: string) => {
-        if (!isoString) return false;
-        const date = new Date(isoString);
-        const today = new Date();
-        return (
-          date.getDate() === today.getDate() &&
-          date.getMonth() === today.getMonth() &&
-          date.getFullYear() === today.getFullYear()
-        );
-      };
-
       const todayTasks = allTasks.filter((t) => isToday(t.scheduled_start) && t.status !== 'done');
       setTodayPendingCount(todayTasks.length);
     } catch (err) {

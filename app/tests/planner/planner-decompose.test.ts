@@ -77,6 +77,30 @@ describe('decomposeGoal', () => {
     });
   });
 
+  it('drops invalid deadline strings instead of propagating them', async () => {
+    mockGenerateContent.mockResolvedValue({
+      response: {
+        functionCalls: () => [
+          {
+            name: 'decomposeGoal',
+            args: {
+              goal: { title: 'Mystery goal', description: 'desc', deadline: 'not-a-date' },
+              subtasks: [{ title: 'Step 1', estimate_minutes: 30 }],
+            },
+          },
+        ],
+      },
+    });
+
+    const result = await decomposeGoal({
+      goalText: 'Mystery goal',
+      now: new Date('2026-05-24T12:00:00Z'),
+      workingHours: { start: '09:00', end: '18:00' },
+    });
+
+    expect(result.goal.deadline).toBeUndefined();
+  });
+
   it('clamps subtask durations to fit the 15-minute and 4-hour bounds', async () => {
     mockGenerateContent.mockResolvedValue({
       response: {

@@ -80,7 +80,6 @@ function toggleOverlayWindow(): void {
       overlayWindow.center();
       overlayWindow.show();
       overlayWindow.focus();
-      // Send a reset event to the renderer process to clear the form/subtask state
       overlayWindow.webContents.send('overlay:reset');
     }
   }

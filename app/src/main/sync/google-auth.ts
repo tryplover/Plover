@@ -1,4 +1,5 @@
 import http from 'http';
+import { randomBytes } from 'node:crypto';
 import { AddressInfo } from 'net';
 import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
@@ -9,11 +10,9 @@ const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'mock-client-id';
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || 'mock-client-secret';
 const KEYCHAIN_SERVICE = 'plover';
 const KEYCHAIN_ACCOUNT = 'google-refresh-token';
+const AUTHORIZE_TIMEOUT_MS = 5 * 60 * 1000;
 
-export const CALENDAR_SCOPES = [
-  'https://www.googleapis.com/auth/calendar',
-  'https://www.googleapis.com/auth/calendar.events',
-];
+export const CALENDAR_SCOPES = ['https://www.googleapis.com/auth/calendar.events'];
 
 export class AuthenticationError extends Error {
   constructor(message: string) {
@@ -58,6 +57,22 @@ export class GoogleAuth {
   async authorize(): Promise<void> {
     return new Promise((resolve, reject) => {
       const server = http.createServer();
+      const expectedState = randomBytes(32).toString('hex');
+      let settled = false;
+
+      const finish = (fn: () => void) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeoutHandle);
+        if (typeof server.closeAllConnections === 'function') {
+          server.closeAllConnections();
+        }
+        server.close(() => fn());
+      };
+
+      const timeoutHandle = setTimeout(() => {
+        finish(() => reject(new AuthenticationError('Authorization timed out')));
+      }, AUTHORIZE_TIMEOUT_MS);
 
       server.listen(0, '127.0.0.1', async () => {
         const address = server.address() as AddressInfo;
@@ -70,6 +85,7 @@ export class GoogleAuth {
           access_type: 'offline',
           scope: CALENDAR_SCOPES,
           prompt: 'consent',
+          state: expectedState,
         });
 
         server.on('request', async (req, res) => {
@@ -85,20 +101,35 @@ export class GoogleAuth {
 
             const code = parsedUrl.searchParams.get('code');
             const error = parsedUrl.searchParams.get('error');
+            const state = parsedUrl.searchParams.get('state');
+
+            // Ignore background probes or pre-connects that aren't actual OAuth redirects
+            if (!code && !error && !state) {
+              res.writeHead(400, { 'Content-Type': 'text/plain' });
+              res.end('Invalid request');
+              return;
+            }
 
             if (error) {
               res.writeHead(400, { 'Content-Type': 'text/html' });
               res.end(`<h1>Authentication failed</h1><p>Error: ${error}</p>`);
-              server.close();
-              reject(new AuthenticationError(`OAuth error: ${error}`));
+              finish(() => reject(new AuthenticationError(`OAuth error: ${error}`)));
+              return;
+            }
+
+            if (state !== expectedState) {
+              res.writeHead(400, { 'Content-Type': 'text/html' });
+              res.end('<h1>Authentication failed</h1><p>State mismatch.</p>');
+              finish(() => reject(new AuthenticationError('OAuth state mismatch')));
               return;
             }
 
             if (!code) {
               res.writeHead(400, { 'Content-Type': 'text/html' });
               res.end('<h1>Authentication failed</h1><p>Missing authorization code.</p>');
-              server.close();
-              reject(new AuthenticationError('Missing authorization code in redirect'));
+              finish(() =>
+                reject(new AuthenticationError('Missing authorization code in redirect')),
+              );
               return;
             }
 
@@ -112,26 +143,23 @@ export class GoogleAuth {
 
             res.writeHead(200, { 'Content-Type': 'text/html' });
             res.end('<h1>Authentication successful!</h1><p>You can close this window now.</p>');
-            server.close();
-            resolve();
+            finish(resolve);
           } catch (err) {
             res.writeHead(500, { 'Content-Type': 'text/html' });
             res.end('<h1>Authentication failed</h1><p>Internal error occurred.</p>');
-            server.close();
-            reject(err);
+            finish(() => reject(err));
           }
         });
 
         try {
           await shell.openExternal(authUrl);
         } catch (err) {
-          server.close();
-          reject(err);
+          finish(() => reject(err));
         }
       });
 
       server.on('error', (err) => {
-        reject(err);
+        finish(() => reject(err));
       });
     });
   }

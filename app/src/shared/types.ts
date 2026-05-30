@@ -13,7 +13,10 @@ export interface Task {
   goal_id: string;
   title: string;
   estimate_minutes: number;
-  depends_on?: string[]; // Array of task IDs
+  // Persisted form: array of task IDs. Decomposition output uses stringified
+  // 0-based indices into the subtasks array; the IPC commit step maps those
+  // indices to the freshly-minted task IDs before insertion.
+  depends_on?: string[];
   scheduled_start?: string; // ISO8601 string
   scheduled_end?: string; // ISO8601 string
   calendar_event_id?: string;
