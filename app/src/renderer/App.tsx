@@ -19,6 +19,7 @@ export function App() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTodayCount();
 
     const unsubscribe = window.api.on('app-event', (event: unknown) => {

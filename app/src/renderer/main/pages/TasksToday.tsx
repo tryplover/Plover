@@ -25,6 +25,7 @@ export default function TasksToday({ onTasksUpdated }: TasksTodayProps) {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchTodayData();
 
     // Subscribe to IPC event bus updates for live refreshes
