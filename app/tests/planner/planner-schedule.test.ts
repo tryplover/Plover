@@ -196,10 +196,10 @@ describe('Deterministic Auto-Scheduling', () => {
     expect(r1.end.toISOString()).toBe(new Date('2026-05-24T20:00:00').toISOString());
   });
 
-  it('throws an error if a dependency cycle is detected', async () => {
+  it('throws an error if a dependency cycle is detected', () => {
     const tasks = [createTask('t1', 60, ['t2']), createTask('t2', 60, ['t1'])];
 
-    await expect(
+    expect(() =>
       scheduleTasks({
         tasks,
         calendarEvents: [],
@@ -207,7 +207,31 @@ describe('Deterministic Auto-Scheduling', () => {
         horizonDays,
         now: baseDate,
       }),
-    ).rejects.toThrow('Cycle detected in task dependencies');
+    ).toThrow('Cycle detected in task dependencies');
+  });
+
+  it('throws on invalid workingHours format', () => {
+    const tasks = [createTask('t1', 60)];
+
+    expect(() =>
+      scheduleTasks({
+        tasks,
+        calendarEvents: [],
+        workingHours: { start: 'oops', end: '17:00' },
+        horizonDays,
+        now: baseDate,
+      }),
+    ).toThrow(/workingHours\.start/);
+
+    expect(() =>
+      scheduleTasks({
+        tasks,
+        calendarEvents: [],
+        workingHours: { start: '09:00', end: '25:99' },
+        horizonDays,
+        now: baseDate,
+      }),
+    ).toThrow(/workingHours\.end/);
   });
 
   it('does not fail if a dependency is external or already completed (not in tasks list)', async () => {

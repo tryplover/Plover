@@ -1,15 +1,16 @@
 import { GoogleGenerativeAI, SchemaType, FunctionDeclaration } from '@google/generative-ai';
 
-/**
- * Get the Google Generative AI client instance.
- * Uses the GEMINI_API_KEY environment variable.
- */
+let cachedClient: { apiKey: string; client: GoogleGenerativeAI } | null = null;
+
 export function getGeminiClient(): GoogleGenerativeAI {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY environment variable is not set');
   }
-  return new GoogleGenerativeAI(apiKey);
+  if (!cachedClient || cachedClient.apiKey !== apiKey) {
+    cachedClient = { apiKey, client: new GoogleGenerativeAI(apiKey) };
+  }
+  return cachedClient.client;
 }
 
 /**

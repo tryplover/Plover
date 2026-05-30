@@ -1,12 +1,32 @@
 import { Task, CalendarEvent } from '@shared/types';
 
-export async function scheduleTasks(input: {
+function parseHHMM(value: string, field: string): { hours: number; minutes: number } {
+  const parts = value.split(':');
+  if (parts.length !== 2) {
+    throw new Error(`Invalid ${field} time format: ${value} (expected HH:MM)`);
+  }
+  const hours = Number(parts[0]);
+  const minutes = Number(parts[1]);
+  if (
+    !Number.isInteger(hours) ||
+    !Number.isInteger(minutes) ||
+    hours < 0 ||
+    hours > 23 ||
+    minutes < 0 ||
+    minutes > 59
+  ) {
+    throw new Error(`Invalid ${field} time: ${value} (HH must be 0-23, MM must be 0-59)`);
+  }
+  return { hours, minutes };
+}
+
+export function scheduleTasks(input: {
   tasks: Task[];
   calendarEvents: CalendarEvent[];
   workingHours: { start: string; end: string };
   horizonDays: number;
   now?: Date;
-}): Promise<{ taskId: string; start: Date; end: Date }[]> {
+}): { taskId: string; start: Date; end: Date }[] {
   const now = input.now ?? new Date();
   const { tasks, calendarEvents, workingHours, horizonDays } = input;
 
@@ -47,12 +67,16 @@ export async function scheduleTasks(input: {
   }
 
   const scheduledTasks = new Map<string, { start: Date; end: Date }>();
-  const [startHoursStr, startMinutesStr] = workingHours.start.split(':');
-  const [endHoursStr, endMinutesStr] = workingHours.end.split(':');
-  const startHours = Number(startHoursStr);
-  const startMinutes = Number(startMinutesStr);
-  const endHours = Number(endHoursStr);
-  const endMinutes = Number(endMinutesStr);
+  const { hours: startHours, minutes: startMinutes } = parseHHMM(
+    workingHours.start,
+    'workingHours.start',
+  );
+  const { hours: endHours, minutes: endMinutes } = parseHHMM(workingHours.end, 'workingHours.end');
+
+  const parsedCalendarEvents = calendarEvents.map((event) => ({
+    start: new Date(event.start).getTime(),
+    end: new Date(event.end).getTime(),
+  }));
 
   const lastDayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + horizonDays - 1);
   const horizonEnd = new Date(
@@ -136,12 +160,10 @@ export async function scheduleTasks(input: {
 
         let overlapEvent: { start: number; end: number } | null = null;
 
-        for (const event of calendarEvents) {
-          const eventStart = new Date(event.start).getTime();
-          const eventEnd = new Date(event.end).getTime();
-          if (S < eventEnd && end > eventStart) {
-            if (!overlapEvent || eventEnd > overlapEvent.end) {
-              overlapEvent = { start: eventStart, end: eventEnd };
+        for (const event of parsedCalendarEvents) {
+          if (S < event.end && end > event.start) {
+            if (!overlapEvent || event.end > overlapEvent.end) {
+              overlapEvent = { start: event.start, end: event.end };
             }
           }
         }

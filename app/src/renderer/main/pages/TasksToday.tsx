@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Task, Goal } from '../../../shared/types';
+import { isToday } from '../../lib/date';
 
 interface TasksTodayProps {
   onTasksUpdated?: () => void;
@@ -65,17 +66,6 @@ export default function TasksToday({ onTasksUpdated }: TasksTodayProps) {
     } catch (err) {
       console.error('Failed to update task status:', err);
     }
-  };
-
-  const isToday = (isoString?: string) => {
-    if (!isoString) return false;
-    const date = new Date(isoString);
-    const today = new Date();
-    return (
-      date.getDate() === today.getDate() &&
-      date.getMonth() === today.getMonth() &&
-      date.getFullYear() === today.getFullYear()
-    );
   };
 
   const getGoalTitle = (goalId: string) => {

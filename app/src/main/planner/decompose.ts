@@ -104,10 +104,14 @@ Guidelines:
     throw new Error('Invalid arguments returned in decomposeGoal function call');
   }
 
+  const rawDeadline = args.goal.deadline ? String(args.goal.deadline).trim() : undefined;
+  const validDeadline =
+    rawDeadline && !Number.isNaN(Date.parse(rawDeadline)) ? rawDeadline : undefined;
+
   const goal: Omit<Goal, 'id' | 'created_at' | 'updated_at' | 'status'> = {
     title: String(args.goal.title || '').trim(),
     description: args.goal.description ? String(args.goal.description).trim() : undefined,
-    deadline: args.goal.deadline ? String(args.goal.deadline).trim() : undefined,
+    deadline: validDeadline,
   };
 
   if (!goal.title) {

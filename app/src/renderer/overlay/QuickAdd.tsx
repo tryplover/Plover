@@ -187,15 +187,7 @@ export function QuickAdd() {
               animation: 'spin 0.8s linear infinite',
             }}
           />
-          <style
-            dangerouslySetInnerHTML={{
-              __html: `
-            @keyframes spin {
-              to { transform: rotate(360deg); }
-            }
-          `,
-            }}
-          />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
           <span style={{ fontSize: '14px', color: '#eaeaea' }}>
             Decomposing goal and scheduling subtasks...
           </span>

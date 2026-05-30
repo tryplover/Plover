@@ -76,11 +76,9 @@ function toggleOverlayWindow(): void {
     if (overlayWindow.isVisible()) {
       overlayWindow.hide();
     } else {
-      overlayWindow.setSize(600, 80);
       overlayWindow.center();
       overlayWindow.show();
       overlayWindow.focus();
-      // Send a reset event to the renderer process to clear the form/subtask state
       overlayWindow.webContents.send('overlay:reset');
     }
   }

@@ -27,8 +27,8 @@ export default function GoalsList() {
     { taskId: string; start: string; end: string }[]
   >([]);
 
-  // Accordion state (maps goalId to boolean open/closed)
   const [expandedGoals, setExpandedGoals] = useState<Record<string, boolean>>({});
+  const [formError, setFormError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -105,6 +105,7 @@ export default function GoalsList() {
     if (!goalText.trim()) return;
 
     setDecomposing(true);
+    setFormError(null);
     try {
       const result = await window.api.decomposeGoal(goalText);
       setDecomposedGoal(result.goal);
@@ -118,7 +119,7 @@ export default function GoalsList() {
       await runSchedulePreview(mappedSubtasks);
     } catch (err) {
       console.error('Decomposition failed:', err);
-      alert('Decomposition failed. Please make sure the backend is active.');
+      setFormError('Decomposition failed. Please make sure the backend is active.');
     } finally {
       setDecomposing(false);
     }
@@ -145,6 +146,7 @@ export default function GoalsList() {
 
   const handleCommitGoal = async () => {
     if (!decomposedGoal) return;
+    setFormError(null);
     try {
       const slotsForSave = previewSubtasks.map((task, idx) => {
         const slot = scheduledSlots.find((s) => s.taskId === task.id);
@@ -165,7 +167,7 @@ export default function GoalsList() {
       await fetchData();
     } catch (err) {
       console.error('Failed to commit goal:', err);
-      alert('Failed to save and schedule goal.');
+      setFormError('Failed to save and schedule goal.');
     }
   };
 
@@ -254,6 +256,11 @@ export default function GoalsList() {
               </>
             )}
           </button>
+          {formError && (
+            <div role="alert" style={{ marginTop: '8px', color: '#ff5d5d', fontSize: '13px' }}>
+              {formError}
+            </div>
+          )}
         </form>
       )}
 
@@ -346,6 +353,11 @@ export default function GoalsList() {
               Accept & Schedule Tasks
             </button>
           </div>
+          {formError && (
+            <div role="alert" style={{ marginTop: '8px', color: '#ff5d5d', fontSize: '13px' }}>
+              {formError}
+            </div>
+          )}
         </div>
       )}
 
