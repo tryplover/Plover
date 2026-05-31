@@ -16,7 +16,7 @@ export const MIGRATIONS: { version: number; sql: string }[] = [
 
       CREATE TABLE tasks (
         id TEXT PRIMARY KEY,
-        goal_id TEXT NOT NULL REFERENCES goals(id) ,
+        goal_id TEXT NOT NULL REFERENCES goals(id),
         title TEXT NOT NULL,
         estimate_minutes INTEGER NOT NULL,
         depends_on TEXT,
@@ -52,6 +52,19 @@ export const MIGRATIONS: { version: number; sql: string }[] = [
 
       CREATE INDEX idx_tasks_goal_id ON tasks(goal_id);
       CREATE INDEX idx_tasks_scheduled_start ON tasks(scheduled_start);
+    `,
+  },
+  {
+    version: 2,
+    sql: `
+      CREATE TABLE settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      );
+      INSERT INTO settings (key, value) VALUES ('googleConnected', 'false');
+      INSERT INTO settings (key, value) VALUES ('workingHours', '{"start":"09:00","end":"18:00"}');
+      INSERT INTO settings (key, value) VALUES ('horizonDays', '14');
+      INSERT INTO settings (key, value) VALUES ('pauseScheduling', 'false');
     `,
   },
 ];

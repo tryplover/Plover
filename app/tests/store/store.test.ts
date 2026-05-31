@@ -21,6 +21,7 @@ describe('Store Layer', () => {
       expect(tableNames).toContain('sessions');
       expect(tableNames).toContain('activity');
       expect(tableNames).toContain('summaries');
+      expect(tableNames).toContain('settings');
       expect(tableNames).toContain('_migrations');
 
       expect(() => runMigrations(db)).not.toThrow();
@@ -28,7 +29,7 @@ describe('Store Layer', () => {
       const versionRow = db
         .prepare('SELECT MAX(version) as current_version FROM _migrations')
         .get() as { current_version: number };
-      expect(versionRow.current_version).toBe(1);
+      expect(versionRow.current_version).toBe(2);
     });
 
     it('refuses to downgrade if db version is newer', () => {

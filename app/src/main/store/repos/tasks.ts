@@ -9,8 +9,8 @@ export class TasksRepo {
     this.db = db;
   }
 
-  create(input: Omit<Task, 'id' | 'created_at' | 'updated_at'>): Task {
-    const id = randomUUID();
+  create(input: Omit<Task, 'id' | 'created_at' | 'updated_at'> & { id?: string }): Task {
+    const id = input.id || randomUUID();
     const now = new Date().toISOString();
     const task: Task = {
       id,
@@ -213,4 +213,42 @@ export class TasksRepo {
 
     return updated;
   }
+
+  list(): Task[] {
+    const stmt = this.db.prepare(`
+      SELECT id, goal_id, title, estimate_minutes, depends_on,
+             scheduled_start, scheduled_end, calendar_event_id, status,
+             created_at, updated_at
+      FROM tasks
+    `);
+
+    const rows = stmt.all() as {
+      id: string;
+      goal_id: string;
+      title: string;
+      estimate_minutes: number;
+      depends_on: string | null;
+      scheduled_start: string | null;
+      scheduled_end: string | null;
+      calendar_event_id: string | null;
+      status: string;
+      created_at: string;
+      updated_at: string;
+    }[];
+
+    return rows.map((row) => ({
+      id: row.id,
+      goal_id: row.goal_id,
+      title: row.title,
+      estimate_minutes: row.estimate_minutes,
+      depends_on: row.depends_on ? (JSON.parse(row.depends_on) as string[]) : undefined,
+      scheduled_start: row.scheduled_start ?? undefined,
+      scheduled_end: row.scheduled_end ?? undefined,
+      calendar_event_id: row.calendar_event_id ?? undefined,
+      status: row.status as Task['status'],
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+    }));
+  }
+
 }

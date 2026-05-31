@@ -1,6 +1,6 @@
-# Tendril — Phase 1 Core Architecture
+# Plover — Phase 1 Core Architecture
 
-Cross-cutting architecture, constraints, and conventions for **Phase 1** of Tendril. Every feature spec under [features/](./features/) assumes this doc. Read this first; the feature docs only restate what's specific to themselves.
+Cross-cutting architecture, constraints, and conventions for **Phase 1** of Plover. Every feature spec under [features/](./features/) assumes this doc. Read this first; the feature docs only restate what's specific to themselves.
 
 The product motivation lives in the [product spec](../2026-05-24-task-tracker-agent-product-spec.md).
 
@@ -23,6 +23,24 @@ Phase 1 covers exactly:
 - Nudge engine
 - Windows port
 - Multi-account, plugins, multi-device sync
+
+## Runtime flow
+
+The two diagrams below are the same Phase 1 system at different zoom levels. The flowchart names every module and the external endpoints that any outbound HTTP must come from (see "Hard constraints" below). The sequence diagram walks the canonical path: user types a goal → Gemini decomposes it → local scheduler places it → Calendar gets written.
+
+### Module map + external endpoints
+
+![Module map + external endpoints](../../../diagrams/core-architecture.svg)
+
+### Goal → calendar sequence
+
+![Goal → calendar sequence](../../../diagrams/seq-diagram.svg)
+
+Notes:
+
+- Every external arrow is one of the three allowlisted hosts in "Hard constraints". Nothing else should make outbound calls.
+- `Planner.schedule` is intentionally pure — no DB, no network — which is why it has a self-loop instead of an external arrow. It's the most-tested module for that reason (see [features/scheduling.md](./features/scheduling.md)).
+- `Nudge` is wired into the bus but does nothing in Phase 1; it exists so later phases don't reshape the module graph.
 
 ## Hard constraints
 

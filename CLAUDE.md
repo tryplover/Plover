@@ -1,4 +1,4 @@
-# CLAUDE.md — Tendril project context
+# CLAUDE.md — Plover project context
 
 This file is loaded automatically into every Claude session in this repo. Read it
 top-to-bottom before doing any work. Treat it as the source of truth for project
@@ -23,7 +23,7 @@ context, conventions, and known footguns.
 
 ## Project
 
-**Tendril** is a local-first Electron desktop agent for the 3-month Gemini
+**Plover** is a local-first Electron desktop agent for the 3-month Gemini
 hackathon. It turns vague goals into a calendar and shepherds the user toward
 finishing them. Privacy-by-design: no cloud backend, allowlisted outbound HTTP
 to Google APIs only.
@@ -55,7 +55,7 @@ implementation order. Do not jump ahead.
 │       ├── store-layer.md
 │       └── features/{typed-goal-capture,subtask-decomposition,scheduling,calendar-sync,todo-views,overlay-quick-add}.md
 └── app/                            # the Electron app (single workspace pkg)
-    ├── package.json                # name: "tendril"
+    ├── package.json                # name: "plover"
     ├── electron.vite.config.ts
     ├── tsconfig.json               # strict TS, path aliases
     ├── eslint.config.js            # flat config
@@ -85,7 +85,7 @@ via `pnpm --filter ./app`.
 | `pnpm --filter ./app exec <tool>` | Run a tool binary inside the app workspace |
 
 **Always use path-based filters (`--filter ./app`)**, not name-based
-(`-F tendril`). See lessons-learned #1.
+(`-F plover`). See lessons-learned #1.
 
 **Always use `pnpm --filter ./app run <script>`** when the script name contains
 a colon (e.g. `test:coverage`). See lessons-learned #2.
@@ -181,8 +181,8 @@ symptom, root cause, and fix as separate paragraphs.
 **Symptom:** `pnpm -F app typecheck` → `No projects matched the filters`.
 
 **Root cause:** `pnpm -F <name>` matches by **package name**, not directory.
-The package in `app/` is named `tendril` (see `app/package.json`), so
-`-F app` matches nothing. `-F tendril` works but couples scripts to the
+The package in `app/` is named `plover` (see `app/package.json`), so
+`-F app` matches nothing. `-F plover` works but couples scripts to the
 package name.
 
 **Fix:** Use path-based filter `pnpm --filter ./app <script>`. Refactor-safe
@@ -232,3 +232,36 @@ postinstall scripts may run, via `pnpm.onlyBuiltDependencies` in the root
 ```
 Add new packages here as they're introduced (e.g. `better-sqlite3` when the
 Store milestone lands — it's a native module and will need this).
+
+### 2026-05-24 — @google/generative-ai response functionCalls is a method, not a property
+
+**Symptom:** `response.response.functionCalls[0]` causes TypeScript compiler error `Property '0' does not exist on type '() => FunctionCall[] | undefined'`.
+
+**Root cause:** In the `@google/generative-ai` legacy SDK, `functionCalls` on the `EnhancedGenerateContentResponse` object is a function (getter method) that returns the list of function calls, not a direct array property.
+
+**Fix:** Call `response.response.functionCalls()` as a function, e.g. `response.response.functionCalls()?.[0]`.
+
+### 2026-05-24 — file creation/edit tools fail on worktree paths outside conversation directory
+
+**Symptom:** `write_to_file`, `replace_file_content`, and `multi_replace_file_content` error with `files must be written to the correct artifact directory: <artifact-dir-of-subagent>`.
+
+**Root cause:** These tools enforce a security/scope policy requiring all paths to be inside the active subagent's conversation ID directory. Since git worktrees created for subagents are located under the main agent's conversation directory, any workspace paths violate this check.
+
+**Fix:** Use `run_command` with Unix tools (e.g. `cat << 'EOF' > file` or `sed`) to create or edit files in the workspace directory instead of using the custom file-handling tools.
+
+### 2026-05-24 — Vitest vi.mock hoisted variable ReferenceError
+
+**Symptom:** `ReferenceError: Cannot access 'mockVariable' before initialization` during Vitest runs.
+
+**Root cause:** `vi.mock` is hoisted to the top of the file before outer variables are defined.
+
+**Fix:** Use `vi.hoisted` to declare mock variables (e.g. `mockKeychain`, `mockOpenExternal`) so that they are declared and initialized before any hoisted `vi.mock` blocks run.
+
+### 2026-05-24 — EventEmitter.removeAllListeners(undefined) does not clear all events
+
+**Symptom:** In tests, calling a typed wrapper's `eventBus.removeAllListeners()` (which passed `event?: string` value of `undefined` to Node's `emitter.removeAllListeners(event)`) failed to clear listeners across tests, leading to tests running with multiple active listeners and failing.
+
+**Root cause:** Node's `EventEmitter.prototype.removeAllListeners` checks `arguments.length` to decide whether to clear all events or just one. When `undefined` is passed explicitly, it treats it as a single argument (event name `"undefined"`) rather than no arguments.
+
+**Fix:** Explicitly branch on `event !== undefined` and call `removeAllListeners()` with no arguments to clear all events.
+

@@ -1,6 +1,6 @@
-# Tendril — Product Spec (PRD)
+# Plover — Product Spec (PRD)
 
-**Working name:** Tendril
+**Working name:** Plover
 **Date:** 2026-05-24
 **Status:** Draft v1
 **Timeline:** 3-month Gemini hackathon
