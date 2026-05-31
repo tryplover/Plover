@@ -8,11 +8,12 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 vi.mock('@google/generative-ai', () => {
   return {
-    GoogleGenerativeAI: vi.fn().mockImplementation((apiKey: string) => {
-      return {
-        apiKey,
-        getGenerativeModel: vi.fn(),
-      };
+    GoogleGenerativeAI: vi.fn(function (
+      this: { apiKey: string; getGenerativeModel: ReturnType<typeof vi.fn> },
+      apiKey: string,
+    ) {
+      this.apiKey = apiKey;
+      this.getGenerativeModel = vi.fn();
     }),
     SchemaType: {
       OBJECT: 'OBJECT',
