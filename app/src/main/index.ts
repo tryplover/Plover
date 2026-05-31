@@ -24,10 +24,9 @@ function createMainWindow(): void {
     mainWindow = null;
   });
 
-  mainWindow.webContents.openDevTools();
-
   const devUrl = process.env['ELECTRON_RENDERER_URL'];
   if (devUrl) {
+    mainWindow.webContents.openDevTools();
     void mainWindow.loadURL(devUrl);
   } else {
     void mainWindow.loadFile(join(import.meta.dirname, '../renderer/index.html'));
