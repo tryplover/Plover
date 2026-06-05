@@ -99,7 +99,7 @@ export interface ModelCandidate {
  * Returns the list of available model candidate helpers in fallback order.
  */
 export function getPlannerCandidates(client: GoogleGenerativeAI): ModelCandidate[] {
-  const defaultModelName = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+  const defaultModelName = (process.env.GEMINI_MODEL || 'gemini-2.0-flash').trim();
   const fallbackNames = [
     'gemini-2.0-flash',
     'gemini-1.5-flash',
