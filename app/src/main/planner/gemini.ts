@@ -81,7 +81,7 @@ export const decomposeGoalDeclaration: FunctionDeclaration = {
  * Uses gemini-2.0-flash as the default planning model.
  */
 export function getPlannerModel(client: GoogleGenerativeAI) {
-  const modelName = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+  const modelName = (process.env.GEMINI_MODEL || 'gemini-2.0-flash').trim();
   return client.getGenerativeModel({
     model: modelName,
     generationConfig: {
