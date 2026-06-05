@@ -7,6 +7,14 @@ export default defineConfig({
     build: {
       rollupOptions: {
         input: { index: resolve('src/main/index.ts') },
+        external: [
+          'electron',
+          'better-sqlite3',
+          'keytar',
+          'google-auth-library',
+          'googleapis',
+          '@google/generative-ai',
+        ],
       },
     },
     resolve: {
@@ -24,6 +32,7 @@ export default defineConfig({
           format: 'cjs',
           entryFileNames: '[name].js',
         },
+        external: ['electron'],
       },
     },
   },
@@ -43,3 +52,4 @@ export default defineConfig({
     plugins: [react()],
   },
 });
+

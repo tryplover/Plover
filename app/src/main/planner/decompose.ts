@@ -1,6 +1,6 @@
 import { Goal, Task } from '@shared/types';
 import { FunctionCallingMode, FunctionCall, Part } from '@google/generative-ai';
-import { getGeminiClient, getPlannerModel, decomposeGoalDeclaration } from './gemini';
+import { getGeminiClient, getPlannerCandidates, decomposeGoalDeclaration } from './gemini.js';
 
 interface DecomposeSubtaskInput {
   title?: string;
@@ -42,7 +42,7 @@ export async function decomposeGoal(input: {
   >[];
 }> {
   const client = getGeminiClient();
-  const model = getPlannerModel(client);
+  const candidates = getPlannerCandidates(client);
 
   const prompt = `You are a productivity planner.
 The user wants to achieve this goal: "${input.goalText}"
@@ -63,16 +63,37 @@ Guidelines:
 8. Determine if there is a specific deadline mentioned or implied in the goal text, interpreting relative dates using the current time ${input.now.toISOString()}. If so, set it as an ISO8601 string. If not, omit it.
 `;
 
-  const response = await model.generateContent({
-    contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    tools: [{ functionDeclarations: [decomposeGoalDeclaration] }],
-    toolConfig: {
-      functionCallingConfig: {
-        mode: FunctionCallingMode.ANY,
-        allowedFunctionNames: ['decomposeGoal'],
-      },
-    },
-  });
+  let response;
+  let lastError: Error | null = null;
+
+  for (const candidate of candidates) {
+    try {
+      console.log(`[Planner] Attempting goal decomposition using model: ${candidate.name}`);
+      const model = candidate.getModel();
+      response = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        tools: [{ functionDeclarations: [decomposeGoalDeclaration] }],
+        toolConfig: {
+          functionCallingConfig: {
+            mode: FunctionCallingMode.ANY,
+            allowedFunctionNames: ['decomposeGoal'],
+          },
+        },
+      });
+      break; // Successfully got response, break the loop
+    } catch (err) {
+      console.warn(`[Planner] Decomposition failed using ${candidate.name}:`, err);
+      lastError = err as Error;
+    }
+  }
+
+  if (!response) {
+    throw new Error(
+      `All Gemini models failed for decomposition. Last error: ${
+        lastError?.message || 'Unknown'
+      }`
+    );
+  }
 
   // Extract the function call
   const functionCalls =

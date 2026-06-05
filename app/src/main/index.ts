@@ -1,10 +1,9 @@
 import './load-env.js';
 import { app, BrowserWindow, globalShortcut } from 'electron';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { setupIpc } from './ipc.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+app.commandLine.appendSwitch('enable-logging');
 
 let mainWindow: BrowserWindow | null = null;
 let overlayWindow: BrowserWindow | null = null;
@@ -15,7 +14,7 @@ function createMainWindow(): void {
     height: 720,
     title: 'Plover',
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
+      preload: join(import.meta.dirname, '../preload/index.js'),
       sandbox: true,
       contextIsolation: true,
     },
@@ -27,9 +26,10 @@ function createMainWindow(): void {
 
   const devUrl = process.env['ELECTRON_RENDERER_URL'];
   if (devUrl) {
+    mainWindow.webContents.openDevTools();
     void mainWindow.loadURL(devUrl);
   } else {
-    void mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
+    void mainWindow.loadFile(join(import.meta.dirname, '../renderer/index.html'));
   }
 }
 
@@ -44,7 +44,7 @@ function createOverlayWindow(): void {
     show: false,
     resizable: false,
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
+      preload: join(import.meta.dirname, '../preload/index.js'),
       sandbox: true,
       contextIsolation: true,
     },
@@ -54,7 +54,7 @@ function createOverlayWindow(): void {
   if (devUrl) {
     void overlayWindow.loadURL(`${devUrl}?overlay`);
   } else {
-    void overlayWindow.loadFile(join(__dirname, '../renderer/index.html'), {
+    void overlayWindow.loadFile(join(import.meta.dirname, '../renderer/index.html'), {
       search: 'overlay',
     });
   }

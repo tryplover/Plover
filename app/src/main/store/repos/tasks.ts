@@ -8,6 +8,7 @@ export class TasksRepo {
   constructor(db: Database.Database) {
     this.db = db;
   }
+
   create(input: Omit<Task, 'id' | 'created_at' | 'updated_at'> & { id?: string }): Task {
     const id = input.id || randomUUID();
     const now = new Date().toISOString();
@@ -212,6 +213,7 @@ export class TasksRepo {
 
     return updated;
   }
+
   list(): Task[] {
     const stmt = this.db.prepare(`
       SELECT id, goal_id, title, estimate_minutes, depends_on,
@@ -248,4 +250,5 @@ export class TasksRepo {
       updated_at: row.updated_at,
     }));
   }
+
 }
