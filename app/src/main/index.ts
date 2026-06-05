@@ -3,7 +3,9 @@ import { app, BrowserWindow, globalShortcut } from 'electron';
 import { join } from 'node:path';
 import { setupIpc } from './ipc.js';
 
-app.commandLine.appendSwitch('enable-logging');
+if (!app.isPackaged) {
+  app.commandLine.appendSwitch('enable-logging');
+}
 
 let mainWindow: BrowserWindow | null = null;
 let overlayWindow: BrowserWindow | null = null;
