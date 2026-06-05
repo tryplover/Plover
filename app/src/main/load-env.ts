@@ -9,8 +9,6 @@ try {
     process.loadEnvFile(appEnvPath);
   } else if (existsSync(rootEnvPath)) {
     process.loadEnvFile(rootEnvPath);
-  } else {
-    process.loadEnvFile();
   }
 } catch {
   // No .env file present — fall back to the ambient environment.
