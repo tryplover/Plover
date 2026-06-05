@@ -78,7 +78,9 @@ describe('gemini configuration and client', () => {
 
   describe('getPlannerCandidates', () => {
     it('returns the list of candidates including the default and fallback models', () => {
-      const mockGetGenerativeModel = vi.fn().mockImplementation(({ model }) => ({ modelName: model }));
+      const mockGetGenerativeModel = vi
+        .fn()
+        .mockImplementation(({ model }) => ({ modelName: model }));
       const mockClient = {
         getGenerativeModel: mockGetGenerativeModel,
       } as unknown as GoogleGenerativeAI;
@@ -107,7 +109,9 @@ describe('gemini configuration and client', () => {
       const originalModel = process.env.GEMINI_MODEL;
       process.env.GEMINI_MODEL = 'gemini-1.5-pro';
       try {
-        const mockGetGenerativeModel = vi.fn().mockImplementation(({ model }) => ({ modelName: model }));
+        const mockGetGenerativeModel = vi
+          .fn()
+          .mockImplementation(({ model }) => ({ modelName: model }));
         const mockClient = {
           getGenerativeModel: mockGetGenerativeModel,
         } as unknown as GoogleGenerativeAI;
@@ -118,7 +122,11 @@ describe('gemini configuration and client', () => {
         const duplicates = candidates.filter((c) => c.name === 'gemini-1.5-pro');
         expect(duplicates.length).toBe(1);
       } finally {
-        process.env.GEMINI_MODEL = originalModel;
+        if (originalModel === undefined) {
+          delete process.env.GEMINI_MODEL;
+        } else {
+          process.env.GEMINI_MODEL = originalModel;
+        }
       }
     });
   });
