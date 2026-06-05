@@ -83,7 +83,7 @@ Guidelines:
       break; // Successfully got response, break the loop
     } catch (err) {
       console.warn(`[Planner] Decomposition failed using ${candidate.name}:`, err);
-      lastError = err as Error;
+      lastError = err instanceof Error ? err : new Error(String(err));
     }
   }
 
