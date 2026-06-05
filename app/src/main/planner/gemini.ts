@@ -81,10 +81,42 @@ export const decomposeGoalDeclaration: FunctionDeclaration = {
  * Uses gemini-2.0-flash as the default planning model.
  */
 export function getPlannerModel(client: GoogleGenerativeAI) {
+  const modelName = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
   return client.getGenerativeModel({
-    model: 'gemini-2.0-flash',
+    model: modelName,
     generationConfig: {
       temperature: 0.1,
     },
   });
+}
+
+export interface ModelCandidate {
+  name: string;
+  getModel: () => ReturnType<typeof getPlannerModel>;
+}
+
+/**
+ * Returns the list of available model candidate helpers in fallback order.
+ */
+export function getPlannerCandidates(client: GoogleGenerativeAI): ModelCandidate[] {
+  const defaultModelName = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+  const fallbackNames = [
+    'gemini-2.0-flash',
+    'gemini-1.5-flash',
+    'gemini-2.0-flash-lite-preview-02-05',
+    'gemini-1.5-pro',
+  ].filter((m) => m !== defaultModelName);
+  return [
+    { name: defaultModelName, getModel: () => getPlannerModel(client) },
+    ...fallbackNames.map((name) => ({
+      name,
+      getModel: () =>
+        client.getGenerativeModel({
+          model: name,
+          generationConfig: {
+            temperature: 0.1,
+          },
+        }),
+    })),
+  ];
 }

@@ -27,17 +27,17 @@
     "googleapis": "^173.0.0",
     "keytar": "^7.9.0",
     "react": "^18.3.1",
-    "react-dom": "^19.2.6"
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.10.0",
     "@types/react": "^18.3.12",
-    "@types/react-dom": "^19.2.3",
+    "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^6.0.2",
     "@vitest/coverage-v8": "^4.1.7",
-    "electron": "^42.3.0",
+    "electron": "^33.2.0",
     "electron-vite": "^5.0.0",
     "eslint": "^10.4.0",
     "eslint-config-prettier": "^10.1.8",

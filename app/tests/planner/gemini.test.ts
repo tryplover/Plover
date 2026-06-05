@@ -3,6 +3,7 @@ import {
   getGeminiClient,
   getPlannerModel,
   decomposeGoalDeclaration,
+  getPlannerCandidates,
 } from '../../src/main/planner/gemini';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
@@ -73,5 +74,52 @@ describe('gemini configuration and client', () => {
     expect(decl.parameters.type).toBe('OBJECT');
     expect(decl.parameters.properties.goal.required).toContain('title');
     expect(decl.parameters.properties.subtasks.type).toBe('ARRAY');
+  });
+
+  describe('getPlannerCandidates', () => {
+    it('returns the list of candidates including the default and fallback models', () => {
+      const mockGetGenerativeModel = vi.fn().mockImplementation(({ model }) => ({ modelName: model }));
+      const mockClient = {
+        getGenerativeModel: mockGetGenerativeModel,
+      } as unknown as GoogleGenerativeAI;
+
+      const candidates = getPlannerCandidates(mockClient);
+      expect(candidates.length).toBeGreaterThan(1);
+      expect(candidates[0]?.name).toBe('gemini-2.0-flash');
+
+      // Call getModel on candidates to verify getGenerativeModel config
+      const firstModel = candidates[0]?.getModel();
+      expect(mockGetGenerativeModel).toHaveBeenCalledWith({
+        model: 'gemini-2.0-flash',
+        generationConfig: { temperature: 0.1 },
+      });
+      expect(firstModel).toEqual({ modelName: 'gemini-2.0-flash' });
+
+      const secondModel = candidates[1]?.getModel();
+      expect(mockGetGenerativeModel).toHaveBeenCalledWith({
+        model: candidates[1]?.name,
+        generationConfig: { temperature: 0.1 },
+      });
+      expect(secondModel).toEqual({ modelName: candidates[1]?.name });
+    });
+
+    it('respects GEMINI_MODEL env variable for the first candidate', () => {
+      const originalModel = process.env.GEMINI_MODEL;
+      process.env.GEMINI_MODEL = 'gemini-1.5-pro';
+      try {
+        const mockGetGenerativeModel = vi.fn().mockImplementation(({ model }) => ({ modelName: model }));
+        const mockClient = {
+          getGenerativeModel: mockGetGenerativeModel,
+        } as unknown as GoogleGenerativeAI;
+
+        const candidates = getPlannerCandidates(mockClient);
+        expect(candidates[0]?.name).toBe('gemini-1.5-pro');
+        // Ensure gemini-1.5-pro is not duplicated in fallback list
+        const duplicates = candidates.filter((c) => c.name === 'gemini-1.5-pro');
+        expect(duplicates.length).toBe(1);
+      } finally {
+        process.env.GEMINI_MODEL = originalModel;
+      }
+    });
   });
 });

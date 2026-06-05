@@ -1,11 +1,12 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { decomposeGoal } from '../../src/main/planner/decompose';
-import { getGeminiClient, getPlannerModel } from '../../src/main/planner/gemini';
+import { getGeminiClient, getPlannerModel, getPlannerCandidates } from '../../src/main/planner/gemini';
 
 vi.mock('../../src/main/planner/gemini', () => {
   return {
     getGeminiClient: vi.fn(),
     getPlannerModel: vi.fn(),
+    getPlannerCandidates: vi.fn(),
     decomposeGoalDeclaration: {},
   };
 });
@@ -24,6 +25,9 @@ describe('decomposeGoal', () => {
     vi.mocked(getPlannerModel).mockReturnValue(
       mockModel as unknown as ReturnType<typeof getPlannerModel>,
     );
+    vi.mocked(getPlannerCandidates).mockReturnValue([
+      { name: 'mock-model', getModel: () => mockModel as unknown as ReturnType<typeof getPlannerModel> },
+    ]);
   });
 
   it('decomposes goal successfully with valid subtasks and correct dependencies', async () => {
@@ -207,5 +211,73 @@ describe('decomposeGoal', () => {
         workingHours: { start: '09:00', end: '18:00' },
       }),
     ).rejects.toThrow('Invalid arguments returned in decomposeGoal function call');
+  });
+
+  it('falls back to the next model if the first model fails with a rate limit error', async () => {
+    const mockModel1 = {
+      generateContent: vi.fn().mockRejectedValue(new Error('[GoogleGenerativeAI Error]: 429 Too Many Requests')),
+    };
+    const mockModel2 = {
+      generateContent: vi.fn().mockResolvedValue({
+        response: {
+          functionCalls: () => [
+            {
+              name: 'decomposeGoal',
+              args: {
+                goal: {
+                  title: 'Fallback goal',
+                  description: 'Goal description from second model',
+                },
+                subtasks: [
+                  { title: 'Task from fallback', estimate_minutes: 60 },
+                ],
+              },
+            },
+          ],
+        },
+      }),
+    };
+
+    vi.mocked(getPlannerCandidates).mockReturnValue([
+      { name: 'failed-model-1', getModel: () => mockModel1 as unknown as ReturnType<typeof getPlannerModel> },
+      { name: 'fallback-model-2', getModel: () => mockModel2 as unknown as ReturnType<typeof getPlannerModel> },
+    ]);
+
+    const result = await decomposeGoal({
+      goalText: 'Fallback test',
+      now: new Date('2026-05-24T12:00:00Z'),
+      workingHours: { start: '09:00', end: '18:00' },
+    });
+
+    expect(mockModel1.generateContent).toHaveBeenCalledTimes(1);
+    expect(mockModel2.generateContent).toHaveBeenCalledTimes(1);
+    expect(result.goal.title).toBe('Fallback goal');
+    expect(result.subtasks).toHaveLength(1);
+    expect(result.subtasks[0]?.title).toBe('Task from fallback');
+  });
+
+  it('throws an error if all candidate models fail', async () => {
+    const mockModel1 = {
+      generateContent: vi.fn().mockRejectedValue(new Error('[429] Limit exceeded')),
+    };
+    const mockModel2 = {
+      generateContent: vi.fn().mockRejectedValue(new Error('[500] Internal server error')),
+    };
+
+    vi.mocked(getPlannerCandidates).mockReturnValue([
+      { name: 'failed-model-1', getModel: () => mockModel1 as unknown as ReturnType<typeof getPlannerModel> },
+      { name: 'failed-model-2', getModel: () => mockModel2 as unknown as ReturnType<typeof getPlannerModel> },
+    ]);
+
+    await expect(
+      decomposeGoal({
+        goalText: 'All fail test',
+        now: new Date(),
+        workingHours: { start: '09:00', end: '18:00' },
+      }),
+    ).rejects.toThrow('All Gemini models failed for decomposition. Last error: [500] Internal server error');
+
+    expect(mockModel1.generateContent).toHaveBeenCalledTimes(1);
+    expect(mockModel2.generateContent).toHaveBeenCalledTimes(1);
   });
 });
