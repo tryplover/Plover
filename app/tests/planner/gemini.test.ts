@@ -35,7 +35,11 @@ describe('gemini configuration and client', () => {
   });
 
   afterEach(() => {
-    process.env.GEMINI_API_KEY = originalEnv;
+    if (originalEnv === undefined) {
+      delete process.env.GEMINI_API_KEY;
+    } else {
+      process.env.GEMINI_API_KEY = originalEnv;
+    }
   });
 
   it('throws an error when GEMINI_API_KEY is not set', () => {
