@@ -1,6 +1,10 @@
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { decomposeGoal } from '../../src/main/planner/decompose';
-import { getGeminiClient, getPlannerModel, getPlannerCandidates } from '../../src/main/planner/gemini';
+import {
+  getGeminiClient,
+  getPlannerModel,
+  getPlannerCandidates,
+} from '../../src/main/planner/gemini';
 
 vi.mock('../../src/main/planner/gemini', () => {
   return {
@@ -13,6 +17,7 @@ vi.mock('../../src/main/planner/gemini', () => {
 
 describe('decomposeGoal', () => {
   const mockGenerateContent = vi.fn();
+  const originalEnv = process.env.GEMINI_API_KEY;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -26,8 +31,19 @@ describe('decomposeGoal', () => {
       mockModel as unknown as ReturnType<typeof getPlannerModel>,
     );
     vi.mocked(getPlannerCandidates).mockReturnValue([
-      { name: 'mock-model', getModel: () => mockModel as unknown as ReturnType<typeof getPlannerModel> },
+      {
+        name: 'mock-model',
+        getModel: () => mockModel as unknown as ReturnType<typeof getPlannerModel>,
+      },
     ]);
+  });
+
+  afterEach(() => {
+    if (originalEnv === undefined) {
+      delete process.env.GEMINI_API_KEY;
+    } else {
+      process.env.GEMINI_API_KEY = originalEnv;
+    }
   });
 
   it('decomposes goal successfully with valid subtasks and correct dependencies', async () => {
@@ -215,7 +231,9 @@ describe('decomposeGoal', () => {
 
   it('falls back to the next model if the first model fails with a rate limit error', async () => {
     const mockModel1 = {
-      generateContent: vi.fn().mockRejectedValue(new Error('[GoogleGenerativeAI Error]: 429 Too Many Requests')),
+      generateContent: vi
+        .fn()
+        .mockRejectedValue(new Error('[GoogleGenerativeAI Error]: 429 Too Many Requests')),
     };
     const mockModel2 = {
       generateContent: vi.fn().mockResolvedValue({
@@ -228,9 +246,7 @@ describe('decomposeGoal', () => {
                   title: 'Fallback goal',
                   description: 'Goal description from second model',
                 },
-                subtasks: [
-                  { title: 'Task from fallback', estimate_minutes: 60 },
-                ],
+                subtasks: [{ title: 'Task from fallback', estimate_minutes: 60 }],
               },
             },
           ],
@@ -239,8 +255,14 @@ describe('decomposeGoal', () => {
     };
 
     vi.mocked(getPlannerCandidates).mockReturnValue([
-      { name: 'failed-model-1', getModel: () => mockModel1 as unknown as ReturnType<typeof getPlannerModel> },
-      { name: 'fallback-model-2', getModel: () => mockModel2 as unknown as ReturnType<typeof getPlannerModel> },
+      {
+        name: 'failed-model-1',
+        getModel: () => mockModel1 as unknown as ReturnType<typeof getPlannerModel>,
+      },
+      {
+        name: 'fallback-model-2',
+        getModel: () => mockModel2 as unknown as ReturnType<typeof getPlannerModel>,
+      },
     ]);
 
     const result = await decomposeGoal({
@@ -265,8 +287,14 @@ describe('decomposeGoal', () => {
     };
 
     vi.mocked(getPlannerCandidates).mockReturnValue([
-      { name: 'failed-model-1', getModel: () => mockModel1 as unknown as ReturnType<typeof getPlannerModel> },
-      { name: 'failed-model-2', getModel: () => mockModel2 as unknown as ReturnType<typeof getPlannerModel> },
+      {
+        name: 'failed-model-1',
+        getModel: () => mockModel1 as unknown as ReturnType<typeof getPlannerModel>,
+      },
+      {
+        name: 'failed-model-2',
+        getModel: () => mockModel2 as unknown as ReturnType<typeof getPlannerModel>,
+      },
     ]);
 
     await expect(
@@ -275,7 +303,9 @@ describe('decomposeGoal', () => {
         now: new Date(),
         workingHours: { start: '09:00', end: '18:00' },
       }),
-    ).rejects.toThrow('All Gemini models failed for decomposition. Last error: [500] Internal server error');
+    ).rejects.toThrow(
+      'All Gemini models failed for decomposition. Last error: [500] Internal server error',
+    );
 
     expect(mockModel1.generateContent).toHaveBeenCalledTimes(1);
     expect(mockModel2.generateContent).toHaveBeenCalledTimes(1);
