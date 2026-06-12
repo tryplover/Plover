@@ -28,47 +28,49 @@ pnpm --filter ./app rebuild better-sqlite3 keytar
 
 ## 3. Set up secrets
 
-Secrets are read from `app/.env` (loaded by the main process via Node's built-in
-`process.loadEnvFile()`). Copy the stub and fill it in:
+### 3a. Backend API Proxy (Gemini API Key)
 
+In production, Plover uses a secure backend proxy server to interact with the Gemini API so that developer API keys are not exposed in the client binary. 
+
+For local development, copy the server env stub and add your key:
+```bash
+cp server/.env.example server/.env
+```
+Open `server/.env` and set:
+- `GEMINI_API_KEY=your-actual-api-key`
+
+Next, configure the desktop application to talk to your local backend server. Copy the app env stub:
 ```bash
 cp app/.env.example app/.env
 ```
-
-`app/.env` is gitignored — never commit real keys. Exported shell variables of
-the same name also work and take precedence if `.env` is absent.
-
-### 3a. Gemini API key (required for decomposition)
-
-1. Go to https://aistudio.google.com/apikey and create an API key.
-2. Put it in `app/.env` as `GEMINI_API_KEY=...`.
-
-The planner uses the `gemini-2.0-flash` model.
+Open `app/.env` and verify the backend URL is set:
+- `PLOVER_BACKEND_URL=http://localhost:3000`
 
 ### 3b. Google OAuth credentials (required for calendar sync)
 
+Google credentials are used directly by the local desktop application to sync with Google Calendar.
 1. **Google Cloud Console** → create (or pick) a project.
 2. **Enable the Google Calendar API** for that project.
-3. **OAuth consent screen** → User type **External** → add your own email
-   (e.g., your.email@example.com) as a **Test user**. This is required while the
-   app is in testing because calendar.events is a sensitive scope.
-4. **Credentials → Create credentials → OAuth client ID → Application type
-   "Desktop app"**. The app uses a loopback redirect (`http://localhost:{port}`,
-   a random port per attempt); desktop clients allow loopback redirects without
-   registering an exact port.
-5. Copy the client ID and secret into `app/.env` as `GOOGLE_CLIENT_ID` and
-   `GOOGLE_CLIENT_SECRET`.
+3. **OAuth consent screen** → User type **External** → add your own email (e.g., your.email@example.com) as a **Test user**. This is required while the app is in testing because calendar.events is a sensitive scope.
+4. **Credentials → Create credentials → OAuth client ID → Application type "Desktop app"**. The app uses a loopback redirect (`http://localhost:{port}`, a random port per attempt); desktop clients allow loopback redirects without registering an exact port.
+5. Copy the client ID and secret into `app/.env` as `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
 
-> Without Google creds the app still runs and the UI renders, but the calendar
-> connect flow uses non-functional `mock-client-id` placeholders. Without a
-> Gemini key, decomposition throws `GEMINI_API_KEY environment variable is not
-> set`.
+> Without Google creds the app still runs and the UI renders, but the calendar connect flow uses non-functional `mock-client-id` placeholders. Without the backend proxy server running, goal decomposition throws a connection error.
 
 ## 4. Run
 
-```bash
-pnpm dev
-```
+To run the application locally, you must start both the backend proxy server and the Electron application:
+
+1. **Start the Backend Proxy Server**:
+   ```bash
+   pnpm --filter ./server dev
+   ```
+   *The server runs on `http://localhost:3000`.*
+
+2. **Start the Electron Client Application** (in a separate terminal tab):
+   ```bash
+   pnpm dev
+   ```
 
 Electron launches with HMR for the renderer.
 
@@ -108,7 +110,7 @@ Electron launches with HMR for the renderer.
 
 | Symptom | Likely cause / fix |
 |---|---|
-| `GEMINI_API_KEY environment variable is not set` | `app/.env` missing or `GEMINI_API_KEY` empty; restart `pnpm dev` after editing |
+| Connection error during goal decomposition / `fetch failed` | The backend proxy server is not running, or `PLOVER_BACKEND_URL` in `app/.env` is incorrect. Make sure to run `pnpm --filter ./server dev` and verify port. |
 | OAuth `redirect_uri_mismatch` | OAuth client isn't type **Desktop app** — recreate it |
 | OAuth `access_denied` / "app not verified" | Your email isn't added as a **Test user** on the consent screen |
 | `Cannot find module 'better-sqlite3'` / keytar errors | Native build failed — `pnpm --filter ./app rebuild better-sqlite3 keytar` |
