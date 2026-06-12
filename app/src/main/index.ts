@@ -2,6 +2,7 @@ import './load-env.js';
 import { app, BrowserWindow, globalShortcut } from 'electron';
 import { join } from 'node:path';
 import { setupIpc } from './ipc.js';
+import { initActivityMonitoring, stopActivityMonitoring } from './activity/index.js';
 
 if (!app.isPackaged) {
   app.commandLine.appendSwitch('enable-logging');
@@ -92,6 +93,9 @@ void app.whenReady().then(() => {
   // Register all typed IPC handlers first
   setupIpc(() => overlayWindow);
 
+  // Initialize passive activity monitoring system
+  initActivityMonitoring();
+
   createMainWindow();
   createOverlayWindow();
 
@@ -116,6 +120,7 @@ app.on('window-all-closed', () => {
 });
 
 app.on('will-quit', () => {
+  stopActivityMonitoring();
   // Always clean up shortcuts to prevent leaking hooks in the OS
   globalShortcut.unregisterAll();
 });
