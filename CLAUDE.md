@@ -23,10 +23,7 @@ context, conventions, and known footguns.
 
 ## Project
 
-**Plover** is a local-first Electron desktop agent for the 3-month Gemini
-hackathon. It turns vague goals into a calendar and shepherds the user toward
-finishing them. Privacy-by-design: no cloud backend, allowlisted outbound HTTP
-to Google APIs only.
+**Plover** is a local-first Electron desktop agent for productivity. It turns vague goals into a calendar and shepherds the user toward finishing them. Privacy-by-design: user data is strictly local, but outbound Gemini API calls are proxied securely through a backend server to protect the developer API key in production.
 
 - **Product spec:** [docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md](docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md)
 - **Phase 1 core architecture:** [docs/superpowers/specs/phase-1/core-architecture.md](docs/superpowers/specs/phase-1/core-architecture.md)
@@ -41,7 +38,7 @@ implementation order. Do not jump ahead.
 .
 ├── CLAUDE.md                       # ← you are here
 ├── package.json                    # pnpm workspace root, husky/lint-staged
-├── pnpm-workspace.yaml             # packages: [app]
+├── pnpm-workspace.yaml             # packages: [app, server]
 ├── .nvmrc                          # Node 22 (LTS)
 ├── .husky/pre-commit               # runs lint-staged
 ├── .github/
@@ -57,6 +54,13 @@ implementation order. Do not jump ahead.
 └── app/                            # the Electron app (single workspace pkg)
     ├── package.json                # name: "plover"
     ├── electron.vite.config.ts
+    ...
+└── server/                         # secure backend proxy server for Gemini API
+    ├── package.json                # name: "plover-server"
+    ├── tsconfig.json
+    ├── .env.example
+    └── src/
+        └── index.ts                # Express app + Gemini API logic
     ├── tsconfig.json               # strict TS, path aliases
     ├── eslint.config.js            # flat config
     ├── vitest.config.ts            # v8 coverage, scoped 60% thresholds
@@ -78,11 +82,14 @@ via `pnpm --filter ./app`.
 | `pnpm install` | Install everything + run husky `prepare` |
 | `pnpm dev` | Launch Electron in dev mode (HMR for renderer) |
 | `pnpm build` | electron-vite production build |
+| `pnpm package` | Compile app and package standalone macOS `.dmg` installer |
 | `pnpm typecheck` | `tsc --noEmit` on the app |
 | `pnpm lint` | ESLint on the app |
 | `pnpm test` | Vitest run (no coverage) |
 | `pnpm --filter ./app run test:coverage` | Vitest run + v8 coverage report |
 | `pnpm --filter ./app exec <tool>` | Run a tool binary inside the app workspace |
+| `pnpm --filter ./server dev` | Start the backend proxy server locally in watch mode |
+| `pnpm --filter ./server build` | Compile the backend server TypeScript code |
 
 **Always use path-based filters (`--filter ./app`)**, not name-based
 (`-F plover`). See lessons-learned #1.
@@ -113,7 +120,9 @@ These are not style preferences. The core architecture doc calls them
 
 ## Hard constraints
 
-- **Local-only data.** SQLite + local filesystem. No backend server.
+- **Local-only data.** SQLite + local filesystem. User data is strictly stored locally. No cloud sync.
+- **Backend API Proxy.** Outbound Gemini API calls are proxied through a secure backend server to protect developer API keys in production.
+
 - **Outbound HTTP allowlist:** `generativelanguage.googleapis.com` (Gemini),
   `www.googleapis.com` (Calendar/Docs), Google OAuth endpoints. Enforced at the
   HTTP client.
@@ -316,8 +325,12 @@ Store milestone lands — it's a native module and will need this).
 
 **Root cause:** Free-tier Gemini keys have strict Rate Limits (15 RPM / 1500 RPD) or model-specific quotas.
 
-**Fix:** Implemented an automatic model recycling fallback loop in `app/src/main/planner/decompose.ts`. If the primary model (defined by `GEMINI_MODEL` or defaulting to `gemini-2.0-flash`) fails, the planner catches the exception, logs a console warning, and retries the request using fallback models (`gemini-1.5-flash`, `gemini-2.0-flash-lite-preview-02-05`, `gemini-1.5-pro`, and other 2.5/3.x generations in order). It only throws if all candidate models fail.
+**Fix:** Implemented an automatic model recycling fallback loop in `app/src/main/planner/decompose.ts`. If the primary model (defined by `GEMINI_MODEL` or defaulting to `gemini-2.0-flash`) fails, the planner catches the exception, logs a console warning, and retries the request using fallback models (`gemini-1.5-flash`, `gemini-2.0-flash-lite-preview-02-05`, `gemini-1.5-pro`, and other 2.5/3.x generations in order). It only throws if all candidate models fail. (Note: Since refactoring to a client-server architecture, this fallback loop is now executed on the backend proxy server).
 
+### 2026-06-12 — tslib required by electron-builder under pnpm workspaces
 
+**Symptom:** Running `pnpm package` fails with `Error: Cannot find module 'tslib'` originating from `@peculiar/utils`.
 
+**Root cause:** Under a pnpm workspace structure, dependencies of `electron-builder` (such as `@peculiar/webcrypto` and `@peculiar/utils`) require the helper module `tslib`, but it was not resolved correctly due to pnpm's strict isolation.
 
+**Fix:** Install `tslib` as a development dependency at the root of the workspace (`pnpm add -D -w tslib`).
