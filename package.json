@@ -14,11 +14,13 @@
     "test": "pnpm --filter ./app rebuild better-sqlite3 keytar && pnpm --filter ./app test",
     "test:coverage": "pnpm --filter ./app rebuild better-sqlite3 keytar && pnpm --filter ./app run test:coverage",
     "dev": "npx @electron/rebuild -v 33.4.11 -f -w better-sqlite3,keytar && pnpm --filter ./app dev",
-    "build": "pnpm --filter ./app build"
+    "build": "pnpm --filter ./app build",
+    "package": "pnpm build && pnpm --filter ./app run dist"
   },
   "devDependencies": {
     "husky": "^9.1.7",
-    "lint-staged": "^17.0.5"
+    "lint-staged": "^17.0.5",
+    "tslib": "^2.8.1"
   },
   "lint-staged": {
     "app/**/*.{ts,tsx}": [
