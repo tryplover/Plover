@@ -12,7 +12,10 @@ const KEYCHAIN_SERVICE = 'plover';
 const KEYCHAIN_ACCOUNT = 'google-refresh-token';
 const AUTHORIZE_TIMEOUT_MS = 5 * 60 * 1000;
 
-export const CALENDAR_SCOPES = ['https://www.googleapis.com/auth/calendar.events'];
+export const CALENDAR_SCOPES = [
+  'https://www.googleapis.com/auth/calendar.events',
+  'https://www.googleapis.com/auth/drive.metadata.readonly',
+];
 
 export class AuthenticationError extends Error {
   constructor(message: string) {
