@@ -1,16 +1,18 @@
-import { ipcMain, BrowserWindow } from 'electron';
+import { ipcMain, BrowserWindow, dialog } from 'electron';
 import { randomUUID } from 'node:crypto';
 import { Goal, Task, CalendarEvent } from '../shared/types.js';
-import { goalsRepo, tasksRepo, settingsRepo } from './store/index.js';
+import { goalsRepo, tasksRepo, settingsRepo, activityRepo } from './store/index.js';
 import { decomposeGoal } from './planner/decompose.js';
 import { scheduleTasks } from './planner/schedule.js';
 import { GoogleAuth } from './sync/google-auth.js';
 import { GoogleCalendarSync } from './sync/calendar.js';
 import { eventBus } from './bus.js';
 import { ProposedPlan } from '../preload/index.js';
+import { FolderWatcher } from './activity/folder-watcher.js';
 
 export const googleAuth = new GoogleAuth();
 export const calendarSync = new GoogleCalendarSync(googleAuth);
+export const folderWatcher = new FolderWatcher(settingsRepo, activityRepo);
 
 function broadcast(channel: string, payload?: unknown): void {
   for (const win of BrowserWindow.getAllWindows()) {
@@ -150,11 +152,49 @@ export function setupIpcHandlers(getOverlayWindow: () => BrowserWindow | null): 
         workingHours: { start: string; end: string };
         horizonDays: number;
         pauseScheduling: boolean;
+        watchedFolders: string[];
       }>,
     ) => {
       settingsRepo.update(settings);
+      if (settings.watchedFolders !== undefined) {
+        folderWatcher.updateWatchedFolders(settings.watchedFolders);
+      }
     },
   );
+
+  ipcMain.handle('settings:addWatchedFolder', async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ['openDirectory'],
+    });
+    if (result.canceled || result.filePaths.length === 0) {
+      return null;
+    }
+    const folderPath = result.filePaths[0];
+    if (!folderPath) {
+      return null;
+    }
+    const settings = settingsRepo.getAll();
+    const watchedFolders = settings.watchedFolders ?? [];
+    if (!watchedFolders.includes(folderPath)) {
+      const updatedFolders = [...watchedFolders, folderPath];
+      settingsRepo.update({ watchedFolders: updatedFolders });
+      folderWatcher.updateWatchedFolders(updatedFolders);
+    }
+    return folderPath;
+  });
+
+  ipcMain.handle('settings:removeWatchedFolder', async (_, folderPath: string) => {
+    const settings = settingsRepo.getAll();
+    const watchedFolders = settings.watchedFolders ?? [];
+    const updatedFolders = watchedFolders.filter((f) => f !== folderPath);
+    settingsRepo.update({ watchedFolders: updatedFolders });
+    folderWatcher.updateWatchedFolders(updatedFolders);
+  });
+
+  ipcMain.handle('settings:getWatchedFolders', async () => {
+    const settings = settingsRepo.getAll();
+    return settings.watchedFolders ?? [];
+  });
 
   // Calendar
   ipcMain.handle('calendar:connect', async () => {
