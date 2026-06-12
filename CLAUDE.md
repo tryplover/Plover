@@ -15,11 +15,29 @@ context, conventions, and known footguns.
    reporting completion**. Be concrete: command/file, symptom, root cause, fix.
    This rule applies even to small mistakes. The point is to make this file
    smarter over time.
-3. **Verify before claiming.** Run `pnpm typecheck && pnpm lint && pnpm test`
+3. **Plan first, then delegate.** For any non-trivial code change, do not write
+   the code yourself in this session. First write an implementation plan to
+   `docs/plans/<short-kebab-name>.md` (use the `writing-plans` skill), then
+   dispatch subagents to implement it (`subagent-driven-development` /
+   `executing-plans`). Default implementation subagents to **Haiku**; escalate
+   to Sonnet/Opus only when a task is genuinely tricky. Trivial edits (typos,
+   one-line fixes, doc tweaks) may be made directly. The orchestrating session
+   stays focused on design, dispatch, and review.
+4. **Verify before claiming.** Run `pnpm typecheck && pnpm lint && pnpm test`
    from the repo root and confirm green output before saying anything is done.
-4. **Use the docs to avoid re-reading code.** This file + the two spec docs
+5. **Use the docs to avoid re-reading code.** This file + the two spec docs
    should be enough to start a session. Open code only when you need a specific
    detail.
+
+## Plan-then-delegate workflow
+
+For any non-trivial changes, follow this structured cycle:
+
+- **Write the plan** → Create a plan under `docs/plans/<name>.md` covering context, file-by-file changes, reuse of existing utilities, and verification steps. Use the `writing-plans` skill.
+- **Delegate implementation** → Dispatch Haiku subagent(s) (or Sonnet/Opus for tricky tasks) to implement the plan, using one agent per independent task. Use the `subagent-driven-development` / `executing-plans` flow.
+- **Review + verify** → The orchestrator reviews the subagent diffs and runs `pnpm typecheck && pnpm lint && pnpm test` before claiming completion.
+
+Note: `docs/plans/` contains *generated implementation plans* used as input to subagents. It is distinct from `docs/superpowers/specs/`, which remains the authoritative product and phase specification.
 
 ## Project
 
@@ -45,12 +63,14 @@ implementation order. Do not jump ahead.
 │   ├── workflows/ci.yml            # typecheck + lint + test+coverage
 │   ├── dependabot.yml              # weekly npm + actions updates
 │   └── PULL_REQUEST_TEMPLATE.md
-├── docs/superpowers/specs/         # PRD + Phase 1 specs (authoritative)
-│   ├── 2026-05-24-task-tracker-agent-product-spec.md
-│   └── phase-1/
-│       ├── core-architecture.md
-│       ├── store-layer.md
-│       └── features/{typed-goal-capture,subtask-decomposition,scheduling,calendar-sync,todo-views,overlay-quick-add}.md
+├── docs/
+│   ├── plans/                      # generated implementation plans (input to subagents)
+│   └── superpowers/specs/          # PRD + Phase 1 specs (authoritative)
+│       ├── 2026-05-24-task-tracker-agent-product-spec.md
+│       └── phase-1/
+│           ├── core-architecture.md
+│           ├── store-layer.md
+│           └── features/{typed-goal-capture,subtask-decomposition,scheduling,calendar-sync,todo-views,overlay-quick-add}.md
 └── app/                            # the Electron app (single workspace pkg)
     ├── package.json                # name: "plover"
     ├── electron.vite.config.ts
