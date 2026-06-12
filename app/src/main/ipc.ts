@@ -157,7 +157,7 @@ export function setupIpcHandlers(getOverlayWindow: () => BrowserWindow | null): 
     ) => {
       settingsRepo.update(settings);
       if (settings.watchedFolders !== undefined) {
-        folderWatcher.updateWatchedFolders(settings.watchedFolders);
+        await folderWatcher.updateWatchedFolders(settings.watchedFolders);
       }
     },
   );
@@ -178,7 +178,7 @@ export function setupIpcHandlers(getOverlayWindow: () => BrowserWindow | null): 
     if (!watchedFolders.includes(folderPath)) {
       const updatedFolders = [...watchedFolders, folderPath];
       settingsRepo.update({ watchedFolders: updatedFolders });
-      folderWatcher.updateWatchedFolders(updatedFolders);
+      await folderWatcher.updateWatchedFolders(updatedFolders);
     }
     return folderPath;
   });
@@ -188,7 +188,7 @@ export function setupIpcHandlers(getOverlayWindow: () => BrowserWindow | null): 
     const watchedFolders = settings.watchedFolders ?? [];
     const updatedFolders = watchedFolders.filter((f) => f !== folderPath);
     settingsRepo.update({ watchedFolders: updatedFolders });
-    folderWatcher.updateWatchedFolders(updatedFolders);
+    await folderWatcher.updateWatchedFolders(updatedFolders);
   });
 
   ipcMain.handle('settings:getWatchedFolders', async () => {

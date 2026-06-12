@@ -56,7 +56,7 @@ describe('FolderWatcher', () => {
 
   it('should detect add, change, and unlink events', async () => {
     watcher = new FolderWatcher(settingsRepo, activityRepo);
-    watcher.updateWatchedFolders([tempDir]);
+    await watcher.updateWatchedFolders([tempDir]);
 
     // Give chokidar some time to initialize
     await new Promise((resolve) => setTimeout(resolve, 300));

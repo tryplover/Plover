@@ -11,12 +11,12 @@ export class FolderWatcher {
     this.settingsRepo = settingsRepo;
     this.activityRepo = activityRepo;
     const initialFolders = this.settingsRepo.getAll().watchedFolders ?? [];
-    this.updateWatchedFolders(initialFolders);
+    void this.updateWatchedFolders(initialFolders);
   }
 
-  updateWatchedFolders(paths: string[]): void {
+  async updateWatchedFolders(paths: string[]): Promise<void> {
     if (this.watcher) {
-      this.watcher.close();
+      await this.watcher.close();
       this.watcher = null;
     }
 
