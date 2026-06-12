@@ -22,7 +22,6 @@
     "dist": "electron-builder"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
     "better-sqlite3": "^12.10.0",
     "google-auth-library": "^10.7.0",
     "googleapis": "^173.0.0",
