@@ -2,8 +2,9 @@ import './load-env.js';
 import { app, BrowserWindow, globalShortcut } from 'electron';
 import { join } from 'node:path';
 import { setupIpc } from './ipc.js';
-import { activityRepo, settingsRepo } from './store/index.js';
+import { activityRepo, settingsRepo, tasksRepo, summariesRepo } from './store/index.js';
 import { FolderWatcher } from './activity/folder-watcher.js';
+import { InferenceEngine } from './activity/inference.js';
 import { eventBus } from './bus.js';
 import { clearAllTimers } from './lifecycle/periodic.js';
 
@@ -14,6 +15,7 @@ if (!app.isPackaged) {
 let mainWindow: BrowserWindow | null = null;
 let overlayWindow: BrowserWindow | null = null;
 let folderWatcher: FolderWatcher | null = null;
+let inferenceEngine: InferenceEngine | null = null;
 
 function createMainWindow(): void {
   mainWindow = new BrowserWindow({
@@ -97,8 +99,11 @@ void app.whenReady().then(() => {
   folderWatcher = new FolderWatcher(activityRepo, eventBus);
   const settings = settingsRepo.getAll();
   if (settings.watchedFolders.length > 0) {
-    folderWatcher.watch(settings.watchedFolders);
+    void folderWatcher.watch(settings.watchedFolders);
   }
+
+  inferenceEngine = new InferenceEngine(tasksRepo, activityRepo, summariesRepo, settingsRepo);
+  inferenceEngine.start();
 
   // Register all typed IPC handlers first
   setupIpc(() => overlayWindow, (folders: string[]) => {
@@ -132,7 +137,10 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   if (folderWatcher) {
-    folderWatcher.closeAllWatchers();
+    void folderWatcher.closeAllWatchers();
+  }
+  if (inferenceEngine) {
+    inferenceEngine.stop();
   }
   clearAllTimers();
 });

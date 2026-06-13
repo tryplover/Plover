@@ -6,6 +6,7 @@ export interface SettingsData {
   horizonDays: number;
   pauseScheduling: boolean;
   watchedFolders: string[];
+  lastInferenceTs: string | null;
 }
 
 export class SettingsRepo {
@@ -36,6 +37,7 @@ export class SettingsRepo {
     const pauseScheduling = this.get('pauseScheduling') === 'true';
     const watchedFoldersRaw = this.get('watchedFolders');
     const watchedFolders = watchedFoldersRaw ? JSON.parse(watchedFoldersRaw) : [];
+    const lastInferenceTs = this.get('lastInferenceTs');
 
     return {
       googleConnected,
@@ -43,6 +45,7 @@ export class SettingsRepo {
       horizonDays,
       pauseScheduling,
       watchedFolders,
+      lastInferenceTs,
     };
   }
 
@@ -61,6 +64,13 @@ export class SettingsRepo {
     }
     if (patch.watchedFolders !== undefined) {
       this.set('watchedFolders', JSON.stringify(patch.watchedFolders));
+    }
+    if (patch.lastInferenceTs !== undefined) {
+      if (patch.lastInferenceTs === null) {
+        this.db.prepare('DELETE FROM settings WHERE key = ?').run('lastInferenceTs');
+      } else {
+        this.set('lastInferenceTs', patch.lastInferenceTs);
+      }
     }
   }
 }
