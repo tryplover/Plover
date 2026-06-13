@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { promises as fs } from 'node:fs';
-import { mkdtemp, rmdir } from 'node:fs/promises';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import Database from 'better-sqlite3';
@@ -36,7 +36,7 @@ describe('MarkdownSync', () => {
   afterEach(async () => {
     sync.stop();
     try {
-      await rmdir(tmpDir, { recursive: true });
+      await rm(tmpDir, { recursive: true, force: true });
     } catch {
       // Ignore cleanup errors
     }
@@ -70,7 +70,8 @@ describe('MarkdownSync', () => {
     const inboxGoal = goals.find((g) => g.title === 'Inbox');
     expect(inboxGoal).toBeDefined();
 
-    const tasks = tasksRepo.listByGoal(inboxGoal!.id);
+    expect(inboxGoal?.id).toBeDefined();
+    const tasks = tasksRepo.listByGoal(inboxGoal?.id ?? '');
     expect(tasks).toHaveLength(1);
   });
 
@@ -97,14 +98,13 @@ describe('MarkdownSync', () => {
   });
 
   it('reverts task to todo when checkbox is unchecked', async () => {
-    const goals = goalsRepo.list({ status: 'active' });
-    if (goals.length === 0) {
+    const existingGoals = goalsRepo.list({ status: 'active' });
+    const goal =
+      existingGoals.find((g) => g.title === 'Inbox') ??
       goalsRepo.create({ title: 'Inbox', status: 'active' });
-    }
-    const goal = goals[0];
 
     const task = tasksRepo.create({
-      goal_id: goal!.id,
+      goal_id: goal.id,
       title: 'Complete review',
       estimate_minutes: 30,
       status: 'done',

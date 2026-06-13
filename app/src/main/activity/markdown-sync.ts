@@ -83,15 +83,13 @@ export class MarkdownSync {
         );
 
         if (!matchingTask) {
-          if (!item.completed) {
-            this.tasksRepo.create({
-              goal_id: this.inboxGoalId,
-              title: item.title.trim(),
-              estimate_minutes: 30,
-              status: 'todo',
-              depends_on: [],
-            });
-          }
+          this.tasksRepo.create({
+            goal_id: this.inboxGoalId,
+            title: item.title.trim(),
+            estimate_minutes: 30,
+            status: item.completed ? 'done' : 'todo',
+            depends_on: [],
+          });
         } else {
           const fileMarksDone = item.completed;
           const dbMarksDone = matchingTask.status === 'done';

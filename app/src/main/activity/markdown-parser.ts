@@ -10,31 +10,23 @@ export function parseChecklists(md: string): ChecklistItem[] {
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
+    if (line === undefined) continue;
 
-    if (line === undefined) {
-      continue;
-    }
-
-    const uncheckedMatch = line.match(/^\s*-\s*\[\s*\]\s+(.+)$/i);
+    const uncheckedMatch = line.match(/^\s*-\s*\[\s*\]\s+(.+?)\s*$/i);
     if (uncheckedMatch) {
-      const title = uncheckedMatch[1];
-      items.push({
-        title,
-        completed: false,
-        line: i + 1,
-      });
+      const title = (uncheckedMatch[1] ?? '').trim();
+      if (title) {
+        items.push({ title, completed: false, line: i + 1 });
+      }
       continue;
     }
 
-    const checkedMatch = line.match(/^\s*-\s*\[x\]\s+(.+)$/i);
+    const checkedMatch = line.match(/^\s*-\s*\[x\]\s+(.+?)\s*$/i);
     if (checkedMatch) {
-      const title = checkedMatch[1];
-      items.push({
-        title,
-        completed: true,
-        line: i + 1,
-      });
-      continue;
+      const title = (checkedMatch[1] ?? '').trim();
+      if (title) {
+        items.push({ title, completed: true, line: i + 1 });
+      }
     }
   }
 
