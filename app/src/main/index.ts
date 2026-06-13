@@ -2,8 +2,9 @@ import './load-env.js';
 import { app, BrowserWindow, globalShortcut } from 'electron';
 import { join } from 'node:path';
 import { setupIpc } from './ipc.js';
-import { activityRepo, settingsRepo } from './store/index.js';
+import { activityRepo, settingsRepo, tasksRepo, goalsRepo } from './store/index.js';
 import { FolderWatcher } from './activity/folder-watcher.js';
+import { MarkdownSync } from './activity/markdown-sync.js';
 import { eventBus } from './bus.js';
 import { clearAllTimers } from './lifecycle/periodic.js';
 
@@ -14,6 +15,7 @@ if (!app.isPackaged) {
 let mainWindow: BrowserWindow | null = null;
 let overlayWindow: BrowserWindow | null = null;
 let folderWatcher: FolderWatcher | null = null;
+let markdownSync: MarkdownSync | null = null;
 
 function createMainWindow(): void {
   mainWindow = new BrowserWindow({
@@ -95,6 +97,9 @@ function toggleOverlayWindow(): void {
 
 void app.whenReady().then(() => {
   folderWatcher = new FolderWatcher(activityRepo, eventBus);
+  markdownSync = new MarkdownSync(tasksRepo, goalsRepo, eventBus);
+  markdownSync.start();
+
   const settings = settingsRepo.getAll();
   if (settings.watchedFolders.length > 0) {
     folderWatcher.watch(settings.watchedFolders);
@@ -131,6 +136,9 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
+  if (markdownSync) {
+    markdownSync.stop();
+  }
   if (folderWatcher) {
     folderWatcher.closeAllWatchers();
   }
