@@ -7,21 +7,42 @@ export interface ActivityRow {
   payload: Record<string, unknown>;
 }
 
+interface ActivityDbRow {
+  id: number;
+  ts: string;
+  kind: string;
+  payload: string;
+}
+
 export class ActivityRepo {
   private db: Database.Database;
+  private insertStmt: Database.Statement;
+  private listSinceStmt: Database.Statement;
+  private listBetweenStmt: Database.Statement;
 
   constructor(db: Database.Database) {
     this.db = db;
+    this.insertStmt = this.db.prepare(`
+      INSERT INTO activity (ts, kind, payload)
+      VALUES (?, ?, ?)
+    `);
+    this.listSinceStmt = this.db.prepare(`
+      SELECT id, ts, kind, payload
+      FROM activity
+      WHERE ts >= ?
+      ORDER BY ts ASC
+    `);
+    this.listBetweenStmt = this.db.prepare(`
+      SELECT id, ts, kind, payload
+      FROM activity
+      WHERE ts >= ? AND ts <= ?
+      ORDER BY ts ASC
+    `);
   }
 
   insert(row: { kind: string; payload: Record<string, unknown>; ts?: string }): ActivityRow {
     const ts = row.ts || new Date().toISOString();
-    const stmt = this.db.prepare(`
-      INSERT INTO activity (ts, kind, payload)
-      VALUES (?, ?, ?)
-    `);
-
-    const result = stmt.run(ts, row.kind, JSON.stringify(row.payload));
+    const result = this.insertStmt.run(ts, row.kind, JSON.stringify(row.payload));
 
     return {
       id: result.lastInsertRowid as number,
@@ -32,20 +53,7 @@ export class ActivityRepo {
   }
 
   listSince(ts: string): ActivityRow[] {
-    const stmt = this.db.prepare(`
-      SELECT id, ts, kind, payload
-      FROM activity
-      WHERE ts >= ?
-      ORDER BY ts ASC
-    `);
-
-    const rows = stmt.all(ts) as {
-      id: number;
-      ts: string;
-      kind: string;
-      payload: string;
-    }[];
-
+    const rows = this.listSinceStmt.all(ts) as ActivityDbRow[];
     return rows.map((row) => ({
       id: row.id,
       ts: row.ts,
@@ -55,20 +63,7 @@ export class ActivityRepo {
   }
 
   listBetween(start: string, end: string): ActivityRow[] {
-    const stmt = this.db.prepare(`
-      SELECT id, ts, kind, payload
-      FROM activity
-      WHERE ts >= ? AND ts <= ?
-      ORDER BY ts ASC
-    `);
-
-    const rows = stmt.all(start, end) as {
-      id: number;
-      ts: string;
-      kind: string;
-      payload: string;
-    }[];
-
+    const rows = this.listBetweenStmt.all(start, end) as ActivityDbRow[];
     return rows.map((row) => ({
       id: row.id,
       ts: row.ts,

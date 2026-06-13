@@ -26,8 +26,8 @@ describe('FolderWatcher', () => {
     folderWatcher = new FolderWatcher(activityRepo, eventBus);
   });
 
-  afterEach(() => {
-    folderWatcher.closeAllWatchers();
+  afterEach(async () => {
+    await folderWatcher.closeAllWatchers();
   });
 
   it('watches a folder and detects file changes', async () => {

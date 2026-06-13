@@ -10,19 +10,26 @@ export interface SummaryRow {
 
 export class SummariesRepo {
   private db: Database.Database;
+  private insertStmt: Database.Statement;
+  private listForTaskStmt: Database.Statement;
 
   constructor(db: Database.Database) {
     this.db = db;
+    this.insertStmt = this.db.prepare(`
+      INSERT INTO summaries (task_id, ts, summary, signal)
+      VALUES (?, ?, ?, ?)
+    `);
+    this.listForTaskStmt = this.db.prepare(`
+      SELECT id, task_id, ts, summary, signal
+      FROM summaries
+      WHERE task_id = ?
+      ORDER BY ts ASC
+    `);
   }
 
   insert(row: { taskId: string | null; summary: string; signal: number; ts?: string }): SummaryRow {
     const ts = row.ts || new Date().toISOString();
-    const stmt = this.db.prepare(`
-      INSERT INTO summaries (task_id, ts, summary, signal)
-      VALUES (?, ?, ?, ?)
-    `);
-
-    const result = stmt.run(row.taskId, ts, row.summary, row.signal);
+    const result = this.insertStmt.run(row.taskId, ts, row.summary, row.signal);
 
     return {
       id: result.lastInsertRowid as number,
@@ -34,21 +41,6 @@ export class SummariesRepo {
   }
 
   listForTask(taskId: string): SummaryRow[] {
-    const stmt = this.db.prepare(`
-      SELECT id, task_id, ts, summary, signal
-      FROM summaries
-      WHERE task_id = ?
-      ORDER BY ts ASC
-    `);
-
-    const rows = stmt.all(taskId) as {
-      id: number;
-      task_id: string | null;
-      ts: string;
-      summary: string;
-      signal: number;
-    }[];
-
-    return rows;
+    return this.listForTaskStmt.all(taskId) as SummaryRow[];
   }
 }

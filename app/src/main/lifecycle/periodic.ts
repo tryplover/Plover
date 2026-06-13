@@ -1,33 +1,51 @@
-const activeTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const activeCancels = new Map<string, () => void>();
 
 export function schedulePeriodic(
   name: string,
   intervalMs: number,
   fn: () => Promise<void>,
 ): () => void {
-  const schedule = (): void => {
-    fn().catch((err) => {
-      console.error(`[periodic:${name}] error:`, err);
-    });
+  const existingCancel = activeCancels.get(name);
+  if (existingCancel) {
+    existingCancel();
+  }
 
-    const timer = setTimeout(schedule, intervalMs);
-    activeTimers.set(name, timer);
+  let cancelled = false;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+
+  const schedule = async (): Promise<void> => {
+    if (cancelled) return;
+
+    try {
+      await fn();
+    } catch (err) {
+      console.error(`[periodic:${name}] error:`, err);
+    }
+
+    if (cancelled) return;
+
+    timer = setTimeout(() => {
+      void schedule();
+    }, intervalMs);
   };
 
-  schedule();
-
-  return () => {
-    const timer = activeTimers.get(name);
+  const cancel = (): void => {
+    cancelled = true;
     if (timer) {
       clearTimeout(timer);
-      activeTimers.delete(name);
     }
+    activeCancels.delete(name);
   };
+
+  activeCancels.set(name, cancel);
+  void schedule();
+
+  return cancel;
 }
 
 export function clearAllTimers(): void {
-  for (const timer of activeTimers.values()) {
-    clearTimeout(timer);
+  for (const cancel of activeCancels.values()) {
+    cancel();
   }
-  activeTimers.clear();
+  activeCancels.clear();
 }
