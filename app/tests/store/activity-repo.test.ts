@@ -37,9 +37,10 @@ describe('ActivityRepo', () => {
 
     const result = repo.listSince(t2);
     expect(result).toHaveLength(2);
-    expect(result[0].kind).toBe('file_added');
-    expect(result[1].kind).toBe('file_modified');
-    expect((result[0].payload as { x: number }).x).toBe(2);
+    const [r0, r1] = result;
+    expect(r0?.kind).toBe('file_added');
+    expect(r1?.kind).toBe('file_modified');
+    expect((r0?.payload as { x: number }).x).toBe(2);
   });
 
   it('listBetween returns rows within a time range', () => {
@@ -59,10 +60,11 @@ describe('ActivityRepo', () => {
 
     const result = repo.listBetween(t2, t3);
     expect(result).toHaveLength(2);
-    expect(result[0].kind).toBe('file_added');
-    expect(result[1].kind).toBe('file_modified');
-    expect((result[0].payload as { x: number }).x).toBe(2);
-    expect((result[1].payload as { x: number }).x).toBe(3);
+    const [r0, r1] = result;
+    expect(r0?.kind).toBe('file_added');
+    expect(r1?.kind).toBe('file_modified');
+    expect((r0?.payload as { x: number }).x).toBe(2);
+    expect((r1?.payload as { x: number }).x).toBe(3);
   });
 
   it('generates timestamps if not provided', () => {
@@ -92,12 +94,12 @@ describe('ActivityRepo', () => {
       array: [1, 2, 3],
     };
 
-    const row = repo.insert({
+    repo.insert({
       kind: 'file_modified',
       payload: complexPayload,
     });
 
-    const retrieved = repo.listSince('2026-01-01T00:00:00.000Z')[0];
-    expect(retrieved.payload).toEqual(complexPayload);
+    const [retrieved] = repo.listSince('2026-01-01T00:00:00.000Z');
+    expect(retrieved?.payload).toEqual(complexPayload);
   });
 });

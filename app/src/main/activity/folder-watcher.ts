@@ -5,7 +5,7 @@ import { FolderEventPayload } from '@shared/events.js';
 
 export class FolderWatcher {
   private watcher: chokidar.FSWatcher | null = null;
-  private watchedPaths: Set<string> = new Set();
+  private watchedPaths = new Set<string>();
 
   constructor(
     private activityRepo: ActivityRepo,

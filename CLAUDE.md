@@ -354,3 +354,39 @@ Store milestone lands — it's a native module and will need this).
 **Root cause:** Under a pnpm workspace structure, dependencies of `electron-builder` (such as `@peculiar/webcrypto` and `@peculiar/utils`) require the helper module `tslib`, but it was not resolved correctly due to pnpm's strict isolation.
 
 **Fix:** Install `tslib` as a development dependency at the root of the workspace (`pnpm add -D -w tslib`).
+
+### 2026-06-12 — `noUncheckedIndexedAccess` + ESLint `no-non-null-assertion` forces destructure + optional chaining in tests
+
+**Symptom:** Subagent-authored test files using `result[0].kind` fail typecheck with `TS2532: Object is possibly 'undefined'` because `tsconfig.json` enables `noUncheckedIndexedAccess`. Switching to `result[0]!.kind` then fails ESLint with `@typescript-eslint/no-non-null-assertion`.
+
+**Root cause:** Both rules are intentionally on. There is no escape hatch via non-null assertion; tests must be written so the type system can prove non-`undefined`.
+
+**Fix:** Use the destructure + optional-chaining pattern that the existing tests use:
+```ts
+const result = repo.listSomething();
+expect(result).toHaveLength(2);
+const [r0, r1] = result;
+expect(r0?.kind).toBe('file_added');
+```
+When `r0` is undefined, `r0?.kind` is `undefined` and the `toBe(...)` assertion fails — same semantics as `!.`, but lint-clean.
+
+### 2026-06-12 — `summaries.task_id` is a real FK; test fixtures must seed the parent task
+
+**Symptom:** Tests for `SummariesRepo.insert({ taskId: 'task-1', ... })` fail with `SqliteError: FOREIGN KEY constraint failed`.
+
+**Root cause:** `summaries.task_id TEXT REFERENCES tasks(id) ON DELETE SET NULL` is a real foreign key. The schema allows `task_id IS NULL` for "global" summaries, but any non-null value must reference an existing `tasks(id)` row. SQLite has foreign keys enabled in this app's migrations.
+
+**Fix:** Seed the parent goal + task before inserting a summary in any test that uses a non-null `taskId`. See the helper pattern in `app/tests/store/summaries-repo.test.ts` (`seedTask(db, taskId)` creates a goal via `GoalsRepo.create(...)` then a task via `TasksRepo.create(...)` with the desired id).
+
+### 2026-06-12 — corepack-based pnpm shim breaks behind corporate npm registry
+
+**Symptom:** `pnpm <anything>` fails with `Error when performing the request to https://registry.npmjs.org/pnpm/-/pnpm-10.26.0.tgz` / `ConnectTimeoutError`, even when `~/.npmrc` already points to an internal registry. Background subagents and the main session both hit the same wall.
+
+**Root cause:** The `pnpm` on `$PATH` (via Node/mise) is actually a corepack shim that ignores user `.npmrc` and unconditionally fetches the pinned `packageManager` version from `registry.npmjs.org`. On a network without direct access to `registry.npmjs.org` (VPN-only, corporate restriction), corepack times out before `.npmrc` is even consulted.
+
+**Fix:** Use the previously-installed global pnpm directly: `~/Library/pnpm/pnpm` (or wherever `pnpm setup` placed it). Prepend `~/Library/pnpm` to `PATH` so subprocesses (including scripts that re-shell out to `pnpm`) resolve to the global binary rather than the corepack shim:
+```sh
+export PATH=/Users/<user>/Library/pnpm:$PATH
+pnpm install   # now actually uses the internal registry from ~/.npmrc
+```
+Subagents that need to install deps will hit this same wall and report "network/corepack issue" — orchestrator must pre-install deps from the main session or pass the PATH override into the subagent prompt.

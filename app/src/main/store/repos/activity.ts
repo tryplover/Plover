@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import Database from 'better-sqlite3';
 
 export interface ActivityRow {

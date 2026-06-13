@@ -64,7 +64,8 @@ describe('FolderWatcher', () => {
     expect(fileAddedHandler).toHaveBeenCalled();
     const calls = fileAddedHandler.mock.calls;
     expect(calls.length).toBeGreaterThan(0);
-    const payload = calls[0][0];
+    const [firstCall] = calls;
+    const payload = firstCall?.[0] as { path: string; kind: string };
     expect(payload.path).toContain('new-file.txt');
     expect(payload.kind).toBe('other');
   });
