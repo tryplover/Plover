@@ -11,6 +11,7 @@ export class MarkdownSync {
   private onFileChangedHandler: ((payload: FolderEventPayload) => void) | null = null;
   private onFileAddedHandler: ((payload: FolderEventPayload) => void) | null = null;
   private inboxGoalId: string | null = null;
+  private fileLocks = new Map<string, Promise<void>>();
 
   constructor(
     private tasksRepo: TasksRepo,
@@ -57,52 +58,65 @@ export class MarkdownSync {
     this.inboxGoalId = inboxGoal.id;
   }
 
-  private async handleFileEvent(payload: FolderEventPayload): Promise<void> {
+  private handleFileEvent(payload: FolderEventPayload): Promise<void> {
     if (payload.kind !== 'md') {
-      return;
+      return Promise.resolve();
     }
 
+    const previous = this.fileLocks.get(payload.path) ?? Promise.resolve();
+    const next = previous.then(() => this.syncFile(payload.path));
+
+    this.fileLocks.set(payload.path, next);
+    void next.finally(() => {
+      if (this.fileLocks.get(payload.path) === next) {
+        this.fileLocks.delete(payload.path);
+      }
+    });
+
+    return next;
+  }
+
+  private async syncFile(filePath: string): Promise<void> {
     try {
-      const content = await fs.readFile(payload.path, 'utf-8');
+      const content = await fs.readFile(filePath, 'utf-8');
       const items = parseChecklists(content);
 
       if (!this.inboxGoalId) {
         this.ensureInboxGoal();
       }
-
       if (!this.inboxGoalId) {
         throw new Error('Failed to ensure Inbox goal');
       }
+      const goalId = this.inboxGoalId;
+
+      const existingTasks = this.tasksRepo.listByGoal(goalId);
+      const taskMap = new Map(
+        existingTasks.map((t) => [t.title.trim().toLowerCase(), t]),
+      );
 
       for (const item of items) {
         const normalizedTitle = item.title.trim().toLowerCase();
-
-        const existingTasks = this.tasksRepo.listByGoal(this.inboxGoalId);
-        const matchingTask = existingTasks.find(
-          (t) => t.title.trim().toLowerCase() === normalizedTitle,
-        );
+        const matchingTask = taskMap.get(normalizedTitle);
 
         if (!matchingTask) {
-          this.tasksRepo.create({
-            goal_id: this.inboxGoalId,
+          const newTask = this.tasksRepo.create({
+            goal_id: goalId,
             title: item.title.trim(),
             estimate_minutes: 30,
             status: item.completed ? 'done' : 'todo',
             depends_on: [],
           });
-        } else {
-          const fileMarksDone = item.completed;
-          const dbMarksDone = matchingTask.status === 'done';
-
-          if (fileMarksDone && !dbMarksDone) {
-            this.tasksRepo.update(matchingTask.id, { status: 'done' });
-          } else if (!fileMarksDone && dbMarksDone) {
-            this.tasksRepo.update(matchingTask.id, { status: 'todo' });
-          }
+          taskMap.set(normalizedTitle, newTask);
+        } else if (item.completed && matchingTask.status !== 'done') {
+          const updated = this.tasksRepo.update(matchingTask.id, { status: 'done' });
+          taskMap.set(normalizedTitle, updated);
+        } else if (!item.completed && matchingTask.status === 'done') {
+          const updated = this.tasksRepo.update(matchingTask.id, { status: 'todo' });
+          taskMap.set(normalizedTitle, updated);
         }
       }
     } catch (err) {
-      console.error('[MarkdownSync] Error handling file event:', payload.path, err);
+      console.error('[MarkdownSync] Error syncing file:', filePath, err);
     }
   }
 }
