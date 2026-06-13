@@ -286,8 +286,9 @@ describe('Store Layer', () => {
       db.close();
     });
 
-    it('instantiates SessionsRepo and ActivityRepo stubs', () => {
+    it('instantiates SessionsRepo and ActivityRepo', () => {
       const db = new Database(':memory:');
+      runMigrations(db);
       const sessions = new SessionsRepo(db);
       const activity = new ActivityRepo(db);
       expect(sessions).toBeDefined();

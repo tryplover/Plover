@@ -24,7 +24,10 @@ function broadcast(channel: string, payload?: unknown): void {
   }
 }
 
-export function setupIpcHandlers(getOverlayWindow: () => BrowserWindow | null): void {
+export function setupIpcHandlers(
+  getOverlayWindow: () => BrowserWindow | null,
+  onWatchedFoldersChange?: (folders: string[]) => void,
+): void {
   void googleAuth.loadSavedCredentials();
 
   // Goals
@@ -150,11 +153,25 @@ export function setupIpcHandlers(getOverlayWindow: () => BrowserWindow | null): 
         workingHours: { start: string; end: string };
         horizonDays: number;
         pauseScheduling: boolean;
+        watchedFolders: string[];
       }>,
     ) => {
       settingsRepo.update(settings);
     },
   );
+
+  ipcMain.handle('settings:watched-folders:get', async () => {
+    const settings = settingsRepo.getAll();
+    return settings.watchedFolders;
+  });
+
+  ipcMain.handle('settings:watched-folders:set', async (_, folders: string[]) => {
+    settingsRepo.update({ watchedFolders: folders });
+    if (onWatchedFoldersChange) {
+      onWatchedFoldersChange(folders);
+    }
+    return folders;
+  });
 
   // Calendar
   ipcMain.handle('calendar:connect', async () => {
@@ -393,7 +410,10 @@ export function startEventForwarding(): void {
   });
 }
 
-export function setupIpc(getOverlayWindow: () => BrowserWindow | null): void {
-  setupIpcHandlers(getOverlayWindow);
+export function setupIpc(
+  getOverlayWindow: () => BrowserWindow | null,
+  onWatchedFoldersChange?: (folders: string[]) => void,
+): void {
+  setupIpcHandlers(getOverlayWindow, onWatchedFoldersChange);
   startEventForwarding();
 }

@@ -5,6 +5,7 @@ export interface SettingsData {
   workingHours: { start: string; end: string };
   horizonDays: number;
   pauseScheduling: boolean;
+  watchedFolders: string[];
 }
 
 export class SettingsRepo {
@@ -33,12 +34,15 @@ export class SettingsRepo {
       : { start: '09:00', end: '18:00' };
     const horizonDays = Number(this.get('horizonDays') ?? '14');
     const pauseScheduling = this.get('pauseScheduling') === 'true';
+    const watchedFoldersRaw = this.get('watchedFolders');
+    const watchedFolders = watchedFoldersRaw ? JSON.parse(watchedFoldersRaw) : [];
 
     return {
       googleConnected,
       workingHours,
       horizonDays,
       pauseScheduling,
+      watchedFolders,
     };
   }
 
@@ -54,6 +58,9 @@ export class SettingsRepo {
     }
     if (patch.pauseScheduling !== undefined) {
       this.set('pauseScheduling', String(patch.pauseScheduling));
+    }
+    if (patch.watchedFolders !== undefined) {
+      this.set('watchedFolders', JSON.stringify(patch.watchedFolders));
     }
   }
 }
