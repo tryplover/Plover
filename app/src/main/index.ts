@@ -2,6 +2,10 @@ import './load-env.js';
 import { app, BrowserWindow, globalShortcut } from 'electron';
 import { join } from 'node:path';
 import { setupIpc } from './ipc.js';
+import { activityRepo, settingsRepo } from './store/index.js';
+import { FolderWatcher } from './activity/folder-watcher.js';
+import { eventBus } from './bus.js';
+import { clearAllTimers } from './lifecycle/periodic.js';
 
 if (!app.isPackaged) {
   app.commandLine.appendSwitch('enable-logging');
@@ -9,6 +13,7 @@ if (!app.isPackaged) {
 
 let mainWindow: BrowserWindow | null = null;
 let overlayWindow: BrowserWindow | null = null;
+let folderWatcher: FolderWatcher | null = null;
 
 function createMainWindow(): void {
   mainWindow = new BrowserWindow({
@@ -89,8 +94,18 @@ function toggleOverlayWindow(): void {
 }
 
 void app.whenReady().then(() => {
+  folderWatcher = new FolderWatcher(activityRepo, eventBus);
+  const settings = settingsRepo.getAll();
+  if (settings.watchedFolders.length > 0) {
+    folderWatcher.watch(settings.watchedFolders);
+  }
+
   // Register all typed IPC handlers first
-  setupIpc(() => overlayWindow);
+  setupIpc(() => overlayWindow, (folders: string[]) => {
+    if (folderWatcher) {
+      folderWatcher.watch(folders);
+    }
+  });
 
   createMainWindow();
   createOverlayWindow();
@@ -113,6 +128,13 @@ void app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
+});
+
+app.on('before-quit', () => {
+  if (folderWatcher) {
+    folderWatcher.closeAllWatchers();
+  }
+  clearAllTimers();
 });
 
 app.on('will-quit', () => {

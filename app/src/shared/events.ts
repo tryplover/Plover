@@ -1,11 +1,18 @@
 import { Goal, Task } from './types.js';
 
+export interface FolderEventPayload {
+  path: string;
+  kind: 'md' | 'git_commit_editmsg' | 'other';
+}
+
 export interface EventPayloads {
   'goal.created': Goal;
   'goal.updated': Goal;
   'task.scheduled': Task;
   'task.completed': Task;
   'calendar.synced': undefined;
+  'folder.file_changed': FolderEventPayload;
+  'folder.file_added': FolderEventPayload;
 }
 
 export type AppEvent =

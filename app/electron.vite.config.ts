@@ -10,6 +10,7 @@ export default defineConfig({
         external: [
           'electron',
           'better-sqlite3',
+          'chokidar',
           'keytar',
           'google-auth-library',
           'googleapis',
