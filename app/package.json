@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "better-sqlite3": "^12.10.0",
-    "chokidar": "^3.6.0",
+    "chokidar": "^5.0.0",
     "google-auth-library": "^10.7.0",
     "googleapis": "^173.0.0",
     "keytar": "^7.9.0",
