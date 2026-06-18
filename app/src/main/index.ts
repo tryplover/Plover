@@ -5,6 +5,7 @@ import { setupIpc } from './ipc.js';
 import { activityRepo, settingsRepo, tasksRepo, summariesRepo } from './store/index.js';
 import { FolderWatcher } from './activity/folder-watcher.js';
 import { InferenceEngine } from './activity/inference.js';
+import { GitCommitTracker } from './activity/git-commit-tracker.js';
 import { eventBus } from './bus.js';
 import { clearAllTimers } from './lifecycle/periodic.js';
 import { initActivityMonitoring, stopActivityMonitoring } from './activity/index.js';
@@ -17,6 +18,7 @@ let mainWindow: BrowserWindow | null = null;
 let overlayWindow: BrowserWindow | null = null;
 let folderWatcher: FolderWatcher | null = null;
 let inferenceEngine: InferenceEngine | null = null;
+let gitCommitTracker: GitCommitTracker | null = null;
 
 function createMainWindow(): void {
   mainWindow = new BrowserWindow({
@@ -112,6 +114,9 @@ void app.whenReady().then(async () => {
   );
   inferenceEngine.start();
 
+  gitCommitTracker = new GitCommitTracker(tasksRepo, activityRepo, eventBus);
+  gitCommitTracker.start();
+
   // Register all typed IPC handlers first
   setupIpc(
     () => overlayWindow,
@@ -154,6 +159,9 @@ app.on('before-quit', () => {
   }
   if (inferenceEngine) {
     inferenceEngine.stop();
+  }
+  if (gitCommitTracker) {
+    gitCommitTracker.stop();
   }
   clearAllTimers();
 });

@@ -494,6 +494,177 @@ You MUST call the tool "inferProgress" with the result.`;
   }
 });
 
+const matchCommitDeclaration: FunctionDeclaration = {
+  name: 'matchCommit',
+  description:
+    'Pick the active task most plausibly completed by the given git commit, or return null if none match.',
+  parameters: {
+    type: SchemaType.OBJECT,
+    properties: {
+      matchedTaskId: {
+        type: SchemaType.STRING,
+        description: 'The id of the matched task. Use the literal string "null" if no task is a clear match.',
+      },
+      reasoning: {
+        type: SchemaType.STRING,
+        description: 'One sentence explaining which keywords in the commit message tied it to the task (or why nothing matched).',
+      },
+    },
+    required: ['matchedTaskId', 'reasoning'],
+  },
+};
+
+interface MatchCommitArgs {
+  matchedTaskId?: string;
+  reasoning?: string;
+}
+
+app.post('/api/match-commit', async (req, res): Promise<any> => {
+  const authToken = process.env.AUTH_TOKEN;
+  if (authToken) {
+    const clientToken = req.headers['x-plover-auth-token'];
+    if (clientToken !== authToken) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+  }
+
+  const { commit: rawCommit, tasks: rawTasks } = req.body;
+
+  if (!rawCommit || typeof rawCommit !== 'object') {
+    return res.status(400).json({ error: 'Missing or invalid commit object' });
+  }
+  if (typeof rawCommit.message !== 'string') {
+    return res.status(400).json({ error: 'Missing or invalid commit.message' });
+  }
+  if (!Array.isArray(rawTasks) || rawTasks.length === 0) {
+    return res.status(400).json({ error: 'Missing or empty tasks array' });
+  }
+
+  const commit = {
+    hash: typeof rawCommit.hash === 'string' ? rawCommit.hash : undefined,
+    repoPath: typeof rawCommit.repoPath === 'string' ? rawCommit.repoPath : undefined,
+    message: rawCommit.message,
+  };
+
+  const tasks = rawTasks.filter(
+    (t): t is { id: string; title: string } =>
+      t && typeof t === 'object' && typeof t.id === 'string' && typeof t.title === 'string'
+  );
+  if (tasks.length === 0) {
+    return res.status(400).json({ error: 'No valid tasks in tasks array' });
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    console.error('Server GEMINI_API_KEY is not set');
+    return res.status(500).json({ error: 'Server configuration error: GEMINI_API_KEY is missing' });
+  }
+
+  try {
+    const client = new GoogleGenerativeAI(apiKey);
+    const defaultModelName = (process.env.GEMINI_MODEL || 'gemini-2.0-flash').trim();
+    const fallbackNames = [
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
+      'gemini-2.0-flash-lite-preview-02-05',
+      'gemini-1.5-pro',
+    ].filter((m) => m !== defaultModelName);
+    const candidates = [defaultModelName, ...fallbackNames];
+
+    const taskList = tasks
+      .map((t: { id: string; title: string }) => `- ${t.id} | ${t.title}`)
+      .join('\n');
+
+    const prompt = `A git commit just landed in a user's repo. Decide which of the user's active tasks this commit most plausibly completes.
+
+Active tasks (id | title):
+${taskList}
+
+Commit:
+  hash: ${commit.hash ?? '(unknown)'}
+  repo: ${commit.repoPath ?? '(unknown)'}
+  message:
+${commit.message
+  .split('\n')
+  .map((line: string) => `    ${line}`)
+  .join('\n')}
+
+Pick the single best matching task id. If no task is a clear match (commit is generic, chore-style, or unrelated), return the literal string "null" as matchedTaskId. Be conservative — false positives are worse than misses.
+
+You MUST call the tool "matchCommit" with the result.`;
+
+    let response;
+    let lastError: Error | null = null;
+
+    for (const modelName of candidates) {
+      try {
+        console.log(`[Server] Attempting commit match using model: ${modelName}`);
+        const model = client.getGenerativeModel({
+          model: modelName,
+          generationConfig: { temperature: 0.1 },
+        });
+        response = await model.generateContent({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          tools: [{ functionDeclarations: [matchCommitDeclaration] }],
+          toolConfig: {
+            functionCallingConfig: {
+              mode: FunctionCallingMode.ANY,
+              allowedFunctionNames: ['matchCommit'],
+            },
+          },
+        });
+        break;
+      } catch (err) {
+        console.warn(`[Server] Commit match failed using ${modelName}:`, err);
+        lastError = err instanceof Error ? err : new Error(String(err));
+      }
+    }
+
+    if (!response) {
+      return res.status(502).json({
+        error: `All Gemini models failed. Last error: ${lastError?.message || 'Unknown'}`,
+      });
+    }
+
+    const functionCalls =
+      typeof response.response.functionCalls === 'function'
+        ? response.response.functionCalls()
+        : undefined;
+    let call: FunctionCall | undefined = functionCalls?.[0];
+
+    if (!call) {
+      const parts: Part[] = response.response.candidates?.[0]?.content?.parts || [];
+      for (const part of parts) {
+        if (part.functionCall) {
+          call = part.functionCall;
+          break;
+        }
+      }
+    }
+
+    let matchedTaskId: string | null = null;
+    let reasoning = '';
+
+    if (call && call.name === 'matchCommit') {
+      const args = call.args as unknown as MatchCommitArgs;
+      if (args) {
+        reasoning = typeof args.reasoning === 'string' ? args.reasoning.trim() : '';
+        if (typeof args.matchedTaskId === 'string' && args.matchedTaskId !== 'null') {
+          const validIds = new Set(tasks.map((t: { id: string }) => t.id));
+          if (validIds.has(args.matchedTaskId)) {
+            matchedTaskId = args.matchedTaskId;
+          }
+        }
+      }
+    }
+
+    res.json({ matchedTaskId, reasoning });
+  } catch (err: any) {
+    console.error('[Server] /api/match-commit error:', err);
+    res.status(500).json({ error: err.message || 'Internal server error' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Plover secure backend proxy server running on port ${PORT}`);
 });

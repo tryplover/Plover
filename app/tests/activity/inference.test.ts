@@ -205,7 +205,9 @@ describe('InferenceEngine', () => {
     await engine.runInferencePass();
 
     expect(emittedTask).not.toBeNull();
-    expect(emittedTask.id).toBe(taskId);
-    expect(emittedTask.status).toBe('done');
+    if (emittedTask) {
+      expect(emittedTask.id).toBe(taskId);
+      expect(emittedTask.status).toBe('done');
+    }
   });
 });
