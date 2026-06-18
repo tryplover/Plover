@@ -15,24 +15,15 @@ export class SettingsRepo {
     this.db = db;
   }
 
-  get(key: string): string | string[] | null {
+  get(key: string): string | null {
     const stmt = this.db.prepare('SELECT value FROM settings WHERE key = ?');
     const row = stmt.get(key) as { value: string } | undefined;
-    if (!row) return null;
-    if (key === 'watchedFolders') {
-      try {
-        return JSON.parse(row.value);
-      } catch {
-        return [];
-      }
-    }
-    return row.value;
+    return row ? row.value : null;
   }
 
-  set(key: string, value: string | string[]): void {
+  set(key: string, value: string): void {
     const stmt = this.db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)');
-    const strValue = typeof value === 'string' ? value : JSON.stringify(value);
-    stmt.run(key, strValue);
+    stmt.run(key, value);
   }
 
   getAll(): SettingsData {

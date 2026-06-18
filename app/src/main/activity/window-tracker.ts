@@ -1,4 +1,4 @@
-import { exec } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import { ActivityRepo } from '../store/repos/activity.js';
 import { SettingsRepo } from '../store/repos/settings.js';
 
@@ -9,6 +9,7 @@ export class WindowTracker {
   private lastApp: string | null = null;
   private lastTitle: string | null = null;
   private lastLogTime = 0;
+  private isChecking = false;
 
   constructor(activityRepo: ActivityRepo, settingsRepo: SettingsRepo) {
     this.activityRepo = activityRepo;
@@ -16,6 +17,12 @@ export class WindowTracker {
   }
 
   start(): void {
+    if (process.platform !== 'darwin') {
+      console.log(
+        '[WindowTracker] Window tracking is only supported on macOS (darwin). Skipping start.',
+      );
+      return;
+    }
     if (this.intervalId) {
       return;
     }
@@ -32,12 +39,20 @@ export class WindowTracker {
   }
 
   async checkActiveWindow(): Promise<void> {
-    const settings = this.settingsRepo.getAll();
-    if (settings.pauseScheduling) {
+    if (process.platform !== 'darwin') {
       return;
     }
+    if (this.isChecking) {
+      return;
+    }
+    this.isChecking = true;
 
     try {
+      const settings = this.settingsRepo.getAll();
+      if (settings.pauseScheduling) {
+        return;
+      }
+
       const { app, title } = await this.getActiveWindowFromOS();
 
       const now = Date.now();
@@ -52,6 +67,8 @@ export class WindowTracker {
       }
     } catch (err) {
       console.error('Error tracking active window:', err);
+    } finally {
+      this.isChecking = false;
     }
   }
 
@@ -69,9 +86,7 @@ export class WindowTracker {
     return productName & "|||" & titleOfWindow
 end tell`;
 
-      const escapedScript = appleScript.replace(/'/g, "'\\''");
-
-      exec(`osascript -e '${escapedScript}'`, (error, stdout) => {
+      execFile('osascript', ['-e', appleScript], (error, stdout) => {
         if (error) {
           reject(error);
           return;

@@ -8,8 +8,11 @@ import { WindowTracker } from '@main/activity/window-tracker.js';
 // Setup child_process mock
 const mockExec = vi.fn();
 vi.mock('node:child_process', () => ({
-  exec: (cmd: string, callback: (error: Error | null, stdout: string, stderr: string) => void) =>
-    mockExec(cmd, callback),
+  execFile: (
+    file: string,
+    args: string[],
+    callback: (error: Error | null, stdout: string, stderr: string) => void,
+  ) => mockExec(file, callback),
 }));
 
 describe('WindowTracker', () => {
