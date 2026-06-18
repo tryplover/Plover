@@ -1,24 +1,35 @@
 import { WindowTracker } from './window-tracker.js';
+import { GDocsPoller } from './gdocs-poller.js';
 import { settingsRepo, activityRepo } from '../store/index.js';
+import { googleAuth } from '../ipc.js';
 
 let windowTracker: WindowTracker | null = null;
+let gdocsPoller: GDocsPoller | null = null;
 
 export function initActivityMonitoring(): void {
-  if (process.platform !== 'darwin') {
-    console.log(
-      '[Activity] Window tracking is only supported on macOS (darwin). Skipping initialization.',
-    );
-    return;
-  }
-  if (windowTracker) {
-    console.log('[Activity] Window tracker already initialized.');
-    return;
-  }
-  console.log('[Activity] Initializing active window tracker...');
+  console.log('[Activity] Initializing active monitoring subsystems...');
 
-  // Initialize and start Window Tracker (ticks every 10 seconds)
-  windowTracker = new WindowTracker(activityRepo, settingsRepo);
-  windowTracker.start();
+  // Initialize and start Window Tracker (ticks every 10 seconds, macOS only)
+  if (process.platform === 'darwin') {
+    if (!windowTracker) {
+      console.log('[Activity] Initializing active window tracker...');
+      windowTracker = new WindowTracker(activityRepo, settingsRepo);
+      windowTracker.start();
+    } else {
+      console.log('[Activity] Window tracker already initialized.');
+    }
+  } else {
+    console.log('[Activity] Window tracking is only supported on macOS (darwin). Skipping.');
+  }
+
+  // Initialize and start Google Docs Poller (ticks every 10 minutes)
+  if (!gdocsPoller) {
+    console.log('[Activity] Initializing Google Docs poller...');
+    gdocsPoller = new GDocsPoller(googleAuth, activityRepo, settingsRepo);
+    gdocsPoller.start();
+  } else {
+    console.log('[Activity] Google Docs poller already initialized.');
+  }
 }
 
 export function stopActivityMonitoring(): void {
@@ -26,5 +37,9 @@ export function stopActivityMonitoring(): void {
   if (windowTracker) {
     windowTracker.stop();
     windowTracker = null;
+  }
+  if (gdocsPoller) {
+    gdocsPoller.stop();
+    gdocsPoller = null;
   }
 }
