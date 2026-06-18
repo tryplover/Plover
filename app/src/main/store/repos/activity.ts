@@ -71,4 +71,25 @@ export class ActivityRepo {
       payload: JSON.parse(row.payload) as Record<string, unknown>,
     }));
   }
+
+  log(kind: string, payload: Record<string, unknown>, ts?: string): void {
+    this.insert({ kind, payload, ts });
+  }
+
+  list(kind?: string): ActivityRow[] {
+    let query = 'SELECT id, ts, kind, payload FROM activity';
+    const params: string[] = [];
+    if (kind) {
+      query += ' WHERE kind = ?';
+      params.push(kind);
+    }
+    const stmt = this.db.prepare(query);
+    const rows = stmt.all(...params) as ActivityDbRow[];
+    return rows.map((row) => ({
+      id: row.id,
+      ts: row.ts,
+      kind: row.kind,
+      payload: JSON.parse(row.payload) as Record<string, unknown>,
+    }));
+  }
 }

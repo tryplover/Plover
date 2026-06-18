@@ -6,6 +6,7 @@ import { activityRepo, settingsRepo } from './store/index.js';
 import { FolderWatcher } from './activity/folder-watcher.js';
 import { eventBus } from './bus.js';
 import { clearAllTimers } from './lifecycle/periodic.js';
+import { initActivityMonitoring, stopActivityMonitoring } from './activity/index.js';
 
 if (!app.isPackaged) {
   app.commandLine.appendSwitch('enable-logging');
@@ -110,6 +111,9 @@ void app.whenReady().then(async () => {
     },
   );
 
+  // Initialize passive activity monitoring system
+  initActivityMonitoring();
+
   createMainWindow();
   createOverlayWindow();
 
@@ -141,6 +145,7 @@ app.on('before-quit', () => {
 });
 
 app.on('will-quit', () => {
+  stopActivityMonitoring();
   // Always clean up shortcuts to prevent leaking hooks in the OS
   globalShortcut.unregisterAll();
 });

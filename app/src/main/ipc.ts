@@ -8,7 +8,6 @@ import { GoogleAuth } from './sync/google-auth.js';
 import { GoogleCalendarSync } from './sync/calendar.js';
 import { eventBus } from './bus.js';
 import { ProposedPlan } from '../preload/index.js';
-
 export const googleAuth = new GoogleAuth();
 export const calendarSync = new GoogleCalendarSync(googleAuth);
 
