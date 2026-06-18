@@ -280,6 +280,220 @@ Guidelines:
   }
 });
 
+const inferProgressDeclaration: FunctionDeclaration = {
+  name: 'inferProgress',
+  description:
+    'Given a list of active tasks and recent computer activity logs, infer which tasks were worked on or completed.',
+  parameters: {
+    type: SchemaType.OBJECT,
+    properties: {
+      task_progress: {
+        type: SchemaType.ARRAY,
+        description: 'One entry per active task. Omit a task only if there is zero evidence either way.',
+        items: {
+          type: SchemaType.OBJECT,
+          properties: {
+            taskId: {
+              type: SchemaType.STRING,
+              description: 'The id of the task being scored (must match an input task id verbatim).',
+            },
+            progress_increment: {
+              type: SchemaType.NUMBER,
+              description: 'Estimated work progress this window, 0..100. 0 = no evidence, 100 = clearly completed.',
+            },
+            completed: {
+              type: SchemaType.BOOLEAN,
+              description: 'True only if the activity logs strongly suggest the task is done.',
+            },
+            reasoning: {
+              type: SchemaType.STRING,
+              description: 'One sentence citing the specific activity evidence used.',
+            },
+          },
+          required: ['taskId', 'progress_increment', 'completed', 'reasoning'],
+        },
+      },
+    },
+    required: ['task_progress'],
+  },
+};
+
+interface InferProgressEntry {
+  taskId?: string;
+  progress_increment?: number;
+  completed?: boolean;
+  reasoning?: string;
+}
+
+interface InferProgressArgs {
+  task_progress?: InferProgressEntry[];
+}
+
+app.post('/api/infer-progress', async (req, res): Promise<any> => {
+  const authToken = process.env.AUTH_TOKEN;
+  if (authToken) {
+    const clientToken = req.headers['x-plover-auth-token'];
+    if (clientToken !== authToken) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+  }
+
+  const { tasks: rawTasks, activity: rawActivity } = req.body;
+
+  if (!Array.isArray(rawTasks) || rawTasks.length === 0) {
+    return res.status(400).json({ error: 'Missing or empty tasks array' });
+  }
+  if (!Array.isArray(rawActivity) || rawActivity.length === 0) {
+    return res.status(400).json({ error: 'Missing or empty activity array' });
+  }
+
+  const tasks = rawTasks.filter(
+    (t): t is { id: string; title: string; status?: string } =>
+      t && typeof t === 'object' && typeof t.id === 'string' && typeof t.title === 'string'
+  );
+  if (tasks.length === 0) {
+    return res.status(400).json({ error: 'No valid tasks in tasks array' });
+  }
+
+  const activity = rawActivity.filter(
+    (a): a is { kind: string; payload: Record<string, unknown>; ts: string } =>
+      a &&
+      typeof a === 'object' &&
+      typeof a.kind === 'string' &&
+      a.payload &&
+      typeof a.payload === 'object' &&
+      typeof a.ts === 'string'
+  );
+  if (activity.length === 0) {
+    return res.status(400).json({ error: 'No valid activity entries in activity array' });
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    console.error('Server GEMINI_API_KEY is not set');
+    return res.status(500).json({ error: 'Server configuration error: GEMINI_API_KEY is missing' });
+  }
+
+  try {
+    const client = new GoogleGenerativeAI(apiKey);
+    const defaultModelName = (process.env.GEMINI_MODEL || 'gemini-2.0-flash').trim();
+    const fallbackNames = [
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
+      'gemini-2.0-flash-lite-preview-02-05',
+      'gemini-1.5-pro',
+    ].filter((m) => m !== defaultModelName);
+    const candidates = [defaultModelName, ...fallbackNames];
+
+    const taskList = tasks
+      .map((t: { id: string; title: string; status?: string }) =>
+        `- ${t.id} | status=${t.status ?? 'todo'} | ${t.title}`,
+      )
+      .join('\n');
+    const activityList = activity
+      .map(
+        (a: { kind: string; payload: Record<string, unknown>; ts: string }) =>
+          `- [${a.ts}] ${a.kind}: ${JSON.stringify(a.payload)}`,
+      )
+      .join('\n');
+
+    const prompt = `You are inferring task progress from a user's recent computer activity logs.
+
+Active tasks (id | status | title):
+${taskList}
+
+Recent activity (chronological):
+${activityList}
+
+For each active task, decide whether the activity above is evidence that the user worked on it (set progress_increment > 0) or completed it (set completed=true). Be conservative: zero evidence → progress_increment=0, completed=false. Cite specific activity in the reasoning sentence.
+
+You MUST call the tool "inferProgress" with the result.`;
+
+    let response;
+    let lastError: Error | null = null;
+
+    for (const modelName of candidates) {
+      try {
+        console.log(`[Server] Attempting progress inference using model: ${modelName}`);
+        const model = client.getGenerativeModel({
+          model: modelName,
+          generationConfig: { temperature: 0.1 },
+        });
+        response = await model.generateContent({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          tools: [{ functionDeclarations: [inferProgressDeclaration] }],
+          toolConfig: {
+            functionCallingConfig: {
+              mode: FunctionCallingMode.ANY,
+              allowedFunctionNames: ['inferProgress'],
+            },
+          },
+        });
+        break;
+      } catch (err) {
+        console.warn(`[Server] Progress inference failed using ${modelName}:`, err);
+        lastError = err instanceof Error ? err : new Error(String(err));
+      }
+    }
+
+    if (!response) {
+      return res.status(502).json({
+        error: `All Gemini models failed. Last error: ${lastError?.message || 'Unknown'}`,
+      });
+    }
+
+    const functionCalls =
+      typeof response.response.functionCalls === 'function'
+        ? response.response.functionCalls()
+        : undefined;
+    let call: FunctionCall | undefined = functionCalls?.[0];
+
+    if (!call) {
+      const parts: Part[] = response.response.candidates?.[0]?.content?.parts || [];
+      for (const part of parts) {
+        if (part.functionCall) {
+          call = part.functionCall;
+          break;
+        }
+      }
+    }
+
+    if (!call) {
+      return res.status(502).json({ error: 'Gemini failed to call the inferProgress function' });
+    }
+    if (call.name !== 'inferProgress') {
+      return res.status(502).json({ error: `Unexpected function call from Gemini: ${call.name}` });
+    }
+
+    const args = call.args as unknown as InferProgressArgs;
+    if (!args || !Array.isArray(args.task_progress)) {
+      return res.status(502).json({ error: 'Invalid arguments returned in inferProgress function call' });
+    }
+
+    const validIds = new Set(tasks.map((t: { id: string }) => t.id));
+    const task_progress = args.task_progress
+      .filter((entry): entry is Required<InferProgressEntry> => {
+        if (!entry) return false;
+        if (typeof entry.taskId !== 'string' || !validIds.has(entry.taskId)) return false;
+        if (typeof entry.progress_increment !== 'number' || Number.isNaN(entry.progress_increment)) return false;
+        if (typeof entry.completed !== 'boolean') return false;
+        if (typeof entry.reasoning !== 'string') return false;
+        return true;
+      })
+      .map((entry) => ({
+        taskId: entry.taskId,
+        progress_increment: Math.min(100, Math.max(0, Math.round(entry.progress_increment))),
+        completed: entry.completed,
+        reasoning: entry.reasoning.trim(),
+      }));
+
+    res.json({ task_progress });
+  } catch (err: any) {
+    console.error('[Server] /api/infer-progress error:', err);
+    res.status(500).json({ error: err.message || 'Internal server error' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Plover secure backend proxy server running on port ${PORT}`);
 });
