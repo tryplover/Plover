@@ -93,19 +93,22 @@ function toggleOverlayWindow(): void {
   }
 }
 
-void app.whenReady().then(() => {
+void app.whenReady().then(async () => {
   folderWatcher = new FolderWatcher(activityRepo, eventBus);
   const settings = settingsRepo.getAll();
   if (settings.watchedFolders.length > 0) {
-    folderWatcher.watch(settings.watchedFolders);
+    await folderWatcher.watch(settings.watchedFolders);
   }
 
   // Register all typed IPC handlers first
-  setupIpc(() => overlayWindow, (folders: string[]) => {
-    if (folderWatcher) {
-      folderWatcher.watch(folders);
-    }
-  });
+  setupIpc(
+    () => overlayWindow,
+    async (folders: string[]) => {
+      if (folderWatcher) {
+        await folderWatcher.watch(folders);
+      }
+    },
+  );
 
   createMainWindow();
   createOverlayWindow();

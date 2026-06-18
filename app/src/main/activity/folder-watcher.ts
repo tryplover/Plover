@@ -1,10 +1,10 @@
-import chokidar from 'chokidar';
+import { watch, FSWatcher } from 'chokidar';
 import { ActivityRepo } from '../store/repos/activity.js';
 import { TypedEventBus } from '../bus.js';
 import { FolderEventPayload } from '@shared/events.js';
 
 export class FolderWatcher {
-  private watcher: chokidar.FSWatcher | null = null;
+  private watcher: FSWatcher | null = null;
   private watchedPaths = new Set<string>();
   private watchChain: Promise<void> = Promise.resolve();
 
@@ -71,7 +71,7 @@ export class FolderWatcher {
       return;
     }
 
-    this.watcher = chokidar.watch(paths, {
+    this.watcher = watch(paths, {
       awaitWriteFinish: false,
       ignored: (testPath: string) => {
         const normalized = testPath.replace(/\\/g, '/');
@@ -90,12 +90,16 @@ export class FolderWatcher {
       persistent: true,
     });
 
-    this.watcher.on('change', (path) => {
+    this.watcher.on('change', (path: string) => {
       this.handleFileChange(path);
     });
 
-    this.watcher.on('add', (path) => {
+    this.watcher.on('add', (path: string) => {
       this.handleFileAdd(path);
+    });
+
+    this.watcher.on('error', (err: unknown) => {
+      console.error('[FolderWatcher] chokidar watcher error:', err);
     });
   }
 

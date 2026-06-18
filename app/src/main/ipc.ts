@@ -26,7 +26,7 @@ function broadcast(channel: string, payload?: unknown): void {
 
 export function setupIpcHandlers(
   getOverlayWindow: () => BrowserWindow | null,
-  onWatchedFoldersChange?: (folders: string[]) => void,
+  onWatchedFoldersChange?: (folders: string[]) => Promise<void> | void,
 ): void {
   void googleAuth.loadSavedCredentials();
 
@@ -168,7 +168,7 @@ export function setupIpcHandlers(
   ipcMain.handle('settings:watched-folders:set', async (_, folders: string[]) => {
     settingsRepo.update({ watchedFolders: folders });
     if (onWatchedFoldersChange) {
-      onWatchedFoldersChange(folders);
+      await onWatchedFoldersChange(folders);
     }
     return folders;
   });
@@ -412,7 +412,7 @@ export function startEventForwarding(): void {
 
 export function setupIpc(
   getOverlayWindow: () => BrowserWindow | null,
-  onWatchedFoldersChange?: (folders: string[]) => void,
+  onWatchedFoldersChange?: (folders: string[]) => Promise<void> | void,
 ): void {
   setupIpcHandlers(getOverlayWindow, onWatchedFoldersChange);
   startEventForwarding();
