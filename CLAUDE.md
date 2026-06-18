@@ -309,7 +309,7 @@ Store milestone lands — it's a native module and will need this).
 
 **Symptom:** Running `pnpm dev` fails with `Error: Electron failed to install correctly. Please delete node_modules/electron...` and `getElectronPath` errors.
 
-**Root cause:** Under a pnpm workspace structure, `electron-vite`'s automatic dependency externalization fails to match dependency paths correctly because packages resolve through the symlinked `.pnpm` virtual store. This causes the main process to bundle packages like `electron` and native dependencies (e.g. `better-sqlite3`, `keytar`) inline. At runtime, the bundled `electron/index.js` wrapper attempts to run installer scripts using a relative path that doesn't exist in `out/main/`.
+**Root cause:** Under a pnpm workspace structure, `electron-vite`'s automatic dependency externalization fails to match dependency/path correctly because packages resolve through the symlinked `.pnpm` virtual store. This causes the main process to bundle packages like `electron` and native dependencies (e.g. `better-sqlite3`, `keytar`) inline. At runtime, the bundled `electron/index.js` wrapper attempts to run installer scripts using a relative path that doesn't exist in `out/main/`.
 
 **Fix:** Explicitly configure `build.rollupOptions.external` under `main` and `preload` in `app/electron.vite.config.ts` to keep `electron`, `better-sqlite3`, `keytar`, and other node modules external.
 
@@ -390,3 +390,11 @@ export PATH=/Users/<user>/Library/pnpm:$PATH
 pnpm install   # now actually uses the internal registry from ~/.npmrc
 ```
 Subagents that need to install deps will hit this same wall and report "network/corepack issue" — orchestrator must pre-install deps from the main session or pass the PATH override into the subagent prompt.
+
+### 2026-05-24 — Preload build output filename extension mismatch in ESM packages
+
+**Symptom:** The main process loads `../preload/index.js` but the built preload script is outputted as `index.mjs`, causing a runtime file-not-found error in Electron.
+
+**Root cause:** When `"type": "module"` is set in `package.json`, Vite/Rollup defaults to building outputs as ESM (using the `.mjs` extension) even when specifying `entryFileNames: '[name].js'`.
+
+**Fix:** Configure the preload config's Rollup output options in `electron.vite.config.ts` to build in CommonJS format (`format: 'cjs'`) and set `entryFileNames: '[name].js'`.
