@@ -4,6 +4,9 @@ on:
   push:
     tags:
       - 'v*'
+  schedule:
+    - cron: '0 0 * * *' # Daily at 00:00 UTC
+  workflow_dispatch:
 
 jobs:
   release:
@@ -35,9 +38,19 @@ jobs:
           # Disable automatic code signing since we do not have Apple Developer Certificates configured in CI secrets yet
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
+      - name: Generate tag name
+        id: tag
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "name=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "name=v$(date -u +'%Y.%m.%d-%H%M')" >> $GITHUB_OUTPUT
+          fi
+
       - name: Upload Binary to GitHub Release
         uses: softprops/action-gh-release@v3
         with:
+          tag_name: ${{ steps.tag.outputs.name }}
           files: |
             app/dist/*.dmg
             app/dist/*.dmg.blockmap
