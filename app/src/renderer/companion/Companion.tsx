@@ -10,12 +10,15 @@ export function Companion() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    const container = containerRef.current;
+    if (!container) return;
     const observer = new ResizeObserver(() => {
-      const h = containerRef.current!.getBoundingClientRect().height;
-      window.api.companion.resize(Math.ceil(h)).catch(console.error);
+      if (container) {
+        const h = container.getBoundingClientRect().height;
+        window.api.companion.resize(Math.ceil(h)).catch(console.error);
+      }
     });
-    observer.observe(containerRef.current);
+    observer.observe(container);
     return () => observer.disconnect();
   }, [expanded]);
 

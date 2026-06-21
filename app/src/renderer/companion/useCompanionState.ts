@@ -42,8 +42,11 @@ function buildSteps(task: Task | null, all: Task[]): CompanionView['steps'] {
   const siblings = all
     .filter((t) => t.goal_id === task.goal_id)
     .sort((a, b) => {
-      const aStart = a.scheduled_start || '';
-      const bStart = b.scheduled_start || '';
+      const aStart = a.scheduled_start;
+      const bStart = b.scheduled_start;
+      if (!aStart && !bStart) return a.id.localeCompare(b.id);
+      if (!aStart) return 1;
+      if (!bStart) return -1;
       if (aStart !== bStart) return aStart.localeCompare(bStart);
       return a.id.localeCompare(b.id);
     });

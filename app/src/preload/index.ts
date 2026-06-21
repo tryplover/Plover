@@ -152,5 +152,3 @@ declare global {
     api: PloverApi;
   }
 }
-
-export type { CompanionApi };

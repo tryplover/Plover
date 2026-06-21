@@ -302,7 +302,9 @@ export function setupIpcHandlers(
   ipcMain.handle('companion:resize', (_e, height: number) => {
     const w = ensureCompanion();
     const [width] = w.getSize();
-    w.setSize(width, Math.max(56, Math.min(640, Math.round(height))));
+    if (width !== undefined) {
+      w.setSize(width, Math.max(56, Math.min(640, Math.round(height))));
+    }
   });
   ipcMain.handle('companion:setActiveTask', (_e, taskId: string | null) => {
     ensureCompanion().webContents.send('companion:activeTask', taskId);

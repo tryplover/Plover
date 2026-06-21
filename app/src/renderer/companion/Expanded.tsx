@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from '../lib/motion';
+import { motion } from '../lib/motion';
 import { StatusIndicator } from '../components/StatusIndicator';
 import { StepRow } from '../components/StepRow';
 import { Button } from '../components/Button';

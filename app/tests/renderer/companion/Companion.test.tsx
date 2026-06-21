@@ -2,32 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { CompanionView } from '../../../src/renderer/companion/useCompanionState';
 
 describe('Companion', () => {
-  const mockWindowApi = vi.hoisted(() => {
-    const onListeners: Record<string, (data: unknown) => void> = {};
-
-    return {
-      api: {
-        on: vi.fn((channel: string, callback: (data: unknown) => void) => {
-          onListeners[channel] = callback;
-          return () => {
-            delete onListeners[channel];
-          };
-        }),
-        getTasks: vi.fn(() => Promise.resolve([])),
-        companion: {
-          show: vi.fn(() => Promise.resolve()),
-          hide: vi.fn(() => Promise.resolve()),
-          setActiveTask: vi.fn(() => Promise.resolve()),
-          setState: vi.fn(() => Promise.resolve()),
-          resize: vi.fn(() => Promise.resolve()),
-        },
-      },
-      triggerEvent: (channel: string, data: unknown) => {
-        const listener = onListeners[channel];
-        if (listener) listener(data);
-      },
-    };
-  });
 
   beforeEach(() => {
     vi.clearAllMocks();
