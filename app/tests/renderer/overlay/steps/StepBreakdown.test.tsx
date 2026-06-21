@@ -29,7 +29,7 @@ describe('StepBreakdown', () => {
 
   it('plan has goal with title', () => {
     const plan: ProposedPlan = {
-      goal: { title: 'Learn TypeScript', frequency: 'weekly', linked_window: null },
+      goal: { title: 'Learn TypeScript' },
       subtasks: [],
     };
     expect(plan.goal.title).toBe('Learn TypeScript');
@@ -37,7 +37,7 @@ describe('StepBreakdown', () => {
 
   it('plan has subtasks array', () => {
     const plan: ProposedPlan = {
-      goal: { title: 'Learn TypeScript', frequency: 'weekly', linked_window: null },
+      goal: { title: 'Learn TypeScript' },
       subtasks: [
         { title: 'Read handbook', estimate_minutes: 120 },
         { title: 'Complete exercises', estimate_minutes: 60 },
@@ -57,7 +57,7 @@ describe('StepBreakdown', () => {
 
   it('can add new step to plan', () => {
     const plan: ProposedPlan = {
-      goal: { title: 'Goal', frequency: 'one-off', linked_window: null },
+      goal: { title: 'Goal' },
       subtasks: [{ title: 'Step 1', estimate_minutes: 30 }],
     };
     const newPlan = {

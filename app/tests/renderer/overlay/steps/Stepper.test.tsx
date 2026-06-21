@@ -51,18 +51,17 @@ describe('Stepper', () => {
     expect(steps[2]?.num).toBe(3);
   });
 
-  it('current state changes styling', () => {
-    const idx = 1 as const;
-    const current = 1 as const;
-    const isCurrent = idx === current;
-    expect(isCurrent).toBe(true);
+  it('step markers are distinct numbers', () => {
+    const steps = [1, 2, 3] as const;
+    expect(steps[0]).toBe(1);
+    expect(steps[1]).toBe(2);
+    expect(steps[2]).toBe(3);
   });
 
-  it('non-current step styling differs', () => {
-    const idx = 2 as const;
-    const current = 1 as const;
-    const isCurrent = idx === current;
-    expect(isCurrent).toBe(false);
+  it('current can match step number', () => {
+    const current: 1 | 2 | 3 = 1;
+    const targetStep = 1;
+    expect(current).toBe(targetStep);
   });
 
   it('can transition current from 1 to 2', () => {

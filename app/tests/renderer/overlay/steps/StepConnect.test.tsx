@@ -8,7 +8,7 @@ describe('StepConnect', () => {
 
   it('accepts plan prop', () => {
     const plan: ProposedPlan = {
-      goal: { title: 'Build feature', frequency: 'one-off', linked_window: null },
+      goal: { title: 'Build feature' },
       subtasks: [{ title: 'Write code', estimate_minutes: 120 }],
     };
     expect(plan.goal.title).toBe('Build feature');
