@@ -12,6 +12,16 @@ export interface ProposedPlan {
   }[];
 }
 
+export type StateKind = 'observing' | 'paused' | 'done' | 'not-sure';
+
+export interface CompanionApi {
+  show: () => Promise<void>;
+  hide: () => Promise<void>;
+  setActiveTask: (taskId: string | null) => Promise<void>;
+  setState: (kind: StateKind) => Promise<void>;
+  resize: (height: number) => Promise<void>;
+}
+
 export interface PloverApi {
   // Main Goals & Tasks
   getGoals: () => Promise<Goal[]>;
@@ -89,6 +99,9 @@ export interface PloverApi {
   closeOverlay: () => Promise<void>;
   resizeOverlay: (height: number) => Promise<void>;
 
+  // Companion API
+  companion: CompanionApi;
+
   // Event Subscription
   on: (channel: string, callback: (...args: unknown[]) => void) => () => void;
 }
@@ -113,6 +126,15 @@ const api: PloverApi = {
   closeOverlay: () => ipcRenderer.invoke('overlay:close'),
   resizeOverlay: (height) => ipcRenderer.invoke('overlay:resize', height),
 
+  // Companion
+  companion: {
+    show: () => ipcRenderer.invoke('companion:show'),
+    hide: () => ipcRenderer.invoke('companion:hide'),
+    setActiveTask: (taskId) => ipcRenderer.invoke('companion:setActiveTask', taskId),
+    setState: (kind) => ipcRenderer.invoke('companion:setState', kind),
+    resize: (height) => ipcRenderer.invoke('companion:resize', height),
+  },
+
   // Events
   on: (channel, callback) => {
     const subscription = (_event: unknown, ...args: unknown[]) => callback(...args);
@@ -130,3 +152,5 @@ declare global {
     api: PloverApi;
   }
 }
+
+export type { CompanionApi };

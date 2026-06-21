@@ -8,6 +8,7 @@ import { GoogleAuth } from './sync/google-auth.js';
 import { GoogleCalendarSync } from './sync/calendar.js';
 import { eventBus } from './bus.js';
 import { ProposedPlan } from '../preload/index.js';
+import { createCompanionWindow } from './windows/companion.js';
 export const googleAuth = new GoogleAuth();
 export const calendarSync = new GoogleCalendarSync(googleAuth);
 
@@ -283,6 +284,31 @@ export function setupIpcHandlers(
         });
       }
     }
+  });
+
+  // Companion
+  let companion: BrowserWindow | null = null;
+
+  function ensureCompanion(): BrowserWindow {
+    if (!companion || companion.isDestroyed()) {
+      companion = createCompanionWindow();
+      companion.on('closed', () => { companion = null; });
+    }
+    return companion;
+  }
+
+  ipcMain.handle('companion:show', () => { ensureCompanion().show(); });
+  ipcMain.handle('companion:hide', () => { companion?.hide(); });
+  ipcMain.handle('companion:resize', (_e, height: number) => {
+    const w = ensureCompanion();
+    const [width] = w.getSize();
+    w.setSize(width, Math.max(56, Math.min(640, Math.round(height))));
+  });
+  ipcMain.handle('companion:setActiveTask', (_e, taskId: string | null) => {
+    ensureCompanion().webContents.send('companion:activeTask', taskId);
+  });
+  ipcMain.handle('companion:setState', (_e, kind: string) => {
+    ensureCompanion().webContents.send('companion:state', kind);
   });
 }
 
