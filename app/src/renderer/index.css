@@ -152,7 +152,7 @@ body {
 
 .badge {
   background-color: var(--plover-mint);
-  color: #fff;
+  color: var(--plover-bg);
   font-size: 11px;
   font-weight: 600;
   padding: 2px 6px;
