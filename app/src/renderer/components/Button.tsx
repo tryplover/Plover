@@ -11,7 +11,8 @@ export function Button({ variant, className = '', children, ...rest }: ButtonPro
       whileTap={{ scale: 0.97 }}
       whileHover={{ y: -1 }}
       className={`plover-btn plover-btn--${variant} ${className}`}
-      {...rest}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      {...(rest as any)}
     >
       {children}
     </motion.button>

@@ -14,7 +14,9 @@ if (!container) throw new Error('root element missing');
 const isOverlay =
   window.location.search.includes('overlay') || window.location.hash.includes('overlay');
 
-if (import.meta.env.DEV && new URLSearchParams(window.location.search).get('gallery') === '1') {
+const showGallery = import.meta.env.DEV && new URLSearchParams(window.location.search).get('gallery') === '1';
+
+if (showGallery) {
   const { ComponentGallery } = await import('./dev/ComponentGallery');
   createRoot(container).render(
     <StrictMode>
