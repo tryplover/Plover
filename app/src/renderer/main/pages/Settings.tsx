@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { Button } from '../../components/Button';
+import { Chip } from '../../components/Chip';
 
 export default function Settings() {
   const [googleConnected, setGoogleConnected] = useState(false);
@@ -80,158 +82,221 @@ export default function Settings() {
   };
 
   return (
-    <div className="main-content">
-      <div
-        className="page-header"
-        style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
-      >
-        <div>
-          <span className="page-subtitle">Preferences</span>
-          <h1 className="page-title">Settings</h1>
-        </div>
+    <div
+      style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        paddingTop: '40px',
+        paddingBottom: '40px',
+        paddingLeft: '40px',
+        paddingRight: '40px',
+        backgroundColor: 'var(--plover-bg)',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
+        <h1
+          style={{
+            fontFamily: 'var(--plover-font-serif)',
+            fontSize: '36px',
+            fontWeight: 400,
+            color: 'var(--plover-text)',
+          }}
+        >
+          Settings
+        </h1>
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
+            gap: '6px',
             fontSize: '13px',
-            color: 'var(--text-secondary)',
+            color: 'var(--plover-text-muted)',
           }}
         >
           {saveStatus === 'saving' && (
             <div className="loading-spinner" style={{ width: '12px', height: '12px' }} />
           )}
           {saveStatus === 'saved' && (
-            <span style={{ color: 'var(--accent-success)' }}>✓ Saved</span>
+            <>
+              <span
+                style={{
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--plover-mint)',
+                }}
+              />
+              <span>Saved</span>
+            </>
           )}
         </div>
       </div>
 
-      <div className="card">
-        <h2 style={{ fontSize: '17px', fontWeight: '700', marginBottom: '8px' }}>
-          Google Calendar
-        </h2>
-        <div className="settings-section">
-          <div className="setting-row">
-            <div className="setting-info">
-              <span className="setting-label">OAuth Sync</span>
-              <span className="setting-description">
-                Connect your Google Calendar to auto-schedule tasks and avoid double bookings.
-              </span>
-            </div>
-            <div className="setting-control">
-              <span className={`oauth-badge ${googleConnected ? 'connected' : ''}`}>
-                <span
-                  style={{
-                    width: '6px',
-                    height: '6px',
-                    borderRadius: '50%',
-                    backgroundColor: googleConnected
-                      ? 'var(--accent-success)'
-                      : 'var(--text-tertiary)',
-                  }}
-                />
-                {googleConnected ? 'Connected' : 'Disconnected'}
-              </span>
-              <button
-                className={`btn ${googleConnected ? 'btn-danger' : 'btn-primary'}`}
-                onClick={handleConnectCalendar}
-              >
-                {googleConnected ? 'Disconnect Calendar' : 'Connect Calendar'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="card">
-        <h2 style={{ fontSize: '17px', fontWeight: '700', marginBottom: '8px' }}>
-          Scheduler Configuration
-        </h2>
-        <div className="settings-section">
-          <div className="setting-row">
-            <div className="setting-info">
-              <span className="setting-label">Daily Working Hours</span>
-              <span className="setting-description">
-                Specify the start and end of your workday for task scheduling.
-              </span>
-            </div>
-            <div className="setting-control">
-              <div className="input-time-group">
-                <input
-                  type="time"
-                  className="input-field"
-                  value={workingHours.start}
-                  onChange={(e) => handleWorkingHoursChange('start', e.target.value)}
-                />
-                <span style={{ color: 'var(--text-tertiary)', fontSize: '13px' }}>to</span>
-                <input
-                  type="time"
-                  className="input-field"
-                  value={workingHours.end}
-                  onChange={(e) => handleWorkingHoursChange('end', e.target.value)}
-                />
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          <div
+            style={{
+              backgroundColor: 'var(--plover-surface)',
+              borderRadius: 'var(--plover-radius-lg)',
+              padding: '24px',
+            }}
+          >
+            <h2
+              style={{
+                fontSize: '18px',
+                fontWeight: 600,
+                marginBottom: '16px',
+                color: 'var(--plover-text)',
+              }}
+            >
+              Account
+            </h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--plover-text)' }}>
+                  Google Calendar
+                </p>
+                {googleConnected && (
+                  <p style={{ fontSize: '13px', color: 'var(--plover-text-muted)', marginTop: '4px' }}>
+                    Connected as account
+                  </p>
+                )}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {googleConnected && (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--plover-text-muted)' }}>
+                    <span
+                      style={{
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        backgroundColor: 'var(--plover-mint)',
+                      }}
+                    />
+                    Connected
+                  </span>
+                )}
+                <Button
+                  variant={googleConnected ? 'secondary' : 'primary'}
+                  onClick={handleConnectCalendar}
+                >
+                  {googleConnected ? 'Disconnect' : 'Connect'}
+                </Button>
               </div>
             </div>
           </div>
 
-          <div className="setting-row">
-            <div className="setting-info">
-              <span className="setting-label">Scheduling Horizon</span>
-              <span className="setting-description">
-                Maximum days in the future the scheduler will plan tasks.
-              </span>
+          <div
+            style={{
+              backgroundColor: 'var(--plover-surface)',
+              borderRadius: 'var(--plover-radius-lg)',
+              padding: '24px',
+            }}
+          >
+            <h2
+              style={{
+                fontSize: '18px',
+                fontWeight: 600,
+                marginBottom: '16px',
+                color: 'var(--plover-text)',
+              }}
+            >
+              Working hours
+            </h2>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+              <input
+                type="time"
+                value={workingHours.start}
+                onChange={(e) => handleWorkingHoursChange('start', e.target.value)}
+                style={{
+                  backgroundColor: 'var(--plover-surface-raised)',
+                  border: '1px solid var(--plover-border)',
+                  borderRadius: 'var(--plover-radius-sm)',
+                  padding: '8px 12px',
+                  color: 'var(--plover-text)',
+                  fontSize: '14px',
+                  outline: 'none',
+                  fontFamily: 'inherit',
+                }}
+              />
+              <span style={{ color: 'var(--plover-text-muted)', fontSize: '14px' }}>to</span>
+              <input
+                type="time"
+                value={workingHours.end}
+                onChange={(e) => handleWorkingHoursChange('end', e.target.value)}
+                style={{
+                  backgroundColor: 'var(--plover-surface-raised)',
+                  border: '1px solid var(--plover-border)',
+                  borderRadius: 'var(--plover-radius-sm)',
+                  padding: '8px 12px',
+                  color: 'var(--plover-text)',
+                  fontSize: '14px',
+                  outline: 'none',
+                  fontFamily: 'inherit',
+                }}
+              />
             </div>
-            <div className="setting-control">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input
-                  type="number"
-                  className="input-field"
-                  style={{ width: '80px' }}
-                  value={horizonDays}
-                  min="1"
-                  max="90"
-                  onChange={(e) => handleHorizonChange(Number(e.target.value))}
-                />
-                <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>days</span>
+          </div>
+
+          <div
+            style={{
+              backgroundColor: 'var(--plover-surface)',
+              borderRadius: 'var(--plover-radius-lg)',
+              padding: '24px',
+            }}
+          >
+            <h2
+              style={{
+                fontSize: '18px',
+                fontWeight: 600,
+                marginBottom: '16px',
+                color: 'var(--plover-text)',
+              }}
+            >
+              Scheduling
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={{ fontSize: '14px', fontWeight: 500, color: 'var(--plover-text)' }}>
+                  Horizon
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input
+                    type="number"
+                    value={horizonDays}
+                    onChange={(e) => handleHorizonChange(Number(e.target.value))}
+                    min="1"
+                    max="90"
+                    style={{
+                      width: '80px',
+                      backgroundColor: 'var(--plover-surface-raised)',
+                      border: '1px solid var(--plover-border)',
+                      borderRadius: 'var(--plover-radius-sm)',
+                      padding: '8px 12px',
+                      color: 'var(--plover-text)',
+                      fontSize: '14px',
+                      outline: 'none',
+                      fontFamily: 'inherit',
+                    }}
+                  />
+                  <span style={{ fontSize: '14px', color: 'var(--plover-text-muted)' }}>days</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={{ fontSize: '14px', fontWeight: 500, color: 'var(--plover-text)' }}>
+                  Pause scheduling
+                </label>
+                <Chip
+                  selected={pauseScheduling}
+                  onClick={handlePauseSchedulingToggle}
+                >
+                  {pauseScheduling ? 'Paused' : 'Active'}
+                </Chip>
               </div>
             </div>
-          </div>
-
-          <div className="setting-row">
-            <div className="setting-info">
-              <span className="setting-label">Pause Auto-Scheduling</span>
-              <span className="setting-description">
-                Temporarily stop the agent from scheduling new tasks on your calendar.
-              </span>
-            </div>
-            <div className="setting-control">
-              <label className="switch">
-                <input
-                  type="checkbox"
-                  checked={pauseScheduling}
-                  onChange={handlePauseSchedulingToggle}
-                />
-                <span className="slider" />
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="card" style={{ opacity: 0.6 }}>
-        <h2 style={{ fontSize: '17px', fontWeight: '700', marginBottom: '8px' }}>Privacy & Data</h2>
-        <div className="settings-section">
-          <div className="setting-row">
-            <div className="setting-info">
-              <span className="setting-label">Local Data Storage</span>
-              <span className="setting-description">
-                All goals, task histories, and credentials are saved locally on your device.
-              </span>
-            </div>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '500' }}>
-              Local SQLite
-            </span>
           </div>
         </div>
       </div>
