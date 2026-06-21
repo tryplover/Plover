@@ -1,0 +1,39 @@
+.plover-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  font-family: var(--plover-font-sans);
+  font-weight: 500;
+  padding: 10px 18px;
+  border-radius: var(--plover-radius-sm);
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+}
+
+.plover-btn--primary {
+  background: var(--plover-button-primary);
+  color: var(--plover-button-primary-fg);
+}
+
+.plover-btn--primary:hover {
+  opacity: 0.9;
+}
+
+.plover-btn--primary:active {
+  opacity: 0.85;
+}
+
+.plover-btn--secondary {
+  background: var(--plover-button-secondary);
+  color: var(--plover-text);
+}
+
+.plover-btn--secondary:hover {
+  background: var(--plover-surface-raised);
+}
+
+.plover-btn--secondary:active {
+  opacity: 0.85;
+}
