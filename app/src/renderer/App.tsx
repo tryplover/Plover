@@ -3,6 +3,7 @@ import TasksToday from './main/pages/TasksToday';
 import GoalsList from './main/pages/GoalsList';
 import Settings from './main/pages/Settings';
 import { isToday } from './lib/date';
+import { IconSun, IconTarget, IconGear } from './main/icons';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<'today' | 'goals' | 'settings'>('today');
@@ -43,17 +44,18 @@ export function App() {
     <div className="app-container">
       <aside className="sidebar">
         <div>
-          <div className="logo-section">
-            <div className="logo-icon">P</div>
-            <span className="logo-text">Plover</span>
+          <div className="plover-brand">
+            <span className="plover-brand__dot" aria-hidden />
+            <span className="plover-brand__word">Plover</span>
           </div>
 
           <nav className="nav-links">
             <button
               className={`nav-item ${activeTab === 'today' ? 'active' : ''}`}
               onClick={() => setActiveTab('today')}
+              data-testid="nav-today"
             >
-              <span className="nav-icon">☀️</span>
+              <IconSun />
               <span>Today</span>
               {todayPendingCount > 0 && <span className="badge">{todayPendingCount}</span>}
             </button>
@@ -61,37 +63,30 @@ export function App() {
             <button
               className={`nav-item ${activeTab === 'goals' ? 'active' : ''}`}
               onClick={() => setActiveTab('goals')}
+              data-testid="nav-goals"
             >
-              <span className="nav-icon">🎯</span>
+              <IconTarget />
               <span>Goals</span>
             </button>
 
             <button
               className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
               onClick={() => setActiveTab('settings')}
+              data-testid="nav-settings"
             >
-              <span className="nav-icon">⚙️</span>
+              <IconGear />
               <span>Settings</span>
             </button>
           </nav>
         </div>
 
-        <div
-          style={{
-            padding: '8px',
-            fontSize: '11px',
-            color: 'var(--text-tertiary)',
-            textAlign: 'center',
-          }}
-        >
-          Plover v1.0.0
-        </div>
+        <div className="sidebar-version">Plover v1.0.0</div>
       </aside>
 
       <main style={{ flexGrow: 1, overflow: 'hidden', height: '100%' }}>
-        {activeTab === 'today' && <TasksToday onTasksUpdated={fetchTodayCount} />}
-        {activeTab === 'goals' && <GoalsList />}
-        {activeTab === 'settings' && <Settings />}
+        {activeTab === 'today' && <TasksToday onTasksUpdated={fetchTodayCount} data-testid="page-today" />}
+        {activeTab === 'goals' && <GoalsList data-testid="page-goals" />}
+        {activeTab === 'settings' && <Settings data-testid="page-settings" />}
       </main>
     </div>
   );

@@ -79,31 +79,27 @@ body {
   justify-content: space-between;
 }
 
-.logo-section {
+.plover-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 32px;
   padding-left: 8px;
 }
 
-.logo-icon {
-  width: 28px;
-  height: 28px;
-  background: linear-gradient(135deg, var(--plover-mint), var(--plover-mint));
-  border-radius: var(--plover-radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  font-size: 14px;
-  color: white;
+.plover-brand__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--plover-mint);
+  flex-shrink: 0;
 }
 
-.logo-text {
+.plover-brand__word {
+  font-family: var(--plover-font-serif);
   font-size: 18px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-weight: 400;
+  color: var(--plover-text);
 }
 
 .nav-links {
@@ -129,25 +125,35 @@ body {
   border: none;
   text-align: left;
   width: 100%;
+  position: relative;
 }
 
 .nav-item:hover {
-  background-color: rgba(255, 255, 255, 0.04);
+  background-color: var(--plover-surface-raised);
   color: var(--plover-text);
 }
 
 .nav-item.active {
   background-color: var(--plover-mint-soft);
-  color: var(--plover-mint);
-  font-weight: 600;
+  color: var(--plover-text);
+  font-weight: 500;
 }
 
-.nav-icon {
-  width: 18px;
-  height: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  width: 2px;
+  height: 8px;
+  background-color: var(--plover-mint);
+  border-radius: 1px;
+}
+
+.sidebar-version {
+  padding: 8px;
+  font-size: 11px;
+  color: var(--plover-text-muted);
+  text-align: center;
 }
 
 .badge {
