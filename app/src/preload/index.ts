@@ -98,6 +98,7 @@ export interface PloverApi {
   commitGoal: (plan: ProposedPlan) => Promise<{ goalId: string }>;
   closeOverlay: () => Promise<void>;
   resizeOverlay: (height: number) => Promise<void>;
+  openSetupWindow: () => Promise<void>;
 
   // Companion API
   companion: CompanionApi;
@@ -125,6 +126,7 @@ const api: PloverApi = {
   commitGoal: (plan) => ipcRenderer.invoke('goal:commit', plan),
   closeOverlay: () => ipcRenderer.invoke('overlay:close'),
   resizeOverlay: (height) => ipcRenderer.invoke('overlay:resize', height),
+  openSetupWindow: () => ipcRenderer.invoke('overlay:openWindow'),
 
   // Companion
   companion: {

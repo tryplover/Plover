@@ -27,6 +27,7 @@ function broadcast(channel: string, payload?: unknown): void {
 export function setupIpcHandlers(
   getOverlayWindow: () => BrowserWindow | null,
   onWatchedFoldersChange?: (folders: string[]) => Promise<void> | void,
+  createOverlayWindow?: (variant: 'overlay' | 'window') => BrowserWindow,
 ): void {
   void googleAuth.loadSavedCredentials();
 
@@ -283,6 +284,13 @@ export function setupIpcHandlers(
           height: height,
         });
       }
+    }
+  });
+
+  ipcMain.handle('overlay:openWindow', async () => {
+    if (createOverlayWindow) {
+      const win = createOverlayWindow('window');
+      win.show();
     }
   });
 
