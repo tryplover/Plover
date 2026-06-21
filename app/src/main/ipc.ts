@@ -448,7 +448,8 @@ export function startEventForwarding(): void {
 export function setupIpc(
   getOverlayWindow: () => BrowserWindow | null,
   onWatchedFoldersChange?: (folders: string[]) => Promise<void> | void,
+  createOverlayWindow?: (variant: 'overlay' | 'window') => BrowserWindow,
 ): void {
-  setupIpcHandlers(getOverlayWindow, onWatchedFoldersChange);
+  setupIpcHandlers(getOverlayWindow, onWatchedFoldersChange, createOverlayWindow);
   startEventForwarding();
 }

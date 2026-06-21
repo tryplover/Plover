@@ -35,18 +35,6 @@ export function StepBreakdown({ draft, onBack, onNext, variant }: Props) {
   if (loading) return <p className="plover-step-breakdown__loading">Asking Gemini…</p>;
   if (error || !plan) return <p className="plover-step-breakdown__error">{error ?? 'No plan'}</p>;
 
-  const renameStep = (idx: number, title: string) => {
-    setPlan((p) => {
-      if (!p) return p;
-      const next = [...p.subtasks];
-      const [item] = next.splice(idx, 1);
-      if (item) {
-        next.splice(idx, 0, { ...item, title });
-      }
-      return { ...p, subtasks: next };
-    });
-  };
-
   const addStep = () => {
     setPlan((p) => p ? { ...p, subtasks: [...p.subtasks, { title: 'New step', estimate_minutes: 30 }] } : p);
   };
