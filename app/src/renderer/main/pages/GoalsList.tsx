@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Goal, Task } from '../../../shared/types';
+import { StepRow } from '../../components/StepRow';
+import { ProgressLine } from '../../components/ProgressLine';
+import { Button } from '../../components/Button';
 
 interface PreviewSubtask {
   id: string;
@@ -201,280 +204,210 @@ export default function GoalsList() {
 
   if (loading) {
     return (
-      <div className="main-content" style={{ justifyContent: 'center', alignItems: 'center' }}>
-        <div
-          className="loading-spinner"
-          style={{ borderTopColor: 'var(--accent-color)', width: '32px', height: '32px' }}
-        />
+      <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <div className="loading-spinner" />
       </div>
     );
   }
 
   return (
-    <div className="main-content">
-      <div className="page-header">
-        <span className="page-subtitle">Strategic Planning</span>
-        <h1 className="page-title">Goals & Subtasks</h1>
-      </div>
+    <div
+      style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        paddingTop: '40px',
+        paddingBottom: '40px',
+        paddingLeft: '40px',
+        paddingRight: '40px',
+        backgroundColor: 'var(--plover-bg)',
+      }}
+    >
+      <h1
+        style={{
+          fontFamily: 'var(--plover-font-serif)',
+          fontSize: '36px',
+          fontWeight: 400,
+          marginBottom: '28px',
+          color: 'var(--plover-text)',
+        }}
+      >
+        Goals
+      </h1>
 
-      {!decomposedGoal && (
-        <form onSubmit={handleDecompose} className="card">
-          <div className="goal-input-container">
-            <h3 style={{ fontSize: '15px', fontWeight: '600' }}>Capture a New Goal</h3>
-            <textarea
-              className="goal-textarea"
-              placeholder="e.g. Finish the GPU profiler write-up by Friday, ~4 hrs of work..."
-              value={goalText}
-              onChange={(e) => setGoalText(e.target.value)}
-              disabled={decomposing}
-            />
-          </div>
-          <button
-            type="submit"
-            className="goal-submit-button"
-            disabled={decomposing || !goalText.trim()}
-          >
-            {decomposing ? (
-              <>
-                <div className="loading-spinner" /> Decomposing Goal...
-              </>
-            ) : (
-              <>
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M5 12h14" />
-                  <path d="M12 5v14" />
-                </svg>
-                Plan Goal
-              </>
-            )}
-          </button>
-          {formError && (
-            <div role="alert" style={{ marginTop: '8px', color: '#ff5d5d', fontSize: '13px' }}>
-              {formError}
-            </div>
-          )}
-        </form>
-      )}
-
-      {decomposedGoal && (
-        <div className="card preview-card">
-          <div
-            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}
-          >
-            <div>
-              <span
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        {!decomposedGoal && (
+          <div style={{ marginBottom: '32px' }}>
+            <form onSubmit={handleDecompose} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <input
+                type="text"
+                placeholder="What are you working on?"
+                value={goalText}
+                onChange={(e) => setGoalText(e.target.value)}
+                disabled={decomposing}
                 style={{
-                  fontSize: '11px',
-                  fontWeight: '700',
-                  textTransform: 'uppercase',
-                  color: 'var(--accent-color)',
-                  letterSpacing: '0.05em',
+                  backgroundColor: 'var(--plover-surface)',
+                  border: '1px solid var(--plover-border)',
+                  borderRadius: 'var(--plover-radius-md)',
+                  padding: '12px 16px',
+                  color: 'var(--plover-text)',
+                  fontSize: '15px',
+                  outline: 'none',
+                  fontFamily: 'inherit',
                 }}
-              >
-                Decomposed Goal Preview
-              </span>
-              <h2 style={{ fontSize: '20px', fontWeight: '700', marginTop: '4px' }}>
-                {decomposedGoal.title}
-              </h2>
-            </div>
-            <button className="btn btn-danger" onClick={handleCancelPreview}>
-              Cancel
-            </button>
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--plover-mint)';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--plover-border)';
+                }}
+              />
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  disabled={decomposing || !goalText.trim()}
+                >
+                  {decomposing ? 'Decomposing...' : 'Break into steps →'}
+                </Button>
+              </div>
+              {formError && (
+                <div role="alert" style={{ color: '#ff5d5d', fontSize: '13px' }}>
+                  {formError}
+                </div>
+              )}
+            </form>
           </div>
+        )}
 
-          <div style={{ marginTop: '12px' }}>
-            <h4
-              style={{
-                fontSize: '13px',
-                fontWeight: '600',
-                color: 'var(--text-secondary)',
-                marginBottom: '8px',
-              }}
+        {decomposedGoal && (
+          <div
+            style={{
+              backgroundColor: 'var(--plover-surface)',
+              borderRadius: 'var(--plover-radius-lg)',
+              padding: '24px',
+              marginBottom: '32px',
+              border: `1px solid var(--plover-mint)`,
+            }}
+          >
+            <div
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}
             >
-              Refine Subtasks & Durations
-            </h4>
+              <div>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--plover-mint)' }}>PREVIEW</span>
+                <h2 style={{ fontSize: '20px', fontWeight: 700, marginTop: '4px' }}>
+                  {decomposedGoal.title}
+                </h2>
+              </div>
+              <Button variant="secondary" onClick={handleCancelPreview}>
+                Cancel
+              </Button>
+            </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {previewSubtasks.map((subtask, index) => {
-                const slot = scheduledSlots.find((s) => s.taskId === subtask.id);
-                const timeString = slot
-                  ? new Date(slot.start).toLocaleString([], {
-                      weekday: 'short',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })
-                  : 'Unscheduled';
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+              {previewSubtasks.map((subtask) => (
+                <StepRow
+                  key={subtask.id}
+                  label={subtask.title}
+                  state="pending"
+                  trailing={`${subtask.estimate_minutes}m`}
+                />
+              ))}
+            </div>
 
-                return (
-                  <div key={subtask.id} className="preview-subtask-item">
-                    <div className="preview-inputs">
-                      <span
-                        style={{ fontSize: '13px', color: 'var(--text-tertiary)', width: '20px' }}
-                      >
-                        {index + 1}.
-                      </span>
-                      <input
-                        type="text"
-                        className="preview-title-input"
-                        value={subtask.title}
-                        onChange={(e) => handlePreviewSubtaskChange(index, 'title', e.target.value)}
-                      />
-                      <input
-                        type="number"
-                        className="preview-duration-input"
-                        value={subtask.estimate_minutes}
-                        onChange={(e) =>
-                          handlePreviewSubtaskChange(index, 'estimate_minutes', e.target.value)
-                        }
-                      />
-                      <span className="preview-duration-unit">min</span>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <Button variant="primary" onClick={handleCommitGoal}>
+                Save Goal
+              </Button>
+            </div>
+            {formError && (
+              <div role="alert" style={{ marginTop: '8px', color: '#ff5d5d', fontSize: '13px' }}>
+                {formError}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {goals.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '32px', color: 'var(--plover-text-muted)' }}>
+              <p>No active goals found.</p>
+            </div>
+          ) : (
+            goals.map((goal) => {
+              const goalTasks = tasks.filter((t) => t.goal_id === goal.id);
+              const doneTasks = goalTasks.filter((t) => t.status === 'done');
+              const progressValue = goalTasks.length > 0 ? doneTasks.length / goalTasks.length : 0;
+              const isOpen = !!expandedGoals[goal.id];
+
+              return (
+                <div
+                  key={goal.id}
+                  style={{
+                    backgroundColor: 'var(--plover-surface)',
+                    borderRadius: 'var(--plover-radius-lg)',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <button
+                    onClick={() => toggleExpandGoal(goal.id)}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      width: '100%',
+                      padding: '24px',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
+                  >
+                    <div>
+                      <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--plover-text)' }}>
+                        {goal.title}
+                      </h3>
                     </div>
-                    <span
-                      style={{ fontSize: '12px', color: 'var(--accent-color)', fontWeight: '500' }}
-                    >
-                      {timeString}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                      <ProgressLine value={progressValue} />
+                      <span
+                        style={{
+                          transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                          transition: 'transform 0.3s',
+                          display: 'inline-block',
+                          color: 'var(--plover-text-muted)',
+                        }}
+                      >
+                        ▾
+                      </span>
+                    </div>
+                  </button>
 
-          <div className="preview-actions">
-            <button className="btn btn-primary" onClick={handleCommitGoal}>
-              Accept & Schedule Tasks
-            </button>
-          </div>
-          {formError && (
-            <div role="alert" style={{ marginTop: '8px', color: '#ff5d5d', fontSize: '13px' }}>
-              {formError}
-            </div>
+                  {isOpen && (
+                    <div style={{ padding: '0 24px 24px 24px', borderTop: `1px solid var(--plover-border)` }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {goalTasks.map((task) => (
+                          <button
+                            key={task.id}
+                            onClick={() => handleSubtaskStatusToggle(task.id, task.status)}
+                            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}
+                          >
+                            <StepRow
+                              label={task.title}
+                              state={task.status === 'done' ? 'done' : 'pending'}
+                              trailing={`${task.estimate_minutes}m`}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })
           )}
         </div>
-      )}
-
-      <div className="goals-list">
-        <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '4px' }}>Active Goals</h2>
-
-        {goals.length === 0 ? (
-          <div className="card" style={{ alignItems: 'center', padding: '36px', gap: '8px' }}>
-            <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-              No active goals found.
-            </span>
-            <p style={{ color: 'var(--text-tertiary)', fontSize: '12px', textAlign: 'center' }}>
-              Type a goal in the form above to start scheduling subtasks automatically.
-            </p>
-          </div>
-        ) : (
-          goals.map((goal) => {
-            const goalTasks = tasks.filter((t) => t.goal_id === goal.id);
-            const doneTasks = goalTasks.filter((t) => t.status === 'done');
-            const progressPercent =
-              goalTasks.length > 0 ? Math.round((doneTasks.length / goalTasks.length) * 100) : 0;
-            const isOpen = !!expandedGoals[goal.id];
-
-            return (
-              <div key={goal.id} className="goal-card">
-                <div className="goal-card-header" onClick={() => toggleExpandGoal(goal.id)}>
-                  <div className="goal-header-left">
-                    <h3 className="goal-card-title">{goal.title}</h3>
-                    <div className="goal-meta">
-                      {goal.deadline && (
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          📅 Deadline: {goal.deadline}
-                        </span>
-                      )}
-                      <span>🎯 {goalTasks.length} subtasks</span>
-                    </div>
-                  </div>
-
-                  <div className="goal-progress-container">
-                    <div className="goal-progress-bar">
-                      <div
-                        className="goal-progress-fill"
-                        style={{ width: `${progressPercent}%` }}
-                      />
-                    </div>
-                    <span className="goal-progress-text">
-                      {doneTasks.length} / {goalTasks.length} Done
-                    </span>
-                  </div>
-
-                  <svg
-                    className={`chevron-icon ${isOpen ? 'open' : ''}`}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
-                </div>
-
-                {isOpen && (
-                  <div className="goal-card-body">
-                    {goal.description && <p className="goal-description">{goal.description}</p>}
-
-                    <div className="subtasks-list">
-                      {goalTasks.map((task) => {
-                        const isDone = task.status === 'done';
-                        const timeStr = task.scheduled_start
-                          ? new Date(task.scheduled_start).toLocaleString([], {
-                              weekday: 'short',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })
-                          : 'Unscheduled';
-
-                        return (
-                          <div key={task.id} className={`subtask-item ${isDone ? 'done' : ''}`}>
-                            <div className="subtask-left">
-                              <button
-                                className={`circle-check-button ${isDone ? 'done' : ''}`}
-                                onClick={() => handleSubtaskStatusToggle(task.id, task.status)}
-                                style={{
-                                  width: '20px',
-                                  height: '20px',
-                                  border: '1.5px solid var(--text-tertiary)',
-                                }}
-                              >
-                                {isDone ? '✓' : ''}
-                              </button>
-                              <span className="subtask-title">{task.title}</span>
-                            </div>
-                            <div className="subtask-right">
-                              <span>⏱️ {task.estimate_minutes}m</span>
-                              <span
-                                style={{
-                                  color: task.scheduled_start
-                                    ? 'var(--accent-color)'
-                                    : 'var(--text-tertiary)',
-                                }}
-                              >
-                                {timeStr}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })
-        )}
       </div>
     </div>
   );
