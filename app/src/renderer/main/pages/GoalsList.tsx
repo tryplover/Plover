@@ -129,25 +129,6 @@ export default function GoalsList() {
     }
   };
 
-  const handlePreviewSubtaskChange = async (
-    index: number,
-    field: 'title' | 'estimate_minutes',
-    value: string | number,
-  ) => {
-    const updated = [...previewSubtasks];
-    const task = updated[index];
-    if (!task) return;
-
-    if (field === 'title') {
-      task.title = value as string;
-    } else if (field === 'estimate_minutes') {
-      task.estimate_minutes = Math.max(15, Number(value));
-    }
-    setPreviewSubtasks(updated);
-
-    await runSchedulePreview(updated);
-  };
-
   const handleCommitGoal = async () => {
     if (!decomposedGoal) return;
     setFormError(null);

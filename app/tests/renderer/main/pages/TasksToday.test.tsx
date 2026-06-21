@@ -28,8 +28,8 @@ describe('TasksToday', () => {
   });
 
   it('marks task as done when clicked', () => {
-    const task = { id: '1', status: 'scheduled' as const };
-    const newStatus = task.status === 'done' ? 'scheduled' : 'done';
+    const status = 'scheduled' as const;
+    const newStatus = status === 'scheduled' ? 'done' : 'scheduled';
     expect(newStatus).toBe('done');
   });
 
@@ -39,7 +39,7 @@ describe('TasksToday', () => {
       { id: '2', scheduled_start: new Date(Date.now() + 7200000).toISOString(), status: 'scheduled' as const },
     ];
     const [current] = tasks;
-    expect(current).toBeDefined();
+    expect(current?.id).toBe('1');
   });
 
   it('shows empty state with status indicator', () => {

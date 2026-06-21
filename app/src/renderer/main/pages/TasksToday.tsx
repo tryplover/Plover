@@ -74,14 +74,13 @@ export default function TasksToday({ onTasksUpdated }: TasksTodayProps) {
 
   const handleOpenSetup = async () => {
     try {
-      await window.api.openOverlay();
+      await window.api.openSetupWindow();
     } catch (err) {
-      console.error('Failed to open overlay:', err);
+      console.error('Failed to open setup window:', err);
     }
   };
 
   const todayTasks = tasks.filter((t) => isToday(t.scheduled_start));
-  const completedCount = todayTasks.filter((t) => t.status === 'done').length;
 
   const goalsWithTodayTasks = goals.filter((goal) => {
     const goalTasks = todayTasks.filter((t) => t.goal_id === goal.id);
