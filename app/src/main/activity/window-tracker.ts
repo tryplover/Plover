@@ -138,7 +138,7 @@ export function listActiveWindows(): Promise<{ app: string; title: string }[]> {
             set procName to name of proc
             set winName to name of window 1 of proc
             if winName is not "" then
-                set output to output & procName & "|||" & winName & "\\n"
+                set output to output & procName & "|||" & winName & linefeed
             end if
         end try
     end repeat
