@@ -178,7 +178,7 @@ end tell`;
             return;
           }
 
-          const lines = stdout.split('\r\n');
+          const lines = stdout.split(/\r?\n/);
           const results: { app: string; title: string }[] = [];
           for (const line of lines) {
             const trimmed = line.trim();
