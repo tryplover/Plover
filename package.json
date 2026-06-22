@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "husky": "^9.1.7",
-    "lint-staged": "^17.0.7",
+    "lint-staged": "^17.0.8",
     "tslib": "^2.8.1"
   },
   "lint-staged": {
