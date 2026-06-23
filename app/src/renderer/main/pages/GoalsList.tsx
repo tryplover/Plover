@@ -11,7 +11,11 @@ interface PreviewSubtask {
   depends_on?: string[];
 }
 
-export default function GoalsList() {
+interface GoalsListProps {
+  'data-testid'?: string;
+}
+
+export default function GoalsList({ 'data-testid': dataTestId }: GoalsListProps) {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -185,7 +189,7 @@ export default function GoalsList() {
 
   if (loading) {
     return (
-      <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <div data-testid={dataTestId} style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         <div className="loading-spinner" />
       </div>
     );
@@ -193,6 +197,7 @@ export default function GoalsList() {
 
   return (
     <div
+      data-testid={dataTestId}
       style={{
         flex: 1,
         display: 'flex',
@@ -223,26 +228,11 @@ export default function GoalsList() {
             <form onSubmit={handleDecompose} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <input
                 type="text"
+                className="plover-input"
                 placeholder="What are you working on?"
                 value={goalText}
                 onChange={(e) => setGoalText(e.target.value)}
                 disabled={decomposing}
-                style={{
-                  backgroundColor: 'var(--plover-surface)',
-                  border: '1px solid var(--plover-border)',
-                  borderRadius: 'var(--plover-radius-md)',
-                  padding: '12px 16px',
-                  color: 'var(--plover-text)',
-                  fontSize: '15px',
-                  outline: 'none',
-                  fontFamily: 'inherit',
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--plover-mint)';
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--plover-border)';
-                }}
               />
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <Button

@@ -8,9 +8,10 @@ import { Button } from '../../components/Button';
 
 interface TasksTodayProps {
   onTasksUpdated?: () => void;
+  'data-testid'?: string;
 }
 
-export default function TasksToday({ onTasksUpdated }: TasksTodayProps) {
+export default function TasksToday({ onTasksUpdated, 'data-testid': dataTestId }: TasksTodayProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,7 +100,7 @@ export default function TasksToday({ onTasksUpdated }: TasksTodayProps) {
 
   if (loading) {
     return (
-      <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <div data-testid={dataTestId} style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         <div className="loading-spinner" />
       </div>
     );
@@ -107,6 +108,7 @@ export default function TasksToday({ onTasksUpdated }: TasksTodayProps) {
 
   return (
     <div
+      data-testid={dataTestId}
       style={{
         flex: 1,
         display: 'flex',

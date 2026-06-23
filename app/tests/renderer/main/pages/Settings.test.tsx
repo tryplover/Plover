@@ -1,58 +1,40 @@
+// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import Settings from '../../../../src/renderer/main/pages/Settings';
+
+const mockUnsubscribe = vi.fn();
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  Object.defineProperty(window, 'api', {
+    value: {
+      getSettings: vi.fn().mockResolvedValue({
+        googleConnected: false,
+        workingHours: { start: '09:00', end: '18:00' },
+        horizonDays: 14,
+        pauseScheduling: false,
+      }),
+      on: vi.fn().mockReturnValue(mockUnsubscribe),
+    },
+    writable: true,
+    configurable: true,
+  });
+});
 
 describe('Settings', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+  it('renders the Settings heading', async () => {
+    render(<Settings />);
+    expect(await screen.findByRole('heading', { name: 'Settings' })).toBeTruthy();
   });
 
-  it('renders settings heading', () => {
-    const heading = 'Settings';
-    expect(heading).toBe('Settings');
+  it('renders the Account section heading', async () => {
+    render(<Settings />);
+    expect(await screen.findByRole('heading', { name: 'Account' })).toBeTruthy();
   });
 
-  it('displays account section with google calendar', () => {
-    const section = 'Account';
-    expect(section).toBe('Account');
-  });
-
-  it('shows google connection status', () => {
-    const connected = true;
-    expect(connected).toBe(true);
-  });
-
-  it('displays working hours section', () => {
-    const section = 'Working hours';
-    expect(section).toBe('Working hours');
-  });
-
-  it('allows changing start time', () => {
-    const time = '09:00';
-    expect(time).toBe('09:00');
-  });
-
-  it('allows changing end time', () => {
-    const time = '18:00';
-    expect(time).toBe('18:00');
-  });
-
-  it('displays scheduling section', () => {
-    const section = 'Scheduling';
-    expect(section).toBe('Scheduling');
-  });
-
-  it('shows horizon days input', () => {
-    const days = 14;
-    expect(days).toBe(14);
-  });
-
-  it('toggles pause scheduling with chip', () => {
-    const paused = false;
-    const toggled = !paused;
-    expect(toggled).toBe(true);
-  });
-
-  it('shows save status indicator', () => {
-    const status = 'Saved';
-    expect(status).toBe('Saved');
+  it('forwards data-testid to root element', async () => {
+    render(<Settings data-testid="page-settings" />);
+    expect(await screen.findByTestId('page-settings')).toBeTruthy();
   });
 });

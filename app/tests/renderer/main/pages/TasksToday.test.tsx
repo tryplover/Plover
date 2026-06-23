@@ -1,54 +1,31 @@
+// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import TasksToday from '../../../../src/renderer/main/pages/TasksToday';
+
+const mockUnsubscribe = vi.fn();
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  Object.defineProperty(window, 'api', {
+    value: {
+      getTasks: vi.fn().mockResolvedValue([]),
+      getGoals: vi.fn().mockResolvedValue([]),
+      on: vi.fn().mockReturnValue(mockUnsubscribe),
+    },
+    writable: true,
+    configurable: true,
+  });
+});
 
 describe('TasksToday', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+  it('renders the Today heading', async () => {
+    render(<TasksToday />);
+    expect(await screen.findByRole('heading', { name: 'Today' })).toBeTruthy();
   });
 
-  it('renders today heading', () => {
-    const heading = 'Today';
-    expect(heading).toBe('Today');
-  });
-
-  it('displays goal sections for today tasks', () => {
-    const goal = { id: '1', title: 'Finish report' };
-    expect(goal.title).toBe('Finish report');
-  });
-
-  it('shows progress line for goal', () => {
-    const doneTasks = 2;
-    const totalTasks = 5;
-    const progress = doneTasks / totalTasks;
-    expect(progress).toBe(0.4);
-  });
-
-  it('renders step rows for goal tasks', () => {
-    const task = { id: '1', title: 'Write section 1', status: 'scheduled' as const };
-    expect(task.status).toBe('scheduled');
-  });
-
-  it('marks task as done when clicked', () => {
-    const status = 'scheduled' as const;
-    const newStatus = status === 'scheduled' ? 'done' : 'scheduled';
-    expect(newStatus).toBe('done');
-  });
-
-  it('identifies current task as earliest pending', () => {
-    const tasks = [
-      { id: '1', scheduled_start: new Date(Date.now() + 3600000).toISOString(), status: 'scheduled' as const },
-      { id: '2', scheduled_start: new Date(Date.now() + 7200000).toISOString(), status: 'scheduled' as const },
-    ];
-    const [current] = tasks;
-    expect(current?.id).toBe('1');
-  });
-
-  it('shows empty state with status indicator', () => {
-    const emptyState = 'nothing scheduled';
-    expect(emptyState).toBe('nothing scheduled');
-  });
-
-  it('provides button to open setup overlay', () => {
-    const action = 'Open setup overlay';
-    expect(action).toBe('Open setup overlay');
+  it('forwards data-testid to root element', async () => {
+    render(<TasksToday data-testid="page-today" />);
+    expect(await screen.findByTestId('page-today')).toBeTruthy();
   });
 });

@@ -1,38 +1,44 @@
+// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { App } from '../../src/renderer/App';
+
+const mockUnsubscribe = vi.fn();
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  Object.defineProperty(window, 'api', {
+    value: {
+      getTasks: vi.fn().mockResolvedValue([]),
+      getGoals: vi.fn().mockResolvedValue([]),
+      getSettings: vi.fn().mockResolvedValue({
+        googleConnected: false,
+        workingHours: { start: '09:00', end: '18:00' },
+        horizonDays: 14,
+        pauseScheduling: false,
+      }),
+      on: vi.fn().mockReturnValue(mockUnsubscribe),
+    },
+    writable: true,
+    configurable: true,
+  });
+});
 
 describe('App', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+  it('renders the Plover brand name', async () => {
+    render(<App />);
+    expect(await screen.findByText('Plover')).toBeTruthy();
   });
 
-  it('renders sidebar tabs', () => {
-    const tabs = ['Today', 'Goals', 'Settings'];
-    expect(tabs).toHaveLength(3);
+  it('renders all three nav tabs', async () => {
+    render(<App />);
+    expect(await screen.findByTestId('nav-today')).toBeTruthy();
+    expect(screen.getByTestId('nav-goals')).toBeTruthy();
+    expect(screen.getByTestId('nav-settings')).toBeTruthy();
   });
 
-  it('today tab is active by default', () => {
-    const activeTab = 'today' as const;
-    expect(['today', 'goals', 'settings']).toContain(activeTab);
-  });
-
-  it('switches to goals tab', () => {
-    const tab = 'goals' as const;
-    expect(['today', 'goals', 'settings']).toContain(tab);
-  });
-
-  it('switches to settings tab', () => {
-    const tab = 'settings' as const;
-    expect(['today', 'goals', 'settings']).toContain(tab);
-  });
-
-  it('renders plover brand with dot and word', () => {
-    const brandElements = ['dot', 'word'];
-    expect(brandElements).toHaveLength(2);
-  });
-
-  it('displays version label in sidebar', () => {
-    const version = 'Plover v1.0.0';
-    expect(version).toContain('Plover');
-    expect(version).toContain('1.0.0');
+  it('shows Today page by default', async () => {
+    render(<App />);
+    expect(await screen.findByTestId('page-today')).toBeTruthy();
   });
 });

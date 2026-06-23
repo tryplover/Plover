@@ -2,7 +2,11 @@ import { useState, useEffect } from 'react';
 import { Button } from '../../components/Button';
 import { Chip } from '../../components/Chip';
 
-export default function Settings() {
+interface SettingsProps {
+  'data-testid'?: string;
+}
+
+export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
   const [googleConnected, setGoogleConnected] = useState(false);
   const [workingHours, setWorkingHours] = useState({ start: '09:00', end: '18:00' });
   const [horizonDays, setHorizonDays] = useState(14);
@@ -83,6 +87,7 @@ export default function Settings() {
 
   return (
     <div
+      data-testid={dataTestId}
       style={{
         flex: 1,
         display: 'flex',
