@@ -288,7 +288,7 @@ export function setupIpcHandlers(
 
   // Companion
   let companion: BrowserWindow | null = null;
-  let companionKind: string = 'observing';
+  let companionKind = 'observing';
   let companionActiveTaskId: string | null = null;
 
   function ensureCompanion(): BrowserWindow {

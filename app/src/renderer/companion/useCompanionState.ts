@@ -33,7 +33,7 @@ export function useCompanionState(): CompanionView {
       } else {
         setView((v) => ({ ...v, kind: kind as StateKind }));
       }
-    }).catch(() => {});
+    }).catch(() => undefined);
 
     const offTask = window.api.on('companion:activeTask', async (taskId: unknown) => {
       if (!active) return;
