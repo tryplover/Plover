@@ -20,11 +20,13 @@ describe('WindowTracker', () => {
     vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin');
     vi.useFakeTimers();
     vi.clearAllMocks();
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin');
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
     vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   it('logs window focus activity on first check', async () => {
