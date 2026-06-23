@@ -36,6 +36,7 @@
       "better-sqlite3",
       "electron",
       "esbuild",
+      "get-windows",
       "keytar"
     ]
   }

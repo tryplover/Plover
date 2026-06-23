@@ -11,6 +11,7 @@ export default defineConfig({
           'electron',
           'better-sqlite3',
           'chokidar',
+          'get-windows',
           'keytar',
           'google-auth-library',
           'googleapis',
@@ -53,4 +54,3 @@ export default defineConfig({
     plugins: [react()],
   },
 });
-

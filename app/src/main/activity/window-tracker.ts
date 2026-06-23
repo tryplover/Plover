@@ -1,4 +1,4 @@
-import { execFile } from 'node:child_process';
+import { activeWindow, openWindows } from 'get-windows';
 import { ActivityRepo } from '../store/repos/activity.js';
 import { SettingsRepo } from '../store/repos/settings.js';
 
@@ -72,130 +72,39 @@ export class WindowTracker {
     }
   }
 
-  private getActiveWindowFromOS(): Promise<{ app: string; title: string }> {
-    return new Promise((resolve, reject) => {
-      if (process.platform === 'darwin') {
-        const appleScript = `tell application "System Events"
-    set frontmostProcess to first process whose frontmost is true
-    set productName to name of frontmostProcess
-    set titleOfWindow to "Unknown"
-    try
-        tell process productName
-            set titleOfWindow to name of window 1
-        end tell
-    end try
-    return productName & "|||" & titleOfWindow
-end tell`;
-
-        execFile('osascript', ['-e', appleScript], (error, stdout) => {
-          if (error) {
-            reject(error);
-            return;
-          }
-
-          const output = stdout.trim();
-          const parts = output.split('|||');
-          const app = parts[0]?.trim() || 'Unknown';
-          const title = parts[1]?.trim() || 'Unknown';
-
-          resolve({ app, title });
-        });
-      } else if (process.platform === 'win32') {
-        const psCommand = `Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public class Win32 { [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow(); [DllImport("user32.dll")] public static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder text, int count); [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId); }'; $hwnd = [Win32]::GetForegroundWindow(); $tb = New-Object System.Text.StringBuilder 256; [void][Win32]::GetWindowText($hwnd, $tb, 256); $pid = 0; [void][Win32]::GetWindowThreadProcessId($hwnd, [ref]$pid); $p = Get-Process -Id $pid -ErrorAction SilentlyContinue; $name = if ($p) { $p.ProcessName } else { 'Unknown' }; Write-Output "$name|||$($tb.ToString())"`;
-
-        execFile(
-          'powershell.exe',
-          ['-NoProfile', '-NonInteractive', '-Command', psCommand],
-          (error, stdout) => {
-            if (error) {
-              reject(error);
-              return;
-            }
-
-            const output = stdout.trim();
-            const parts = output.split('|||');
-            const app = parts[0]?.trim() || 'Unknown';
-            const title = parts[1]?.trim() || 'Unknown';
-
-            resolve({ app, title });
-          },
-        );
-      } else {
-        reject(new Error('Unsupported platform'));
-      }
-    });
+  private async getActiveWindowFromOS(): Promise<{ app: string; title: string }> {
+    if (process.platform !== 'darwin' && process.platform !== 'win32') {
+      throw new Error('Unsupported platform');
+    }
+    const result = await activeWindow();
+    const app = result?.owner?.name || 'Unknown';
+    const title = result?.title || 'Unknown';
+    return { app, title };
   }
 }
 
-export function listActiveWindows(): Promise<{ app: string; title: string }[]> {
-  return new Promise((resolve) => {
-    if (process.platform === 'darwin') {
-      const appleScript = `tell application "System Events"
-    set output to ""
-    set processList to every process whose visible is true
-    repeat with proc in processList
-        try
-            set procName to name of proc
-            set winName to name of window 1 of proc
-            if winName is not "" then
-                set output to output & procName & "|||" & winName & linefeed
-            end if
-        end try
-    end repeat
-    return output
-end tell`;
-
-      execFile('osascript', ['-e', appleScript], (error, stdout) => {
-        if (error) {
-          resolve([]);
-          return;
-        }
-
-        const lines = stdout.split('\n');
-        const results: { app: string; title: string }[] = [];
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed || trimmed === '""') continue;
-          const parts = trimmed.split('|||');
-          const app = parts[0]?.trim() || 'Unknown';
-          const title = parts[1]?.trim() || 'Unknown';
-
-          if (app !== 'Finder' && title !== 'Unknown') {
-            results.push({ app, title });
-          }
-        }
-        resolve(results);
-      });
-    } else if (process.platform === 'win32') {
-      const psCommand = `Get-Process | Where-Object { $_.MainWindowTitle } | ForEach-Object { "$($_.ProcessName)|||$($_.MainWindowTitle)" }`;
-
-      execFile(
-        'powershell.exe',
-        ['-NoProfile', '-NonInteractive', '-Command', psCommand],
-        (error, stdout) => {
-          if (error) {
-            resolve([]);
-            return;
-          }
-
-          const lines = stdout.split(/\r?\n/);
-          const results: { app: string; title: string }[] = [];
-          for (const line of lines) {
-            const trimmed = line.trim();
-            if (!trimmed) continue;
-            const parts = trimmed.split('|||');
-            const app = parts[0]?.trim() || 'Unknown';
-            const title = parts[1]?.trim() || 'Unknown';
-
-            if (app !== 'explorer' && title !== 'Unknown') {
-              results.push({ app, title });
-            }
-          }
-          resolve(results);
-        },
-      );
-    } else {
-      resolve([]);
+export async function listActiveWindows(): Promise<{ app: string; title: string }[]> {
+  try {
+    if (process.platform !== 'darwin' && process.platform !== 'win32') {
+      return [];
     }
-  });
+    const windows = await openWindows();
+    return windows
+      .filter((w) => {
+        const app = w.owner?.name;
+        const title = w.title;
+        if (process.platform === 'darwin') {
+          return app !== 'Finder' && title !== 'Unknown';
+        } else {
+          return app !== 'explorer' && title !== 'Unknown';
+        }
+      })
+      .map((w) => ({
+        app: w.owner?.name || 'Unknown',
+        title: w.title || 'Unknown',
+      }));
+  } catch (err) {
+    console.error('Error listing active windows:', err);
+    return [];
+  }
 }
