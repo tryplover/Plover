@@ -6,23 +6,23 @@ This guide details the front-end design flow of the **How it Works** section, th
 
 ## 1. Front-End Flow of the "How It Works" Section
 
-The section (found in [HowItWorks.jsx](file:///c:/Users/hhl_c/Documents/GitHub/plover-website/src/components/landing/HowItWorks.jsx)) guides a user through 4 key steps of using the Plover desktop application:
+The section (found in `HowItWorks.jsx`) guides a user through 4 key steps of using the Plover desktop application:
 
 1. **Name your task (Step 1)**
    * **UI Description**: The user enters their goal and specifies the frequency.
-   * **Animation Flow** ([PloverTaskDemo.jsx](file:///c:/Users/hhl_c/Documents/GitHub/plover-website/src/components/landing/PloverTaskDemo.jsx)): An overlay panel appears representing the desktop client. A macOS-style cursor enters, clicks into the text input, types *"Finish the methodology section of my thesis"*, clicks the `"One-off"` frequency pill, and then clicks the `"Break into steps →"` button.
+   * **Animation Flow** (`PloverTaskDemo.jsx`): An overlay panel appears representing the desktop client. A macOS-style cursor enters, clicks into the text input, types *"Finish the methodology section of my thesis"*, clicks the `"One-off"` frequency pill, and then clicks the `"Break into steps →"` button.
 
 2. **AI breaks it down (Step 2)**
    * **UI Description**: The AI decomposes the vague task into concrete checkable items. The user can add, edit, or remove these suggestions.
-   * **Animation Flow** ([PloverTaskDemoStep2.jsx](file:///c:/Users/hhl_c/Documents/GitHub/plover-website/src/components/landing/PloverTaskDemoStep2.jsx)): The window expands vertically. Under the message *"Gemini suggested 5 steps — edit freely"*, five steps appear. The cursor moves to scroll the list, clicks `"+ Add a step"`, selects the new text input, types a 6th step (*"Format bibliography"*), and clicks `"Looks right →"`.
+   * **Animation Flow** (`PloverTaskDemoStep2.jsx`): The window expands vertically. Under the message *"Gemini suggested 5 steps — edit freely"*, five steps appear. The cursor moves to scroll the list, clicks `"+ Add a step"`, selects the new text input, types a 6th step (*"Format bibliography"*), and clicks `"Looks right →"`.
 
 3. **Select your workflow (Step 3)**
    * **UI Description**: The user connects specific applications or active windows (e.g., Notion, Google Docs, browser tabs, or PDFs) for Plover to monitor.
-   * **Animation Flow** ([PloverTaskDemoStep3.jsx](file:///c:/Users/hhl_c/Documents/GitHub/plover-website/src/components/landing/PloverTaskDemoStep3.jsx)): The UI displays *"Which window should I watch?"*. It lists active documents like *"Google Docs — Thesis draft"* and *"Notion — Research notes"*. The cursor selects the `"Watch"` button next to both, changing them to green checkmarks, then clicks `"Start tracking →"`.
+   * **Animation Flow** (`PloverTaskDemoStep3.jsx`): The UI displays *"Which window should I watch?"*. It lists active documents like *"Google Docs — Thesis draft"* and *"Notion — Research notes"*. The cursor selects the `"Watch"` button next to both, changing them to green checkmarks, then clicks `"Start tracking →"`.
 
 4. **Watch it fill (Step 4)**
    * **UI Description**: Plover sits at the top of the user's screen as a translucent bar, filling up automatically as progress is detected in the monitored applications. It can be paused, resumed, or completed.
-   * **Animation Flow** ([PloverTaskDemoStep4.jsx](file:///c:/Users/hhl_c/Documents/GitHub/plover-website/src/components/landing/PloverTaskDemoStep4.jsx)): The panel collapses into a compact floating widget. The progress indicator shows `observing` and begins filling from `0%` to `65%`. It transitions to `paused` state when the user is inactive. The cursor appears, clicks `"Resume"`, the bar resumes filling from `65%` to `100%`, and displays `Done` when finished.
+   * **Animation Flow** (`PloverTaskDemoStep4.jsx`): The panel collapses into a compact floating widget. The progress indicator shows `observing` and begins filling from `0%` to `65%`. It transitions to `paused` state when the user is inactive. The cursor appears, clicks `"Resume"`, the bar resumes filling from `65%` to `100%`, and displays `Done` when finished.
 
 ---
 
@@ -56,11 +56,11 @@ To build the actual Plover desktop app as described above, your development envi
 
 If you want your IDE to parse and replicate the exact visual styles, easing curves, and timings of the current website animations, refer to these files:
 
-* [HowItWorks.jsx](file:///c:/Users/hhl_c/Documents/GitHub/plover-website/src/components/landing/HowItWorks.jsx): The main section grid coordinating the scrolling offsets and triggers for each step demo.
-* [PloverTaskDemo.jsx](file:///c:/Users/hhl_c/Documents/GitHub/plover-website/src/components/landing/PloverTaskDemo.jsx): Step 1 animation. Uses custom `requestAnimationFrame` tickers, cubic easing calculations, custom scale variables, and SVG cursor positioning.
-* [PloverTaskDemoStep2.jsx](file:///c:/Users/hhl_c/Documents/GitHub/plover-website/src/components/landing/PloverTaskDemoStep2.jsx): Step 2 animation. Includes dynamic panel expanding heights, hover cursors, and custom text-typing delay offsets.
-* [PloverTaskDemoStep3.jsx](file:///c:/Users/hhl_c/Documents/GitHub/plover-website/src/components/landing/PloverTaskDemoStep3.jsx): Step 3 animation. Features Google Docs/Notion watch card click transitions, viewport zoom calculations, and ripple elements.
-* [PloverTaskDemoStep4.jsx](file:///c:/Users/hhl_c/Documents/GitHub/plover-website/src/components/landing/PloverTaskDemoStep4.jsx): Step 4 animation. Handles the linear interpolation of percentages, status string transitions (`observing` -> `paused` -> `complete`), and play/pause icon logic.
-* [HeroVisual.jsx](file:///c:/Users/hhl_c/Documents/GitHub/plover-website/src/components/landing/HeroVisual.jsx): Contains the landing page hero's mockup demonstration (writing a document in real-time alongside a floating translucent widget widget tracking progress).
-* [Motion.jsx](file:///c:/Users/hhl_c/Documents/GitHub/plover-website/src/components/shared/Motion.jsx): General utility transitions, element visibility bounds checkers (`useInView`), and scroll tracker hooks.
-* [Hero.jsx](file:///c:/Users/hhl_c/Documents/GitHub/plover-website/src/components/landing/Hero.jsx): Utilizes `framer-motion` libraries for initial text fade-ins and button slide transitions.
+* `HowItWorks.jsx`: The main section grid coordinating the scrolling offsets and triggers for each step demo.
+* `PloverTaskDemo.jsx`: Step 1 animation. Uses custom `requestAnimationFrame` tickers, cubic easing calculations, custom scale variables, and SVG cursor positioning.
+* `PloverTaskDemoStep2.jsx`: Step 2 animation. Includes dynamic panel expanding heights, hover cursors, and custom text-typing delay offsets.
+* `PloverTaskDemoStep3.jsx`: Step 3 animation. Features Google Docs/Notion watch card click transitions, viewport zoom calculations, and ripple elements.
+* `PloverTaskDemoStep4.jsx`: Step 4 animation. Handles the linear interpolation of percentages, status string transitions (`observing` -> `paused` -> `complete`), and play/pause icon logic.
+* `HeroVisual.jsx`: Contains the landing page hero's mockup demonstration (writing a document in real-time alongside a floating translucent widget widget tracking progress).
+* `Motion.jsx`: General utility transitions, element visibility bounds checkers (`useInView`), and scroll tracker hooks.
+* `Hero.jsx`: Utilizes `framer-motion` libraries for initial text fade-ins and button slide transitions.
