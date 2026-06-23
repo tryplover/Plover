@@ -287,10 +287,17 @@ export function setupIpcHandlers(
     }
   });
 
+  let setupWindow: BrowserWindow | null = null;
+
   ipcMain.handle('overlay:openWindow', async () => {
+    if (setupWindow && !setupWindow.isDestroyed()) {
+      setupWindow.focus();
+      return;
+    }
     if (createOverlayWindow) {
-      const win = createOverlayWindow('window');
-      win.show();
+      setupWindow = createOverlayWindow('window');
+      setupWindow.on('closed', () => { setupWindow = null; });
+      setupWindow.show();
     }
   });
 
