@@ -90,7 +90,7 @@ body {
 .logo-icon {
   width: 28px;
   height: 28px;
-  background: linear-gradient(135deg, var(--plover-mint), var(--plover-mint));
+  background: var(--plover-mint);
   border-radius: var(--plover-radius-sm);
   display: flex;
   align-items: center;
@@ -338,7 +338,7 @@ body {
 .circle-check-button.done {
   border-color: var(--plover-mint);
   background-color: var(--plover-mint);
-  color: white;
+  color: var(--plover-bg);
 }
 
 .goal-input-container {
@@ -618,11 +618,12 @@ body {
 .btn-primary {
   background-color: var(--plover-mint);
   border-color: var(--plover-mint);
-  color: white;
+  color: var(--plover-bg);
 }
 
 .btn-primary:hover {
   background-color: var(--plover-mint);
+  opacity: 0.85;
 }
 
 .btn-danger {
