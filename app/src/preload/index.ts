@@ -20,6 +20,7 @@ export interface CompanionApi {
   setActiveTask: (taskId: string | null) => Promise<void>;
   setState: (kind: StateKind) => Promise<void>;
   resize: (height: number) => Promise<void>;
+  getInitialState: () => Promise<{ kind: StateKind; activeTaskId: string | null }>;
 }
 
 export interface PloverApi {
@@ -133,6 +134,7 @@ const api: PloverApi = {
     setActiveTask: (taskId) => ipcRenderer.invoke('companion:setActiveTask', taskId),
     setState: (kind) => ipcRenderer.invoke('companion:setState', kind),
     resize: (height) => ipcRenderer.invoke('companion:resize', height),
+    getInitialState: () => ipcRenderer.invoke('companion:getInitialState'),
   },
 
   // Events

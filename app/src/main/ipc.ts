@@ -288,6 +288,8 @@ export function setupIpcHandlers(
 
   // Companion
   let companion: BrowserWindow | null = null;
+  let companionKind: string = 'observing';
+  let companionActiveTaskId: string | null = null;
 
   function ensureCompanion(): BrowserWindow {
     if (!companion || companion.isDestroyed()) {
@@ -307,11 +309,17 @@ export function setupIpcHandlers(
     }
   });
   ipcMain.handle('companion:setActiveTask', (_e, taskId: string | null) => {
+    companionActiveTaskId = taskId;
     ensureCompanion().webContents.send('companion:activeTask', taskId);
   });
   ipcMain.handle('companion:setState', (_e, kind: string) => {
+    companionKind = kind;
     ensureCompanion().webContents.send('companion:state', kind);
   });
+  ipcMain.handle('companion:getInitialState', () => ({
+    kind: companionKind,
+    activeTaskId: companionActiveTaskId,
+  }));
 }
 
 async function saveGoalAndTasksInternal(
