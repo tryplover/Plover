@@ -12,6 +12,17 @@ export interface ProposedPlan {
   }[];
 }
 
+export type StateKind = 'observing' | 'paused' | 'done' | 'not-sure';
+
+export interface CompanionApi {
+  show: () => Promise<void>;
+  hide: () => Promise<void>;
+  setActiveTask: (taskId: string | null) => Promise<void>;
+  setState: (kind: StateKind) => Promise<void>;
+  resize: (height: number) => Promise<void>;
+  getInitialState: () => Promise<{ kind: StateKind; activeTaskId: string | null }>;
+}
+
 export interface PloverApi {
   // Main Goals & Tasks
   getGoals: () => Promise<Goal[]>;
@@ -92,6 +103,9 @@ export interface PloverApi {
   setIgnoreMouseEvents: (ignore: boolean) => Promise<void>;
   setTrackingState: (tracking: boolean) => Promise<void>;
 
+  // Companion API
+  companion: CompanionApi;
+
   // Event Subscription
   on: (channel: string, callback: (...args: unknown[]) => void) => () => void;
 }
@@ -118,6 +132,16 @@ const api: PloverApi = {
   listActiveWindows: () => ipcRenderer.invoke('windows:list'),
   setIgnoreMouseEvents: (ignore) => ipcRenderer.invoke('overlay:set-ignore-mouse-events', ignore),
   setTrackingState: (tracking) => ipcRenderer.invoke('overlay:set-tracking', tracking),
+
+  // Companion
+  companion: {
+    show: () => ipcRenderer.invoke('companion:show'),
+    hide: () => ipcRenderer.invoke('companion:hide'),
+    setActiveTask: (taskId) => ipcRenderer.invoke('companion:setActiveTask', taskId),
+    setState: (kind) => ipcRenderer.invoke('companion:setState', kind),
+    resize: (height) => ipcRenderer.invoke('companion:resize', height),
+    getInitialState: () => ipcRenderer.invoke('companion:getInitialState'),
+  },
 
   // Events
   on: (channel, callback) => {
