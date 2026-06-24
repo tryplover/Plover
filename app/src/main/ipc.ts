@@ -28,6 +28,7 @@ function broadcast(channel: string, payload?: unknown): void {
 export function setupIpcHandlers(
   getOverlayWindow: () => BrowserWindow | null,
   onWatchedFoldersChange?: (folders: string[]) => Promise<void> | void,
+  createOverlayWindow?: (variant: 'overlay' | 'window') => BrowserWindow,
 ): void {
   void googleAuth.loadSavedCredentials();
 
@@ -289,6 +290,20 @@ export function setupIpcHandlers(
     }
   });
 
+  let setupWindow: BrowserWindow | null = null;
+
+  ipcMain.handle('overlay:openWindow', async () => {
+    if (setupWindow && !setupWindow.isDestroyed()) {
+      setupWindow.focus();
+      return;
+    }
+    if (createOverlayWindow) {
+      setupWindow = createOverlayWindow('window');
+      setupWindow.on('closed', () => { setupWindow = null; });
+      setupWindow.show();
+    }
+  });
+
   // Companion
   let companion: BrowserWindow | null = null;
   let companionKind = 'observing';
@@ -474,7 +489,8 @@ export function startEventForwarding(): void {
 export function setupIpc(
   getOverlayWindow: () => BrowserWindow | null,
   onWatchedFoldersChange?: (folders: string[]) => Promise<void> | void,
+  createOverlayWindow?: (variant: 'overlay' | 'window') => BrowserWindow,
 ): void {
-  setupIpcHandlers(getOverlayWindow, onWatchedFoldersChange);
+  setupIpcHandlers(getOverlayWindow, onWatchedFoldersChange, createOverlayWindow);
   startEventForwarding();
 }

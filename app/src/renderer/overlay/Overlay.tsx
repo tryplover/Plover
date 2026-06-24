@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { QuickAdd } from './QuickAdd';
+import { SetupFlow } from './SetupFlow';
 
 export function Overlay() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [resetCounter, setResetCounter] = useState(0);
 
-  // Resize window to fit content width and height dynamically
+  const variant = new URLSearchParams(window.location.search).get('variant') === 'window' ? 'window' : 'overlay';
+
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -19,7 +20,6 @@ export function Overlay() {
       });
     };
 
-    // Initial resize
     resizeWindow();
 
     const observer = new ResizeObserver(() => {
@@ -32,7 +32,6 @@ export function Overlay() {
     };
   }, []);
 
-  // Listen to Escape key to close the window
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -47,25 +46,44 @@ export function Overlay() {
     };
   }, []);
 
-  // Listen to overlay reset event from main process
   useEffect(() => {
     return window.api.on('overlay:reset', () => {
       setResetCounter((prev) => prev + 1);
     });
   }, []);
 
+  const overlayStyle = variant === 'overlay' ? {
+    boxSizing: 'border-box' as const,
+    width: '100%',
+    padding: '16px',
+    backgroundColor: 'rgba(28, 28, 30, 0.88)',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    borderRadius: '12px',
+    border: '1px solid rgba(255, 255, 255, 0.12)',
+    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.4)',
+    color: '#f5f5f7',
+    fontFamily:
+      '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+    overflow: 'hidden' as const,
+  } : {
+    boxSizing: 'border-box' as const,
+    width: '100%',
+    height: '100%',
+    padding: '0',
+    backgroundColor: 'transparent',
+    color: '#f5f5f7',
+    fontFamily:
+      '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+    overflow: 'hidden' as const,
+  };
+
   return (
     <div
       ref={containerRef}
-      style={{
-        boxSizing: 'border-box',
-        width: 'fit-content',
-        height: 'fit-content',
-        overflow: 'hidden',
-        backgroundColor: 'transparent',
-      }}
+      style={overlayStyle}
     >
-      <QuickAdd key={resetCounter} />
+      <SetupFlow key={resetCounter} variant={variant} />
     </div>
   );
 }

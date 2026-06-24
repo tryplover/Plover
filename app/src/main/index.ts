@@ -47,16 +47,19 @@ function createMainWindow(): void {
   }
 }
 
-function createOverlayWindow(): void {
-  overlayWindow = new BrowserWindow({
-    width: 600,
-    height: 80,
-    frame: false,
-    transparent: true,
-    alwaysOnTop: true,
-    skipTaskbar: true,
+function createOverlayWindow(variant: 'overlay' | 'window' = 'overlay'): BrowserWindow {
+  const isWindow = variant === 'window';
+  const win = new BrowserWindow({
+    width: isWindow ? 720 : 600,
+    height: isWindow ? 640 : 80,
+    frame: isWindow,
+    transparent: !isWindow,
+    alwaysOnTop: !isWindow,
+    skipTaskbar: !isWindow,
     show: false,
-    resizable: false,
+    resizable: isWindow,
+    titleBarStyle: isWindow ? 'hiddenInset' : undefined,
+    vibrancy: isWindow ? undefined : 'under-window',
     webPreferences: {
       preload: join(import.meta.dirname, '../preload/index.js'),
       sandbox: true,
@@ -66,25 +69,31 @@ function createOverlayWindow(): void {
 
   const devUrl = process.env['ELECTRON_RENDERER_URL'];
   if (devUrl) {
-    void overlayWindow.loadURL(`${devUrl}?overlay`);
+    void win.loadURL(`${devUrl}?variant=${variant}`);
   } else {
-    void overlayWindow.loadFile(join(import.meta.dirname, '../renderer/index.html'), {
-      search: 'overlay',
+    void win.loadFile(join(import.meta.dirname, '../renderer/index.html'), {
+      search: `variant=${variant}`,
     });
   }
 
-  overlayWindow.on('blur', () => {
-    overlayWindow?.hide();
+  if (!isWindow) {
+    win.on('blur', () => {
+      win.hide();
+    });
+  }
+
+  win.on('closed', () => {
+    if (variant === 'overlay') {
+      overlayWindow = null;
+    }
   });
 
-  overlayWindow.on('closed', () => {
-    overlayWindow = null;
-  });
+  return win;
 }
 
 function toggleOverlayWindow(): void {
   if (!overlayWindow) {
-    createOverlayWindow();
+    overlayWindow = createOverlayWindow('overlay');
   }
 
   if (overlayWindow) {
@@ -137,13 +146,14 @@ void app.whenReady().then(async () => {
         await folderWatcher.watch(folders);
       }
     },
+    (variant) => createOverlayWindow(variant),
   );
 
   // Initialize passive activity monitoring system
   initActivityMonitoring();
 
   createMainWindow();
-  createOverlayWindow();
+  overlayWindow = createOverlayWindow('overlay');
 
   // Register the global hotkey Option + Space
   const registered = globalShortcut.register('Option+Space', () => {

@@ -99,6 +99,7 @@ export interface PloverApi {
   commitGoal: (plan: ProposedPlan) => Promise<{ goalId: string }>;
   closeOverlay: () => Promise<void>;
   resizeOverlay: (height: number, width?: number) => Promise<void>;
+  openSetupWindow: () => Promise<void>;
   listActiveWindows: () => Promise<{ app: string; title: string }[]>;
   setIgnoreMouseEvents: (ignore: boolean) => Promise<void>;
   setTrackingState: (tracking: boolean) => Promise<void>;
@@ -129,6 +130,7 @@ const api: PloverApi = {
   commitGoal: (plan) => ipcRenderer.invoke('goal:commit', plan),
   closeOverlay: () => ipcRenderer.invoke('overlay:close'),
   resizeOverlay: (height, width) => ipcRenderer.invoke('overlay:resize', height, width),
+  openSetupWindow: () => ipcRenderer.invoke('overlay:openWindow'),
   listActiveWindows: () => ipcRenderer.invoke('windows:list'),
   setIgnoreMouseEvents: (ignore) => ipcRenderer.invoke('overlay:set-ignore-mouse-events', ignore),
   setTrackingState: (tracking) => ipcRenderer.invoke('overlay:set-tracking', tracking),

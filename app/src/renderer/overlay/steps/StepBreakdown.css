@@ -1,0 +1,85 @@
+.plover-step-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.plover-step-breakdown--overlay {
+  padding: 0;
+}
+
+.plover-step-breakdown--window {
+  padding: 0;
+  gap: 24px;
+}
+
+.plover-step-breakdown h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--plover-text, #f5f5f7);
+}
+
+.plover-step-breakdown--window h2 {
+  font-family: var(--plover-font-serif, Georgia, serif);
+  font-size: 28px;
+  font-weight: 400;
+}
+
+.plover-step-breakdown__loading,
+.plover-step-breakdown__error {
+  padding: 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--plover-text-muted, rgba(255, 255, 255, 0.6));
+}
+
+.plover-step-breakdown__error {
+  color: #ff6b6b;
+}
+
+.plover-step-breakdown__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.plover-step-breakdown__list li {
+  list-style: none;
+}
+
+.plover-drag-handle {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.3);
+  cursor: grab;
+  user-select: none;
+}
+
+.plover-step-breakdown__add {
+  padding: 8px 12px;
+  font-size: 13px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  background-color: transparent;
+  color: var(--plover-text, #f5f5f7);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.plover-step-breakdown__add:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.plover-step-breakdown footer {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.plover-step-breakdown footer button {
+  flex: 1;
+}

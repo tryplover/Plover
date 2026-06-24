@@ -1,0 +1,75 @@
+.plover-step-name {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.plover-step-name--overlay {
+  padding: 0;
+}
+
+.plover-step-name--overlay h2 {
+  display: none;
+}
+
+.plover-step-name--window {
+  padding: 0;
+  gap: 32px;
+}
+
+.plover-step-name--window h2 {
+  font-family: var(--plover-font-serif, Georgia, serif);
+  font-size: 28px;
+  font-weight: 400;
+  margin: 0;
+  color: var(--plover-text, #f5f5f7);
+}
+
+.plover-step-name h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--plover-text, #f5f5f7);
+}
+
+.plover-step-name input {
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--plover-text, #f5f5f7);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.plover-step-name--window input {
+  padding: 12px 16px;
+  font-size: 16px;
+}
+
+.plover-step-name input:focus {
+  border-color: rgba(255, 255, 255, 0.4);
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+.plover-step-name input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.plover-step-name__how {
+  margin: 0;
+  font-size: 13px;
+  color: var(--plover-text-muted, rgba(255, 255, 255, 0.6));
+}
+
+.plover-step-name__chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.plover-step-name__cta {
+  margin-top: 8px;
+}
