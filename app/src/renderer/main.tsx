@@ -17,12 +17,13 @@ const isOverlay =
 const showGallery = import.meta.env.DEV && new URLSearchParams(window.location.search).get('gallery') === '1';
 
 if (showGallery) {
-  const { ComponentGallery } = await import('./dev/ComponentGallery');
-  createRoot(container).render(
-    <StrictMode>
-      <ComponentGallery />
-    </StrictMode>
-  );
+  import('./dev/ComponentGallery').then(({ ComponentGallery }) => {
+    createRoot(container).render(
+      <StrictMode>
+        <ComponentGallery />
+      </StrictMode>
+    );
+  });
 } else {
   createRoot(container).render(<StrictMode>{isOverlay ? <Overlay /> : <App />}</StrictMode>);
 }

@@ -17,12 +17,14 @@ vi.mock('node:child_process', () => ({
 
 describe('WindowTracker', () => {
   beforeEach(() => {
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin');
     vi.useFakeTimers();
     vi.clearAllMocks();
     vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin');
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.useRealTimers();
     vi.restoreAllMocks();
   });
