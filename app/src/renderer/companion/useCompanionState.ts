@@ -21,17 +21,38 @@ export function useCompanionState(): CompanionView {
   });
 
   useEffect(() => {
+    let active = true;
+
+    window.api.companion.getInitialState().then(async ({ kind, activeTaskId }) => {
+      if (!active) return;
+      if (activeTaskId) {
+        const tasks = await window.api.getTasks();
+        if (!active) return;
+        const task = tasks.find((t) => t.id === activeTaskId) ?? null;
+        setView((v) => ({ ...v, kind: kind as StateKind, task, steps: buildSteps(task, tasks) }));
+      } else {
+        setView((v) => ({ ...v, kind: kind as StateKind }));
+      }
+    }).catch(() => undefined);
+
     const offTask = window.api.on('companion:activeTask', async (taskId: unknown) => {
+      if (!active) return;
       const id = taskId as string | null;
       if (!id) return setView((v) => ({ ...v, task: null, steps: [] }));
       const tasks = await window.api.getTasks();
+      if (!active) return;
       const task = tasks.find((t) => t.id === id) ?? null;
       setView((v) => ({ ...v, task, steps: buildSteps(task, tasks) }));
     });
     const offState = window.api.on('companion:state', (kind: unknown) => {
+      if (!active) return;
       setView((v) => ({ ...v, kind: kind as StateKind }));
     });
-    return () => { offTask(); offState(); };
+    return () => {
+      active = false;
+      offTask();
+      offState();
+    };
   }, []);
 
   return view;

@@ -44,8 +44,8 @@ export function StepBreakdown({ draft, onBack, onNext, variant }: Props) {
       <StatusIndicator kind="observing" label={`Gemini suggested ${plan.subtasks.length} steps`} />
       <h2>{plan.goal.title}</h2>
       <ol className="plover-step-breakdown__list">
-        {plan.subtasks.map((s, i) => {
-          const [item] = plan.subtasks.slice(i, i + 1);
+        {plan.subtasks.map((_s, i) => {
+          const item = plan.subtasks[i];
           return (
             <li key={i}>
               <StepRow

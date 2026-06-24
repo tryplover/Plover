@@ -24,7 +24,7 @@ export function Collapsed({ view, onExpand }: Props) {
       </span>
       <span className="plover-collapsed__title">{view.task?.title ?? 'No active task'}</span>
       <span className="plover-collapsed__pct">{Math.round(view.progress * 100)}%</span>
-      <ProgressLine value={view.progress} animate />
+      <ProgressLine value={view.progress} animate tone={view.kind === 'done' ? 'mint' : 'solid'} />
     </motion.button>
   );
 }

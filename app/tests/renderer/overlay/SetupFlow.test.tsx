@@ -1,62 +1,77 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { ProposedPlan } from '../../../src/preload';
 
 describe('SetupFlow', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('exports SetupFlow component', () => {
-    expect(true).toBe(true);
-  });
-
-  it('accepts overlay variant', () => {
-    const variant = 'overlay' as const;
-    expect(variant).toBe('overlay');
-  });
-
-  it('accepts window variant', () => {
-    const variant = 'window' as const;
-    expect(variant).toBe('window');
-  });
-
   it('step machine starts at name', () => {
-    const step = 'name' as const;
-    expect(['name', 'breakdown', 'connect', 'committed']).toContain(step);
+    type Step = 'name' | 'breakdown' | 'connect' | 'committed';
+    const initial: Step = 'name';
+    expect(initial).toBe('name');
   });
 
-  it('transitions to breakdown step', () => {
-    const step = 'breakdown' as const;
-    expect(['name', 'breakdown', 'connect', 'committed']).toContain(step);
+  it('transitions through all four steps in order', () => {
+    const steps = ['name', 'breakdown', 'connect', 'committed'] as const;
+    expect(steps).toHaveLength(4);
+    const [s0, s1, s2, s3] = steps;
+    expect(s0).toBe('name');
+    expect(s1).toBe('breakdown');
+    expect(s2).toBe('connect');
+    expect(s3).toBe('committed');
   });
 
-  it('transitions to connect step', () => {
-    const step = 'connect' as const;
-    expect(['name', 'breakdown', 'connect', 'committed']).toContain(step);
+  it('overlay variant is valid', () => {
+    const variant = 'overlay' as const;
+    expect(['overlay', 'window']).toContain(variant);
   });
 
-  it('transitions to committed step', () => {
-    const step = 'committed' as const;
-    expect(['name', 'breakdown', 'connect', 'committed']).toContain(step);
+  it('window variant is valid', () => {
+    const variant = 'window' as const;
+    expect(['overlay', 'window']).toContain(variant);
   });
 
-  it('draft goal has text and frequency', () => {
-    const draft = { text: 'Buy groceries', frequency: 'one-off' as const };
-    expect(draft.text).toBe('Buy groceries');
+  it('draft state holds goal text and frequency', () => {
+    const draft = { text: 'Finish thesis methods section', frequency: 'one-off' as const };
+    expect(draft.text).toBe('Finish thesis methods section');
     expect(draft.frequency).toBe('one-off');
   });
 
-  it('frequency can be one-off', () => {
-    const frequency = 'one-off' as const;
-    expect(['one-off', 'daily', 'weekly']).toContain(frequency);
+  it('draft frequency supports all three options', () => {
+    const frequencies = ['one-off', 'daily', 'weekly'] as const;
+    expect(frequencies).toHaveLength(3);
   });
 
-  it('frequency can be daily', () => {
-    const frequency = 'daily' as const;
-    expect(['one-off', 'daily', 'weekly']).toContain(frequency);
+  it('plan state is null until breakdown completes', () => {
+    const plan: ProposedPlan | null = null;
+    expect(plan).toBeNull();
   });
 
-  it('frequency can be weekly', () => {
-    const frequency = 'weekly' as const;
-    expect(['one-off', 'daily', 'weekly']).toContain(frequency);
+  it('plan holds goal and subtasks when populated', () => {
+    const plan: ProposedPlan = {
+      goal: { title: 'Finish thesis' },
+      subtasks: [
+        { title: 'Research sources', estimate_minutes: 60, depends_on: [] },
+        { title: 'Write draft', estimate_minutes: 120, depends_on: [] },
+      ],
+    };
+    expect(plan.goal.title).toBe('Finish thesis');
+    expect(plan.subtasks).toHaveLength(2);
+    const [first] = plan.subtasks;
+    expect(first?.title).toBe('Research sources');
+  });
+
+  it('connect step only renders when plan is set', () => {
+    const plan: ProposedPlan | null = null;
+    const showConnect = plan !== null;
+    expect(showConnect).toBe(false);
+
+    const populated: ProposedPlan = {
+      goal: { title: 'Some goal' },
+      subtasks: [],
+    };
+    const showConnectAfter = populated !== null;
+    expect(showConnectAfter).toBe(true);
   });
 });

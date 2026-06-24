@@ -14,6 +14,7 @@ export function Expanded({ view, onCollapse }: Props) {
   return (
     <motion.section
       className="plover-expanded"
+      data-kind={view.kind}
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
@@ -59,15 +60,29 @@ export function Expanded({ view, onCollapse }: Props) {
       )}
 
       {view.kind === 'paused' && (
-        <Button variant="secondary" className="plover-expanded__resume">
+        <Button
+          variant="secondary"
+          className="plover-expanded__resume"
+          onClick={() => { window.api.companion.setState('observing').catch(console.error); }}
+        >
           ▶ Resume
         </Button>
       )}
       {view.kind === 'not-sure' && (
         <div className="plover-expanded__verify">
           <span>Still working on this?</span>
-          <Button variant="primary">Yes</Button>
-          <Button variant="secondary">Pause</Button>
+          <Button
+            variant="primary"
+            onClick={() => { window.api.companion.setState('observing').catch(console.error); }}
+          >
+            Yes
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => { window.api.companion.setState('paused').catch(console.error); }}
+          >
+            Pause
+          </Button>
         </div>
       )}
     </motion.section>

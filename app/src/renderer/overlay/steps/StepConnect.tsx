@@ -21,12 +21,16 @@ interface Props {
 export function StepConnect({ plan, onBack, onCommitted, variant }: Props) {
   const [selected, setSelected] = useState<string | null>(EXAMPLES[0]?.id ?? null);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const start = async () => {
     setBusy(true);
+    setError(null);
     try {
       await window.api.commitGoal(plan);
       onCommitted();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
     } finally {
       setBusy(false);
     }
@@ -55,6 +59,7 @@ export function StepConnect({ plan, onBack, onCommitted, variant }: Props) {
       <p className="plover-step-connect__coming-soon">
         Deeper integrations — Docs, VS Code, Notion <span>coming soon</span>
       </p>
+      {error && <p className="plover-step-connect__error">{error}</p>}
       <footer>
         <Button variant="secondary" onClick={onBack}>Back</Button>
         <Button variant="primary" onClick={start} disabled={busy}>
