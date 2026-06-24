@@ -1,12 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Task, Goal } from '../../../shared/types';
 import { isToday } from '../../lib/date';
+import { StepRow } from '../../components/StepRow';
+import { ProgressLine } from '../../components/ProgressLine';
+import { StatusIndicator } from '../../components/StatusIndicator';
+import { Button } from '../../components/Button';
 
 interface TasksTodayProps {
   onTasksUpdated?: () => void;
+  'data-testid'?: string;
 }
 
-export default function TasksToday({ onTasksUpdated }: TasksTodayProps) {
+export default function TasksToday({ onTasksUpdated, 'data-testid': dataTestId }: TasksTodayProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,7 +33,6 @@ export default function TasksToday({ onTasksUpdated }: TasksTodayProps) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchTodayData();
 
-    // Subscribe to IPC event bus updates for live refreshes
     const unsubscribe = window.api.on('app-event', (event: unknown) => {
       const appEvent = event as { type: string };
       if (
@@ -49,7 +53,7 @@ export default function TasksToday({ onTasksUpdated }: TasksTodayProps) {
     };
   }, [fetchTodayData, onTasksUpdated]);
 
-  const handleMarkDone = async (taskId: string) => {
+  const handleTaskClick = async (taskId: string) => {
     try {
       const task = tasks.find((t) => t.id === taskId);
       if (!task) return;
@@ -69,175 +73,153 @@ export default function TasksToday({ onTasksUpdated }: TasksTodayProps) {
     }
   };
 
-  const getGoalTitle = (goalId: string) => {
-    const goal = goals.find((g) => g.id === goalId);
-    return goal ? goal.title : 'General Goal';
+  const handleOpenSetup = async () => {
+    try {
+      await window.api.openSetupWindow();
+    } catch (err) {
+      console.error('Failed to open setup window:', err);
+    }
   };
 
   const todayTasks = tasks.filter((t) => isToday(t.scheduled_start));
-  const completedCount = todayTasks.filter((t) => t.status === 'done').length;
 
-  const getGroup = (isoString?: string) => {
-    if (!isoString) return 'Morning';
-    const hour = new Date(isoString).getHours();
-    if (hour < 12) return 'Morning';
-    if (hour < 17) return 'Afternoon';
-    return 'Evening';
-  };
+  const goalsWithTodayTasks = goals.filter((goal) => {
+    const goalTasks = todayTasks.filter((t) => t.goal_id === goal.id);
+    return goalTasks.length > 0;
+  });
 
-  const morningTasks = todayTasks
-    .filter((t) => getGroup(t.scheduled_start) === 'Morning')
-    .sort(
-      (a, b) =>
-        new Date(a.scheduled_start ?? 0).getTime() - new Date(b.scheduled_start ?? 0).getTime(),
-    );
-
-  const afternoonTasks = todayTasks
-    .filter((t) => getGroup(t.scheduled_start) === 'Afternoon')
-    .sort(
-      (a, b) =>
-        new Date(a.scheduled_start ?? 0).getTime() - new Date(b.scheduled_start ?? 0).getTime(),
-    );
-
-  const eveningTasks = todayTasks
-    .filter((t) => getGroup(t.scheduled_start) === 'Evening')
-    .sort(
-      (a, b) =>
-        new Date(a.scheduled_start ?? 0).getTime() - new Date(b.scheduled_start ?? 0).getTime(),
-    );
-
-  const renderTaskItem = (task: Task) => {
-    const startTimeStr = task.scheduled_start
-      ? new Date(task.scheduled_start).toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        })
-      : '';
-    const endTimeStr = task.scheduled_end
-      ? new Date(task.scheduled_end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      : '';
-
-    return (
-      <div key={task.id} className={`timeline-item ${task.status === 'done' ? 'done' : ''}`}>
-        <div className="task-info">
-          <div className="task-title-row">
-            <span className="task-title">{task.title}</span>
-            <span className="task-duration">{task.estimate_minutes}m</span>
-          </div>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px' }}>
-            <span className="task-goal-tag">{getGoalTitle(task.goal_id)}</span>
-            <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>
-              {startTimeStr} - {endTimeStr}
-            </span>
-          </div>
-        </div>
-        <button
-          className={`circle-check-button ${task.status === 'done' ? 'done' : ''}`}
-          onClick={() => handleMarkDone(task.id)}
-          aria-label="Mark done"
-        >
-          {task.status === 'done' ? '✓' : ''}
-        </button>
-      </div>
-    );
+  const getNearestCurrentTask = (goalId: string) => {
+    const goalTasks = todayTasks
+      .filter((t) => t.goal_id === goalId && t.status !== 'done')
+      .sort(
+        (a, b) =>
+          new Date(a.scheduled_start ?? 0).getTime() - new Date(b.scheduled_start ?? 0).getTime(),
+      );
+    return goalTasks[0];
   };
 
   if (loading) {
     return (
-      <div className="main-content" style={{ justifyContent: 'center', alignItems: 'center' }}>
-        <div
-          className="loading-spinner"
-          style={{ borderTopColor: 'var(--accent-color)', width: '32px', height: '32px' }}
-        />
+      <div data-testid={dataTestId} style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <div className="loading-spinner" />
       </div>
     );
   }
 
-  const todayDateString = new Date().toLocaleDateString([], {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  });
-
   return (
-    <div className="main-content">
-      <div
-        className="page-header"
-        style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}
+    <div
+      data-testid={dataTestId}
+      style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        paddingTop: '40px',
+        paddingBottom: '40px',
+        paddingLeft: '40px',
+        paddingRight: '40px',
+        backgroundColor: 'var(--plover-bg)',
+      }}
+    >
+      <h1
+        style={{
+          fontFamily: 'var(--plover-font-serif)',
+          fontSize: '36px',
+          fontWeight: 400,
+          marginBottom: '28px',
+          color: 'var(--plover-text)',
+        }}
       >
-        <div>
-          <span className="page-subtitle">{todayDateString}</span>
-          <h1 className="page-title">Today's Focus</h1>
-        </div>
-        {todayTasks.length > 0 && (
-          <div className="goal-progress-container" style={{ width: '220px' }}>
-            <div className="goal-progress-bar">
-              <div
-                className="goal-progress-fill"
-                style={{ width: `${(completedCount / todayTasks.length) * 100}%` }}
-              />
-            </div>
-            <span className="goal-progress-text">
-              {completedCount} / {todayTasks.length} Done (
-              {Math.round((completedCount / todayTasks.length) * 100)}%)
-            </span>
+        Today
+      </h1>
+
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        {todayTasks.length === 0 ? (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '16px',
+              padding: '48px 24px',
+            }}
+          >
+            <StatusIndicator kind="not-sure" label="nothing scheduled" />
+            <Button variant="primary" onClick={handleOpenSetup}>
+              Open setup overlay
+            </Button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+            {goalsWithTodayTasks.map((goal) => {
+              const goalTasks = todayTasks.filter((t) => t.goal_id === goal.id);
+              const doneTasks = goalTasks.filter((t) => t.status === 'done');
+              const progressValue = goalTasks.length > 0 ? doneTasks.length / goalTasks.length : 0;
+              const currentTask = getNearestCurrentTask(goal.id);
+
+              return (
+                <div
+                  key={goal.id}
+                  style={{
+                    backgroundColor: 'var(--plover-surface)',
+                    borderRadius: 'var(--plover-radius-lg)',
+                    padding: '24px',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '16px',
+                    }}
+                  >
+                    <h2
+                      style={{
+                        fontSize: '18px',
+                        fontWeight: 600,
+                        color: 'var(--plover-text)',
+                      }}
+                    >
+                      {goal.title}
+                    </h2>
+                    <ProgressLine value={progressValue} />
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {goalTasks.map((task) => (
+                      <button
+                        key={task.id}
+                        onClick={() => handleTaskClick(task.id)}
+                        style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}
+                      >
+                        <StepRow
+                          label={task.title}
+                          state={
+                            task.status === 'done'
+                              ? 'done'
+                              : currentTask?.id === task.id
+                                ? 'current'
+                                : 'pending'
+                          }
+                          trailing={
+                            currentTask?.id === task.id ? (
+                              <span style={{ fontSize: '11px', color: 'var(--plover-text-muted)' }}>
+                                now
+                              </span>
+                            ) : null
+                          }
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
-
-      {todayTasks.length === 0 ? (
-        <div className="card" style={{ alignItems: 'center', padding: '48px', gap: '12px' }}>
-          <svg
-            width="48"
-            height="48"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="var(--text-tertiary)"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <path d="m9 12 2 2 4-4" />
-          </svg>
-          <span style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>
-            All caught up!
-          </span>
-          <p
-            style={{
-              fontSize: '13px',
-              color: 'var(--text-secondary)',
-              textAlign: 'center',
-              maxWidth: '320px',
-            }}
-          >
-            No tasks are scheduled for today. Add a new goal in the Goals tab to plan out subtasks.
-          </p>
-        </div>
-      ) : (
-        <div className="timeline-container">
-          {morningTasks.length > 0 && (
-            <div className="timeline-group">
-              <div className="timeline-time-label">Morning</div>
-              {morningTasks.map(renderTaskItem)}
-            </div>
-          )}
-
-          {afternoonTasks.length > 0 && (
-            <div className="timeline-group">
-              <div className="timeline-time-label">Afternoon</div>
-              {afternoonTasks.map(renderTaskItem)}
-            </div>
-          )}
-
-          {eveningTasks.length > 0 && (
-            <div className="timeline-group">
-              <div className="timeline-time-label">Evening</div>
-              {eveningTasks.map(renderTaskItem)}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
