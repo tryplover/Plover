@@ -65,6 +65,9 @@ export interface PloverAPI {
   ): Promise<void>;
   connectCalendar(): Promise<boolean>;
   disconnectCalendar(): Promise<void>;
+  listActiveWindows(): Promise<{ app: string; title: string }[]>;
+  setIgnoreMouseEvents(ignore: boolean): Promise<void>;
+  setTrackingState(tracking: boolean): Promise<void>;
   on(channel: string, callback: (...args: unknown[]) => void): () => void;
 }
 
