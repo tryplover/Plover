@@ -9,6 +9,7 @@ import { GoogleCalendarSync } from './sync/calendar.js';
 import { eventBus } from './bus.js';
 import { ProposedPlan } from '../preload/index.js';
 import { createCompanionWindow } from './windows/companion.js';
+import { listActiveWindows } from './activity/window-tracker.js';
 export const googleAuth = new GoogleAuth();
 export const calendarSync = new GoogleCalendarSync(googleAuth);
 
@@ -272,15 +273,17 @@ export function setupIpcHandlers(
     }
   });
 
-  ipcMain.handle('overlay:resize', async (_event, height: number) => {
+  ipcMain.handle('overlay:resize', async (_event, height: number, width?: number) => {
     const overlayWin = getOverlayWindow();
     if (overlayWin) {
       const bounds = overlayWin.getBounds();
-      if (bounds.height !== height) {
+      const newWidth = width ?? bounds.width;
+      if (bounds.height !== height || bounds.width !== newWidth) {
+        const newX = bounds.x - Math.round((newWidth - bounds.width) / 2);
         overlayWin.setBounds({
-          x: bounds.x,
+          x: newX,
           y: bounds.y,
-          width: bounds.width,
+          width: newWidth,
           height: height,
         });
       }
@@ -303,6 +306,8 @@ export function setupIpcHandlers(
 
   // Companion
   let companion: BrowserWindow | null = null;
+  let companionKind = 'observing';
+  let companionActiveTaskId: string | null = null;
 
   function ensureCompanion(): BrowserWindow {
     if (!companion || companion.isDestroyed()) {
@@ -322,10 +327,39 @@ export function setupIpcHandlers(
     }
   });
   ipcMain.handle('companion:setActiveTask', (_e, taskId: string | null) => {
+    companionActiveTaskId = taskId;
     ensureCompanion().webContents.send('companion:activeTask', taskId);
   });
   ipcMain.handle('companion:setState', (_e, kind: string) => {
+    companionKind = kind;
     ensureCompanion().webContents.send('companion:state', kind);
+  });
+  ipcMain.handle('companion:getInitialState', () => ({
+    kind: companionKind,
+    activeTaskId: companionActiveTaskId,
+  }));
+
+  ipcMain.handle('windows:list', async () => {
+    try {
+      return await listActiveWindows();
+    } catch (err) {
+      console.error('[IPC] Failed to list active windows:', err);
+      return [];
+    }
+  });
+
+  ipcMain.handle('overlay:set-ignore-mouse-events', async (_event, ignore: boolean) => {
+    const overlayWin = getOverlayWindow();
+    if (overlayWin) {
+      overlayWin.setIgnoreMouseEvents(ignore, { forward: true });
+    }
+  });
+
+  ipcMain.handle('overlay:set-tracking', async (_event, tracking: boolean) => {
+    const overlayWin = getOverlayWindow();
+    if (overlayWin) {
+      (overlayWin as BrowserWindow & { isTracking?: boolean }).isTracking = tracking;
+    }
   });
 }
 

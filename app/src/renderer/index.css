@@ -90,7 +90,7 @@ body {
 .logo-icon {
   width: 28px;
   height: 28px;
-  background: linear-gradient(135deg, var(--plover-mint), var(--plover-mint));
+  background: var(--plover-mint);
   border-radius: var(--plover-radius-sm);
   display: flex;
   align-items: center;
@@ -152,7 +152,7 @@ body {
 
 .badge {
   background-color: var(--plover-mint);
-  color: #fff;
+  color: var(--plover-bg);
   font-size: 11px;
   font-weight: 600;
   padding: 2px 6px;
@@ -338,7 +338,7 @@ body {
 .circle-check-button.done {
   border-color: var(--plover-mint);
   background-color: var(--plover-mint);
-  color: white;
+  color: var(--plover-bg);
 }
 
 .goal-input-container {
@@ -618,11 +618,12 @@ body {
 .btn-primary {
   background-color: var(--plover-mint);
   border-color: var(--plover-mint);
-  color: white;
+  color: var(--plover-bg);
 }
 
 .btn-primary:hover {
   background-color: var(--plover-mint);
+  opacity: 0.85;
 }
 
 .btn-danger {
@@ -780,4 +781,234 @@ input:checked + .slider:before {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* ---- Plover Overlay CSS Styles -------------------------------------------- */
+
+.plover-floating-bar-widget {
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  background: rgba(19, 19, 22, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  border-radius: 9999px;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.1),
+    0 12px 32px -8px rgba(0, 0, 0, 0.6);
+  box-sizing: border-box;
+  transition: all var(--transition-normal);
+  justify-content: space-between;
+  width: 400px;
+  height: 36px;
+}
+
+.plover-glass-panel {
+  background: rgba(19, 19, 22, 0.85);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.1),
+    0 24px 60px -20px rgba(0, 0, 0, 0.7);
+  box-sizing: border-box;
+  position: relative;
+}
+
+.plover-glass-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    150deg,
+    rgba(255, 255, 255, 0.25) 0%,
+    rgba(255, 255, 255, 0.04) 35%,
+    rgba(255, 255, 255, 0) 60%,
+    rgba(255, 255, 255, 0.12) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.plover-wizard-container {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+}
+
+.plover-progress-track {
+  flex: 1;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  overflow: hidden;
+  margin: 0 10px;
+}
+
+.plover-progress-fill {
+  height: 100%;
+  background: #9fe1cb;
+  border-radius: 9999px;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.plover-pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #9fe1cb;
+  box-shadow: 0 0 0 0 rgba(159, 225, 203, 0.7);
+  animation: plover-pulse-animation 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes plover-pulse-animation {
+  0%,
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(159, 225, 203, 0.7);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 6px rgba(159, 225, 203, 0);
+  }
+}
+
+.plover-pill-group {
+  display: flex;
+  gap: 8px;
+}
+
+.plover-pill {
+  padding: 6px 14px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  outline: none;
+}
+
+.plover-pill:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.plover-pill.active {
+  background: rgba(159, 225, 203, 0.1);
+  color: #9fe1cb;
+  border-color: rgba(159, 225, 203, 0.3);
+  box-shadow: inset 0 0 0 1px rgba(159, 225, 203, 0.2);
+}
+
+.plover-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+  transition: color var(--transition-fast);
+}
+
+.plover-checkbox-label:hover {
+  color: var(--text-primary);
+}
+
+.plover-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  outline: none;
+  background: rgba(255, 255, 255, 0.02);
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.plover-checkbox:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.plover-checkbox:checked {
+  background: #9fe1cb;
+  border-color: #9fe1cb;
+}
+
+.plover-checkbox:checked::after {
+  content: '✓';
+  color: #141416;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.plover-button-primary {
+  padding: 10px 20px;
+  border-radius: 9999px;
+  background: #f6f2eb;
+  color: #111113;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.plover-button-primary:hover:not(:disabled) {
+  background: #ffffff;
+  transform: translateY(-1px);
+}
+
+.plover-button-primary:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+
+.plover-button-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.plover-window-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.plover-window-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.plover-window-card.selected {
+  background: rgba(159, 225, 203, 0.06);
+  border-color: rgba(159, 225, 203, 0.3);
+  box-shadow: inset 0 0 0 1px rgba(159, 225, 203, 0.1);
 }

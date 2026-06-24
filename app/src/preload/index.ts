@@ -20,6 +20,7 @@ export interface CompanionApi {
   setActiveTask: (taskId: string | null) => Promise<void>;
   setState: (kind: StateKind) => Promise<void>;
   resize: (height: number) => Promise<void>;
+  getInitialState: () => Promise<{ kind: StateKind; activeTaskId: string | null }>;
 }
 
 export interface PloverApi {
@@ -97,8 +98,11 @@ export interface PloverApi {
   proposeGoal: (goalText: string) => Promise<ProposedPlan>;
   commitGoal: (plan: ProposedPlan) => Promise<{ goalId: string }>;
   closeOverlay: () => Promise<void>;
-  resizeOverlay: (height: number) => Promise<void>;
+  resizeOverlay: (height: number, width?: number) => Promise<void>;
   openSetupWindow: () => Promise<void>;
+  listActiveWindows: () => Promise<{ app: string; title: string }[]>;
+  setIgnoreMouseEvents: (ignore: boolean) => Promise<void>;
+  setTrackingState: (tracking: boolean) => Promise<void>;
 
   // Companion API
   companion: CompanionApi;
@@ -125,8 +129,11 @@ const api: PloverApi = {
   proposeGoal: (goalText) => ipcRenderer.invoke('goal:propose', goalText),
   commitGoal: (plan) => ipcRenderer.invoke('goal:commit', plan),
   closeOverlay: () => ipcRenderer.invoke('overlay:close'),
-  resizeOverlay: (height) => ipcRenderer.invoke('overlay:resize', height),
+  resizeOverlay: (height, width) => ipcRenderer.invoke('overlay:resize', height, width),
   openSetupWindow: () => ipcRenderer.invoke('overlay:openWindow'),
+  listActiveWindows: () => ipcRenderer.invoke('windows:list'),
+  setIgnoreMouseEvents: (ignore) => ipcRenderer.invoke('overlay:set-ignore-mouse-events', ignore),
+  setTrackingState: (tracking) => ipcRenderer.invoke('overlay:set-tracking', tracking),
 
   // Companion
   companion: {
@@ -135,6 +142,7 @@ const api: PloverApi = {
     setActiveTask: (taskId) => ipcRenderer.invoke('companion:setActiveTask', taskId),
     setState: (kind) => ipcRenderer.invoke('companion:setState', kind),
     resize: (height) => ipcRenderer.invoke('companion:resize', height),
+    getInitialState: () => ipcRenderer.invoke('companion:getInitialState'),
   },
 
   // Events

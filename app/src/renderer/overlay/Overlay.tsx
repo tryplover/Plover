@@ -14,7 +14,8 @@ export function Overlay() {
       if (!containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
       const height = Math.ceil(rect.height);
-      window.api.resizeOverlay(height).catch((err) => {
+      const width = Math.ceil(rect.width);
+      window.api.resizeOverlay(height, width).catch((err) => {
         console.error('Failed to resize overlay:', err);
       });
     };

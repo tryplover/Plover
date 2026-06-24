@@ -1,4 +1,4 @@
-import { execFile } from 'node:child_process';
+import { activeWindow, openWindows } from 'get-windows';
 import { ActivityRepo } from '../store/repos/activity.js';
 import { SettingsRepo } from '../store/repos/settings.js';
 
@@ -17,9 +17,9 @@ export class WindowTracker {
   }
 
   start(): void {
-    if (process.platform !== 'darwin') {
+    if (process.platform !== 'darwin' && process.platform !== 'win32') {
       console.log(
-        '[WindowTracker] Window tracking is only supported on macOS (darwin). Skipping start.',
+        '[WindowTracker] Window tracking is only supported on macOS (darwin) and Windows (win32). Skipping start.',
       );
       return;
     }
@@ -39,7 +39,7 @@ export class WindowTracker {
   }
 
   async checkActiveWindow(): Promise<void> {
-    if (process.platform !== 'darwin') {
+    if (process.platform !== 'darwin' && process.platform !== 'win32') {
       return;
     }
     if (this.isChecking) {
@@ -72,33 +72,39 @@ export class WindowTracker {
     }
   }
 
-  private getActiveWindowFromOS(): Promise<{ app: string; title: string }> {
-    return new Promise((resolve, reject) => {
-      const appleScript = `tell application "System Events"
-    set frontmostProcess to first process whose frontmost is true
-    set productName to name of frontmostProcess
-    set titleOfWindow to "Unknown"
-    try
-        tell process productName
-            set titleOfWindow to name of window 1
-        end tell
-    end try
-    return productName & "|||" & titleOfWindow
-end tell`;
+  private async getActiveWindowFromOS(): Promise<{ app: string; title: string }> {
+    if (process.platform !== 'darwin' && process.platform !== 'win32') {
+      throw new Error('Unsupported platform');
+    }
+    const result = await activeWindow();
+    const app = result?.owner?.name || 'Unknown';
+    const title = result?.title || 'Unknown';
+    return { app, title };
+  }
+}
 
-      execFile('osascript', ['-e', appleScript], (error, stdout) => {
-        if (error) {
-          reject(error);
-          return;
+export async function listActiveWindows(): Promise<{ app: string; title: string }[]> {
+  try {
+    if (process.platform !== 'darwin' && process.platform !== 'win32') {
+      return [];
+    }
+    const windows = await openWindows();
+    return windows
+      .filter((w) => {
+        const app = w.owner?.name;
+        const title = w.title;
+        if (process.platform === 'darwin') {
+          return app !== 'Finder' && title !== 'Unknown';
+        } else {
+          return app !== 'explorer' && title !== 'Unknown';
         }
-
-        const output = stdout.trim();
-        const parts = output.split('|||');
-        const app = parts[0]?.trim() || 'Unknown';
-        const title = parts[1]?.trim() || 'Unknown';
-
-        resolve({ app, title });
-      });
-    });
+      })
+      .map((w) => ({
+        app: w.owner?.name || 'Unknown',
+        title: w.title || 'Unknown',
+      }));
+  } catch (err) {
+    console.error('Error listing active windows:', err);
+    return [];
   }
 }

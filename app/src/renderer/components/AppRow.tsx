@@ -12,7 +12,7 @@ export interface AppRowProps {
 export function AppRow({ initial, title, subtitle, selected, onWatch }: AppRowProps) {
   return (
     <div className="plover-approw" data-selected={selected ? 'true' : 'false'}>
-      <span className="plover-approw__avatar" aria-hidden>
+      <span className="plover-approw__avatar" aria-hidden="true">
         {initial}
       </span>
       <span className="plover-approw__text">
