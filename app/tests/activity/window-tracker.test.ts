@@ -14,7 +14,6 @@ vi.mock('get-windows', () => ({
 }));
 
 describe('WindowTracker', () => {
-  const originalPlatform = process.platform;
 
   beforeEach(() => {
     vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin');
