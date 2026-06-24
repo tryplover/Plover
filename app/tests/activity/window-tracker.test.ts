@@ -17,19 +17,13 @@ describe('WindowTracker', () => {
   const originalPlatform = process.platform;
 
   beforeEach(() => {
-    Object.defineProperty(process, 'platform', {
-      value: 'darwin',
-      configurable: true,
-    });
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin');
     vi.useFakeTimers();
     vi.clearAllMocks();
   });
 
   afterEach(() => {
-    Object.defineProperty(process, 'platform', {
-      value: originalPlatform,
-      configurable: true,
-    });
+    vi.restoreAllMocks();
     vi.useRealTimers();
   });
 
