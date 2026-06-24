@@ -172,7 +172,11 @@ describe('IPC Handlers', () => {
     const resizeCall = calls.find((call) => call[0] === 'overlay:resize');
     expect(resizeCall).toBeDefined();
 
-    const handler = resizeCall?.[1] as (event: unknown, height: number) => Promise<void>;
+    const handler = resizeCall?.[1] as (
+      event: unknown,
+      height: number,
+      width?: number,
+    ) => Promise<void>;
 
     // Height changes
     await handler({}, 200);
@@ -187,5 +191,15 @@ describe('IPC Handlers', () => {
     mockOverlayWindow.setBounds.mockClear();
     await handler({}, 80);
     expect(mockOverlayWindow.setBounds).not.toHaveBeenCalled();
+
+    // Width changes (with horizontal centering)
+    mockOverlayWindow.setBounds.mockClear();
+    await handler({}, 80, 440);
+    expect(mockOverlayWindow.setBounds).toHaveBeenCalledWith({
+      x: 90,
+      y: 20,
+      width: 440,
+      height: 80,
+    });
   });
 });
