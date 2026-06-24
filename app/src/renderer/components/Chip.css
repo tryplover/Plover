@@ -1,0 +1,31 @@
+.plover-chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: var(--plover-surface-raised);
+  color: var(--plover-text);
+  transition: all 0.2s ease;
+  font-family: var(--plover-font-sans);
+}
+
+.plover-chip[data-selected='true'] {
+  border: 1px solid var(--plover-mint);
+  background: var(--plover-mint-soft);
+  color: var(--plover-mint);
+}
+
+.plover-chip[data-selected='false'] {
+  background: var(--plover-surface-raised);
+  color: var(--plover-text);
+}
+
+.plover-chip:hover {
+  opacity: 0.85;
+}
+
+.plover-chip:active {
+  transform: scale(0.98);
+}

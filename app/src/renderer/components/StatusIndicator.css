@@ -1,0 +1,55 @@
+.plover-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  background: var(--plover-surface-raised);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.plover-status__dot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.plover-status[data-kind='observing'] .plover-status__dot,
+.plover-status[data-kind='done'] .plover-status__dot {
+  background: var(--plover-mint);
+}
+
+.plover-status[data-kind='paused'] .plover-status__dot {
+  background: var(--plover-text-muted);
+}
+
+.plover-status[data-kind='not-sure'] .plover-status__dot {
+  background: transparent;
+  border: 1px dashed var(--plover-text-muted);
+}
+
+.plover-status__pulse {
+  position: absolute;
+  inset: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--plover-mint);
+  pointer-events: none;
+}
+
+.plover-status__label {
+  color: var(--plover-text-muted);
+}
+
+.plover-status[data-kind='observing'] .plover-status__label,
+.plover-status[data-kind='done'] .plover-status__label {
+  color: var(--plover-mint);
+}
