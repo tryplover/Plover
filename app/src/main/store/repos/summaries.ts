@@ -43,4 +43,15 @@ export class SummariesRepo {
   listForTask(taskId: string): SummaryRow[] {
     return this.listForTaskStmt.all(taskId) as SummaryRow[];
   }
+
+  listAll(): (SummaryRow & { task_title: string | null; goal_title: string | null })[] {
+    const stmt = this.db.prepare(`
+      SELECT s.id, s.task_id, s.ts, s.summary, s.signal, t.title as task_title, g.title as goal_title
+      FROM summaries s
+      LEFT JOIN tasks t ON s.task_id = t.id
+      LEFT JOIN goals g ON t.goal_id = g.id
+      ORDER BY s.ts DESC
+    `);
+    return stmt.all() as (SummaryRow & { task_title: string | null; goal_title: string | null })[];
+  }
 }

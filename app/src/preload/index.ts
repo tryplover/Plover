@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { Task, Goal, CalendarEvent } from '../shared/types.js';
+import { Task, Goal, CalendarEvent, SummaryRow } from '../shared/types.js';
 
 export interface ProposedPlan {
   goal: Omit<Goal, 'id' | 'created_at' | 'updated_at' | 'status'>;
@@ -27,6 +27,9 @@ export interface PloverApi {
   // Main Goals & Tasks
   getGoals: () => Promise<Goal[]>;
   getTasks: () => Promise<Task[]>;
+  getSummaries: () => Promise<
+    (SummaryRow & { task_title: string | null; goal_title: string | null })[]
+  >;
   updateTaskStatus: (id: string, status: Task['status']) => Promise<Task>;
   decomposeGoal: (goalText: string) => Promise<{
     goal: Omit<Goal, 'id' | 'created_at' | 'updated_at' | 'status'>;
@@ -114,6 +117,7 @@ export interface PloverApi {
 const api: PloverApi = {
   getGoals: () => ipcRenderer.invoke('goals:get'),
   getTasks: () => ipcRenderer.invoke('tasks:get'),
+  getSummaries: () => ipcRenderer.invoke('summaries:get'),
   updateTaskStatus: (id, status) => ipcRenderer.invoke('tasks:updateStatus', id, status),
   decomposeGoal: (goalText) => ipcRenderer.invoke('goals:decompose', goalText),
   scheduleTasks: (tasks, calendarEvents, workingHours, horizonDays) =>
