@@ -12,6 +12,7 @@ export async function runRetention(args: {
   const cutoff = new Date(args.now.getTime() - days * 86400000).toISOString();
   const screenshotsToUnlink = args.activityRepo
     .list({ kinds: ['screenshot_captured'], until: cutoff, limit: 1000 })
+    .filter((r) => r.ts < cutoff)
     .map((r) => (r.payload as { filePath?: string }).filePath)
     .filter((p): p is string => typeof p === 'string' && p.length > 0);
   const { deleted } = args.activityRepo.purge({ olderThan: cutoff });
