@@ -102,7 +102,7 @@ app.post('/api/decompose', async (req, res): Promise<any> => {
     }
   }
 
-  const { goalText, now, workingHours } = req.body;
+  const { goalText, now, workingHours, recentActivity } = req.body;
 
   if (!goalText) {
     return res.status(400).json({ error: 'Missing goalText' });
@@ -112,6 +112,14 @@ app.post('/api/decompose', async (req, res): Promise<any> => {
   }
   if (!workingHours || !workingHours.start || !workingHours.end) {
     return res.status(400).json({ error: 'Missing workingHours configuration' });
+  }
+  if (recentActivity !== undefined) {
+    if (!Array.isArray(recentActivity)) {
+      return res.status(400).json({ error: 'recentActivity must be an array' });
+    }
+    if (recentActivity.length > 200) {
+      return res.status(400).json({ error: 'recentActivity exceeds 200 entries' });
+    }
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
@@ -135,7 +143,7 @@ app.post('/api/decompose', async (req, res): Promise<any> => {
       ...fallbackNames
     ];
 
-    const prompt = `You are a productivity planner.
+    const baseDecomposePrompt = `You are a productivity planner.
 The user wants to achieve this goal: "${goalText}"
 Current time is: ${now}
 Working hours are: ${workingHours.start} to ${workingHours.end}
@@ -153,6 +161,13 @@ Guidelines:
 7. A subtask can only depend on subtasks that appear BEFORE it in the list (index < current index).
 8. Determine if there is a specific deadline mentioned or implied in the goal text, interpreting relative dates using the current time ${now}. If so, set it as an ISO8601 string. If not, omit it.
 `;
+
+    const activityBlock =
+      Array.isArray(recentActivity) && recentActivity.length > 0
+        ? `\n\nThe user has had the following recent computer activity (chronological):\n${(recentActivity as Array<{ kind: string; payload: unknown; ts: string }>).map((a) => `- [${a.ts}] ${a.kind}: ${JSON.stringify(a.payload)}`).join('\n')}\n\nUse this only as soft context — do NOT mention it back to the user, and do NOT force tasks to align with it. If the activity is irrelevant to the goal, ignore it.`
+        : '';
+
+    const prompt = baseDecomposePrompt + activityBlock;
 
     let response;
     let lastError: Error | null = null;
