@@ -10,13 +10,23 @@ export async function runRetention(args: {
   const days = args.settingsRepo.getAll().activityRetentionDays;
   if (!days || days <= 0) return { deleted: 0, cutoff: null };
   const cutoff = new Date(args.now.getTime() - days * 86400000).toISOString();
-  const screenshotsToUnlink = args.activityRepo
-    .list({ kinds: ['screenshot_captured'], until: cutoff, limit: 1000 })
-    .filter((r) => r.ts < cutoff)
-    .map((r) => (r.payload as { filePath?: string }).filePath)
-    .filter((p): p is string => typeof p === 'string' && p.length > 0);
+  const PAGE = 500;
+  let offset = 0;
+  const filesToUnlink: string[] = [];
+  for (;;) {
+    const page = args.activityRepo.list({ kinds: ['screenshot_captured'], until: cutoff, limit: PAGE, offset });
+    for (const r of page) {
+      if (r.ts >= cutoff) continue;
+      const filePath = (r.payload as { filePath?: string }).filePath;
+      if (typeof filePath === 'string' && filePath.length > 0) {
+        filesToUnlink.push(filePath);
+      }
+    }
+    if (page.length < PAGE) break;
+    offset += PAGE;
+  }
   const { deleted } = args.activityRepo.purge({ olderThan: cutoff });
-  for (const p of screenshotsToUnlink) {
+  for (const p of filesToUnlink) {
     try {
       await fs.unlink(p);
     } catch {

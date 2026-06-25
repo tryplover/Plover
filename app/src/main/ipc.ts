@@ -186,6 +186,23 @@ export function setupIpcHandlers(
       }
       return result;
     }
+    if (args?.olderThan) {
+      const olderThan = args.olderThan;
+      const PAGE = 500;
+      let offset = 0;
+      for (;;) {
+        const page = activityRepo.list({ kinds: ['screenshot_captured'], until: olderThan, limit: PAGE, offset });
+        const screenshotPage = page.filter((r) => r.ts < olderThan);
+        for (const r of screenshotPage) {
+          const filePath = (r.payload as { filePath?: string }).filePath;
+          if (typeof filePath === 'string') {
+            try { await fs.promises.unlink(filePath); } catch { /* ignore */ }
+          }
+        }
+        if (page.length < PAGE) break;
+        offset += PAGE;
+      }
+    }
     return activityRepo.purge(args ?? {});
   });
 
