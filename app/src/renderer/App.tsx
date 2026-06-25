@@ -2,11 +2,12 @@ import { useState, useEffect, useCallback } from 'react';
 import GoalsList from './main/pages/GoalsList';
 import AIProgress from './main/pages/AIProgress';
 import Settings from './main/pages/Settings';
+import { Activity } from './main/pages/Activity';
 import { isToday } from './lib/date';
 import { IconTarget, IconGear, IconActivity } from './main/icons';
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<'goals' | 'progress' | 'settings'>('goals');
+  const [activeTab, setActiveTab] = useState<'goals' | 'progress' | 'settings' | 'activity'>('goals');
   const [todayPendingCount, setTodayPendingCount] = useState(0);
 
   const fetchTodayCount = useCallback(async () => {
@@ -77,6 +78,14 @@ export function App() {
               <IconGear />
               <span>Settings</span>
             </button>
+
+            <button
+              className={`nav-item ${activeTab === 'activity' ? 'active' : ''}`}
+              onClick={() => setActiveTab('activity')}
+              data-testid="nav-activity"
+            >
+              <span>Activity</span>
+            </button>
           </nav>
         </div>
 
@@ -87,6 +96,7 @@ export function App() {
         {activeTab === 'goals' && <GoalsList onTasksUpdated={fetchTodayCount} data-testid="page-goals" />}
         {activeTab === 'progress' && <AIProgress data-testid="page-progress" />}
         {activeTab === 'settings' && <Settings data-testid="page-settings" />}
+        {activeTab === 'activity' && <Activity />}
       </main>
     </div>
   );
