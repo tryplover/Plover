@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import GoalsList from './main/pages/GoalsList';
 import AIProgress from './main/pages/AIProgress';
 import Settings from './main/pages/Settings';
