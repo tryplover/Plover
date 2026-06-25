@@ -88,8 +88,7 @@ CREATE VIRTUAL TABLE search_index USING fts5(
   source_id,                          -- foreign id into the source's table or filesystem
   title,
   body,
-  ts,
-  unindexed=ts,
+  ts UNINDEXED,
   tokenize = 'porter unicode61'
 );
 ```
