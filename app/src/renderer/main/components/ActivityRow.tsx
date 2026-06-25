@@ -28,7 +28,7 @@ function summarize(row: Row): string {
     case 'file_added':          return `Added ${String(p.path ?? '')}`;
     case 'git_commit':          return `Commit ${String(p.hash ?? '').slice(0, 7)}: ${String(p.message ?? '').split('\n')[0]}`;
     case 'screenshot_captured': return `Screenshot ${String(p.width ?? '?')}×${String(p.height ?? '?')}`;
-    case 'screenshot_inferred': return `Inferred: ${String(p.summary ?? '')}`;
+    case 'screenshot_inferred': return Number(p.confidence ?? 0) <= 0.3 ? '' : `Inferred: ${String(p.summary ?? '')}`;
     default:                    return JSON.stringify(p);
   }
 }

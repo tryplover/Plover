@@ -90,7 +90,6 @@ export class ScreenCapturer {
     const authToken = process.env.PLOVER_AUTH_TOKEN;
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (authToken) headers['X-Plover-Auth-Token'] = authToken;
-
     // Pass the most recent window_focus payload to the backend so Gemini Vision
     // has the active app/title/URL as context instead of falling back to "no context".
     const lastFocus = this.deps.activityRepo.list({ kind: 'window_focus', limit: 1 })[0];

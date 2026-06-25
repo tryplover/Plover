@@ -99,4 +99,38 @@ describe('ScreenCapturer', () => {
     expect(kinds).toContain('screenshot_inferred');
     vi.unstubAllGlobals();
   });
+
+  it('forwards windowContext from most recent window_focus row in fetch body', async () => {
+    settingsRepo.update({ screenCaptureEnabled: true, screenVisionInferenceEnabled: true });
+    activityRepo.log('window_focus', { app: 'Slack', title: 'General', browserUrl: 'https://app.slack.com' });
+    const png = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
+    getSources.mockResolvedValueOnce([{ name: 'Entire Screen', thumbnail: { toPNG: () => png, getSize: () => ({ width: 100, height: 100 }) } }]);
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ summary: 'In Slack', activeApp: 'Slack', currentTask: null, confidence: 0.8 }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    await capturer.captureOnce();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [, callOptions] = fetchMock.mock.calls[0] as [string, { body: string }];
+    const body = JSON.parse(callOptions.body) as { screenshotBase64: string; windowContext?: { app: string; title: string; browserUrl?: string } };
+    expect(body.windowContext).toMatchObject({ app: 'Slack', title: 'General', browserUrl: 'https://app.slack.com' });
+    vi.unstubAllGlobals();
+  });
+
+  it('omits windowContext from fetch body when no window_focus row exists', async () => {
+    settingsRepo.update({ screenCaptureEnabled: true, screenVisionInferenceEnabled: true });
+    const png = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
+    getSources.mockResolvedValueOnce([{ name: 'Entire Screen', thumbnail: { toPNG: () => png, getSize: () => ({ width: 100, height: 100 }) } }]);
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ summary: 'Desktop', activeApp: 'Finder', currentTask: null, confidence: 0.7 }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    await capturer.captureOnce();
+    const [, callOptions] = fetchMock.mock.calls[0] as [string, { body: string }];
+    const body = JSON.parse(callOptions.body) as { screenshotBase64: string; windowContext?: unknown };
+    expect(body.windowContext).toBeUndefined();
+    vi.unstubAllGlobals();
+  });
 });

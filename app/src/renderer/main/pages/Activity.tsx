@@ -63,8 +63,12 @@ function KindFilter({ kinds, onChange }: { kinds: string[]; onChange: (k: string
             type="checkbox"
             checked={kinds.length === 0 || kinds.includes(k)}
             onChange={(e) => {
-              if (e.target.checked) onChange([...kinds.filter((x) => x !== k), k]);
-              else onChange(kinds.length ? kinds.filter((x) => x !== k) : ALL.filter((x) => x !== k));
+              if (e.target.checked) {
+                const next = [...kinds.filter((x) => x !== k), k];
+                onChange(next.length === ALL.length ? [] : next);
+              } else {
+                onChange(kinds.length ? kinds.filter((x) => x !== k) : ALL.filter((x) => x !== k));
+              }
             }}
           />
           {k}
