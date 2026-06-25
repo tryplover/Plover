@@ -24,7 +24,7 @@ export function Activity() {
     setLoading(false);
   }, [rows, kinds]);
 
-  useEffect(() => { void load(true); }, [kinds]); // eslint-disable-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
+  useEffect(() => { void load(true); }, [kinds]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const deleteRow = async (id: number): Promise<void> => {
     await window.api.purgeActivity({ ids: [id] });
