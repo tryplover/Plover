@@ -1,6 +1,23 @@
 import { activeWindow, openWindows } from 'get-windows';
+import { execFile } from 'node:child_process';
 import { ActivityRepo } from '../store/repos/activity.js';
 import { SettingsRepo } from '../store/repos/settings.js';
+
+const BROWSER_BUNDLES: Record<string, string> = {
+  'com.google.Chrome': 'Google Chrome',
+  'com.apple.Safari': 'Safari',
+  'com.brave.Browser': 'Brave Browser',
+  'company.thebrowser.Browser': 'Arc',
+  'org.mozilla.firefox': 'Firefox',
+};
+
+interface WindowMeta {
+  app: string;
+  title: string;
+  bundleId?: string;
+  browserUrl?: string;
+  browserTabTitle?: string;
+}
 
 export class WindowTracker {
   private activityRepo: ActivityRepo;
@@ -17,18 +34,9 @@ export class WindowTracker {
   }
 
   start(): void {
-    if (process.platform !== 'darwin' && process.platform !== 'win32') {
-      console.log(
-        '[WindowTracker] Window tracking is only supported on macOS (darwin) and Windows (win32). Skipping start.',
-      );
-      return;
-    }
-    if (this.intervalId) {
-      return;
-    }
-    this.intervalId = setInterval(() => {
-      void this.checkActiveWindow();
-    }, 10000);
+    if (process.platform !== 'darwin' && process.platform !== 'win32') return;
+    if (this.intervalId) return;
+    this.intervalId = setInterval(() => { void this.checkActiveWindow(); }, 10000);
   }
 
   stop(): void {
@@ -39,31 +47,26 @@ export class WindowTracker {
   }
 
   async checkActiveWindow(): Promise<void> {
-    if (process.platform !== 'darwin' && process.platform !== 'win32') {
-      return;
-    }
-    if (this.isChecking) {
-      return;
-    }
+    if (process.platform !== 'darwin' && process.platform !== 'win32') return;
+    if (this.isChecking) return;
     this.isChecking = true;
-
     try {
       const settings = this.settingsRepo.getAll();
-      if (settings.pauseScheduling) {
-        return;
-      }
+      if (settings.pauseAllTracking || settings.pauseScheduling || !settings.windowTrackingEnabled) return;
 
-      const { app, title } = await this.getActiveWindowFromOS();
-
+      const meta = await this.getActiveWindowFromOS();
       const now = Date.now();
-      const hasChanged = app !== this.lastApp || title !== this.lastTitle;
+      const hasChanged = meta.app !== this.lastApp || meta.title !== this.lastTitle;
       const reachedTimeLimit = now - this.lastLogTime >= 60000;
-
       if (hasChanged || reachedTimeLimit) {
-        this.lastApp = app;
-        this.lastTitle = title;
+        this.lastApp = meta.app;
+        this.lastTitle = meta.title;
         this.lastLogTime = now;
-        this.activityRepo.log('window_focus', { app, title });
+        const payload: Record<string, unknown> = { app: meta.app, title: meta.title };
+        if (meta.bundleId) payload.bundleId = meta.bundleId;
+        if (meta.browserUrl) payload.browserUrl = meta.browserUrl;
+        if (meta.browserTabTitle) payload.browserTabTitle = meta.browserTabTitle;
+        this.activityRepo.log('window_focus', payload);
       }
     } catch (err) {
       console.error('Error tracking active window:', err);
@@ -72,14 +75,35 @@ export class WindowTracker {
     }
   }
 
-  private async getActiveWindowFromOS(): Promise<{ app: string; title: string }> {
-    if (process.platform !== 'darwin' && process.platform !== 'win32') {
-      throw new Error('Unsupported platform');
-    }
+  private async getActiveWindowFromOS(): Promise<WindowMeta> {
     const result = await activeWindow();
     const app = result?.owner?.name || 'Unknown';
     const title = result?.title || 'Unknown';
-    return { app, title };
+    const bundleId =
+      (result?.owner as { bundleId?: string } | undefined)?.bundleId ?? undefined;
+    let browserUrl: string | undefined;
+    let browserTabTitle: string | undefined;
+    if (process.platform === 'darwin' && bundleId && BROWSER_BUNDLES[bundleId]) {
+      const captured = await this.tryReadBrowserTab(BROWSER_BUNDLES[bundleId]);
+      if (captured) { browserUrl = captured.url; browserTabTitle = captured.title; }
+    }
+    return { app, title, bundleId, browserUrl, browserTabTitle };
+  }
+
+  private tryReadBrowserTab(appName: string): Promise<{ url: string; title: string } | null> {
+    const script =
+      appName === 'Firefox'
+        ? 'tell application "Firefox" to get URL of active tab of front window'
+        : `tell application "${appName}" to (get URL of active tab of front window) & linefeed & (get title of active tab of front window)`;
+    return new Promise((resolve) => {
+      execFile('osascript', ['-e', script], { timeout: 1000 }, (err, stdout) => {
+        if (err) { resolve(null); return; }
+        const text = stdout.toString().trim();
+        if (!text) { resolve(null); return; }
+        const [url, ...rest] = text.split('\n');
+        resolve(url ? { url, title: rest.join(' ').trim() || appName } : null);
+      });
+    });
   }
 }
 
