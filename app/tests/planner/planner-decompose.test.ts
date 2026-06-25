@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import nock from 'nock';
 import { decomposeGoal } from '../../src/main/planner/decompose';
 
@@ -183,5 +183,49 @@ describe('decomposeGoal', () => {
         workingHours: { start: '09:00', end: '18:00' },
       }),
     ).rejects.toThrow('Invalid response payload returned from decomposition backend');
+  });
+
+  it('forwards recentActivity to the backend request body', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        goal: { title: 'Finish doc' },
+        subtasks: [{ title: 'Outline', estimate_minutes: 30 }],
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    await decomposeGoal({
+      goalText: 'Finish doc',
+      now: new Date('2026-06-25T12:00:00.000Z'),
+      workingHours: { start: '09:00', end: '18:00' },
+      recentActivity: [{ kind: 'gdocs_revision', payload: { name: 'Q3 Roadmap' }, ts: '2026-06-25T11:00:00.000Z' }],
+    });
+    const [firstCall] = fetchMock.mock.calls;
+    const body = JSON.parse(firstCall?.[1]?.body ?? '{}') as Record<string, unknown>;
+    expect(Array.isArray(body.recentActivity)).toBe(true);
+    const activity = body.recentActivity as { kind: string }[];
+    expect(activity).toHaveLength(1);
+    expect(activity[0]?.kind).toBe('gdocs_revision');
+    vi.unstubAllGlobals();
+  });
+
+  it('omits recentActivity from request body when not provided', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        goal: { title: 'No activity goal' },
+        subtasks: [{ title: 'Step', estimate_minutes: 30 }],
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    await decomposeGoal({
+      goalText: 'No activity goal',
+      now: new Date('2026-06-25T12:00:00.000Z'),
+      workingHours: { start: '09:00', end: '18:00' },
+    });
+    const [firstCall] = fetchMock.mock.calls;
+    const body = JSON.parse(firstCall?.[1]?.body ?? '{}') as Record<string, unknown>;
+    expect(body.recentActivity).toBeUndefined();
+    vi.unstubAllGlobals();
   });
 });

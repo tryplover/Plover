@@ -70,10 +70,18 @@ export function setupIpcHandlers(
 
   ipcMain.handle('goals:decompose', async (_, goalText: string) => {
     const settings = settingsRepo.getAll();
+    let recentActivity: { kind: string; payload: Record<string, unknown>; ts: string }[] | undefined;
+    if (settings.planner_useRecentActivityContext) {
+      const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      recentActivity = activityRepo
+        .list({ since, limit: 50 })
+        .map((r) => ({ kind: r.kind, payload: r.payload, ts: r.ts }));
+    }
     return decomposeGoal({
       goalText,
       now: new Date(),
       workingHours: settings.workingHours,
+      ...(recentActivity ? { recentActivity } : {}),
     });
   });
 
@@ -243,10 +251,18 @@ export function setupIpcHandlers(
   // Overlay API
   ipcMain.handle('goal:propose', async (_event, goalText: string): Promise<ProposedPlan> => {
     const settings = settingsRepo.getAll();
+    let recentActivity: { kind: string; payload: Record<string, unknown>; ts: string }[] | undefined;
+    if (settings.planner_useRecentActivityContext) {
+      const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      recentActivity = activityRepo
+        .list({ since, limit: 50 })
+        .map((r) => ({ kind: r.kind, payload: r.payload, ts: r.ts }));
+    }
     const result = await decomposeGoal({
       goalText,
       now: new Date(),
       workingHours: settings.workingHours,
+      ...(recentActivity ? { recentActivity } : {}),
     });
 
     const mockTasks: Task[] = result.subtasks.map((t, idx) => ({

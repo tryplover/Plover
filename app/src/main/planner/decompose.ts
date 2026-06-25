@@ -7,6 +7,7 @@ export async function decomposeGoal(input: {
   goalText: string;
   now: Date;
   workingHours: { start: string; end: string };
+  recentActivity?: { kind: string; payload: Record<string, unknown>; ts: string }[];
 }): Promise<{
   goal: Omit<Goal, 'id' | 'created_at' | 'updated_at' | 'status'>;
   subtasks: Omit<
@@ -31,14 +32,19 @@ export async function decomposeGoal(input: {
     headers['X-Plover-Auth-Token'] = authToken;
   }
 
+  const body: Record<string, unknown> = {
+    goalText: input.goalText,
+    now: input.now.toISOString(),
+    workingHours: input.workingHours,
+  };
+  if (input.recentActivity && input.recentActivity.length > 0) {
+    body.recentActivity = input.recentActivity.slice(0, 200);
+  }
+
   const response = await fetch(`${backendUrl}/api/decompose`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({
-      goalText: input.goalText,
-      now: input.now.toISOString(),
-      workingHours: input.workingHours,
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
