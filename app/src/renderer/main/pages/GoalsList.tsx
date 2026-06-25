@@ -1,41 +1,26 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Goal, Task } from '../../../shared/types';
 import { StepRow } from '../../components/StepRow';
 import { ProgressLine } from '../../components/ProgressLine';
 import { Button } from '../../components/Button';
-
-interface PreviewSubtask {
-  id: string;
-  title: string;
-  estimate_minutes: number;
-  depends_on?: string[];
-}
+import { isToday } from '../../lib/date';
+import { SetupFlow } from '../../overlay/SetupFlow';
+import { StatusIndicator } from '../../components/StatusIndicator';
 
 interface GoalsListProps {
   'data-testid'?: string;
+  onTasksUpdated?: () => void;
 }
 
-export default function GoalsList({ 'data-testid': dataTestId }: GoalsListProps) {
+export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }: GoalsListProps) {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Goal Form State
-  const [goalText, setGoalText] = useState('');
-  const [decomposing, setDecomposing] = useState(false);
-
-  // Decomposition Preview State
-  const [decomposedGoal, setDecomposedGoal] = useState<Omit<
-    Goal,
-    'id' | 'created_at' | 'updated_at' | 'status'
-  > | null>(null);
-  const [previewSubtasks, setPreviewSubtasks] = useState<PreviewSubtask[]>([]);
-  const [scheduledSlots, setScheduledSlots] = useState<
-    { taskId: string; start: string; end: string }[]
-  >([]);
+  // Modal State
+  const [showSetupModal, setShowSetupModal] = useState(false);
 
   const [expandedGoals, setExpandedGoals] = useState<Record<string, boolean>>({});
-  const [formError, setFormError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -75,96 +60,16 @@ export default function GoalsList({ 'data-testid': dataTestId }: GoalsListProps)
         appEvent.type === 'task.scheduled'
       ) {
         void fetchData();
+        if (onTasksUpdated) {
+          onTasksUpdated();
+        }
       }
     });
 
     return () => {
       unsubscribe();
     };
-  }, [fetchData]);
-
-  const runSchedulePreview = async (currentSubtasks: PreviewSubtask[]) => {
-    try {
-      const settings = await window.api.getSettings();
-      const existingTasks = await window.api.getTasks();
-      const existingSlots = existingTasks
-        .filter((t) => t.status === 'scheduled' && t.scheduled_start && t.scheduled_end)
-        .map((t) => ({
-          id: t.id,
-          summary: t.title,
-          start: t.scheduled_start ?? '',
-          end: t.scheduled_end ?? '',
-        }));
-
-      const slots = await window.api.scheduleTasks(
-        currentSubtasks,
-        existingSlots,
-        settings.workingHours,
-        settings.horizonDays,
-      );
-      setScheduledSlots(slots);
-    } catch (err) {
-      console.error('Failed to run schedule preview:', err);
-    }
-  };
-
-  const handleDecompose = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!goalText.trim()) return;
-
-    setDecomposing(true);
-    setFormError(null);
-    try {
-      const result = await window.api.decomposeGoal(goalText);
-      setDecomposedGoal(result.goal);
-
-      const mappedSubtasks = result.subtasks.map((task, idx) => ({
-        ...task,
-        id: `temp-preview-task-${idx}`,
-      }));
-      setPreviewSubtasks(mappedSubtasks);
-
-      await runSchedulePreview(mappedSubtasks);
-    } catch (err) {
-      console.error('Decomposition failed:', err);
-      setFormError('Decomposition failed. Please make sure the backend is active.');
-    } finally {
-      setDecomposing(false);
-    }
-  };
-
-  const handleCommitGoal = async () => {
-    if (!decomposedGoal) return;
-    setFormError(null);
-    try {
-      const slotsForSave = previewSubtasks.map((task, idx) => {
-        const slot = scheduledSlots.find((s) => s.taskId === task.id);
-        return {
-          tempIndex: idx,
-          start: slot?.start || '',
-          end: slot?.end || '',
-        };
-      });
-
-      await window.api.saveGoalAndTasks(decomposedGoal, previewSubtasks, slotsForSave);
-
-      setGoalText('');
-      setDecomposedGoal(null);
-      setPreviewSubtasks([]);
-      setScheduledSlots([]);
-
-      await fetchData();
-    } catch (err) {
-      console.error('Failed to commit goal:', err);
-      setFormError('Failed to save and schedule goal.');
-    }
-  };
-
-  const handleCancelPreview = () => {
-    setDecomposedGoal(null);
-    setPreviewSubtasks([]);
-    setScheduledSlots([]);
-  };
+  }, [fetchData, onTasksUpdated]);
 
   const toggleExpandGoal = (goalId: string) => {
     setExpandedGoals((prev) => ({
@@ -173,7 +78,7 @@ export default function GoalsList({ 'data-testid': dataTestId }: GoalsListProps)
     }));
   };
 
-  const handleSubtaskStatusToggle = async (taskId: string, currentStatus: Task['status']) => {
+  const handleTaskStatusToggle = async (taskId: string, currentStatus: Task['status']) => {
     try {
       const newStatus = currentStatus === 'done' ? 'scheduled' : 'done';
       await window.api.updateTaskStatus(taskId, newStatus);
@@ -182,14 +87,38 @@ export default function GoalsList({ 'data-testid': dataTestId }: GoalsListProps)
           t.id === taskId ? { ...t, status: newStatus, updated_at: new Date().toISOString() } : t,
         ),
       );
+      if (onTasksUpdated) {
+        onTasksUpdated();
+      }
     } catch (err) {
-      console.error('Failed to update subtask status:', err);
+      console.error('Failed to update task status:', err);
     }
+  };
+
+  // Filter today's tasks
+  const todayTasks = tasks.filter((t) => isToday(t.scheduled_start));
+
+  const goalsWithTodayTasks = goals.filter((goal) => {
+    const goalTasks = todayTasks.filter((t) => t.goal_id === goal.id);
+    return goalTasks.length > 0;
+  });
+
+  const getNearestCurrentTask = (goalId: string) => {
+    const goalTasks = todayTasks
+      .filter((t) => t.goal_id === goalId && t.status !== 'done')
+      .sort(
+        (a, b) =>
+          new Date(a.scheduled_start ?? 0).getTime() - new Date(b.scheduled_start ?? 0).getTime(),
+      );
+    return goalTasks[0];
   };
 
   if (loading) {
     return (
-      <div data-testid={dataTestId} style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <div
+        data-testid={dataTestId}
+        style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+      >
         <div className="loading-spinner" />
       </div>
     );
@@ -208,178 +137,334 @@ export default function GoalsList({ 'data-testid': dataTestId }: GoalsListProps)
         paddingLeft: '40px',
         paddingRight: '40px',
         backgroundColor: 'var(--plover-bg)',
+        position: 'relative',
       }}
     >
-      <h1
+      {/* Header */}
+      <div
         style={{
-          fontFamily: 'var(--plover-font-serif)',
-          fontSize: '36px',
-          fontWeight: 400,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
           marginBottom: '28px',
-          color: 'var(--plover-text)',
         }}
       >
-        Goals
-      </h1>
+        <h1
+          style={{
+            fontFamily: 'var(--plover-font-serif)',
+            fontSize: '36px',
+            fontWeight: 400,
+            color: 'var(--plover-text)',
+          }}
+        >
+          Goals
+        </h1>
+        <Button variant="primary" onClick={() => setShowSetupModal(true)}>
+          + Create Goal
+        </Button>
+      </div>
 
-      <div style={{ flex: 1, overflowY: 'auto' }}>
-        {!decomposedGoal && (
-          <div style={{ marginBottom: '32px' }}>
-            <form onSubmit={handleDecompose} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <input
-                type="text"
-                className="plover-input"
-                placeholder="What are you working on?"
-                value={goalText}
-                onChange={(e) => setGoalText(e.target.value)}
-                disabled={decomposing}
-              />
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  disabled={decomposing || !goalText.trim()}
-                >
-                  {decomposing ? 'Decomposing...' : 'Break into steps →'}
-                </Button>
-              </div>
-              {formError && (
-                <div role="alert" style={{ color: '#ff5d5d', fontSize: '13px' }}>
-                  {formError}
-                </div>
-              )}
-            </form>
-          </div>
-        )}
-
-        {decomposedGoal && (
-          <div
+      {/* Main Content Area */}
+      <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px' }}>
+        {/* Today's Focus Section */}
+        <div style={{ marginBottom: '40px' }}>
+          <h2
             style={{
-              backgroundColor: 'var(--plover-surface)',
-              borderRadius: 'var(--plover-radius-lg)',
-              padding: '24px',
-              marginBottom: '32px',
-              border: `1px solid var(--plover-mint)`,
+              fontSize: '14px',
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              color: 'var(--plover-text-muted)',
+              marginBottom: '16px',
             }}
           >
+            Today's Focus
+          </h2>
+
+          {todayTasks.length === 0 ? (
             <div
-              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}
+              style={{
+                backgroundColor: 'var(--plover-surface)',
+                borderRadius: 'var(--plover-radius-lg)',
+                padding: '32px 24px',
+                border: '1px solid var(--plover-border)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '12px',
+                textAlign: 'center',
+              }}
             >
-              <div>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--plover-mint)' }}>PREVIEW</span>
-                <h2 style={{ fontSize: '20px', fontWeight: 700, marginTop: '4px' }}>
-                  {decomposedGoal.title}
-                </h2>
-              </div>
-              <Button variant="secondary" onClick={handleCancelPreview}>
-                Cancel
-              </Button>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
-              {previewSubtasks.map((subtask) => (
-                <StepRow
-                  key={subtask.id}
-                  label={subtask.title}
-                  state="pending"
-                  trailing={`${subtask.estimate_minutes}m`}
-                />
-              ))}
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <Button variant="primary" onClick={handleCommitGoal}>
-                Save Goal
-              </Button>
-            </div>
-            {formError && (
-              <div role="alert" style={{ marginTop: '8px', color: '#ff5d5d', fontSize: '13px' }}>
-                {formError}
-              </div>
-            )}
-          </div>
-        )}
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {goals.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '32px', color: 'var(--plover-text-muted)' }}>
-              <p>No active goals found.</p>
+              <StatusIndicator kind="not-sure" label="nothing scheduled" />
+              <p style={{ fontSize: '13px', color: 'var(--plover-text-dim)' }}>
+                No tasks scheduled for today. Create a new goal or break down active ones to
+                schedule tasks.
+              </p>
             </div>
           ) : (
-            goals.map((goal) => {
-              const goalTasks = tasks.filter((t) => t.goal_id === goal.id);
-              const doneTasks = goalTasks.filter((t) => t.status === 'done');
-              const progressValue = goalTasks.length > 0 ? doneTasks.length / goalTasks.length : 0;
-              const isOpen = !!expandedGoals[goal.id];
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {goalsWithTodayTasks.map((goal) => {
+                const goalTasks = todayTasks.filter((t) => t.goal_id === goal.id);
+                const doneTasks = goalTasks.filter((t) => t.status === 'done');
+                const progressValue =
+                  goalTasks.length > 0 ? doneTasks.length / goalTasks.length : 0;
+                const currentTask = getNearestCurrentTask(goal.id);
 
-              return (
-                <div
-                  key={goal.id}
-                  style={{
-                    backgroundColor: 'var(--plover-surface)',
-                    borderRadius: 'var(--plover-radius-lg)',
-                    overflow: 'hidden',
-                  }}
-                >
-                  <button
-                    onClick={() => toggleExpandGoal(goal.id)}
+                return (
+                  <div
+                    key={`today-${goal.id}`}
                     style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      width: '100%',
-                      padding: '24px',
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      textAlign: 'left',
+                      backgroundColor: 'var(--plover-surface)',
+                      borderRadius: 'var(--plover-radius-lg)',
+                      padding: '20px',
+                      border: '1px solid var(--plover-border)',
                     }}
                   >
-                    <div>
-                      <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--plover-text)' }}>
-                        {goal.title}
-                      </h3>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                      <ProgressLine value={progressValue} />
-                      <span
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '14px',
+                      }}
+                    >
+                      <h3
                         style={{
-                          transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                          transition: 'transform 0.3s',
-                          display: 'inline-block',
-                          color: 'var(--plover-text-muted)',
+                          fontSize: '15px',
+                          fontWeight: 600,
+                          color: 'var(--plover-text)',
                         }}
                       >
-                        ▾
-                      </span>
+                        {goal.title}
+                      </h3>
+                      <ProgressLine value={progressValue} />
                     </div>
-                  </button>
 
-                  {isOpen && (
-                    <div style={{ padding: '0 24px 24px 24px', borderTop: `1px solid var(--plover-border)` }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {goalTasks.map((task) => (
-                          <button
-                            key={task.id}
-                            onClick={() => handleSubtaskStatusToggle(task.id, task.status)}
-                            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}
-                          >
-                            <StepRow
-                              label={task.title}
-                              state={task.status === 'done' ? 'done' : 'pending'}
-                              trailing={`${task.estimate_minutes}m`}
-                            />
-                          </button>
-                        ))}
-                      </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {goalTasks.map((task) => (
+                        <button
+                          key={task.id}
+                          onClick={() => handleTaskStatusToggle(task.id, task.status)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            padding: 0,
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            width: '100%',
+                          }}
+                        >
+                          <StepRow
+                            label={task.title}
+                            state={
+                              task.status === 'done'
+                                ? 'done'
+                                : currentTask?.id === task.id
+                                  ? 'current'
+                                  : 'pending'
+                            }
+                            trailing={
+                              currentTask?.id === task.id ? (
+                                <span
+                                  style={{ fontSize: '11px', color: 'var(--plover-text-muted)' }}
+                                >
+                                  now
+                                </span>
+                              ) : null
+                            }
+                          />
+                        </button>
+                      ))}
                     </div>
-                  )}
-                </div>
-              );
-            })
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
+
+        {/* All Goals Section */}
+        <div>
+          <h2
+            style={{
+              fontSize: '14px',
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              color: 'var(--plover-text-muted)',
+              marginBottom: '16px',
+            }}
+          >
+            All Goals
+          </h2>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {goals.length === 0 ? (
+              <div
+                style={{
+                  backgroundColor: 'var(--plover-surface)',
+                  borderRadius: 'var(--plover-radius-lg)',
+                  padding: '48px 24px',
+                  border: '1px solid var(--plover-border)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '16px',
+                  textAlign: 'center',
+                }}
+              >
+                <p style={{ fontSize: '14px', color: 'var(--plover-text-muted)' }}>
+                  You don't have any goals active. Let's create one to start tracking progress!
+                </p>
+                <Button variant="primary" onClick={() => setShowSetupModal(true)}>
+                  Create Your First Goal
+                </Button>
+              </div>
+            ) : (
+              goals.map((goal) => {
+                const goalTasks = tasks.filter((t) => t.goal_id === goal.id);
+                const doneTasks = goalTasks.filter((t) => t.status === 'done');
+                const progressValue =
+                  goalTasks.length > 0 ? doneTasks.length / goalTasks.length : 0;
+                const isOpen = !!expandedGoals[goal.id];
+
+                return (
+                  <div
+                    key={goal.id}
+                    style={{
+                      backgroundColor: 'var(--plover-surface)',
+                      borderRadius: 'var(--plover-radius-lg)',
+                      border: '1px solid var(--plover-border)',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <button
+                      onClick={() => toggleExpandGoal(goal.id)}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        width: '100%',
+                        padding: '20px',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <div>
+                        <h3
+                          style={{ fontSize: '16px', fontWeight: 650, color: 'var(--plover-text)' }}
+                        >
+                          {goal.title}
+                        </h3>
+                        {goal.description && (
+                          <p
+                            style={{
+                              fontSize: '13px',
+                              color: 'var(--plover-text-muted)',
+                              marginTop: '4px',
+                            }}
+                          >
+                            {goal.description}
+                          </p>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <ProgressLine value={progressValue} />
+                        <span
+                          style={{
+                            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.3s',
+                            display: 'inline-block',
+                            color: 'var(--plover-text-muted)',
+                            fontSize: '12px',
+                          }}
+                        >
+                          ▼
+                        </span>
+                      </div>
+                    </button>
+
+                    {isOpen && (
+                      <div
+                        style={{
+                          padding: '0 20px 20px 20px',
+                          borderTop: `1px solid var(--plover-border)`,
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '8px',
+                            marginTop: '16px',
+                          }}
+                        >
+                          {goalTasks.length === 0 ? (
+                            <p
+                              style={{
+                                fontSize: '13px',
+                                color: 'var(--plover-text-dim)',
+                                fontStyle: 'italic',
+                              }}
+                            >
+                              No subtasks created for this goal.
+                            </p>
+                          ) : (
+                            goalTasks.map((task) => (
+                              <button
+                                key={task.id}
+                                onClick={() => handleTaskStatusToggle(task.id, task.status)}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  padding: 0,
+                                  cursor: 'pointer',
+                                  textAlign: 'left',
+                                  width: '100%',
+                                }}
+                              >
+                                <StepRow
+                                  label={task.title}
+                                  state={task.status === 'done' ? 'done' : 'pending'}
+                                  trailing={`${task.estimate_minutes}m`}
+                                />
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
       </div>
+
+      {/* Goal Creation Setup Flow Modal Overlay */}
+      {showSetupModal && (
+        <div className="plover-modal-backdrop" onClick={() => setShowSetupModal(false)}>
+          <div className="plover-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="plover-modal-close"
+              onClick={() => setShowSetupModal(false)}
+              aria-label="Close modal"
+            >
+              ✕
+            </button>
+            <SetupFlow
+              variant="window"
+              onClose={() => {
+                setShowSetupModal(false);
+                void fetchData();
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

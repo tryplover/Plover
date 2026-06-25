@@ -24,9 +24,13 @@ describe('GoalsList', () => {
     expect(await screen.findByRole('heading', { name: 'Goals' })).toBeTruthy();
   });
 
-  it('renders the goal input placeholder', async () => {
+  it('renders the goal input placeholder in the setup flow modal', async () => {
     render(<GoalsList />);
-    expect(await screen.findByPlaceholderText('What are you working on?')).toBeTruthy();
+    const createBtn = await screen.findByRole('button', { name: '+ Create Goal' });
+    createBtn.click();
+    expect(
+      await screen.findByPlaceholderText('Finish the methods section of my thesis'),
+    ).toBeTruthy();
   });
 
   it('forwards data-testid to root element', async () => {

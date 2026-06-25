@@ -9,12 +9,27 @@ import './SetupFlow.css';
 
 type Step = 'name' | 'breakdown' | 'connect' | 'committed';
 
-export function SetupFlow({ variant = 'overlay' as const }: { variant?: 'overlay' | 'window' }) {
+export function SetupFlow({
+  variant = 'overlay' as const,
+  onClose,
+}: {
+  variant?: 'overlay' | 'window';
+  onClose?: () => void;
+}) {
   const [step, setStep] = useState<Step>('name');
-  const [draft, setDraft] = useState<{ text: string; frequency: 'one-off' | 'daily' | 'weekly' }>({ text: '', frequency: 'one-off' });
+  const [draft, setDraft] = useState<{ text: string; frequency: 'one-off' | 'daily' | 'weekly' }>({
+    text: '',
+    frequency: 'one-off',
+  });
   const [plan, setPlan] = useState<ProposedPlan | null>(null);
 
-  const close = () => window.api.closeOverlay().catch(console.error);
+  const close = () => {
+    if (onClose) {
+      onClose();
+    } else {
+      window.api.closeOverlay().catch(console.error);
+    }
+  };
 
   return (
     <div className={`plover-setup plover-setup--${variant}`}>
@@ -22,7 +37,12 @@ export function SetupFlow({ variant = 'overlay' as const }: { variant?: 'overlay
       <AnimatePresence mode="wait">
         {step === 'name' && (
           <motion.div key="name" {...slide()}>
-            <StepName value={draft} onChange={setDraft} onNext={() => setStep('breakdown')} variant={variant} />
+            <StepName
+              value={draft}
+              onChange={setDraft}
+              onNext={() => setStep('breakdown')}
+              variant={variant}
+            />
           </motion.div>
         )}
         {step === 'breakdown' && (
@@ -31,7 +51,10 @@ export function SetupFlow({ variant = 'overlay' as const }: { variant?: 'overlay
               draft={draft}
               variant={variant}
               onBack={() => setStep('name')}
-              onNext={(p) => { setPlan(p); setStep('connect'); }}
+              onNext={(p) => {
+                setPlan(p);
+                setStep('connect');
+              }}
             />
           </motion.div>
         )}
@@ -41,7 +64,10 @@ export function SetupFlow({ variant = 'overlay' as const }: { variant?: 'overlay
               plan={plan}
               variant={variant}
               onBack={() => setStep('breakdown')}
-              onCommitted={() => { setStep('committed'); setTimeout(close, 800); }}
+              onCommitted={() => {
+                setStep('committed');
+                setTimeout(close, 800);
+              }}
             />
           </motion.div>
         )}
