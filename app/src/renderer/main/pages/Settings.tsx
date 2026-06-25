@@ -38,6 +38,7 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
   const [activitySettings, setActivitySettings] = useState<ActivitySettings>(defaultActivitySettings);
   const [screenPermission, setScreenPermission] = useState<string>('not-determined');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [activityMessage, setActivityMessage] = useState<string>('');
 
   const fetchSettings = async () => {
     try {
@@ -90,7 +91,7 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
     const status = await window.api.requestScreenRecording();
     setScreenPermission(status);
     if (status !== 'granted') {
-      alert('Screen Recording permission is required. Open System Settings → Privacy & Security → Screen Recording, add Plover, then try again.');
+      setActivityMessage('Screen Recording permission is required. Open System Settings → Privacy & Security → Screen Recording, add Plover, then try again.');
       return;
     }
     await triggerActivitySave({ screenCaptureEnabled: true });
@@ -98,7 +99,8 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
 
   const handleDeleteAllActivity = async (): Promise<void> => {
     await window.api.purgeActivity({ olderThan: new Date(0).toISOString() });
-    alert('All activity deleted');
+    setActivityMessage('All activity deleted.');
+    setTimeout(() => setActivityMessage(''), 2000);
   };
 
   const triggerAutoSave = async (
@@ -455,6 +457,9 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
                   {activitySettings.screenCaptureEnabled ? 'On' : 'Off'}
                 </Chip>
               </div>
+              {activityMessage && (
+                <p style={{ fontSize: '13px', color: 'var(--plover-text-muted)', margin: '0' }}>{activityMessage}</p>
+              )}
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <label style={{ fontSize: '14px', color: 'var(--plover-text)' }}>
@@ -542,10 +547,13 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
                 </Chip>
               </div>
 
-              <div style={{ marginTop: '8px' }}>
+              <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <Button variant="secondary" onClick={() => void handleDeleteAllActivity()}>
                   Delete all activity
                 </Button>
+                {activityMessage && (
+                  <span style={{ fontSize: '13px', color: 'var(--plover-text-muted)' }}>{activityMessage}</span>
+                )}
               </div>
             </div>
           </div>

@@ -82,10 +82,18 @@ export class ScreenCapturer {
     const authToken = process.env.PLOVER_AUTH_TOKEN;
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (authToken) headers['X-Plover-Auth-Token'] = authToken;
+    const recentFocus = this.deps.activityRepo.list({ kinds: ['window_focus'], limit: 1 })[0];
+    const windowContext = recentFocus
+      ? {
+          app: String(recentFocus.payload.app ?? ''),
+          title: String(recentFocus.payload.title ?? ''),
+          ...(recentFocus.payload.browserUrl !== undefined && { browserUrl: String(recentFocus.payload.browserUrl) }),
+        }
+      : undefined;
     const res = await fetch(`${backendUrl}/api/infer-screen`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ screenshotBase64: png.toString('base64') }),
+      body: JSON.stringify({ screenshotBase64: png.toString('base64'), windowContext }),
     });
     if (!res.ok) return;
     const body = await res.json() as { summary?: string; activeApp?: string; currentTask?: string | null; confidence?: number };
