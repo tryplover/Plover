@@ -84,7 +84,7 @@ export function App() {
       </aside>
 
       <main style={{ flexGrow: 1, overflow: 'hidden', height: '100%' }}>
-        {activeTab === 'goals' && <GoalsList data-testid="page-goals" />}
+        {activeTab === 'goals' && <GoalsList onTasksUpdated={fetchTodayCount} data-testid="page-goals" />}
         {activeTab === 'progress' && <AIProgress data-testid="page-progress" />}
         {activeTab === 'settings' && <Settings data-testid="page-settings" />}
       </main>
