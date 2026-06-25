@@ -183,4 +183,32 @@ describe('GDocsPoller', () => {
     await vi.advanceTimersByTimeAsync(2000);
     expect(pollSpy).toHaveBeenCalledTimes(3);
   });
+
+  it('skips polling when gdocsPollingEnabled is false', async () => {
+    settingsRepo.update({ googleConnected: true, gdocsPollingEnabled: false });
+    auth.client.setCredentials({ access_token: 'test-token' });
+
+    const poller = new GDocsPoller(auth, activityRepo, settingsRepo, 1000);
+
+    const isAuthorizedSpy = vi.spyOn(auth, 'isAuthorized');
+
+    await poller.poll();
+
+    expect(isAuthorizedSpy).not.toHaveBeenCalled();
+    expect(activityRepo.list()).toHaveLength(0);
+  });
+
+  it('skips polling when pauseAllTracking is true', async () => {
+    settingsRepo.update({ googleConnected: true, pauseAllTracking: true });
+    auth.client.setCredentials({ access_token: 'test-token' });
+
+    const poller = new GDocsPoller(auth, activityRepo, settingsRepo, 1000);
+
+    const isAuthorizedSpy = vi.spyOn(auth, 'isAuthorized');
+
+    await poller.poll();
+
+    expect(isAuthorizedSpy).not.toHaveBeenCalled();
+    expect(activityRepo.list()).toHaveLength(0);
+  });
 });

@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { FolderWatcher } from '@main/activity/folder-watcher.js';
 import { ActivityRepo } from '@main/store/repos/activity.js';
+import { SettingsRepo } from '@main/store/repos/settings.js';
 import { TypedEventBus } from '@main/bus.js';
 import Database from 'better-sqlite3';
 import { runMigrations } from '@main/store/db.js';
@@ -12,6 +13,7 @@ describe('FolderWatcher', () => {
   let testDir: string;
   let db: Database.Database;
   let activityRepo: ActivityRepo;
+  let settingsRepo: SettingsRepo;
   let eventBus: TypedEventBus;
   let folderWatcher: FolderWatcher;
 
@@ -22,8 +24,9 @@ describe('FolderWatcher', () => {
     db = new Database(':memory:');
     runMigrations(db);
     activityRepo = new ActivityRepo(db);
+    settingsRepo = new SettingsRepo(db);
     eventBus = new TypedEventBus();
-    folderWatcher = new FolderWatcher(activityRepo, eventBus);
+    folderWatcher = new FolderWatcher(activityRepo, settingsRepo, eventBus);
   });
 
   afterEach(async () => {
@@ -154,5 +157,50 @@ describe('FolderWatcher', () => {
     );
 
     expect(gitOrNodeModulesCalls.length).toBe(0);
+  });
+
+  it('does not log activity when fileWatchingEnabled is false', async () => {
+    settingsRepo.update({ fileWatchingEnabled: false });
+    folderWatcher.watch([testDir]);
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const testFile = join(testDir, 'test-disabled.txt');
+    writeFileSync(testFile, 'content');
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const activities = activityRepo.listSince('2026-01-01T00:00:00.000Z');
+    expect(activities).toHaveLength(0);
+  });
+
+  it('does not log activity when pauseAllTracking is true', async () => {
+    settingsRepo.update({ pauseAllTracking: true });
+    folderWatcher.watch([testDir]);
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const testFile = join(testDir, 'test-paused.txt');
+    writeFileSync(testFile, 'content');
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const activities = activityRepo.listSince('2026-01-01T00:00:00.000Z');
+    expect(activities).toHaveLength(0);
+  });
+
+  it('logs activity when both settings are enabled', async () => {
+    settingsRepo.update({ fileWatchingEnabled: true, pauseAllTracking: false });
+    folderWatcher.watch([testDir]);
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const testFile = join(testDir, 'test-enabled.txt');
+    writeFileSync(testFile, 'content');
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const activities = activityRepo.listSince('2026-01-01T00:00:00.000Z');
+    expect(activities.length).toBeGreaterThan(0);
   });
 });
