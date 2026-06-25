@@ -2,12 +2,14 @@ import { app } from 'electron';
 import { WindowTracker } from './window-tracker.js';
 import { GDocsPoller } from './gdocs-poller.js';
 import { ScreenCapturer } from './screen-capturer.js';
+import { runRetention } from './retention.js';
 import { settingsRepo, activityRepo } from '../store/index.js';
 import { googleAuth } from '../ipc.js';
 
 let windowTracker: WindowTracker | null = null;
 let gdocsPoller: GDocsPoller | null = null;
 let screenCapturer: ScreenCapturer | null = null;
+let retentionIntervalId: NodeJS.Timeout | null = null;
 
 export function initActivityMonitoring(): void {
   console.log('[Activity] Initializing active monitoring subsystems...');
@@ -42,6 +44,15 @@ export function initActivityMonitoring(): void {
     });
     if (settingsRepo.getAll().screenCaptureEnabled) screenCapturer.start();
   }
+
+  void runRetention({ activityRepo, settingsRepo, now: new Date() })
+    .catch((err) => console.error('[Activity] retention failed:', err));
+  if (!retentionIntervalId) {
+    retentionIntervalId = setInterval(() => {
+      void runRetention({ activityRepo, settingsRepo, now: new Date() })
+        .catch((err) => console.error('[Activity] retention failed:', err));
+    }, 6 * 60 * 60 * 1000);
+  }
 }
 
 export function stopActivityMonitoring(): void {
@@ -57,6 +68,10 @@ export function stopActivityMonitoring(): void {
   if (screenCapturer) {
     screenCapturer.stop();
     screenCapturer = null;
+  }
+  if (retentionIntervalId) {
+    clearInterval(retentionIntervalId);
+    retentionIntervalId = null;
   }
 }
 
