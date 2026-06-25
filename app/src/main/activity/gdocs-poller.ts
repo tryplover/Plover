@@ -45,6 +45,10 @@ export class GDocsPoller {
 
   async poll(): Promise<void> {
     const settings = this.settingsRepo.getAll();
+    if (settings.pauseAllTracking || !settings.gdocsPollingEnabled) {
+      return;
+    }
+
     if (settings.googleConnected !== true) {
       return;
     }

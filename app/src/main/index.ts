@@ -110,7 +110,7 @@ function toggleOverlayWindow(): void {
 }
 
 void app.whenReady().then(async () => {
-  folderWatcher = new FolderWatcher(activityRepo, eventBus);
+  folderWatcher = new FolderWatcher(activityRepo, settingsRepo, eventBus);
   const settings = settingsRepo.getAll();
   if (settings.watchedFolders.length > 0) {
     await folderWatcher.watch(settings.watchedFolders);

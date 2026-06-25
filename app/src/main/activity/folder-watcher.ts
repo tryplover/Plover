@@ -1,5 +1,6 @@
 import { watch, FSWatcher } from 'chokidar';
 import { ActivityRepo } from '../store/repos/activity.js';
+import { SettingsRepo } from '../store/repos/settings.js';
 import { TypedEventBus } from '../bus.js';
 import { FolderEventPayload } from '@shared/events.js';
 
@@ -10,6 +11,7 @@ export class FolderWatcher {
 
   constructor(
     private activityRepo: ActivityRepo,
+    private settingsRepo: SettingsRepo,
     private bus: TypedEventBus,
   ) {}
 
@@ -115,6 +117,11 @@ export class FolderWatcher {
   }
 
   private handleFileChange(path: string): void {
+    const settings = this.settingsRepo.getAll();
+    if (settings.pauseAllTracking || !settings.fileWatchingEnabled) {
+      return;
+    }
+
     const kind = this.determineKind(path);
     const payload: FolderEventPayload = { path, kind };
 
@@ -127,6 +134,11 @@ export class FolderWatcher {
   }
 
   private handleFileAdd(path: string): void {
+    const settings = this.settingsRepo.getAll();
+    if (settings.pauseAllTracking || !settings.fileWatchingEnabled) {
+      return;
+    }
+
     const kind = this.determineKind(path);
     const payload: FolderEventPayload = { path, kind };
 
