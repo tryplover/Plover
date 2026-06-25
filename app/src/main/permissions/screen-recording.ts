@@ -14,7 +14,6 @@ export function getScreenRecordingStatus(): ScreenRecordingStatus {
 
 export async function requestScreenRecording(): Promise<'granted' | 'denied' | 'unsupported'> {
   if (process.platform !== 'darwin') return 'unsupported';
-  systemPreferences.getMediaAccessStatus('screen');
   try {
     await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 1, height: 1 } });
   } catch {

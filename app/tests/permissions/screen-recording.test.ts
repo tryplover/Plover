@@ -39,7 +39,7 @@ describe('Screen Recording permission', () => {
   });
 
   it('request triggers a tiny capture and returns the post-status', async () => {
-    getMediaAccessStatus.mockReturnValueOnce('not-determined').mockReturnValueOnce('granted');
+    getMediaAccessStatus.mockReturnValueOnce('granted');
     getSources.mockResolvedValueOnce([]);
     const result = await requestScreenRecording();
     expect(getSources).toHaveBeenCalledWith(expect.objectContaining({ types: ['screen'] }));
