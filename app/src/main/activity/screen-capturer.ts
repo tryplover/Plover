@@ -74,11 +74,36 @@ export class ScreenCapturer {
     const filename = `${crypto.randomUUID()}.png`;
     const filePath = path.join(dir, filename);
     await fs.writeFile(filePath, png);
-    this.deps.activityRepo.log('screenshot_captured', {
-      filePath,
-      width: size.width,
-      height: size.height,
-    }, now.toISOString());
+    const captureRow = this.deps.activityRepo.insert({
+      kind: 'screenshot_captured',
+      payload: { filePath, width: size.width, height: size.height },
+      ts: now.toISOString(),
+    });
+    if (settings.screenVisionInferenceEnabled) {
+      await this.runInference(captureRow.id, filePath, png).catch((err) => console.error('[ScreenCapturer] infer failed:', err));
+    }
     return filePath;
+  }
+
+  private async runInference(screenshotId: number, filePath: string, png: Buffer): Promise<void> {
+    const backendUrl = (process.env.PLOVER_BACKEND_URL ?? 'http://localhost:3000').trim();
+    const authToken = process.env.PLOVER_AUTH_TOKEN;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (authToken) headers['X-Plover-Auth-Token'] = authToken;
+    const res = await fetch(`${backendUrl}/api/infer-screen`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ screenshotBase64: png.toString('base64') }),
+    });
+    if (!res.ok) return;
+    const body = await res.json() as { summary?: string; activeApp?: string; currentTask?: string | null; confidence?: number };
+    this.deps.activityRepo.log('screenshot_inferred', {
+      screenshotId,
+      filePath,
+      summary: body.summary ?? '',
+      activeApp: body.activeApp ?? '',
+      currentTask: body.currentTask ?? null,
+      confidence: Number(body.confidence ?? 0),
+    });
   }
 }
