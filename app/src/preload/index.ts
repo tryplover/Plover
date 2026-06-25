@@ -108,6 +108,7 @@ export interface PloverApi {
   listActivity: (args?: { since?: string; until?: string; kinds?: string[]; limit?: number; offset?: number }) => Promise<{ id: number; ts: string; kind: string; payload: Record<string, unknown> }[]>;
   getActivityById: (id: number) => Promise<{ id: number; ts: string; kind: string; payload: Record<string, unknown> } | null>;
   purgeActivity: (args: { olderThan?: string; ids?: number[] }) => Promise<{ deleted: number }>;
+  getScreenshot: (id: number) => Promise<{ dataUrl: string } | null>;
 
   // Permissions
   getScreenRecordingStatus: () => Promise<'granted' | 'denied' | 'not-determined' | 'restricted' | 'unsupported'>;
@@ -148,6 +149,7 @@ const api: PloverApi = {
   listActivity: (args) => ipcRenderer.invoke('activity:list', args ?? {}),
   getActivityById: (id) => ipcRenderer.invoke('activity:getById', id),
   purgeActivity: (args) => ipcRenderer.invoke('activity:purge', args),
+  getScreenshot: (id) => ipcRenderer.invoke('activity:getScreenshot', id),
 
   // Permissions
   getScreenRecordingStatus: () => ipcRenderer.invoke('permissions:screenRecording:status'),

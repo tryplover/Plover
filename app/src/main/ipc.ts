@@ -150,6 +150,19 @@ export function setupIpcHandlers(
 
   ipcMain.handle('activity:getById', async (_, id: number) => activityRepo.getById(Number(id)));
 
+  ipcMain.handle('activity:getScreenshot', async (_, id: number) => {
+    const row = activityRepo.getById(Number(id));
+    if (!row || row.kind !== 'screenshot_captured') return null;
+    const filePath = (row.payload as { filePath?: string }).filePath;
+    if (!filePath) return null;
+    try {
+      const bytes = await fs.promises.readFile(filePath);
+      return { dataUrl: `data:image/png;base64,${bytes.toString('base64')}` };
+    } catch {
+      return null;
+    }
+  });
+
   ipcMain.handle('activity:purge', async (_, args: { olderThan?: string; ids?: number[] }) => {
     if (args?.ids && args.ids.length > 0) {
       const orphanPaths = args.ids

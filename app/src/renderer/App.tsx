@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import TasksToday from './main/pages/TasksToday';
 import GoalsList from './main/pages/GoalsList';
 import Settings from './main/pages/Settings';
+import { Activity } from './main/pages/Activity';
 import { isToday } from './lib/date';
 import { IconSun, IconTarget, IconGear } from './main/icons';
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<'today' | 'goals' | 'settings'>('today');
+  const [activeTab, setActiveTab] = useState<'today' | 'goals' | 'settings' | 'activity'>('today');
   const [todayPendingCount, setTodayPendingCount] = useState(0);
 
   const fetchTodayCount = async () => {
@@ -77,6 +78,14 @@ export function App() {
               <IconGear />
               <span>Settings</span>
             </button>
+
+            <button
+              className={`nav-item ${activeTab === 'activity' ? 'active' : ''}`}
+              onClick={() => setActiveTab('activity')}
+              data-testid="nav-activity"
+            >
+              <span>Activity</span>
+            </button>
           </nav>
         </div>
 
@@ -87,6 +96,7 @@ export function App() {
         {activeTab === 'today' && <TasksToday onTasksUpdated={fetchTodayCount} data-testid="page-today" />}
         {activeTab === 'goals' && <GoalsList data-testid="page-goals" />}
         {activeTab === 'settings' && <Settings data-testid="page-settings" />}
+        {activeTab === 'activity' && <Activity />}
       </main>
     </div>
   );
