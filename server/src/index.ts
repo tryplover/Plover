@@ -133,9 +133,9 @@ app.post('/api/decompose', async (req, res): Promise<any> => {
     const defaultModelName = (process.env.GEMINI_MODEL || 'gemini-2.0-flash').trim();
     const fallbackNames = [
       'gemini-2.0-flash',
-      'gemini-1.5-flash',
-      'gemini-2.0-flash-lite-preview-02-05',
-      'gemini-1.5-pro',
+      'gemini-2.0-flash-lite',
+      'gemini-2.5-flash',
+      'gemini-2.5-pro',
     ].filter((m) => m !== defaultModelName);
 
     const candidates = [
@@ -379,9 +379,9 @@ app.post('/api/infer-progress', async (req, res): Promise<any> => {
     const defaultModelName = (process.env.GEMINI_MODEL || 'gemini-2.0-flash').trim();
     const fallbackNames = [
       'gemini-2.0-flash',
-      'gemini-1.5-flash',
-      'gemini-2.0-flash-lite-preview-02-05',
-      'gemini-1.5-pro',
+      'gemini-2.0-flash-lite',
+      'gemini-2.5-flash',
+      'gemini-2.5-pro',
     ].filter((m) => m !== defaultModelName);
     const candidates = [defaultModelName, ...fallbackNames];
 
@@ -565,9 +565,9 @@ app.post('/api/match-commit', async (req, res): Promise<any> => {
     const defaultModelName = (process.env.GEMINI_MODEL || 'gemini-2.0-flash').trim();
     const fallbackNames = [
       'gemini-2.0-flash',
-      'gemini-1.5-flash',
-      'gemini-2.0-flash-lite-preview-02-05',
-      'gemini-1.5-pro',
+      'gemini-2.0-flash-lite',
+      'gemini-2.5-flash',
+      'gemini-2.5-pro',
     ].filter((m) => m !== defaultModelName);
     const candidates = [defaultModelName, ...fallbackNames];
 
