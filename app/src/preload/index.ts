@@ -80,6 +80,15 @@ export interface PloverApi {
     workingHours: { start: string; end: string };
     horizonDays: number;
     pauseScheduling: boolean;
+    pauseAllTracking: boolean;
+    windowTrackingEnabled: boolean;
+    gdocsPollingEnabled: boolean;
+    fileWatchingEnabled: boolean;
+    screenCaptureEnabled: boolean;
+    screenCaptureIntervalMinutes: number;
+    screenVisionInferenceEnabled: boolean;
+    activityRetentionDays: number;
+    planner_useRecentActivityContext: boolean;
   }>;
   updateSettings: (
     settings: Partial<{
@@ -87,6 +96,15 @@ export interface PloverApi {
       workingHours: { start: string; end: string };
       horizonDays: number;
       pauseScheduling: boolean;
+      pauseAllTracking: boolean;
+      windowTrackingEnabled: boolean;
+      gdocsPollingEnabled: boolean;
+      fileWatchingEnabled: boolean;
+      screenCaptureEnabled: boolean;
+      screenCaptureIntervalMinutes: number;
+      screenVisionInferenceEnabled: boolean;
+      activityRetentionDays: number;
+      planner_useRecentActivityContext: boolean;
     }>,
   ) => Promise<void>;
 
