@@ -11,6 +11,7 @@ import { eventBus } from './bus.js';
 import { ProposedPlan } from '../preload/index.js';
 import { createCompanionWindow } from './windows/companion.js';
 import { listActiveWindows } from './activity/window-tracker.js';
+import { getScreenRecordingStatus, requestScreenRecording } from './permissions/screen-recording.js';
 export const googleAuth = new GoogleAuth();
 export const calendarSync = new GoogleCalendarSync(googleAuth);
 
@@ -385,6 +386,9 @@ export function setupIpcHandlers(
       (overlayWin as BrowserWindow & { isTracking?: boolean }).isTracking = tracking;
     }
   });
+
+  ipcMain.handle('permissions:screenRecording:status', () => getScreenRecordingStatus());
+  ipcMain.handle('permissions:screenRecording:request', async () => requestScreenRecording());
 }
 
 async function saveGoalAndTasksInternal(

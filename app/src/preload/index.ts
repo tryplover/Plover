@@ -109,6 +109,10 @@ export interface PloverApi {
   getActivityById: (id: number) => Promise<{ id: number; ts: string; kind: string; payload: Record<string, unknown> } | null>;
   purgeActivity: (args: { olderThan?: string; ids?: number[] }) => Promise<{ deleted: number }>;
 
+  // Permissions
+  getScreenRecordingStatus: () => Promise<'granted' | 'denied' | 'not-determined' | 'restricted' | 'unsupported'>;
+  requestScreenRecording: () => Promise<'granted' | 'denied' | 'unsupported'>;
+
   // Companion API
   companion: CompanionApi;
 
@@ -144,6 +148,10 @@ const api: PloverApi = {
   listActivity: (args) => ipcRenderer.invoke('activity:list', args ?? {}),
   getActivityById: (id) => ipcRenderer.invoke('activity:getById', id),
   purgeActivity: (args) => ipcRenderer.invoke('activity:purge', args),
+
+  // Permissions
+  getScreenRecordingStatus: () => ipcRenderer.invoke('permissions:screenRecording:status'),
+  requestScreenRecording: () => ipcRenderer.invoke('permissions:screenRecording:request'),
 
   // Companion
   companion: {
