@@ -1,7 +1,8 @@
 import { ipcMain, BrowserWindow } from 'electron';
 import { randomUUID } from 'node:crypto';
+import * as fs from 'node:fs';
 import { Goal, Task, CalendarEvent, SummaryRow } from '../shared/types.js';
-import { goalsRepo, tasksRepo, settingsRepo, summariesRepo } from './store/index.js';
+import { goalsRepo, tasksRepo, settingsRepo, summariesRepo, activityRepo } from './store/index.js';
 import { decomposeGoal } from './planner/decompose.js';
 import { scheduleTasks } from './planner/schedule.js';
 import { GoogleAuth } from './sync/google-auth.js';
@@ -140,6 +141,29 @@ export function setupIpcHandlers(
       return saveGoalAndTasksInternal(goalInput, subtaskInputs, scheduledSlots);
     },
   );
+
+  // Activity
+  ipcMain.handle('activity:list', async (_, args: {
+    since?: string; until?: string; kinds?: string[]; limit?: number; offset?: number;
+  }) => activityRepo.list(args ?? {}));
+
+  ipcMain.handle('activity:getById', async (_, id: number) => activityRepo.getById(Number(id)));
+
+  ipcMain.handle('activity:purge', async (_, args: { olderThan?: string; ids?: number[] }) => {
+    if (args?.ids && args.ids.length > 0) {
+      const orphanPaths = args.ids
+        .map((id) => activityRepo.getById(Number(id)))
+        .filter((r): r is NonNullable<typeof r> => !!r && r.kind === 'screenshot_captured')
+        .map((r) => (r.payload as { filePath?: string }).filePath)
+        .filter((p): p is string => typeof p === 'string');
+      const result = activityRepo.purge({ ids: args.ids });
+      for (const p of orphanPaths) {
+        try { await fs.promises.unlink(p); } catch { /* ignore */ }
+      }
+      return result;
+    }
+    return activityRepo.purge(args ?? {});
+  });
 
   // Settings
   ipcMain.handle('settings:get', async () => {
