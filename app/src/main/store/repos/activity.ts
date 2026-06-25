@@ -76,20 +76,50 @@ export class ActivityRepo {
     this.insert({ kind, payload, ts });
   }
 
-  list(kind?: string): ActivityRow[] {
-    let query = 'SELECT id, ts, kind, payload FROM activity';
-    const params: string[] = [];
-    if (kind) {
-      query += ' WHERE kind = ?';
-      params.push(kind);
+  list(filter?: { kind?: string; kinds?: string[]; since?: string; until?: string; limit?: number; offset?: number }): ActivityRow[] {
+    const where: string[] = [];
+    const params: unknown[] = [];
+    if (filter?.kind) { where.push('kind = ?'); params.push(filter.kind); }
+    if (filter?.kinds && filter.kinds.length > 0) {
+      where.push(`kind IN (${filter.kinds.map(() => '?').join(',')})`);
+      params.push(...filter.kinds);
     }
-    const stmt = this.db.prepare(query);
-    const rows = stmt.all(...params) as ActivityDbRow[];
-    return rows.map((row) => ({
+    if (filter?.since) { where.push('ts >= ?'); params.push(filter.since); }
+    if (filter?.until) { where.push('ts <= ?'); params.push(filter.until); }
+    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+    const limitSql = filter?.limit ? ` LIMIT ${Math.max(1, Math.min(1000, Math.round(filter.limit)))}` : '';
+    const offsetSql = filter?.offset ? ` OFFSET ${Math.max(0, Math.round(filter.offset))}` : '';
+    const rows = this.db
+      .prepare(`SELECT id, ts, kind, payload FROM activity ${whereSql} ORDER BY ts DESC${limitSql}${offsetSql}`)
+      .all(...params) as ActivityDbRow[];
+    return rows.map((row) => ({ id: row.id, ts: row.ts, kind: row.kind, payload: JSON.parse(row.payload) as Record<string, unknown> }));
+  }
+
+  purge(args: { olderThan?: string; ids?: number[] }): { deleted: number } {
+    if (args.ids && args.ids.length > 0) {
+      const placeholders = args.ids.map(() => '?').join(',');
+      const stmt = this.db.prepare(`DELETE FROM activity WHERE id IN (${placeholders})`);
+      const result = stmt.run(...args.ids);
+      return { deleted: Number(result.changes) };
+    }
+    if (args.olderThan) {
+      const stmt = this.db.prepare('DELETE FROM activity WHERE ts < ?');
+      const result = stmt.run(args.olderThan);
+      return { deleted: Number(result.changes) };
+    }
+    return { deleted: 0 };
+  }
+
+  getById(id: number): ActivityRow | null {
+    const row = this.db
+      .prepare('SELECT id, ts, kind, payload FROM activity WHERE id = ?')
+      .get(id) as ActivityDbRow | undefined;
+    if (!row) return null;
+    return {
       id: row.id,
       ts: row.ts,
       kind: row.kind,
       payload: JSON.parse(row.payload) as Record<string, unknown>,
-    }));
+    };
   }
 }

@@ -120,7 +120,7 @@ describe('GDocsPoller', () => {
 
     await poller.poll();
 
-    const activities = activityRepo.list('gdocs_revision');
+    const activities = activityRepo.list({ kind: 'gdocs_revision' });
     expect(activities).toHaveLength(2);
     expect(activities[0]).toEqual(
       expect.objectContaining({

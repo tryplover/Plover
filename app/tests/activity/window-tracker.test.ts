@@ -100,7 +100,7 @@ describe('WindowTracker', () => {
     vi.advanceTimersByTime(10000);
     await tracker.checkActiveWindow();
     expect(activityRepo.list()).toHaveLength(2);
-    expect(activityRepo.list()[1]?.payload).toEqual({
+    expect(activityRepo.list()[0]?.payload).toEqual({
       app: 'Slack',
       title: 'General',
     });
@@ -135,7 +135,7 @@ describe('WindowTracker', () => {
     vi.advanceTimersByTime(10000);
     await tracker.checkActiveWindow();
     expect(activityRepo.list()).toHaveLength(2);
-    expect(activityRepo.list()[1]?.payload).toEqual({
+    expect(activityRepo.list()[0]?.payload).toEqual({
       app: 'Safari',
       title: 'Google Search',
     });
