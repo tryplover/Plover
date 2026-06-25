@@ -109,7 +109,21 @@ export interface PloverApi {
       activityRetentionDays: number;
       planner_useRecentActivityContext: boolean;
     }>,
-  ) => Promise<void>;
+  ) => Promise<{
+    googleConnected: boolean;
+    workingHours: { start: string; end: string };
+    horizonDays: number;
+    pauseScheduling: boolean;
+    pauseAllTracking: boolean;
+    windowTrackingEnabled: boolean;
+    gdocsPollingEnabled: boolean;
+    fileWatchingEnabled: boolean;
+    screenCaptureEnabled: boolean;
+    screenCaptureIntervalMinutes: number;
+    screenVisionInferenceEnabled: boolean;
+    activityRetentionDays: number;
+    planner_useRecentActivityContext: boolean;
+  }>;
 
   // Calendar Sync
   connectCalendar: () => Promise<boolean>;

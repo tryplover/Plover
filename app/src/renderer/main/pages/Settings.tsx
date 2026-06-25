@@ -486,16 +486,25 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
                 <label style={{ fontSize: '14px', color: 'var(--plover-text)' }}>
                   Send screenshots to Gemini Vision
                 </label>
-                <Chip
-                  selected={activitySettings.screenVisionInferenceEnabled}
-                  onClick={() => {
-                    if (activitySettings.screenCaptureEnabled) {
-                      void triggerActivitySave({ screenVisionInferenceEnabled: !activitySettings.screenVisionInferenceEnabled });
-                    }
+                <div
+                  style={{
+                    opacity: activitySettings.screenCaptureEnabled ? 1 : 0.4,
+                    cursor: activitySettings.screenCaptureEnabled ? 'pointer' : 'not-allowed',
+                    pointerEvents: activitySettings.screenCaptureEnabled ? 'auto' : 'none',
                   }}
                 >
-                  {activitySettings.screenVisionInferenceEnabled ? 'On' : 'Off'}
-                </Chip>
+                  <Chip
+                    selected={activitySettings.screenVisionInferenceEnabled}
+                    onClick={() => {
+                      if (activitySettings.screenCaptureEnabled) {
+                        void triggerActivitySave({ screenVisionInferenceEnabled: !activitySettings.screenVisionInferenceEnabled });
+                      }
+                    }}
+                    aria-disabled={!activitySettings.screenCaptureEnabled}
+                  >
+                    {activitySettings.screenVisionInferenceEnabled ? 'On' : 'Off'}
+                  </Chip>
+                </div>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
