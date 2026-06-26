@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import GoalsList from './main/pages/GoalsList';
 import AIProgress from './main/pages/AIProgress';
 import Settings from './main/pages/Settings';
+import { Onboarding } from './main/pages/Onboarding';
 import { Activity } from './main/pages/Activity';
 import { isToday } from './lib/date';
 import { IconTarget, IconGear, IconActivity } from './main/icons';
@@ -9,6 +10,9 @@ import { IconTarget, IconGear, IconActivity } from './main/icons';
 export function App() {
   const [activeTab, setActiveTab] = useState<'goals' | 'progress' | 'settings' | 'activity'>('goals');
   const [todayPendingCount, setTodayPendingCount] = useState(0);
+  const [onboardingCompleted, setOnboardingCompleted] = useState<boolean>(() => {
+    return localStorage.getItem('plover_onboarding_completed') === 'true';
+  });
 
   const fetchTodayCount = useCallback(async () => {
     try {
@@ -21,8 +25,10 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    if (!onboardingCompleted) return;
+
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchTodayCount();
+    void fetchTodayCount();
 
     const unsubscribe = window.api.on('app-event', (event: unknown) => {
       const appEvent = event as { type: string };
@@ -39,7 +45,16 @@ export function App() {
     return () => {
       unsubscribe();
     };
-  }, [fetchTodayCount]);
+  }, [onboardingCompleted, fetchTodayCount]);
+
+  const handleOnboardingComplete = () => {
+    localStorage.setItem('plover_onboarding_completed', 'true');
+    setOnboardingCompleted(true);
+  };
+
+  if (!onboardingCompleted) {
+    return <Onboarding onComplete={handleOnboardingComplete} />;
+  }
 
   return (
     <div className="app-container">
