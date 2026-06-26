@@ -2,12 +2,16 @@ import { useState, useEffect } from 'react';
 import TasksToday from './main/pages/TasksToday';
 import GoalsList from './main/pages/GoalsList';
 import Settings from './main/pages/Settings';
+import { Onboarding } from './main/pages/Onboarding';
 import { isToday } from './lib/date';
 import { IconSun, IconTarget, IconGear } from './main/icons';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<'today' | 'goals' | 'settings'>('today');
   const [todayPendingCount, setTodayPendingCount] = useState(0);
+  const [onboardingCompleted, setOnboardingCompleted] = useState<boolean>(() => {
+    return localStorage.getItem('plover_onboarding_completed') === 'true';
+  });
 
   const fetchTodayCount = async () => {
     try {
@@ -20,8 +24,10 @@ export function App() {
   };
 
   useEffect(() => {
+    if (!onboardingCompleted) return;
+
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchTodayCount();
+    void fetchTodayCount();
 
     const unsubscribe = window.api.on('app-event', (event: unknown) => {
       const appEvent = event as { type: string };
@@ -38,7 +44,16 @@ export function App() {
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [onboardingCompleted]);
+
+  const handleOnboardingComplete = () => {
+    localStorage.setItem('plover_onboarding_completed', 'true');
+    setOnboardingCompleted(true);
+  };
+
+  if (!onboardingCompleted) {
+    return <Onboarding onComplete={handleOnboardingComplete} />;
+  }
 
   return (
     <div className="app-container">
@@ -84,7 +99,9 @@ export function App() {
       </aside>
 
       <main style={{ flexGrow: 1, overflow: 'hidden', height: '100%' }}>
-        {activeTab === 'today' && <TasksToday onTasksUpdated={fetchTodayCount} data-testid="page-today" />}
+        {activeTab === 'today' && (
+          <TasksToday onTasksUpdated={fetchTodayCount} data-testid="page-today" />
+        )}
         {activeTab === 'goals' && <GoalsList data-testid="page-goals" />}
         {activeTab === 'settings' && <Settings data-testid="page-settings" />}
       </main>

@@ -6,6 +6,7 @@ import { App } from '../../src/renderer/App';
 const mockUnsubscribe = vi.fn();
 
 beforeEach(() => {
+  localStorage.setItem('plover_onboarding_completed', 'true');
   vi.clearAllMocks();
   Object.defineProperty(window, 'api', {
     value: {
