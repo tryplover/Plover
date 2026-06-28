@@ -1,15 +1,15 @@
-import { useState, useEffect } from 'react';
-import TasksToday from './main/pages/TasksToday';
+import { useState, useEffect, useCallback } from 'react';
 import GoalsList from './main/pages/GoalsList';
+import AIProgress from './main/pages/AIProgress';
 import Settings from './main/pages/Settings';
 import { isToday } from './lib/date';
-import { IconSun, IconTarget, IconGear } from './main/icons';
+import { IconTarget, IconGear, IconActivity } from './main/icons';
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<'today' | 'goals' | 'settings'>('today');
+  const [activeTab, setActiveTab] = useState<'goals' | 'progress' | 'settings'>('goals');
   const [todayPendingCount, setTodayPendingCount] = useState(0);
 
-  const fetchTodayCount = async () => {
+  const fetchTodayCount = useCallback(async () => {
     try {
       const allTasks = await window.api.getTasks();
       const todayTasks = allTasks.filter((t) => isToday(t.scheduled_start) && t.status !== 'done');
@@ -17,7 +17,7 @@ export function App() {
     } catch (err) {
       console.error('Failed to fetch task count:', err);
     }
-  };
+  }, []);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -38,7 +38,7 @@ export function App() {
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [fetchTodayCount]);
 
   return (
     <div className="app-container">
@@ -51,22 +51,22 @@ export function App() {
 
           <nav className="nav-links">
             <button
-              className={`nav-item ${activeTab === 'today' ? 'active' : ''}`}
-              onClick={() => setActiveTab('today')}
-              data-testid="nav-today"
-            >
-              <IconSun />
-              <span>Today</span>
-              {todayPendingCount > 0 && <span className="badge">{todayPendingCount}</span>}
-            </button>
-
-            <button
               className={`nav-item ${activeTab === 'goals' ? 'active' : ''}`}
               onClick={() => setActiveTab('goals')}
               data-testid="nav-goals"
             >
               <IconTarget />
               <span>Goals</span>
+              {todayPendingCount > 0 && <span className="badge">{todayPendingCount}</span>}
+            </button>
+
+            <button
+              className={`nav-item ${activeTab === 'progress' ? 'active' : ''}`}
+              onClick={() => setActiveTab('progress')}
+              data-testid="nav-progress"
+            >
+              <IconActivity />
+              <span>AI Progress</span>
             </button>
 
             <button
@@ -84,8 +84,8 @@ export function App() {
       </aside>
 
       <main style={{ flexGrow: 1, overflow: 'hidden', height: '100%' }}>
-        {activeTab === 'today' && <TasksToday onTasksUpdated={fetchTodayCount} data-testid="page-today" />}
-        {activeTab === 'goals' && <GoalsList data-testid="page-goals" />}
+        {activeTab === 'goals' && <GoalsList onTasksUpdated={fetchTodayCount} data-testid="page-goals" />}
+        {activeTab === 'progress' && <AIProgress data-testid="page-progress" />}
         {activeTab === 'settings' && <Settings data-testid="page-settings" />}
       </main>
     </div>
