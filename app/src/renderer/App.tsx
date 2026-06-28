@@ -9,7 +9,7 @@ export function App() {
   const [activeTab, setActiveTab] = useState<'goals' | 'progress' | 'settings'>('goals');
   const [todayPendingCount, setTodayPendingCount] = useState(0);
 
-  const fetchTodayCount = async () => {
+  const fetchTodayCount = useCallback(async () => {
     try {
       const allTasks = await window.api.getTasks();
       const todayTasks = allTasks.filter((t) => isToday(t.scheduled_start) && t.status !== 'done');
@@ -17,7 +17,7 @@ export function App() {
     } catch (err) {
       console.error('Failed to fetch task count:', err);
     }
-  };
+  }, []);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -38,7 +38,7 @@ export function App() {
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [fetchTodayCount]);
 
   return (
     <div className="app-container">

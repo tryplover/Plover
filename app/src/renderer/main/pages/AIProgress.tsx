@@ -58,8 +58,9 @@ export default function AIProgress({ 'data-testid': dataTestId }: AIProgressProp
         return `Today at ${timeString}`;
       }
 
-      const isYesterday =
-        new Date(now.setDate(now.getDate() - 1)).toDateString() === date.toDateString();
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const isYesterday = yesterday.toDateString() === date.toDateString();
       if (isYesterday) {
         return `Yesterday at ${timeString}`;
       }
