@@ -12,6 +12,13 @@ try {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const FALLBACK_MODELS = [
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-lite',
+  'gemini-2.5-flash',
+  'gemini-2.5-pro',
+];
+
 app.use(cors());
 app.use(express.json());
 
@@ -131,12 +138,7 @@ app.post('/api/decompose', async (req, res): Promise<any> => {
   try {
     const client = new GoogleGenerativeAI(apiKey);
     const defaultModelName = (process.env.GEMINI_MODEL || 'gemini-2.0-flash').trim();
-    const fallbackNames = [
-      'gemini-2.0-flash',
-      'gemini-2.0-flash-lite',
-      'gemini-2.5-flash',
-      'gemini-2.5-pro',
-    ].filter((m) => m !== defaultModelName);
+    const fallbackNames = FALLBACK_MODELS.filter((m) => m !== defaultModelName);
 
     const candidates = [
       defaultModelName,
@@ -377,12 +379,7 @@ app.post('/api/infer-progress', async (req, res): Promise<any> => {
   try {
     const client = new GoogleGenerativeAI(apiKey);
     const defaultModelName = (process.env.GEMINI_MODEL || 'gemini-2.0-flash').trim();
-    const fallbackNames = [
-      'gemini-2.0-flash',
-      'gemini-2.0-flash-lite',
-      'gemini-2.5-flash',
-      'gemini-2.5-pro',
-    ].filter((m) => m !== defaultModelName);
+    const fallbackNames = FALLBACK_MODELS.filter((m) => m !== defaultModelName);
     const candidates = [defaultModelName, ...fallbackNames];
 
     const taskList = tasks
@@ -563,12 +560,7 @@ app.post('/api/match-commit', async (req, res): Promise<any> => {
   try {
     const client = new GoogleGenerativeAI(apiKey);
     const defaultModelName = (process.env.GEMINI_MODEL || 'gemini-2.0-flash').trim();
-    const fallbackNames = [
-      'gemini-2.0-flash',
-      'gemini-2.0-flash-lite',
-      'gemini-2.5-flash',
-      'gemini-2.5-pro',
-    ].filter((m) => m !== defaultModelName);
+    const fallbackNames = FALLBACK_MODELS.filter((m) => m !== defaultModelName);
     const candidates = [defaultModelName, ...fallbackNames];
 
     const taskList = tasks
