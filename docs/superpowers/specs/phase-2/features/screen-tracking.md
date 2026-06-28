@@ -86,6 +86,8 @@ type WindowFocusPayload = {
 
 Browser-URL capture uses macOS AppleScript via `child_process.execFile('osascript', ...)`. Known browsers: `com.google.Chrome`, `com.apple.Safari`, `com.brave.Browser`, `company.thebrowser.Browser` (Arc), `org.mozilla.firefox`. AppleScript calls have a 1-second timeout; any failure produces an event without the browser fields. Errors are logged once per app-launch session.
 
+**Firefox caveat:** Firefox on macOS does not expose its active tab URL through AppleScript's standard dictionary (unlike Safari and Chromium-based browsers). The AppleScript call will fail and the browser fields will be omitted unless a future implementation switches to a browser-extension or accessibility-API approach.
+
 ### Settings additions (`SettingsRepo`)
 
 New keys (all persisted as JSON in the existing `settings` table):
