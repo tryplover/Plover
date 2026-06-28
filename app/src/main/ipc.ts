@@ -1,7 +1,7 @@
 import { ipcMain, BrowserWindow } from 'electron';
 import { randomUUID } from 'node:crypto';
-import { Goal, Task, CalendarEvent } from '../shared/types.js';
-import { goalsRepo, tasksRepo, settingsRepo } from './store/index.js';
+import { Goal, Task, CalendarEvent, SummaryRow } from '../shared/types.js';
+import { goalsRepo, tasksRepo, settingsRepo, summariesRepo } from './store/index.js';
 import { decomposeGoal } from './planner/decompose.js';
 import { scheduleTasks } from './planner/schedule.js';
 import { GoogleAuth } from './sync/google-auth.js';
@@ -175,6 +175,11 @@ export function setupIpcHandlers(
     return folders;
   });
 
+  // Summaries
+  ipcMain.handle('summaries:get', async () => {
+    return summariesRepo.listAll();
+  });
+
   // Calendar
   ipcMain.handle('calendar:connect', async () => {
     try {
@@ -299,7 +304,9 @@ export function setupIpcHandlers(
     }
     if (createOverlayWindow) {
       setupWindow = createOverlayWindow('window');
-      setupWindow.on('closed', () => { setupWindow = null; });
+      setupWindow.on('closed', () => {
+        setupWindow = null;
+      });
       setupWindow.show();
     }
   });
@@ -312,13 +319,19 @@ export function setupIpcHandlers(
   function ensureCompanion(): BrowserWindow {
     if (!companion || companion.isDestroyed()) {
       companion = createCompanionWindow();
-      companion.on('closed', () => { companion = null; });
+      companion.on('closed', () => {
+        companion = null;
+      });
     }
     return companion;
   }
 
-  ipcMain.handle('companion:show', () => { ensureCompanion().show(); });
-  ipcMain.handle('companion:hide', () => { companion?.hide(); });
+  ipcMain.handle('companion:show', () => {
+    ensureCompanion().show();
+  });
+  ipcMain.handle('companion:hide', () => {
+    companion?.hide();
+  });
   ipcMain.handle('companion:resize', (_e, height: number) => {
     const w = ensureCompanion();
     const [width] = w.getSize();
@@ -483,6 +496,11 @@ export function startEventForwarding(): void {
   eventBus.on('calendar.synced', () => {
     broadcast('calendar:synced');
     broadcast('app-event', { type: 'calendar.synced', payload: { syncedCount: 0 } });
+  });
+
+  eventBus.on('summary.created', (summary: SummaryRow) => {
+    broadcast('summary:created', summary);
+    broadcast('app-event', { type: 'summary.created', payload: summary });
   });
 }
 

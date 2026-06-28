@@ -12,6 +12,7 @@ export class SummariesRepo {
   private db: Database.Database;
   private insertStmt: Database.Statement;
   private listForTaskStmt: Database.Statement;
+  private listAllStmt: Database.Statement;
 
   constructor(db: Database.Database) {
     this.db = db;
@@ -24,6 +25,13 @@ export class SummariesRepo {
       FROM summaries
       WHERE task_id = ?
       ORDER BY ts ASC
+    `);
+    this.listAllStmt = this.db.prepare(`
+      SELECT s.id, s.task_id, s.ts, s.summary, s.signal, t.title as task_title, g.title as goal_title
+      FROM summaries s
+      LEFT JOIN tasks t ON s.task_id = t.id
+      LEFT JOIN goals g ON t.goal_id = g.id
+      ORDER BY s.ts DESC
     `);
   }
 
@@ -42,5 +50,9 @@ export class SummariesRepo {
 
   listForTask(taskId: string): SummaryRow[] {
     return this.listForTaskStmt.all(taskId) as SummaryRow[];
+  }
+
+  listAll(): (SummaryRow & { task_title: string | null; goal_title: string | null })[] {
+    return this.listAllStmt.all() as (SummaryRow & { task_title: string | null; goal_title: string | null })[];
   }
 }

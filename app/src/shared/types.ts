@@ -31,3 +31,11 @@ export interface CalendarEvent {
   start: string; // ISO8601 string
   end: string; // ISO8601 string
 }
+
+export interface SummaryRow {
+  id: number;
+  task_id: string | null;
+  ts: string;
+  summary: string;
+  signal: number;
+}
