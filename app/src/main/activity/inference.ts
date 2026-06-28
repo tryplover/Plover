@@ -109,7 +109,7 @@ export class InferenceEngine {
       const inserted = this.summariesRepo.insert({
         taskId: entry.taskId,
         summary: entry.reasoning,
-        signal: Math.min(1, Math.max(0, entry.progress_increment / 100)),
+        signal: Math.min(1, Math.max(0, (entry.progress_increment ?? 0) / 100)),
         ts: nowTs,
       });
       this.bus.emit('summary.created', inserted);
