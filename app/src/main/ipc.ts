@@ -1,7 +1,8 @@
 import { ipcMain, BrowserWindow } from 'electron';
 import { randomUUID } from 'node:crypto';
-import { Goal, Task, CalendarEvent } from '../shared/types.js';
-import { goalsRepo, tasksRepo, settingsRepo } from './store/index.js';
+import * as fs from 'node:fs';
+import { Goal, Task, CalendarEvent, SummaryRow } from '../shared/types.js';
+import { goalsRepo, tasksRepo, settingsRepo, summariesRepo, activityRepo } from './store/index.js';
 import { decomposeGoal } from './planner/decompose.js';
 import { scheduleTasks } from './planner/schedule.js';
 import { GoogleAuth } from './sync/google-auth.js';
@@ -10,6 +11,8 @@ import { eventBus } from './bus.js';
 import { ProposedPlan } from '../preload/index.js';
 import { createCompanionWindow } from './windows/companion.js';
 import { listActiveWindows } from './activity/window-tracker.js';
+import { getScreenRecordingStatus, requestScreenRecording } from './permissions/screen-recording.js';
+import { SettingsData } from './store/repos/settings.js';
 export const googleAuth = new GoogleAuth();
 export const calendarSync = new GoogleCalendarSync(googleAuth);
 
@@ -141,6 +144,53 @@ export function setupIpcHandlers(
     },
   );
 
+  // Activity
+  ipcMain.handle('activity:list', async (_, args: {
+    since?: string; until?: string; kinds?: string[]; limit?: number; offset?: number;
+  }) => activityRepo.list(args ?? {}));
+
+  ipcMain.handle('activity:getById', async (_, id: number) => activityRepo.getById(Number(id)));
+
+  ipcMain.handle('activity:getScreenshot', async (_, id: number) => {
+    const row = activityRepo.getById(Number(id));
+    if (!row || row.kind !== 'screenshot_captured') return null;
+    const filePath = (row.payload as { filePath?: string }).filePath;
+    if (!filePath) return null;
+    try {
+      const bytes = await fs.promises.readFile(filePath);
+      return { dataUrl: `data:image/png;base64,${bytes.toString('base64')}` };
+    } catch {
+      return null;
+    }
+  });
+
+  ipcMain.handle('activity:purge', async (_, args: { olderThan?: string; ids?: number[] }) => {
+    if (args?.ids && args.ids.length > 0) {
+      const orphanPaths = activityRepo
+        .getByIds(args.ids.map(Number))
+        .filter((r) => r.kind === 'screenshot_captured')
+        .map((r) => (r.payload as { filePath?: string }).filePath)
+        .filter((p): p is string => typeof p === 'string');
+      const result = activityRepo.purge({ ids: args.ids });
+      for (const p of orphanPaths) {
+        try { await fs.promises.unlink(p); } catch { /* ignore */ }
+      }
+      return result;
+    }
+    if (args?.olderThan) {
+      const orphanPaths = activityRepo
+        .list({ kinds: ['screenshot_captured'], until: args.olderThan })
+        .map((r) => (r.payload as { filePath?: string }).filePath)
+        .filter((p): p is string => typeof p === 'string');
+      const result = activityRepo.purge({ olderThan: args.olderThan });
+      for (const p of orphanPaths) {
+        try { await fs.promises.unlink(p); } catch { /* ignore */ }
+      }
+      return result;
+    }
+    return { deleted: 0 };
+  });
+
   // Settings
   ipcMain.handle('settings:get', async () => {
     return settingsRepo.getAll();
@@ -148,17 +198,9 @@ export function setupIpcHandlers(
 
   ipcMain.handle(
     'settings:update',
-    async (
-      _,
-      settings: Partial<{
-        googleConnected: boolean;
-        workingHours: { start: string; end: string };
-        horizonDays: number;
-        pauseScheduling: boolean;
-        watchedFolders: string[];
-      }>,
-    ) => {
-      settingsRepo.update(settings);
+    async (_: unknown, patch: Partial<SettingsData>) => {
+      settingsRepo.update(patch);
+      return settingsRepo.getAll();
     },
   );
 
@@ -173,6 +215,11 @@ export function setupIpcHandlers(
       await onWatchedFoldersChange(folders);
     }
     return folders;
+  });
+
+  // Summaries
+  ipcMain.handle('summaries:get', async () => {
+    return summariesRepo.listAll();
   });
 
   // Calendar
@@ -299,7 +346,9 @@ export function setupIpcHandlers(
     }
     if (createOverlayWindow) {
       setupWindow = createOverlayWindow('window');
-      setupWindow.on('closed', () => { setupWindow = null; });
+      setupWindow.on('closed', () => {
+        setupWindow = null;
+      });
       setupWindow.show();
     }
   });
@@ -312,13 +361,19 @@ export function setupIpcHandlers(
   function ensureCompanion(): BrowserWindow {
     if (!companion || companion.isDestroyed()) {
       companion = createCompanionWindow();
-      companion.on('closed', () => { companion = null; });
+      companion.on('closed', () => {
+        companion = null;
+      });
     }
     return companion;
   }
 
-  ipcMain.handle('companion:show', () => { ensureCompanion().show(); });
-  ipcMain.handle('companion:hide', () => { companion?.hide(); });
+  ipcMain.handle('companion:show', () => {
+    ensureCompanion().show();
+  });
+  ipcMain.handle('companion:hide', () => {
+    companion?.hide();
+  });
   ipcMain.handle('companion:resize', (_e, height: number) => {
     const w = ensureCompanion();
     const [width] = w.getSize();
@@ -361,6 +416,9 @@ export function setupIpcHandlers(
       (overlayWin as BrowserWindow & { isTracking?: boolean }).isTracking = tracking;
     }
   });
+
+  ipcMain.handle('permissions:screenRecording:status', () => getScreenRecordingStatus());
+  ipcMain.handle('permissions:screenRecording:request', async () => requestScreenRecording());
 }
 
 async function saveGoalAndTasksInternal(
@@ -483,6 +541,11 @@ export function startEventForwarding(): void {
   eventBus.on('calendar.synced', () => {
     broadcast('calendar:synced');
     broadcast('app-event', { type: 'calendar.synced', payload: { syncedCount: 0 } });
+  });
+
+  eventBus.on('summary.created', (summary: SummaryRow) => {
+    broadcast('summary:created', summary);
+    broadcast('app-event', { type: 'summary.created', payload: summary });
   });
 }
 

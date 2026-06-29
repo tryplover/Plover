@@ -1,19 +1,20 @@
-import { useState, useEffect } from 'react';
-import TasksToday from './main/pages/TasksToday';
+import { useState, useEffect, useCallback } from 'react';
 import GoalsList from './main/pages/GoalsList';
+import AIProgress from './main/pages/AIProgress';
 import Settings from './main/pages/Settings';
 import { Onboarding } from './main/pages/Onboarding';
+import { Activity } from './main/pages/Activity';
 import { isToday } from './lib/date';
-import { IconSun, IconTarget, IconGear } from './main/icons';
+import { IconTarget, IconGear, IconActivity } from './main/icons';
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<'today' | 'goals' | 'settings'>('today');
+  const [activeTab, setActiveTab] = useState<'goals' | 'progress' | 'settings' | 'activity'>('goals');
   const [todayPendingCount, setTodayPendingCount] = useState(0);
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean>(() => {
     return localStorage.getItem('plover_onboarding_completed') === 'true';
   });
 
-  const fetchTodayCount = async () => {
+  const fetchTodayCount = useCallback(async () => {
     try {
       const allTasks = await window.api.getTasks();
       const todayTasks = allTasks.filter((t) => isToday(t.scheduled_start) && t.status !== 'done');
@@ -21,7 +22,7 @@ export function App() {
     } catch (err) {
       console.error('Failed to fetch task count:', err);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (!onboardingCompleted) return;
@@ -66,22 +67,22 @@ export function App() {
 
           <nav className="nav-links">
             <button
-              className={`nav-item ${activeTab === 'today' ? 'active' : ''}`}
-              onClick={() => setActiveTab('today')}
-              data-testid="nav-today"
-            >
-              <IconSun />
-              <span>Today</span>
-              {todayPendingCount > 0 && <span className="badge">{todayPendingCount}</span>}
-            </button>
-
-            <button
               className={`nav-item ${activeTab === 'goals' ? 'active' : ''}`}
               onClick={() => setActiveTab('goals')}
               data-testid="nav-goals"
             >
               <IconTarget />
               <span>Goals</span>
+              {todayPendingCount > 0 && <span className="badge">{todayPendingCount}</span>}
+            </button>
+
+            <button
+              className={`nav-item ${activeTab === 'progress' ? 'active' : ''}`}
+              onClick={() => setActiveTab('progress')}
+              data-testid="nav-progress"
+            >
+              <IconActivity />
+              <span>AI Progress</span>
             </button>
 
             <button
@@ -91,6 +92,14 @@ export function App() {
             >
               <IconGear />
               <span>Settings</span>
+            </button>
+
+            <button
+              className={`nav-item ${activeTab === 'activity' ? 'active' : ''}`}
+              onClick={() => setActiveTab('activity')}
+              data-testid="nav-activity"
+            >
+              <span>Activity</span>
             </button>
           </nav>
         </div>
@@ -104,6 +113,7 @@ export function App() {
         )}
         {activeTab === 'goals' && <GoalsList data-testid="page-goals" />}
         {activeTab === 'settings' && <Settings data-testid="page-settings" />}
+        {activeTab === 'activity' && <Activity />}
       </main>
     </div>
   );

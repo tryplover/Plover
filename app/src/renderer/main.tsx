@@ -11,17 +11,23 @@ import './index.css';
 const container = document.getElementById('root');
 if (!container) throw new Error('root element missing');
 
+const params = new URLSearchParams(window.location.search);
+const variant = params.get('variant');
 const isOverlay =
-  window.location.search.includes('overlay') || window.location.hash.includes('overlay');
+  variant === 'overlay' ||
+  variant === 'window' ||
+  window.location.search.includes('overlay') ||
+  window.location.hash.includes('overlay');
 
-const showGallery = import.meta.env.DEV && new URLSearchParams(window.location.search).get('gallery') === '1';
+const showGallery =
+  import.meta.env.DEV && new URLSearchParams(window.location.search).get('gallery') === '1';
 
 if (showGallery) {
   import('./dev/ComponentGallery').then(({ ComponentGallery }) => {
     createRoot(container).render(
       <StrictMode>
         <ComponentGallery />
-      </StrictMode>
+      </StrictMode>,
     );
   });
 } else {

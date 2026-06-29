@@ -54,6 +54,15 @@ export interface PloverAPI {
     workingHours: { start: string; end: string };
     horizonDays: number;
     pauseScheduling: boolean;
+    pauseAllTracking: boolean;
+    windowTrackingEnabled: boolean;
+    gdocsPollingEnabled: boolean;
+    fileWatchingEnabled: boolean;
+    screenCaptureEnabled: boolean;
+    screenCaptureIntervalMinutes: number;
+    screenVisionInferenceEnabled: boolean;
+    activityRetentionDays: number;
+    planner_useRecentActivityContext: boolean;
   }>;
   updateSettings(
     settings: Partial<{
@@ -61,13 +70,42 @@ export interface PloverAPI {
       workingHours: { start: string; end: string };
       horizonDays: number;
       pauseScheduling: boolean;
+      pauseAllTracking: boolean;
+      windowTrackingEnabled: boolean;
+      gdocsPollingEnabled: boolean;
+      fileWatchingEnabled: boolean;
+      screenCaptureEnabled: boolean;
+      screenCaptureIntervalMinutes: number;
+      screenVisionInferenceEnabled: boolean;
+      activityRetentionDays: number;
+      planner_useRecentActivityContext: boolean;
     }>,
-  ): Promise<void>;
+  ): Promise<{
+    googleConnected: boolean;
+    workingHours: { start: string; end: string };
+    horizonDays: number;
+    pauseScheduling: boolean;
+    pauseAllTracking: boolean;
+    windowTrackingEnabled: boolean;
+    gdocsPollingEnabled: boolean;
+    fileWatchingEnabled: boolean;
+    screenCaptureEnabled: boolean;
+    screenCaptureIntervalMinutes: number;
+    screenVisionInferenceEnabled: boolean;
+    activityRetentionDays: number;
+    planner_useRecentActivityContext: boolean;
+  }>;
   connectCalendar(): Promise<boolean>;
   disconnectCalendar(): Promise<void>;
   listActiveWindows(): Promise<{ app: string; title: string }[]>;
   setIgnoreMouseEvents(ignore: boolean): Promise<void>;
   setTrackingState(tracking: boolean): Promise<void>;
+  listActivity(args?: { since?: string; until?: string; kinds?: string[]; limit?: number; offset?: number }): Promise<{ id: number; ts: string; kind: string; payload: Record<string, unknown> }[]>;
+  getActivityById(id: number): Promise<{ id: number; ts: string; kind: string; payload: Record<string, unknown> } | null>;
+  purgeActivity(args: { olderThan?: string; ids?: number[] }): Promise<{ deleted: number }>;
+  getScreenshot(id: number): Promise<{ dataUrl: string } | null>;
+  getScreenRecordingStatus(): Promise<'granted' | 'denied' | 'not-determined' | 'restricted' | 'unsupported'>;
+  requestScreenRecording(): Promise<'granted' | 'denied' | 'unsupported'>;
   on(channel: string, callback: (...args: unknown[]) => void): () => void;
 }
 

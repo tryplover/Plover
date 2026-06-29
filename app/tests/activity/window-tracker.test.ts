@@ -13,6 +13,14 @@ vi.mock('get-windows', () => ({
   openWindows: () => mockOpenWindows(),
 }));
 
+// Setup execFile mock
+const mockExecFile = vi.fn();
+vi.mock('node:child_process', () => ({
+  execFile: (cmd: string, args: string[], opts: object, cb: (err: Error | null, stdout: string, stderr: string) => void) => {
+    mockExecFile(cmd, args, opts, cb);
+  },
+}));
+
 describe('WindowTracker', () => {
 
   beforeEach(() => {
@@ -100,7 +108,7 @@ describe('WindowTracker', () => {
     vi.advanceTimersByTime(10000);
     await tracker.checkActiveWindow();
     expect(activityRepo.list()).toHaveLength(2);
-    expect(activityRepo.list()[1]?.payload).toEqual({
+    expect(activityRepo.list()[0]?.payload).toEqual({
       app: 'Slack',
       title: 'General',
     });
@@ -135,7 +143,7 @@ describe('WindowTracker', () => {
     vi.advanceTimersByTime(10000);
     await tracker.checkActiveWindow();
     expect(activityRepo.list()).toHaveLength(2);
-    expect(activityRepo.list()[1]?.payload).toEqual({
+    expect(activityRepo.list()[0]?.payload).toEqual({
       app: 'Safari',
       title: 'Google Search',
     });
@@ -221,5 +229,76 @@ describe('listActiveWindows', () => {
       { app: 'Safari', title: 'Google Search' },
       { app: 'Finder', title: 'Desktop' },
     ]);
+  });
+});
+
+describe('WindowTracker — enhanced metadata', () => {
+  let db: Database.Database;
+  let activityRepo: ActivityRepo;
+  let settingsRepo: SettingsRepo;
+  let tracker: WindowTracker;
+  const realPlatform = process.platform;
+
+  beforeEach(() => {
+    Object.defineProperty(process, 'platform', { value: 'darwin', configurable: true });
+    db = new Database(':memory:');
+    runMigrations(db);
+    activityRepo = new ActivityRepo(db);
+    settingsRepo = new SettingsRepo(db);
+    settingsRepo.update({ pauseScheduling: false });
+    tracker = new WindowTracker(activityRepo, settingsRepo);
+    mockActiveWindow.mockReset();
+    mockExecFile.mockReset();
+  });
+
+  afterEach(() => {
+    Object.defineProperty(process, 'platform', { value: realPlatform, configurable: true });
+  });
+
+  it('logs bundleId from get-windows owner', async () => {
+    mockActiveWindow.mockResolvedValue({
+      owner: { name: 'Slack', bundleId: 'com.tinyspeck.slackmacgap' },
+      title: '#engineering',
+    });
+    await tracker.checkActiveWindow();
+    const rows = activityRepo.list();
+    expect(rows[0]?.payload.bundleId).toBe('com.tinyspeck.slackmacgap');
+  });
+
+  it('captures browser URL for Chrome via osascript', async () => {
+    mockActiveWindow.mockResolvedValue({
+      owner: { name: 'Google Chrome', bundleId: 'com.google.Chrome' },
+      title: 'Plover - GitHub',
+    });
+    mockExecFile.mockImplementationOnce((_cmd, _args, _opts, cb) =>
+      cb(null, 'https://github.com/foo/plover\nPlover · GitHub', '')
+    );
+    await tracker.checkActiveWindow();
+    const payload = activityRepo.list()[0]?.payload as Record<string, unknown>;
+    expect(payload.browserUrl).toBe('https://github.com/foo/plover');
+    expect(payload.browserTabTitle).toBe('Plover · GitHub');
+  });
+
+  it('omits browser fields cleanly when osascript fails', async () => {
+    mockActiveWindow.mockResolvedValue({
+      owner: { name: 'Safari', bundleId: 'com.apple.Safari' },
+      title: 'Some Page',
+    });
+    mockExecFile.mockImplementationOnce((_cmd, _args, _opts, cb) =>
+      cb(new Error('not allowed'), '', '')
+    );
+    await tracker.checkActiveWindow();
+    const payload = activityRepo.list()[0]?.payload as Record<string, unknown>;
+    expect(payload.app).toBe('Safari');
+    expect(payload.browserUrl).toBeUndefined();
+  });
+
+  it('does not call osascript for non-browser apps', async () => {
+    mockActiveWindow.mockResolvedValue({
+      owner: { name: 'Terminal', bundleId: 'com.apple.Terminal' },
+      title: 'zsh',
+    });
+    await tracker.checkActiveWindow();
+    expect(mockExecFile).not.toHaveBeenCalled();
   });
 });

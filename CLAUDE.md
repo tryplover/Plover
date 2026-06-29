@@ -398,3 +398,21 @@ Subagents that need to install deps will hit this same wall and report "network/
 **Root cause:** When `"type": "module"` is set in `package.json`, Vite/Rollup defaults to building outputs as ESM (using the `.mjs` extension) even when specifying `entryFileNames: '[name].js'`.
 
 **Fix:** Configure the preload config's Rollup output options in `electron.vite.config.ts` to build in CommonJS format (`format: 'cjs'`) and set `entryFileNames: '[name].js'`.
+
+### 2026-06-24 — Port 3000 occupied by other local servers causes 404 in goal decomposition
+
+**Symptom:** Invoking `goals:decompose` fails with `Goal decomposition failed: Server responded with status 404`.
+
+**Root cause:** The backend proxy server by default runs on port `3000`. If port `3000` is already occupied by another local service (e.g., a Next.js dev server), HTTP requests from the Electron client targeting `http://localhost:3000/api/decompose` will hit the other service instead, resulting in a 404.
+
+**Fix:** Create `server/.env` and assign `PORT=3001` (or another unused port), and create `app/.env` to configure `PLOVER_BACKEND_URL=http://localhost:3001`. Both processes must be restarted to load their respective environment files.
+
+### 2026-06-24 — Clicking "Open setup overlay" opens duplicate main window instead of setup flow
+
+**Symptom:** In the "Today" page empty state, clicking "Open setup overlay" opens a new window, but the window renders a duplicate of the main application (with sidebar/main tabs) rather than the setup/overlay flow.
+
+**Root cause:** The setup flow window is loaded with `?variant=window`. However, `main.tsx` determined whether to render `<Overlay />` (which renders the setup/overlay steps) or `<App />` (which renders the main application layout) by checking if `window.location.search` includes the literal string `"overlay"`. Since `variant=window` does not contain `"overlay"`, it incorrectly fell back to rendering `<App />`.
+
+**Fix:** Update `main.tsx` to parse the `variant` query parameter and match both `"overlay"` and `"window"` variants as the overlay/setup flow.
+
+
