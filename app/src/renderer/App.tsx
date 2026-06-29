@@ -44,7 +44,7 @@ export function App() {
     return () => {
       unsubscribe();
     };
-  }, [onboardingCompleted]);
+  }, [onboardingCompleted, fetchTodayCount]);
 
   const handleOnboardingComplete = () => {
     localStorage.setItem('plover_onboarding_completed', 'true');
