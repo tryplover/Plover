@@ -627,6 +627,7 @@
   margin-bottom: 18px;
   outline: none;
   font-family: inherit;
+  user-select: text;
 }
 
 .plover-onboarding__mockup-label-small {
