@@ -6,11 +6,37 @@ interface SettingsProps {
   'data-testid'?: string;
 }
 
+interface ActivitySettings {
+  pauseAllTracking: boolean;
+  windowTrackingEnabled: boolean;
+  gdocsPollingEnabled: boolean;
+  fileWatchingEnabled: boolean;
+  screenCaptureEnabled: boolean;
+  screenCaptureIntervalMinutes: number;
+  screenVisionInferenceEnabled: boolean;
+  activityRetentionDays: number;
+  planner_useRecentActivityContext: boolean;
+}
+
+const defaultActivitySettings: ActivitySettings = {
+  pauseAllTracking: false,
+  windowTrackingEnabled: true,
+  gdocsPollingEnabled: true,
+  fileWatchingEnabled: true,
+  screenCaptureEnabled: false,
+  screenCaptureIntervalMinutes: 5,
+  screenVisionInferenceEnabled: false,
+  activityRetentionDays: 30,
+  planner_useRecentActivityContext: true,
+};
+
 export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
   const [googleConnected, setGoogleConnected] = useState(false);
   const [workingHours, setWorkingHours] = useState({ start: '09:00', end: '18:00' });
   const [horizonDays, setHorizonDays] = useState(14);
   const [pauseScheduling, setPauseScheduling] = useState(false);
+  const [activitySettings, setActivitySettings] = useState<ActivitySettings>(defaultActivitySettings);
+  const [screenPermission, setScreenPermission] = useState<string>('not-determined');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   const fetchSettings = async () => {
@@ -20,6 +46,17 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
       setWorkingHours(settings.workingHours || { start: '09:00', end: '18:00' });
       setHorizonDays(settings.horizonDays || 14);
       setPauseScheduling(settings.pauseScheduling || false);
+      setActivitySettings({
+        pauseAllTracking: settings.pauseAllTracking ?? defaultActivitySettings.pauseAllTracking,
+        windowTrackingEnabled: settings.windowTrackingEnabled ?? defaultActivitySettings.windowTrackingEnabled,
+        gdocsPollingEnabled: settings.gdocsPollingEnabled ?? defaultActivitySettings.gdocsPollingEnabled,
+        fileWatchingEnabled: settings.fileWatchingEnabled ?? defaultActivitySettings.fileWatchingEnabled,
+        screenCaptureEnabled: settings.screenCaptureEnabled ?? defaultActivitySettings.screenCaptureEnabled,
+        screenCaptureIntervalMinutes: settings.screenCaptureIntervalMinutes ?? defaultActivitySettings.screenCaptureIntervalMinutes,
+        screenVisionInferenceEnabled: settings.screenVisionInferenceEnabled ?? defaultActivitySettings.screenVisionInferenceEnabled,
+        activityRetentionDays: settings.activityRetentionDays ?? defaultActivitySettings.activityRetentionDays,
+        planner_useRecentActivityContext: settings.planner_useRecentActivityContext ?? defaultActivitySettings.planner_useRecentActivityContext,
+      });
     } catch (err) {
       console.error('Failed to fetch settings:', err);
     }
@@ -28,7 +65,41 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchSettings();
+    void window.api.getScreenRecordingStatus().then(setScreenPermission);
   }, []);
+
+  const triggerActivitySave = async (patch: Partial<ActivitySettings>): Promise<void> => {
+    const next = { ...activitySettings, ...patch };
+    setActivitySettings(next);
+    setSaveStatus('saving');
+    try {
+      await window.api.updateSettings(patch);
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 1500);
+    } catch (err) {
+      console.error('Failed to update activity settings:', err);
+      setSaveStatus('idle');
+    }
+  };
+
+  const handleScreenCaptureToggle = async (enabled: boolean): Promise<void> => {
+    if (!enabled) {
+      await triggerActivitySave({ screenCaptureEnabled: false });
+      return;
+    }
+    const status = await window.api.requestScreenRecording();
+    setScreenPermission(status);
+    if (status !== 'granted') {
+      alert('Screen Recording permission is required. Open System Settings → Privacy & Security → Screen Recording, add Plover, then try again.');
+      return;
+    }
+    await triggerActivitySave({ screenCaptureEnabled: true });
+  };
+
+  const handleDeleteAllActivity = async (): Promise<void> => {
+    await window.api.purgeActivity({ olderThan: new Date().toISOString() });
+    alert('All activity deleted');
+  };
 
   const triggerAutoSave = async (
     updatedSettings: Partial<{
@@ -300,6 +371,181 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
                 >
                   {pauseScheduling ? 'Paused' : 'Active'}
                 </Chip>
+              </div>
+            </div>
+          </div>
+
+          <div
+            style={{
+              backgroundColor: 'var(--plover-surface)',
+              borderRadius: 'var(--plover-radius-lg)',
+              padding: '24px',
+            }}
+          >
+            <h2
+              style={{
+                fontSize: '18px',
+                fontWeight: 600,
+                marginBottom: '16px',
+                color: 'var(--plover-text)',
+              }}
+            >
+              Activity tracking
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={{ fontSize: '14px', fontWeight: 500, color: 'var(--plover-text)' }}>
+                  Pause all tracking
+                </label>
+                <Chip
+                  selected={activitySettings.pauseAllTracking}
+                  onClick={() => void triggerActivitySave({ pauseAllTracking: !activitySettings.pauseAllTracking })}
+                >
+                  {activitySettings.pauseAllTracking ? 'Paused' : 'Active'}
+                </Chip>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={{ fontSize: '14px', color: 'var(--plover-text)' }}>
+                  Window tracking
+                </label>
+                <Chip
+                  selected={activitySettings.windowTrackingEnabled}
+                  onClick={() => void triggerActivitySave({ windowTrackingEnabled: !activitySettings.windowTrackingEnabled })}
+                >
+                  {activitySettings.windowTrackingEnabled ? 'On' : 'Off'}
+                </Chip>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={{ fontSize: '14px', color: 'var(--plover-text)' }}>
+                  Google Docs polling
+                </label>
+                <Chip
+                  selected={activitySettings.gdocsPollingEnabled}
+                  onClick={() => void triggerActivitySave({ gdocsPollingEnabled: !activitySettings.gdocsPollingEnabled })}
+                >
+                  {activitySettings.gdocsPollingEnabled ? 'On' : 'Off'}
+                </Chip>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={{ fontSize: '14px', color: 'var(--plover-text)' }}>
+                  Watched-folder file events
+                </label>
+                <Chip
+                  selected={activitySettings.fileWatchingEnabled}
+                  onClick={() => void triggerActivitySave({ fileWatchingEnabled: !activitySettings.fileWatchingEnabled })}
+                >
+                  {activitySettings.fileWatchingEnabled ? 'On' : 'Off'}
+                </Chip>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={{ fontSize: '14px', color: 'var(--plover-text)' }}>
+                  Capture periodic screenshots
+                  {activitySettings.screenCaptureEnabled && screenPermission !== 'granted' && (
+                    <span style={{ fontSize: '12px', color: 'var(--plover-text-muted)', marginLeft: '6px' }}>(permission not granted)</span>
+                  )}
+                </label>
+                <Chip
+                  selected={activitySettings.screenCaptureEnabled}
+                  onClick={() => void handleScreenCaptureToggle(!activitySettings.screenCaptureEnabled)}
+                >
+                  {activitySettings.screenCaptureEnabled ? 'On' : 'Off'}
+                </Chip>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={{ fontSize: '14px', color: 'var(--plover-text)' }}>
+                  Capture interval (minutes)
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={60}
+                  value={activitySettings.screenCaptureIntervalMinutes}
+                  disabled={!activitySettings.screenCaptureEnabled}
+                  onChange={(e) => void triggerActivitySave({ screenCaptureIntervalMinutes: Number(e.target.value) })}
+                  style={{
+                    width: '72px',
+                    backgroundColor: 'var(--plover-surface-raised)',
+                    border: '1px solid var(--plover-border)',
+                    borderRadius: 'var(--plover-radius-sm)',
+                    padding: '6px 10px',
+                    color: 'var(--plover-text)',
+                    fontSize: '14px',
+                    outline: 'none',
+                    fontFamily: 'inherit',
+                    opacity: activitySettings.screenCaptureEnabled ? 1 : 0.4,
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={{ fontSize: '14px', color: 'var(--plover-text)' }}>
+                  Send screenshots to Gemini Vision
+                </label>
+                <div
+                  style={{
+                    opacity: activitySettings.screenCaptureEnabled ? 1 : 0.4,
+                    cursor: activitySettings.screenCaptureEnabled ? 'pointer' : 'not-allowed',
+                    pointerEvents: activitySettings.screenCaptureEnabled ? 'auto' : 'none',
+                  }}
+                >
+                  <Chip
+                    selected={activitySettings.screenVisionInferenceEnabled}
+                    onClick={() => {
+                      if (activitySettings.screenCaptureEnabled) {
+                        void triggerActivitySave({ screenVisionInferenceEnabled: !activitySettings.screenVisionInferenceEnabled });
+                      }
+                    }}
+                    aria-disabled={!activitySettings.screenCaptureEnabled}
+                  >
+                    {activitySettings.screenVisionInferenceEnabled ? 'On' : 'Off'}
+                  </Chip>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={{ fontSize: '14px', color: 'var(--plover-text)' }}>
+                  Retention (days, 0 = keep forever)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={activitySettings.activityRetentionDays}
+                  onChange={(e) => void triggerActivitySave({ activityRetentionDays: Number(e.target.value) })}
+                  style={{
+                    width: '72px',
+                    backgroundColor: 'var(--plover-surface-raised)',
+                    border: '1px solid var(--plover-border)',
+                    borderRadius: 'var(--plover-radius-sm)',
+                    padding: '6px 10px',
+                    color: 'var(--plover-text)',
+                    fontSize: '14px',
+                    outline: 'none',
+                    fontFamily: 'inherit',
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={{ fontSize: '14px', color: 'var(--plover-text)' }}>
+                  Include recent activity when decomposing goals
+                </label>
+                <Chip
+                  selected={activitySettings.planner_useRecentActivityContext}
+                  onClick={() => void triggerActivitySave({ planner_useRecentActivityContext: !activitySettings.planner_useRecentActivityContext })}
+                >
+                  {activitySettings.planner_useRecentActivityContext ? 'On' : 'Off'}
+                </Chip>
+              </div>
+
+              <div style={{ marginTop: '8px' }}>
+                <Button variant="secondary" onClick={() => void handleDeleteAllActivity()}>
+                  Delete all activity
+                </Button>
               </div>
             </div>
           </div>

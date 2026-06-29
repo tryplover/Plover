@@ -83,6 +83,15 @@ export interface PloverApi {
     workingHours: { start: string; end: string };
     horizonDays: number;
     pauseScheduling: boolean;
+    pauseAllTracking: boolean;
+    windowTrackingEnabled: boolean;
+    gdocsPollingEnabled: boolean;
+    fileWatchingEnabled: boolean;
+    screenCaptureEnabled: boolean;
+    screenCaptureIntervalMinutes: number;
+    screenVisionInferenceEnabled: boolean;
+    activityRetentionDays: number;
+    planner_useRecentActivityContext: boolean;
   }>;
   updateSettings: (
     settings: Partial<{
@@ -90,8 +99,31 @@ export interface PloverApi {
       workingHours: { start: string; end: string };
       horizonDays: number;
       pauseScheduling: boolean;
+      pauseAllTracking: boolean;
+      windowTrackingEnabled: boolean;
+      gdocsPollingEnabled: boolean;
+      fileWatchingEnabled: boolean;
+      screenCaptureEnabled: boolean;
+      screenCaptureIntervalMinutes: number;
+      screenVisionInferenceEnabled: boolean;
+      activityRetentionDays: number;
+      planner_useRecentActivityContext: boolean;
     }>,
-  ) => Promise<void>;
+  ) => Promise<{
+    googleConnected: boolean;
+    workingHours: { start: string; end: string };
+    horizonDays: number;
+    pauseScheduling: boolean;
+    pauseAllTracking: boolean;
+    windowTrackingEnabled: boolean;
+    gdocsPollingEnabled: boolean;
+    fileWatchingEnabled: boolean;
+    screenCaptureEnabled: boolean;
+    screenCaptureIntervalMinutes: number;
+    screenVisionInferenceEnabled: boolean;
+    activityRetentionDays: number;
+    planner_useRecentActivityContext: boolean;
+  }>;
 
   // Calendar Sync
   connectCalendar: () => Promise<boolean>;
@@ -111,6 +143,7 @@ export interface PloverApi {
   listActivity: (args?: { since?: string; until?: string; kinds?: string[]; limit?: number; offset?: number }) => Promise<{ id: number; ts: string; kind: string; payload: Record<string, unknown> }[]>;
   getActivityById: (id: number) => Promise<{ id: number; ts: string; kind: string; payload: Record<string, unknown> } | null>;
   purgeActivity: (args: { olderThan?: string; ids?: number[] }) => Promise<{ deleted: number }>;
+  getScreenshot: (id: number) => Promise<{ dataUrl: string } | null>;
 
   // Permissions
   getScreenRecordingStatus: () => Promise<'granted' | 'denied' | 'not-determined' | 'restricted' | 'unsupported'>;
@@ -152,6 +185,7 @@ const api: PloverApi = {
   listActivity: (args) => ipcRenderer.invoke('activity:list', args ?? {}),
   getActivityById: (id) => ipcRenderer.invoke('activity:getById', id),
   purgeActivity: (args) => ipcRenderer.invoke('activity:purge', args),
+  getScreenshot: (id) => ipcRenderer.invoke('activity:getScreenshot', id),
 
   // Permissions
   getScreenRecordingStatus: () => ipcRenderer.invoke('permissions:screenRecording:status'),
