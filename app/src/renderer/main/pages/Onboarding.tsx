@@ -266,7 +266,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                         onClick={() => handleToggleUsecase(usecase.label)}
                       >
                         <div style={{ display: 'flex', alignItems: 'center' }}>
-                          <span className="plover-onboarding__chip-icon">{usecase.icon}</span>
+                          <span className="plover-onboarding__chip-icon" aria-hidden="true">{usecase.icon}</span>
                           <span>{usecase.label}</span>
                         </div>
                         {isSelected && (
