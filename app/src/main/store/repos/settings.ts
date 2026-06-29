@@ -7,6 +7,16 @@ export interface SettingsData {
   pauseScheduling: boolean;
   watchedFolders: string[];
   lastInferenceTs: string | null;
+
+  pauseAllTracking: boolean;
+  windowTrackingEnabled: boolean;
+  gdocsPollingEnabled: boolean;
+  fileWatchingEnabled: boolean;
+  screenCaptureEnabled: boolean;
+  screenCaptureIntervalMinutes: number;
+  screenVisionInferenceEnabled: boolean;
+  activityRetentionDays: number;
+  planner_useRecentActivityContext: boolean;
 }
 
 export class SettingsRepo {
@@ -39,6 +49,18 @@ export class SettingsRepo {
     const watchedFolders = watchedFoldersRaw ? JSON.parse(watchedFoldersRaw) : [];
     const lastInferenceTs = this.get('lastInferenceTs');
 
+    const pauseAllTracking = this.get('pauseAllTracking') === 'true';
+    const windowTrackingEnabled = this.get('windowTrackingEnabled') !== 'false';
+    const gdocsPollingEnabled = this.get('gdocsPollingEnabled') !== 'false';
+    const fileWatchingEnabled = this.get('fileWatchingEnabled') !== 'false';
+    const screenCaptureEnabled = this.get('screenCaptureEnabled') === 'true';
+    const rawInterval = Number(this.get('screenCaptureIntervalMinutes') ?? '5');
+    const screenCaptureIntervalMinutes = Math.min(60, Math.max(1, Number.isFinite(rawInterval) ? Math.round(rawInterval) : 5));
+    const screenVisionInferenceEnabled = this.get('screenVisionInferenceEnabled') === 'true';
+    const rawRetention = Number(this.get('activityRetentionDays') ?? '30');
+    const activityRetentionDays = Math.max(0, Number.isFinite(rawRetention) ? Math.round(rawRetention) : 30);
+    const planner_useRecentActivityContext = this.get('planner_useRecentActivityContext') !== 'false';
+
     return {
       googleConnected,
       workingHours,
@@ -46,6 +68,15 @@ export class SettingsRepo {
       pauseScheduling,
       watchedFolders,
       lastInferenceTs,
+      pauseAllTracking,
+      windowTrackingEnabled,
+      gdocsPollingEnabled,
+      fileWatchingEnabled,
+      screenCaptureEnabled,
+      screenCaptureIntervalMinutes,
+      screenVisionInferenceEnabled,
+      activityRetentionDays,
+      planner_useRecentActivityContext,
     };
   }
 
@@ -71,6 +102,34 @@ export class SettingsRepo {
       } else {
         this.set('lastInferenceTs', patch.lastInferenceTs);
       }
+    }
+    if (patch.pauseAllTracking !== undefined) {
+      this.set('pauseAllTracking', String(patch.pauseAllTracking));
+    }
+    if (patch.windowTrackingEnabled !== undefined) {
+      this.set('windowTrackingEnabled', String(patch.windowTrackingEnabled));
+    }
+    if (patch.gdocsPollingEnabled !== undefined) {
+      this.set('gdocsPollingEnabled', String(patch.gdocsPollingEnabled));
+    }
+    if (patch.fileWatchingEnabled !== undefined) {
+      this.set('fileWatchingEnabled', String(patch.fileWatchingEnabled));
+    }
+    if (patch.screenCaptureEnabled !== undefined) {
+      this.set('screenCaptureEnabled', String(patch.screenCaptureEnabled));
+    }
+    if (patch.screenCaptureIntervalMinutes !== undefined) {
+      const clamped = Math.min(60, Math.max(1, Math.round(patch.screenCaptureIntervalMinutes)));
+      this.set('screenCaptureIntervalMinutes', String(clamped));
+    }
+    if (patch.screenVisionInferenceEnabled !== undefined) {
+      this.set('screenVisionInferenceEnabled', String(patch.screenVisionInferenceEnabled));
+    }
+    if (patch.activityRetentionDays !== undefined) {
+      this.set('activityRetentionDays', String(Math.max(0, Math.round(patch.activityRetentionDays))));
+    }
+    if (patch.planner_useRecentActivityContext !== undefined) {
+      this.set('planner_useRecentActivityContext', String(patch.planner_useRecentActivityContext));
     }
   }
 }
