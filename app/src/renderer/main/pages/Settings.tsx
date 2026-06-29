@@ -97,7 +97,7 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
   };
 
   const handleDeleteAllActivity = async (): Promise<void> => {
-    await window.api.purgeActivity({ olderThan: new Date(0).toISOString() });
+    await window.api.purgeActivity({ olderThan: new Date().toISOString() });
     alert('All activity deleted');
   };
 

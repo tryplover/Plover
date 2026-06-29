@@ -12,7 +12,6 @@ import { ProposedPlan } from '../preload/index.js';
 import { createCompanionWindow } from './windows/companion.js';
 import { listActiveWindows } from './activity/window-tracker.js';
 import { getScreenRecordingStatus, requestScreenRecording } from './permissions/screen-recording.js';
-import { getScreenCapturer } from './activity/index.js';
 import { SettingsData } from './store/repos/settings.js';
 export const googleAuth = new GoogleAuth();
 export const calendarSync = new GoogleCalendarSync(googleAuth);
@@ -201,13 +200,6 @@ export function setupIpcHandlers(
     'settings:update',
     async (_: unknown, patch: Partial<SettingsData>) => {
       settingsRepo.update(patch);
-      if (patch.screenCaptureEnabled !== undefined) {
-        const cap = getScreenCapturer();
-        if (cap) {
-          if (patch.screenCaptureEnabled) cap.start();
-          else cap.stop();
-        }
-      }
       return settingsRepo.getAll();
     },
   );

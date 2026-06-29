@@ -11,20 +11,21 @@ export function Activity() {
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
 
-  const load = useCallback(async (reset = false) => {
+  const load = useCallback(async (currentCount: number, reset = false) => {
     setLoading(true);
-    const offset = reset ? 0 : rows.length;
+    const offset = reset ? 0 : currentCount;
     const next = await window.api.listActivity({
       kinds: kinds.length ? kinds : undefined,
       limit: PAGE_SIZE,
       offset,
     });
-    setRows(reset ? next : [...rows, ...next]);
+    setRows((prev) => (reset ? next : [...prev, ...next]));
     setDone(next.length < PAGE_SIZE);
     setLoading(false);
-  }, [rows, kinds]);
+  }, [kinds]);
 
-  useEffect(() => { void load(true); }, [kinds]); // eslint-disable-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { void load(0, true); }, [load]);
 
   const deleteRow = async (id: number): Promise<void> => {
     await window.api.purgeActivity({ ids: [id] });
@@ -43,7 +44,7 @@ export function Activity() {
         ))}
       </ul>
       {!done && (
-        <button onClick={() => void load(false)} disabled={loading}>
+        <button onClick={() => void load(rows.length, false)} disabled={loading}>
           {loading ? 'Loading…' : 'Load more'}
         </button>
       )}
