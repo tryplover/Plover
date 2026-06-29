@@ -495,6 +495,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                     <input
                       type="text"
                       className="plover-onboarding__mockup-input"
+                      aria-label="Task name"
                       value={appName}
                       onChange={(e) => setAppName(e.target.value)}
                     />
