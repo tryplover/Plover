@@ -4,6 +4,13 @@ import { GoogleGenerativeAI, FunctionCallingMode, SchemaType, FunctionDeclaratio
 
 const app = express();
 
+const FALLBACK_MODELS = [
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-lite',
+  'gemini-2.5-flash',
+  'gemini-2.5-pro',
+];
+
 app.use(cors());
 app.use(express.json());
 
@@ -123,12 +130,7 @@ app.post('/api/decompose', async (req, res): Promise<any> => {
   try {
     const client = new GoogleGenerativeAI(apiKey);
     const defaultModelName = (process.env.GEMINI_MODEL || 'gemini-2.0-flash').trim();
-    const fallbackNames = [
-      'gemini-2.0-flash',
-      'gemini-1.5-flash',
-      'gemini-2.0-flash-lite-preview-02-05',
-      'gemini-1.5-pro',
-    ].filter((m) => m !== defaultModelName);
+    const fallbackNames = FALLBACK_MODELS.filter((m) => m !== defaultModelName);
 
     const candidates = [
       defaultModelName,
@@ -369,12 +371,7 @@ app.post('/api/infer-progress', async (req, res): Promise<any> => {
   try {
     const client = new GoogleGenerativeAI(apiKey);
     const defaultModelName = (process.env.GEMINI_MODEL || 'gemini-2.0-flash').trim();
-    const fallbackNames = [
-      'gemini-2.0-flash',
-      'gemini-1.5-flash',
-      'gemini-2.0-flash-lite-preview-02-05',
-      'gemini-1.5-pro',
-    ].filter((m) => m !== defaultModelName);
+    const fallbackNames = FALLBACK_MODELS.filter((m) => m !== defaultModelName);
     const candidates = [defaultModelName, ...fallbackNames];
 
     const taskList = tasks
@@ -555,12 +552,7 @@ app.post('/api/match-commit', async (req, res): Promise<any> => {
   try {
     const client = new GoogleGenerativeAI(apiKey);
     const defaultModelName = (process.env.GEMINI_MODEL || 'gemini-2.0-flash').trim();
-    const fallbackNames = [
-      'gemini-2.0-flash',
-      'gemini-1.5-flash',
-      'gemini-2.0-flash-lite-preview-02-05',
-      'gemini-1.5-pro',
-    ].filter((m) => m !== defaultModelName);
+    const fallbackNames = FALLBACK_MODELS.filter((m) => m !== defaultModelName);
     const candidates = [defaultModelName, ...fallbackNames];
 
     const taskList = tasks
@@ -691,7 +683,7 @@ app.post('/api/infer-screen', async (req, res): Promise<any> => {
   try {
     const client = new GoogleGenerativeAI(apiKey);
     const defaultModel = (process.env.GEMINI_VISION_MODEL || 'gemini-2.0-flash').trim();
-    const candidates = [defaultModel, 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'].filter((m, i, a) => a.indexOf(m) === i);
+    const candidates = [defaultModel, ...FALLBACK_MODELS].filter((m, i, a) => a.indexOf(m) === i);
 
     const contextLine = windowContext
       ? `Active window context: app="${windowContext.app}", title="${windowContext.title}"${windowContext.browserUrl ? `, url="${windowContext.browserUrl}"` : ''}`
@@ -721,7 +713,7 @@ app.post('/api/infer-screen', async (req, res): Promise<any> => {
     const calls = typeof response.response.functionCalls === 'function' ? response.response.functionCalls() : undefined;
     const call: FunctionCall | undefined = calls?.[0] ?? response.response.candidates?.[0]?.content?.parts?.find((p: Part) => !!p.functionCall)?.functionCall;
     if (!call || call.name !== 'inferScreen') return res.status(502).json({ error: 'Gemini did not call inferScreen' });
-    const args = call.args as { summary?: string; activeApp?: string; currentTask?: string; confidence?: number };
+    const args = (call.args ?? {}) as { summary?: string; activeApp?: string; currentTask?: string; confidence?: number };
     return res.json({
       summary: String(args.summary ?? '').slice(0, 500),
       activeApp: String(args.activeApp ?? ''),

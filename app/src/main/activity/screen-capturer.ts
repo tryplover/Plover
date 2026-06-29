@@ -90,10 +90,24 @@ export class ScreenCapturer {
     const authToken = process.env.PLOVER_AUTH_TOKEN;
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (authToken) headers['X-Plover-Auth-Token'] = authToken;
+
+    // Pass the most recent window_focus payload to the backend so Gemini Vision
+    // has the active app/title/URL as context instead of falling back to "no context".
+    const lastFocus = this.deps.activityRepo.list({ kind: 'window_focus', limit: 1 })[0];
+    const focusPayload = lastFocus?.payload as Record<string, unknown> | undefined;
+    const windowContext = focusPayload
+      ? {
+          app: String(focusPayload.app ?? ''),
+          title: String(focusPayload.title ?? ''),
+          browserUrl: focusPayload.browserUrl ? String(focusPayload.browserUrl) : undefined,
+        }
+      : undefined;
+
     const res = await fetch(`${backendUrl}/api/infer-screen`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ screenshotBase64: png.toString('base64') }),
+      body: JSON.stringify({ screenshotBase64: png.toString('base64'), windowContext }),
+      signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) return;
     const body = await res.json() as { summary?: string; activeApp?: string; currentTask?: string | null; confidence?: number };
