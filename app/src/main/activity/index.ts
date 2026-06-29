@@ -40,7 +40,9 @@ export function initActivityMonitoring(): void {
       settingsRepo,
       userDataDir: app.getPath('userData'),
     });
-    if (settingsRepo.getAll().screenCaptureEnabled) screenCapturer.start();
+    // Always start the loop; captureOnce gates on screenCaptureEnabled +
+    // pauseAllTracking each tick, so toggling the setting at runtime works.
+    screenCapturer.start();
   }
 }
 

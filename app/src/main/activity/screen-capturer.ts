@@ -15,7 +15,8 @@ export interface ScreenCapturerDeps {
 
 export class ScreenCapturer {
   private deps: ScreenCapturerDeps;
-  private intervalId: NodeJS.Timeout | null = null;
+  private timeoutId: NodeJS.Timeout | null = null;
+  private running = false;
   private now: () => Date;
 
   constructor(deps: ScreenCapturerDeps) {
@@ -24,22 +25,29 @@ export class ScreenCapturer {
   }
 
   start(): void {
-    if (this.intervalId) return;
+    if (this.running) return;
+    this.running = true;
+    // Recursive setTimeout instead of setInterval so captures never overlap
+    // and the interval setting is re-read each tick from settings.
     const tick = async (): Promise<void> => {
       try {
         await this.captureOnce();
       } catch (err) {
         console.error('[ScreenCapturer] capture failed:', err);
       }
+      if (!this.running) return;
+      const intervalMs = Math.max(1, this.deps.settingsRepo.getAll().screenCaptureIntervalMinutes) * 60 * 1000;
+      this.timeoutId = setTimeout(() => { void tick(); }, intervalMs);
     };
     const intervalMs = Math.max(1, this.deps.settingsRepo.getAll().screenCaptureIntervalMinutes) * 60 * 1000;
-    this.intervalId = setInterval(() => { void tick(); }, intervalMs);
+    this.timeoutId = setTimeout(() => { void tick(); }, intervalMs);
   }
 
   stop(): void {
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-      this.intervalId = null;
+    this.running = false;
+    if (this.timeoutId) {
+      clearTimeout(this.timeoutId);
+      this.timeoutId = null;
     }
   }
 
