@@ -87,8 +87,10 @@ export class ActivityRepo {
     if (filter?.since) { where.push('ts >= ?'); params.push(filter.since); }
     if (filter?.until) { where.push('ts <= ?'); params.push(filter.until); }
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
-    const limitSql = filter?.limit ? ` LIMIT ${Math.max(1, Math.min(1000, Math.round(filter.limit)))}` : '';
-    const offsetSql = filter?.offset ? ` OFFSET ${Math.max(0, Math.round(filter.offset))}` : '';
+    const limitVal = filter?.limit !== undefined ? Number(filter.limit) : NaN;
+    const offsetVal = filter?.offset !== undefined ? Number(filter.offset) : NaN;
+    const limitSql = Number.isFinite(limitVal) ? ` LIMIT ${Math.max(1, Math.min(1000, Math.round(limitVal)))}` : '';
+    const offsetSql = Number.isFinite(offsetVal) ? ` OFFSET ${Math.max(0, Math.round(offsetVal))}` : '';
     const rows = this.db
       .prepare(`SELECT id, ts, kind, payload FROM activity ${whereSql} ORDER BY ts DESC${limitSql}${offsetSql}`)
       .all(...params) as ActivityDbRow[];
@@ -121,5 +123,19 @@ export class ActivityRepo {
       kind: row.kind,
       payload: JSON.parse(row.payload) as Record<string, unknown>,
     };
+  }
+
+  getByIds(ids: number[]): ActivityRow[] {
+    if (ids.length === 0) return [];
+    const placeholders = ids.map(() => '?').join(',');
+    const rows = this.db
+      .prepare(`SELECT id, ts, kind, payload FROM activity WHERE id IN (${placeholders})`)
+      .all(...ids) as ActivityDbRow[];
+    return rows.map((row) => ({
+      id: row.id,
+      ts: row.ts,
+      kind: row.kind,
+      payload: JSON.parse(row.payload) as Record<string, unknown>,
+    }));
   }
 }

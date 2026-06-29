@@ -151,9 +151,9 @@ export function setupIpcHandlers(
 
   ipcMain.handle('activity:purge', async (_, args: { olderThan?: string; ids?: number[] }) => {
     if (args?.ids && args.ids.length > 0) {
-      const orphanPaths = args.ids
-        .map((id) => activityRepo.getById(Number(id)))
-        .filter((r): r is NonNullable<typeof r> => !!r && r.kind === 'screenshot_captured')
+      const orphanPaths = activityRepo
+        .getByIds(args.ids.map(Number))
+        .filter((r) => r.kind === 'screenshot_captured')
         .map((r) => (r.payload as { filePath?: string }).filePath)
         .filter((p): p is string => typeof p === 'string');
       const result = activityRepo.purge({ ids: args.ids });
@@ -162,7 +162,18 @@ export function setupIpcHandlers(
       }
       return result;
     }
-    return activityRepo.purge(args ?? {});
+    if (args?.olderThan) {
+      const orphanPaths = activityRepo
+        .list({ kinds: ['screenshot_captured'], until: args.olderThan })
+        .map((r) => (r.payload as { filePath?: string }).filePath)
+        .filter((p): p is string => typeof p === 'string');
+      const result = activityRepo.purge({ olderThan: args.olderThan });
+      for (const p of orphanPaths) {
+        try { await fs.promises.unlink(p); } catch { /* ignore */ }
+      }
+      return result;
+    }
+    return { deleted: 0 };
   });
 
   // Settings
