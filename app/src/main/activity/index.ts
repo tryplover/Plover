@@ -1,10 +1,13 @@
+import { app } from 'electron';
 import { WindowTracker } from './window-tracker.js';
 import { GDocsPoller } from './gdocs-poller.js';
+import { ScreenCapturer } from './screen-capturer.js';
 import { settingsRepo, activityRepo } from '../store/index.js';
 import { googleAuth } from '../ipc.js';
 
 let windowTracker: WindowTracker | null = null;
 let gdocsPoller: GDocsPoller | null = null;
+let screenCapturer: ScreenCapturer | null = null;
 
 export function initActivityMonitoring(): void {
   console.log('[Activity] Initializing active monitoring subsystems...');
@@ -30,6 +33,17 @@ export function initActivityMonitoring(): void {
   } else {
     console.log('[Activity] Google Docs poller already initialized.');
   }
+
+  if (process.platform === 'darwin' && !screenCapturer) {
+    screenCapturer = new ScreenCapturer({
+      activityRepo,
+      settingsRepo,
+      userDataDir: app.getPath('userData'),
+    });
+    // Always start the loop; captureOnce gates on screenCaptureEnabled +
+    // pauseAllTracking each tick, so toggling the setting at runtime works.
+    screenCapturer.start();
+  }
 }
 
 export function stopActivityMonitoring(): void {
@@ -42,4 +56,10 @@ export function stopActivityMonitoring(): void {
     gdocsPoller.stop();
     gdocsPoller = null;
   }
+  if (screenCapturer) {
+    screenCapturer.stop();
+    screenCapturer = null;
+  }
 }
+
+export function getScreenCapturer(): ScreenCapturer | null { return screenCapturer; }
