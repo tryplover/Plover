@@ -83,4 +83,20 @@ describe('ScreenCapturer', () => {
     expect(row?.kind).toBe('screenshot_captured');
     expect(row?.payload).toMatchObject({ filePath, width: 1440, height: 900 });
   });
+
+  it('calls infer-screen and logs screenshot_inferred when vision is enabled', async () => {
+    settingsRepo.update({ screenCaptureEnabled: true, screenVisionInferenceEnabled: true });
+    const png = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
+    getSources.mockResolvedValueOnce([{ name: 'Entire Screen', thumbnail: { toPNG: () => png, getSize: () => ({ width: 100, height: 100 }) } }]);
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ summary: 'In Slack', activeApp: 'Slack', currentTask: null, confidence: 0.6 }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    await capturer.captureOnce();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const kinds = activityRepo.list().map((r) => r.kind);
+    expect(kinds).toContain('screenshot_inferred');
+    vi.unstubAllGlobals();
+  });
 });

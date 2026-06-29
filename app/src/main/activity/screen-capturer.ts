@@ -74,11 +74,50 @@ export class ScreenCapturer {
     const filename = `${crypto.randomUUID()}.png`;
     const filePath = path.join(dir, filename);
     await fs.writeFile(filePath, png);
-    this.deps.activityRepo.log('screenshot_captured', {
-      filePath,
-      width: size.width,
-      height: size.height,
-    }, now.toISOString());
+    const captureRow = this.deps.activityRepo.insert({
+      kind: 'screenshot_captured',
+      payload: { filePath, width: size.width, height: size.height },
+      ts: now.toISOString(),
+    });
+    if (settings.screenVisionInferenceEnabled) {
+      await this.runInference(captureRow.id, filePath, png).catch((err) => console.error('[ScreenCapturer] infer failed:', err));
+    }
     return filePath;
+  }
+
+  private async runInference(screenshotId: number, filePath: string, png: Buffer): Promise<void> {
+    const backendUrl = (process.env.PLOVER_BACKEND_URL ?? 'http://localhost:3000').trim();
+    const authToken = process.env.PLOVER_AUTH_TOKEN;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (authToken) headers['X-Plover-Auth-Token'] = authToken;
+
+    // Pass the most recent window_focus payload to the backend so Gemini Vision
+    // has the active app/title/URL as context instead of falling back to "no context".
+    const lastFocus = this.deps.activityRepo.list({ kind: 'window_focus', limit: 1 })[0];
+    const focusPayload = lastFocus?.payload as Record<string, unknown> | undefined;
+    const windowContext = focusPayload
+      ? {
+          app: String(focusPayload.app ?? ''),
+          title: String(focusPayload.title ?? ''),
+          browserUrl: focusPayload.browserUrl ? String(focusPayload.browserUrl) : undefined,
+        }
+      : undefined;
+
+    const res = await fetch(`${backendUrl}/api/infer-screen`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ screenshotBase64: png.toString('base64'), windowContext }),
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return;
+    const body = await res.json() as { summary?: string; activeApp?: string; currentTask?: string | null; confidence?: number };
+    this.deps.activityRepo.log('screenshot_inferred', {
+      screenshotId,
+      filePath,
+      summary: body.summary ?? '',
+      activeApp: body.activeApp ?? '',
+      currentTask: body.currentTask ?? null,
+      confidence: Number(body.confidence ?? 0),
+    });
   }
 }

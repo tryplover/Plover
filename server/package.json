@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "test": "NODE_PATH=../app/node_modules ../app/node_modules/.bin/vitest run test/infer-screen.test.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -19,6 +20,7 @@
     "@types/express": "^5.0.6",
     "@types/node": "^22.10.0",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^3.0.0"
   }
 }
