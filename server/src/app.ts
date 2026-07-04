@@ -127,6 +127,11 @@ app.post('/api/decompose', async (req, res): Promise<any> => {
     if (recentActivity.length > 200) {
       return res.status(400).json({ error: 'recentActivity exceeds 200 entries' });
     }
+    for (const entry of recentActivity) {
+      if (!entry || typeof entry !== 'object' || typeof entry.kind !== 'string' || typeof entry.ts !== 'string') {
+        return res.status(400).json({ error: 'Invalid entry in recentActivity' });
+      }
+    }
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
