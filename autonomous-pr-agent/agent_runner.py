@@ -123,54 +123,69 @@ def submit_pull_request(workspace_path: str, branch_name: str, commit_message: s
     except Exception as e:
         logging.error(f"Failed to create PR: {e}")
         return f"Failed to create Pull Request. Git branch was pushed, but API call failed: {e}"
+def list_github_issues() -> list:
+    """Lists all open issues in the target GitHub repository.
+    
+    Returns:
+        A list of dictionaries, each containing 'number', 'title', and 'body' of an open issue.
+    """
+    if not TARGET_REPO or not GITHUB_TOKEN:
+        raise ValueError("TARGET_REPO and GITHUB_TOKEN must be set.")
+        
+    g = Github(GITHUB_TOKEN)
+    repo = g.get_repo(TARGET_REPO)
+    issues = repo.get_issues(state="open")
+    
+    return [{"number": i.number, "title": i.title, "body": i.body} for i in issues]
 
 # =============================================================================
 # 2. Periodic Agent Trigger
 # =============================================================================
 
-async def check_repo_and_fix(ctx: TriggerContext):
-    """Trigger function that runs periodically to initiate agent workflows."""
-    logging.info("TRIGGER: Autonomous agent check started.")
+async def check_issues_and_resolve(ctx: TriggerContext):
+    """Trigger function that runs periodically to initiate the issue resolution workflow."""
+    logging.info("TRIGGER: Autonomous PR agent check started.")
     
     prompt = (
-        "Task: Perform an autonomous sweep of the target repository.\n"
-        "1. Call `checkout_repository` with a descriptive branch name (e.g. `agent-auto-fix-task`).\n"
-        "2. Inspect the repository workspace (e.g., scan for syntax issues, broken tests, missing docs, or code quality improvements).\n"
-        "3. Apply your modifications inside the workspace.\n"
-        "4. Run tests or validation commands (e.g. npm test, pytest, compile checks) to verify your changes using `run_command` in the workspace folder.\n"
-        "5. If tests pass and changes are correct, call `submit_pull_request` to commit, push, and open a PR.\n"
-        "6. If you find no improvements to make, or if tests fail and cannot be easily fixed, clean up and finish."
+        "Task: Check open GitHub issues and resolve one.\n"
+        "1. Call `list_github_issues` to retrieve the list of currently open issues.\n"
+        "2. If there are no open issues, log a message and stop.\n"
+        "3. Select one open issue to work on.\n"
+        "4. Call `checkout_repository` with a descriptive branch name like `resolve-issue-<num>`.\n"
+        "5. Read the codebase in the workspace and implement a clean fix to resolve the selected issue.\n"
+        "6. Run tests or validation commands (e.g. npm test, pnpm test, compile checks) to verify correctness using `run_command` in the workspace folder.\n"
+        "7. If verification passes, call `submit_pull_request` to commit, push, and open a PR.\n"
+        "8. In the PR body, make sure to include 'Closes #<issue_number>' or 'Fixes #<issue_number>' so GitHub closes it automatically upon merging.\n"
+        "9. If tests fail or you cannot easily solve it, clean up and stop."
     )
     
-    # Send the prompt turn to the agent
     await ctx.send(prompt)
 
-# Set up periodic trigger (e.g. every 3600 seconds / 1 hour)
-# For local testing, you can reduce this interval (e.g., 600 seconds)
-agent_trigger = every(3600, check_repo_and_fix)
+# Set up periodic trigger (runs every 3600 seconds / 1 hour)
+agent_trigger = every(3600, check_issues_and_resolve)
 
 # =============================================================================
 # 3. Agent Execution Setup
 # =============================================================================
 
-# System guidelines instructions
 system_prompt = (
-    "You are Antigravity, an autonomous coding agent designed to monitor, maintain, "
-    "and improve software codebases. Your goal is to find opportunities for fixes, optimizations, "
-    "refactoring, or documentation improvements in the cloned repository.\n\n"
+    "You are Antigravity PR Agent, an autonomous coding agent designed to resolve open GitHub issues. "
+    "Your goal is to inspect open issues in the target repository, implement robust fixes, run verification tests, "
+    "and submit Pull Requests that automatically close the issues.\n\n"
     "Guidelines:\n"
-    "1. Always check out a workspace branch first using checkout_repository.\n"
-    "2. Make modifications, run linters, and run test suites to verify correctness.\n"
-    "3. Keep commits atomic and document your reasoning clearly in the Pull Request body.\n"
-    "4. Be conservative: do not make breaking architectural changes without supervisor approval."
+    "1. Retrieve open issues using `list_github_issues` to find a task to work on.\n"
+    "2. Always check out a workspace branch first using `checkout_repository` with a name related to the issue (e.g., `resolve-issue-12`).\n"
+    "3. Apply your modifications inside the workspace to resolve the selected issue.\n"
+    "4. Run validation/test commands to verify correctness of your changes.\n"
+    "5. Submit a pull request using `submit_pull_request` with a title and body that clearly mentions 'Closes #<issue_number>' or 'Fixes #<issue_number>' so GitHub closes it automatically upon merging."
 )
 
 config = LocalAgentConfig(
     system_instructions=system_prompt,
-    tools=[checkout_repository, submit_pull_request],
+    tools=[checkout_repository, list_github_issues, submit_pull_request],
     triggers=[agent_trigger],
     policies=[
-        policy.allow_all(), # Allows file writes and run_command autonomously
+        policy.allow_all(),  # Allows file writes and run_command autonomously
     ]
 )
 

@@ -51,12 +51,22 @@ Fill in the environment variables:
 * `GITHUB_TOKEN`: A GitHub Personal Access Token (classic or fine-grained) with read & write repository permissions.
 * `TARGET_REPO`: The repository path you want the agent to monitor (e.g. `OWNER/REPO`).
 
-### 3. Start the Agent Runner
-Run the agent:
+### 3. Start the Agents
+
+This setup runs two agents that collaborate asynchronously:
+1. **Issue Finder Agent (`issue_finder.py`)**: Periodically scans the repository codebase, identifies potential code quality issues, bugs, or missing documentation, and posts them as GitHub issues.
+2. **PR Agent (`agent_runner.py`)**: Periodically checks the repository's open issues, selects one to work on, writes code changes to resolve it, runs verification tests, and opens a Pull Request on GitHub.
+
+To run the **Issue Finder Agent**:
+```bash
+python issue_finder.py
+```
+
+To run the **PR Agent (Issue Resolver)**:
 ```bash
 python agent_runner.py
 ```
-The agent will run continuously, polling/triggering according to the interval specified in `agent_runner.py`.
+Both agents run continuously in the background, polling according to their configured trigger intervals.
 
 ---
 
