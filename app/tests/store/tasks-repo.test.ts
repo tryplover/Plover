@@ -3,7 +3,6 @@ import Database from "better-sqlite3";
 import { TasksRepo } from "../../src/main/store/repos/tasks";
 import { GoalsRepo } from "../../src/main/store/repos/goals";
 import { runMigrations } from "../../src/main/store/db";
-import { randomUUID } from "node:crypto";
 
 describe("TasksRepo", () => {
   let db: Database.Database;
