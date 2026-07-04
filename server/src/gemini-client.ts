@@ -18,6 +18,8 @@ export interface RotationOptions {
   createClient?: (apiKey: string) => GenerativeClientShape;
 }
 
+export const ALL_KEYS_COOLING_DOWN_ERROR = 'All Gemini API keys are cooling down';
+
 const QUOTA_MESSAGE_RE = /quota|rate.?limit|resource.?exhausted/i;
 
 export function isQuotaError(err: unknown): boolean {
@@ -56,5 +58,5 @@ export async function generateContentWithKeyRotation(
     }
   }
   if (lastError) throw lastError;
-  throw new Error('All Gemini API keys are cooling down');
+  throw new Error(ALL_KEYS_COOLING_DOWN_ERROR);
 }

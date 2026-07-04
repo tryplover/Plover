@@ -3,7 +3,7 @@ import cors from 'cors';
 import { FunctionCallingMode, SchemaType, FunctionDeclaration, FunctionCall, Part } from '@google/generative-ai';
 import type { GenerateContentRequest, GenerateContentResult } from '@google/generative-ai';
 import { KeyPool } from './gemini-keys.js';
-import { generateContentWithKeyRotation } from './gemini-client.js';
+import { generateContentWithKeyRotation, ALL_KEYS_COOLING_DOWN_ERROR } from './gemini-client.js';
 
 const app = express();
 
@@ -46,6 +46,7 @@ async function runWithFallback(
     } catch (err) {
       console.warn(`[Server] ${label} failed using ${modelName}:`, err);
       lastError = err;
+      if (err instanceof Error && err.message === ALL_KEYS_COOLING_DOWN_ERROR) break;
     }
   }
   throw lastError instanceof Error
