@@ -415,4 +415,12 @@ Subagents that need to install deps will hit this same wall and report "network/
 
 **Fix:** Update `main.tsx` to parse the `variant` query parameter and match both `"overlay"` and `"window"` variants as the overlay/setup flow.
 
+### 2026-07-04 — Gemini quota errors rotate keys, not models
+
+**Symptom:** With a single free-tier `GEMINI_API_KEY`, the app hits `429 RESOURCE_EXHAUSTED` after a few decompose requests and every model in the fallback loop fails identically (they share the per-key quota).
+
+**Root cause:** The model-fallback loop treats quota errors like any other transient failure and cycles through models — but the quota is billed to the *key*, not the model, so all attempts fail the same way.
+
+**Fix:** Two-layer retry: a `KeyPool` (`server/src/gemini-keys.ts`) plus `generateContentWithKeyRotation` (`server/src/gemini-client.ts`) rotate to the next key on 429/quota errors before the model loop advances. Configure via comma-separated `GEMINI_API_KEYS` in `server/.env` (single-key `GEMINI_API_KEY` still works). Cooldown per key is 60s by default, overridable via `GEMINI_KEY_COOLDOWN_MS`.
+
 
