@@ -5,6 +5,15 @@ interface OnboardingProps {
   onComplete: () => void;
 }
 
+const usecases = [
+  { label: 'Essays & papers', icon: '✎' },
+  { label: 'Reading & research', icon: '☰' },
+  { label: 'Problem sets', icon: '∑' },
+  { label: 'Digital projects', icon: '✍' },
+  { label: 'Daily study sessions', icon: '◷' },
+  { label: 'Something else', icon: '✦' },
+];
+
 export function Onboarding({ onComplete }: OnboardingProps) {
   const [step, setStep] = useState(0);
   const [selectedUsecases, setSelectedUsecases] = useState<string[]>([
@@ -12,15 +21,6 @@ export function Onboarding({ onComplete }: OnboardingProps) {
     'Digital projects',
   ]);
   const [appName, setAppName] = useState('Finish the methods section of my thesis');
-
-  const usecases = [
-    { label: 'Essays & papers', icon: '✎' },
-    { label: 'Reading & research', icon: '☰' },
-    { label: 'Problem sets', icon: '∑' },
-    { label: 'Digital projects', icon: '✍' },
-    { label: 'Daily study sessions', icon: '◷' },
-    { label: 'Something else', icon: '✦' },
-  ];
 
   const handleToggleUsecase = (label: string) => {
     setSelectedUsecases((prev) =>
@@ -177,7 +177,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
           <section className="plover-onboarding__slide" data-testid="step-welcome">
             <div className="plover-onboarding__split-left">
               <div className="plover-onboarding__brand">
-                <span className="plover-onboarding__brand-icon">❙❙❙</span>
+                <span className="plover-onboarding__brand-icon" aria-hidden="true">
+                  ❙❙❙
+                </span>
                 <span>Plover</span>
               </div>
               <h1 className="plover-onboarding__title">See your progress as you actually work.</h1>
@@ -266,7 +268,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                         onClick={() => handleToggleUsecase(usecase.label)}
                       >
                         <div style={{ display: 'flex', alignItems: 'center' }}>
-                          <span className="plover-onboarding__chip-icon" aria-hidden="true">{usecase.icon}</span>
+                          <span className="plover-onboarding__chip-icon" aria-hidden="true">
+                            {usecase.icon}
+                          </span>
                           <span>{usecase.label}</span>
                         </div>
                         {isSelected && (
@@ -311,7 +315,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
 
                 <div className="plover-onboarding__cards-stack">
                   <div className="plover-onboarding__promise-card">
-                    <div className="plover-onboarding__promise-icon-container">◳</div>
+                    <div className="plover-onboarding__promise-icon-container" aria-hidden="true">
+                      ◳
+                    </div>
                     <div>
                       <h3 className="plover-onboarding__promise-title">Only specified windows</h3>
                       <p className="plover-onboarding__promise-desc">
@@ -321,7 +327,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                   </div>
 
                   <div className="plover-onboarding__promise-card">
-                    <div className="plover-onboarding__promise-icon-container">⦸</div>
+                    <div className="plover-onboarding__promise-icon-container" aria-hidden="true">
+                      ⦸
+                    </div>
                     <div>
                       <h3 className="plover-onboarding__promise-title">Never saved</h3>
                       <p className="plover-onboarding__promise-desc">
@@ -331,7 +339,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                   </div>
 
                   <div className="plover-onboarding__promise-card">
-                    <div className="plover-onboarding__promise-icon-container">☖</div>
+                    <div className="plover-onboarding__promise-icon-container" aria-hidden="true">
+                      ☖
+                    </div>
                     <div>
                       <h3 className="plover-onboarding__promise-title">Yours alone</h3>
                       <p className="plover-onboarding__promise-desc">
@@ -514,6 +524,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                       <button
                         className="plover-onboarding__mockup-btn-primary"
                         onClick={handleNext}
+                        disabled={!appName.trim()}
                         data-testid="btn-break-steps"
                       >
                         Break into steps →
