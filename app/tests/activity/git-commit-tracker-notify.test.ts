@@ -23,6 +23,10 @@ describe('defaultNotify', () => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('instantiates Notification and calls show()', () => {
     const showSpy = vi.fn();
     NotificationMock.mockImplementationOnce(function () {
@@ -56,8 +60,6 @@ describe('defaultNotify', () => {
     );
     const call0 = consoleSpy.mock.calls[0];
     expect(call0?.[1].message).toBe('Instantiation failed');
-
-    consoleSpy.mockRestore();
   });
 
   it('catches and logs errors during show() call', () => {
@@ -82,7 +84,5 @@ describe('defaultNotify', () => {
     );
     const call0 = consoleSpy.mock.calls[0];
     expect(call0?.[1].message).toBe('Show failed');
-
-    consoleSpy.mockRestore();
   });
 });
