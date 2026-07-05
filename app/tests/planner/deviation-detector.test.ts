@@ -207,6 +207,34 @@ describe('DeviationDetector.rescheduleTask', () => {
     expect(after?.scheduled_start).toBe('2026-06-12T10:00:00.000Z');
   });
 
+  it('continues rescheduling even if deleteEvent fails in rescheduleTask', async () => {
+    const { detector, tasksRepo, goalsRepo, calendar, notifySpy } = freshHarness();
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const { taskId } = seedScheduledTask(
+      goalsRepo,
+      tasksRepo,
+      'Stale event',
+      '2026-06-12T10:00:00.000Z',
+      '2026-06-12T11:00:00.000Z',
+      'bad-event-id',
+    );
+    calendar.deleteEvent.mockRejectedValue(new Error('delete failed'));
+
+    const task = tasksRepo.get(taskId);
+    if (!task) throw new Error('task missing');
+    const result = await detector.rescheduleTask(task);
+
+    expect(calendar.deleteEvent).toHaveBeenCalledWith('bad-event-id');
+    expect(calendar.listEvents).toHaveBeenCalled();
+    expect(calendar.createEvent).toHaveBeenCalled();
+    expect(result).not.toBeNull();
+    const updated = tasksRepo.get(taskId);
+    expect(updated?.calendar_event_id).toBe('new-event-id');
+    expect(notifySpy).toHaveBeenCalledTimes(1);
+    expect(consoleSpy).toHaveBeenCalled();
+    consoleSpy.mockRestore();
+  });
+
   it('runDeviationPass reschedules every missed block', async () => {
     const { detector, tasksRepo, goalsRepo, calendar } = freshHarness();
     seedScheduledTask(
@@ -231,6 +259,43 @@ describe('DeviationDetector.rescheduleTask', () => {
 
     expect(calendar.deleteEvent).toHaveBeenCalledTimes(2);
     expect(calendar.createEvent).toHaveBeenCalledTimes(2);
+  });
+
+  it('runDeviationPass continues even if deleteEvent fails for a task', async () => {
+    const { detector, tasksRepo, goalsRepo, calendar } = freshHarness();
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    seedScheduledTask(
+      goalsRepo,
+      tasksRepo,
+      'Task A',
+      '2026-06-12T09:00:00.000Z',
+      '2026-06-12T10:00:00.000Z',
+      'event-a',
+    );
+    seedScheduledTask(
+      goalsRepo,
+      tasksRepo,
+      'Task B',
+      '2026-06-12T11:00:00.000Z',
+      '2026-06-12T12:00:00.000Z',
+      'event-b',
+    );
+    calendar.deleteEvent.mockRejectedValueOnce(new Error('delete a failed'));
+    calendar.createEvent.mockResolvedValueOnce('new-a').mockResolvedValueOnce('new-b');
+
+    await detector.runDeviationPass();
+
+    expect(calendar.deleteEvent).toHaveBeenCalledTimes(2);
+    expect(calendar.createEvent).toHaveBeenCalledTimes(2);
+
+    const tasks = tasksRepo.list();
+    expect(tasks).toHaveLength(2);
+    const [t0, t1] = tasks;
+    expect(t0?.calendar_event_id).toBe('new-a');
+    expect(t1?.calendar_event_id).toBe('new-b');
+
+    expect(consoleSpy).toHaveBeenCalled();
+    consoleSpy.mockRestore();
   });
 
   it('runDeviationPass preserves task dependencies during rescheduling and calls listEvents once', async () => {
