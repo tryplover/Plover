@@ -209,6 +209,7 @@ describe('DeviationDetector.rescheduleTask', () => {
 
   it('continues rescheduling even if deleteEvent fails in rescheduleTask', async () => {
     const { detector, tasksRepo, goalsRepo, calendar, notifySpy } = freshHarness();
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const { taskId } = seedScheduledTask(
       goalsRepo,
       tasksRepo,
@@ -230,6 +231,8 @@ describe('DeviationDetector.rescheduleTask', () => {
     const updated = tasksRepo.get(taskId);
     expect(updated?.calendar_event_id).toBe('new-event-id');
     expect(notifySpy).toHaveBeenCalledTimes(1);
+    expect(consoleSpy).toHaveBeenCalled();
+    consoleSpy.mockRestore();
   });
 
   it('runDeviationPass reschedules every missed block', async () => {
@@ -260,6 +263,7 @@ describe('DeviationDetector.rescheduleTask', () => {
 
   it('runDeviationPass continues even if deleteEvent fails for a task', async () => {
     const { detector, tasksRepo, goalsRepo, calendar } = freshHarness();
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     seedScheduledTask(
       goalsRepo,
       tasksRepo,
@@ -283,7 +287,15 @@ describe('DeviationDetector.rescheduleTask', () => {
 
     expect(calendar.deleteEvent).toHaveBeenCalledTimes(2);
     expect(calendar.createEvent).toHaveBeenCalledTimes(2);
-    expect(tasksRepo.list().every((t) => t.calendar_event_id?.startsWith('new-'))).toBe(true);
+
+    const tasks = tasksRepo.list();
+    expect(tasks).toHaveLength(2);
+    const eventIds = tasks.map((t) => t.calendar_event_id);
+    expect(eventIds).toContain('new-a');
+    expect(eventIds).toContain('new-b');
+
+    expect(consoleSpy).toHaveBeenCalled();
+    consoleSpy.mockRestore();
   });
 
   it('runDeviationPass preserves task dependencies during rescheduling and calls listEvents once', async () => {
