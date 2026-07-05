@@ -584,6 +584,11 @@ export function startEventForwarding(): void {
     broadcast('summary:created', summary);
     broadcast('app-event', { type: 'summary.created', payload: summary });
   });
+
+  eventBus.on('inference.error', (payload: { message: string }) => {
+    broadcast('inference:error', payload);
+    broadcast('app-event', { type: 'inference.error', payload });
+  });
 }
 
 export function setupIpc(
