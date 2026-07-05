@@ -262,7 +262,12 @@ describe('WindowTracker — enhanced metadata', () => {
     });
     await tracker.checkActiveWindow();
     const rows = activityRepo.list();
-    expect(rows[0]?.payload.bundleId).toBe('com.tinyspeck.slackmacgap');
+    const row = rows[0];
+    if (row?.kind === 'window_focus') {
+      expect(row.payload.bundleId).toBe('com.tinyspeck.slackmacgap');
+    } else {
+      throw new Error('Expected window_focus log');
+    }
   });
 
   it('captures browser URL for Chrome via osascript', async () => {
@@ -274,9 +279,13 @@ describe('WindowTracker — enhanced metadata', () => {
       cb(null, 'https://github.com/foo/plover\nPlover · GitHub', '')
     );
     await tracker.checkActiveWindow();
-    const payload = activityRepo.list()[0]?.payload as Record<string, unknown>;
-    expect(payload.browserUrl).toBe('https://github.com/foo/plover');
-    expect(payload.browserTabTitle).toBe('Plover · GitHub');
+    const row = activityRepo.list()[0];
+    if (row?.kind === 'window_focus') {
+      expect(row.payload.browserUrl).toBe('https://github.com/foo/plover');
+      expect(row.payload.browserTabTitle).toBe('Plover · GitHub');
+    } else {
+      throw new Error('Expected window_focus log');
+    }
   });
 
   it('omits browser fields cleanly when osascript fails', async () => {
@@ -288,9 +297,13 @@ describe('WindowTracker — enhanced metadata', () => {
       cb(new Error('not allowed'), '', '')
     );
     await tracker.checkActiveWindow();
-    const payload = activityRepo.list()[0]?.payload as Record<string, unknown>;
-    expect(payload.app).toBe('Safari');
-    expect(payload.browserUrl).toBeUndefined();
+    const row = activityRepo.list()[0];
+    if (row?.kind === 'window_focus') {
+      expect(row.payload.app).toBe('Safari');
+      expect(row.payload.browserUrl).toBeUndefined();
+    } else {
+      throw new Error('Expected window_focus log');
+    }
   });
 
   it('does not call osascript for non-browser apps', async () => {

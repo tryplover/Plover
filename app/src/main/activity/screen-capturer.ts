@@ -93,12 +93,11 @@ export class ScreenCapturer {
     // Pass the most recent window_focus payload to the backend so Gemini Vision
     // has the active app/title/URL as context instead of falling back to "no context".
     const lastFocus = this.deps.activityRepo.list({ kind: 'window_focus', limit: 1 })[0];
-    const focusPayload = lastFocus?.payload as Record<string, unknown> | undefined;
-    const windowContext = focusPayload
+    const windowContext = lastFocus?.kind === 'window_focus'
       ? {
-          app: String(focusPayload.app ?? ''),
-          title: String(focusPayload.title ?? ''),
-          browserUrl: focusPayload.browserUrl ? String(focusPayload.browserUrl) : undefined,
+          app: lastFocus.payload.app,
+          title: lastFocus.payload.title,
+          browserUrl: lastFocus.payload.browserUrl,
         }
       : undefined;
 
