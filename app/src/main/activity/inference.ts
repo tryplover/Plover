@@ -77,26 +77,30 @@ export class InferenceEngine {
         }),
       });
     } catch (err) {
-      console.error('[InferenceEngine] Network error:', err);
-      return;
+      const message = err instanceof Error ? err.message : String(err);
+      this.bus.emit('inference.error', { message: `Network error: ${message}` });
+      throw err;
     }
 
     if (!response.ok) {
-      console.error('[InferenceEngine] Server responded with status', response.status);
-      return;
+      const message = `Server responded with status ${response.status}`;
+      this.bus.emit('inference.error', { message });
+      throw new Error(message);
     }
 
     let payload: InferProgressResponse;
     try {
       payload = (await response.json()) as InferProgressResponse;
     } catch (err) {
-      console.error('[InferenceEngine] Failed to parse response JSON:', err);
-      return;
+      const message = err instanceof Error ? err.message : String(err);
+      this.bus.emit('inference.error', { message: `Failed to parse response: ${message}` });
+      throw err;
     }
 
     if (!payload.task_progress || !Array.isArray(payload.task_progress)) {
-      console.error('[InferenceEngine] Invalid response payload');
-      return;
+      const message = 'Invalid response payload: missing task_progress';
+      this.bus.emit('inference.error', { message });
+      throw new Error(message);
     }
 
     const validIds = new Set(activeTasks.map((t) => t.id));

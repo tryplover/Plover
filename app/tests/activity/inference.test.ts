@@ -126,7 +126,9 @@ describe('InferenceEngine', () => {
 
     fetchSpy.mockResolvedValue(new Response('boom', { status: 500 }));
 
-    await engine.runInferencePass();
+    await expect(engine.runInferencePass()).rejects.toThrow(
+      'Server responded with status 500',
+    );
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(settingsRepo.getAll().lastInferenceTs).toBeNull();
@@ -143,7 +145,7 @@ describe('InferenceEngine', () => {
 
     fetchSpy.mockRejectedValue(new Error('ECONNREFUSED'));
 
-    await engine.runInferencePass();
+    await expect(engine.runInferencePass()).rejects.toThrow('ECONNREFUSED');
 
     expect(settingsRepo.getAll().lastInferenceTs).toBeNull();
   });
@@ -210,5 +212,28 @@ describe('InferenceEngine', () => {
       expect(task.id).toBe(taskId);
       expect(task.status).toBe('done');
     }
+  });
+
+  it('emits inference.error when a network error occurs', async () => {
+    const { tasksRepo, goalsRepo, activityRepo, engine, bus } = freshHarness();
+    seedGoalAndTask(goalsRepo, tasksRepo, 'A task');
+    activityRepo.insert({
+      kind: 'file_modified',
+      payload: { path: '/src/a.ts' },
+      ts: '2026-06-12T10:00:00.000Z',
+    });
+
+    fetchSpy.mockRejectedValue(new Error('ECONNREFUSED'));
+
+    let errorPayload: { message: string } | null = null;
+    bus.on('inference.error', (payload) => {
+      errorPayload = payload;
+    });
+
+    await expect(engine.runInferencePass()).rejects.toThrow();
+
+    expect(errorPayload).not.toBeNull();
+    const ep = errorPayload as { message: string } | null;
+    expect(ep?.message).toContain('Network error: ECONNREFUSED');
   });
 });

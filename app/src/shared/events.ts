@@ -14,6 +14,7 @@ export interface EventPayloads {
   'folder.file_changed': FolderEventPayload;
   'folder.file_added': FolderEventPayload;
   'summary.created': SummaryRow;
+  'inference.error': { message: string };
 }
 
 export type AppEvent =
@@ -22,7 +23,8 @@ export type AppEvent =
   | { type: 'task.scheduled'; payload: { taskId: string; start: string; end: string } }
   | { type: 'task.completed'; payload: { taskId: string } }
   | { type: 'calendar.synced'; payload: { syncedCount: number } }
-  | { type: 'summary.created'; payload: SummaryRow };
+  | { type: 'summary.created'; payload: SummaryRow }
+  | { type: 'inference.error'; payload: { message: string } };
 
 export interface AppEventMap {
   'goal.created': { goalId: string };
@@ -31,4 +33,5 @@ export interface AppEventMap {
   'task.completed': { taskId: string };
   'calendar.synced': { syncedCount: number };
   'summary.created': SummaryRow;
+  'inference.error': { message: string };
 }
