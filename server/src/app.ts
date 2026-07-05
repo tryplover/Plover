@@ -17,15 +17,8 @@ const FALLBACK_MODELS = [
 let cachedPool: KeyPool | null | undefined;
 function getKeyPool(): KeyPool | null {
   if (cachedPool !== undefined) return cachedPool;
-  const cooldownMs = Number(process.env.GEMINI_KEY_COOLDOWN_MS ?? 60_000);
-  cachedPool = KeyPool.fromEnv(process.env, {
-    cooldownMs: Number.isFinite(cooldownMs) && cooldownMs > 0 ? cooldownMs : 60_000,
-  });
+  cachedPool = KeyPool.fromEnv(process.env);
   return cachedPool;
-}
-
-export function _resetKeyPoolForTests(): void {
-  cachedPool = undefined;
 }
 
 async function runWithFallback(

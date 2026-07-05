@@ -57,6 +57,7 @@ export async function generateContentWithKeyRotation(
       lastError = err;
     }
   }
-  if (lastError) throw lastError;
-  throw new Error(ALL_KEYS_COOLING_DOWN_ERROR);
+  throw lastError
+    ? new Error(ALL_KEYS_COOLING_DOWN_ERROR, { cause: lastError })
+    : new Error(ALL_KEYS_COOLING_DOWN_ERROR);
 }

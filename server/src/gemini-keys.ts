@@ -31,13 +31,18 @@ export class KeyPool {
   }
 
   static fromEnv(env: NodeJS.ProcessEnv, opts: KeyPoolOptions = {}): KeyPool | null {
+    const rawCooldown = Number(env.GEMINI_KEY_COOLDOWN_MS);
+    const cooldownMs =
+      opts.cooldownMs ?? (Number.isFinite(rawCooldown) && rawCooldown > 0 ? rawCooldown : undefined);
+    const mergedOpts = { ...opts, cooldownMs };
+
     const multi = (env.GEMINI_API_KEYS ?? '')
       .split(',')
       .map((s) => s.trim())
       .filter((s) => s.length > 0);
-    if (multi.length > 0) return new KeyPool(multi, opts);
+    if (multi.length > 0) return new KeyPool(multi, mergedOpts);
     const single = (env.GEMINI_API_KEY ?? '').trim();
-    if (single) return new KeyPool([single], opts);
+    if (single) return new KeyPool([single], mergedOpts);
     return null;
   }
 
@@ -60,16 +65,16 @@ export class KeyPool {
   }
 
   markExhausted(key: string, nowMs: number): void {
-    if (!this.keys.includes(key)) return;
+    const idx = this.keys.indexOf(key);
+    if (idx < 0) return;
     this.cooldownUntil.set(key, nowMs + this.cooldownMs);
-    const currentIdx = this.keys.indexOf(key);
-    if (currentIdx === this.cursor) {
+    if (idx === this.cursor) {
       this.cursor = (this.cursor + 1) % this.keys.length;
     }
   }
 
   fingerprint(key: string): string {
-    if (key.length < 8) return `${key}…${key}`;
+    if (key.length < 8) return '<short-key>';
     return `${key.slice(0, 4)}…${key.slice(-4)}`;
   }
 }

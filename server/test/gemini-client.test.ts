@@ -76,16 +76,18 @@ describe('generateContentWithKeyRotation', () => {
     expect(handler).toHaveBeenCalledTimes(1);
   });
 
-  it('throws when all keys have been exhausted this call', async () => {
+  it('throws the cooling-down sentinel with the last quota error as cause when all keys are exhausted this call', async () => {
     const pool = new KeyPool(['a', 'b'], { cooldownMs: 60_000, initialIndex: 0 });
     const handler = vi.fn(async () => { throw Object.assign(new Error('quota'), { status: 429 }); });
-    await expect(
-      generateContentWithKeyRotation(
-        pool,
-        { contents: [] },
-        { modelName: 'test', nowMs: () => 0, createClient: makeMockClient(handler) },
-      ),
-    ).rejects.toThrow(/quota/);
+    let caught: unknown;
+    await generateContentWithKeyRotation(
+      pool,
+      { contents: [] },
+      { modelName: 'test', nowMs: () => 0, createClient: makeMockClient(handler) },
+    ).catch((e) => { caught = e; });
+    expect(caught).toBeInstanceOf(Error);
+    expect((caught as Error).message).toBe('All Gemini API keys are cooling down');
+    expect((caught as Error & { cause?: Error }).cause?.message).toBe('quota');
     expect(handler).toHaveBeenCalledTimes(2);
     expect(pool.getCurrent(0)).toBeNull();
   });

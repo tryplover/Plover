@@ -421,6 +421,6 @@ Subagents that need to install deps will hit this same wall and report "network/
 
 **Root cause:** The model-fallback loop treats quota errors like any other transient failure and cycles through models — but the quota is billed to the *key*, not the model, so all attempts fail the same way.
 
-**Fix:** Two-layer retry: a `KeyPool` (`server/src/gemini-keys.ts`) plus `generateContentWithKeyRotation` (`server/src/gemini-client.ts`) rotate to the next key on 429/quota errors before the model loop advances. Configure via comma-separated `GEMINI_API_KEYS` in `server/.env` (single-key `GEMINI_API_KEY` still works). Cooldown per key is 60s by default, overridable via `GEMINI_KEY_COOLDOWN_MS`.
+**Fix:** Two-layer retry: a `KeyPool` (`server/src/gemini-keys.ts`) plus `generateContentWithKeyRotation` (`server/src/gemini-client.ts`) rotate to the next key on 429/quota errors before the model loop advances. Keys are round-robined across requests (not sticky) so load spreads evenly; a key that 429s is put on cooldown and skipped until it expires. Configure via comma-separated `GEMINI_API_KEYS` in `server/.env` (single-key `GEMINI_API_KEY` still works). Cooldown per key is 60s by default, overridable via `GEMINI_KEY_COOLDOWN_MS`.
 
 
