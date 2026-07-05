@@ -3,9 +3,50 @@ import cors from 'cors';
 import { FunctionCallingMode, SchemaType, FunctionDeclaration, FunctionCall, Part } from '@google/generative-ai';
 import type { GenerateContentRequest, GenerateContentResult } from '@google/generative-ai';
 import { KeyPool } from './gemini-keys.js';
-import { generateContentWithKeyRotation, ALL_KEYS_COOLING_DOWN_ERROR } from './gemini-client.js';
+import {
+  generateContentWithKeyRotation,
+  ALL_KEYS_COOLING_DOWN_ERROR,
+  isQuotaError,
+  isInvalidKeyError,
+  isTimeoutError,
+  isNetworkError,
+} from './gemini-client.js';
 
 const app = express();
+
+function mapError(err: unknown): { code: string; message: string } {
+  const message = err instanceof Error ? err.message : String(err || 'Unknown error');
+
+  if (isQuotaError(err) || message === ALL_KEYS_COOLING_DOWN_ERROR) {
+    return {
+      code: 'gemini_quota_exhausted',
+      message: 'Daily Gemini quota reached.',
+    };
+  }
+  if (isInvalidKeyError(err)) {
+    return {
+      code: 'gemini_invalid_key',
+      message: 'Gemini API key missing or invalid.',
+    };
+  }
+  if (isTimeoutError(err)) {
+    return {
+      code: 'gemini_timeout',
+      message: 'Gemini request timed out.',
+    };
+  }
+  if (isNetworkError(err)) {
+    return {
+      code: 'network',
+      message: 'Network error reaching Gemini.',
+    };
+  }
+
+  return {
+    code: 'unknown',
+    message,
+  };
+}
 
 const FALLBACK_MODELS = [
   'gemini-2.0-flash',
@@ -225,9 +266,7 @@ Guidelines:
         { generationConfig: { temperature: 0.1 } },
       );
     } catch (err) {
-      return res.status(502).json({
-        error: `All Gemini models failed. Last error: ${(err instanceof Error && err.message) || 'Unknown'}`,
-      });
+      return res.status(502).json({ error: mapError(err) });
     }
 
     // Extract the function call
@@ -248,16 +287,22 @@ Guidelines:
     }
 
     if (!call) {
-      return res.status(502).json({ error: 'Gemini failed to call the decomposeGoal function' });
+      return res.status(502).json({
+        error: { code: 'schema_error', message: 'Gemini failed to call the decomposeGoal function' },
+      });
     }
 
     if (call.name !== 'decomposeGoal') {
-      return res.status(502).json({ error: `Unexpected function call from Gemini: ${call.name}` });
+      return res.status(502).json({
+        error: { code: 'schema_error', message: `Unexpected function call from Gemini: ${call.name}` },
+      });
     }
 
     const args = call.args as unknown as DecomposeResponseArgs;
     if (!args || !args.goal || !args.subtasks || !Array.isArray(args.subtasks)) {
-      return res.status(502).json({ error: 'Invalid arguments returned in decomposeGoal function call' });
+      return res.status(502).json({
+        error: { code: 'schema_error', message: 'Invalid arguments returned in decomposeGoal function call' },
+      });
     }
 
     const rawDeadline = args.goal.deadline ? String(args.goal.deadline).trim() : undefined;
@@ -308,7 +353,7 @@ Guidelines:
     });
   } catch (err: any) {
     console.error('[Server] API error:', err);
-    res.status(500).json({ error: err.message || 'Internal server error' });
+    res.status(500).json({ error: mapError(err) });
   }
 });
 
