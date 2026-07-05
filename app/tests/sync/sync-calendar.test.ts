@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import nock from 'nock';
 import http from 'http';
+import keytar from 'keytar';
 import { GoogleAuth, AuthenticationError, PermissionError } from '../../src/main/sync/google-auth';
 import { GoogleCalendarSync } from '../../src/main/sync/calendar';
 
@@ -52,6 +53,14 @@ describe('Google Calendar Sync & OAuth', () => {
     });
 
     it('should return false if credentials do not exist in keychain', async () => {
+      const auth = new GoogleAuth();
+      const loaded = await auth.loadSavedCredentials();
+      expect(loaded).toBe(false);
+      expect(auth.client.credentials.refresh_token).toBeUndefined();
+    });
+
+    it('should return false and handle errors when keychain access fails', async () => {
+      vi.mocked(keytar.getPassword).mockRejectedValueOnce(new Error('Keychain access denied'));
       const auth = new GoogleAuth();
       const loaded = await auth.loadSavedCredentials();
       expect(loaded).toBe(false);
