@@ -12,7 +12,7 @@ Expand Plover to support Windows 10/11, reaching feature parity with the macOS v
    - Active window tracking via Win32 `GetForegroundWindow`.
    - Keystroke counting via `SetWindowsHookEx`.
 3. **Installer & Auto-update**: Squirrel.Windows or MSIX based installer.
-4. **Credential Management**: Transition from `keytar` (macOS Keychain) to Windows Credential Manager.
+4. **Credential Management**: Transition from keytar (macOS Keychain) to Electron's native safeStorage API.
 5. **UI Polish**: Windows-specific styling for the overlay and main window (Acrylic/Mica effects).
 
 ## Hard Constraints

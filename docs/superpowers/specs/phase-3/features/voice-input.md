@@ -20,7 +20,7 @@ This feature enables users to capture goals and tasks using natural voice input.
 
 ## Implementation Order
 
-1. Integrated `whisper.cpp` native bindings.
+1. Integrate whisper.cpp native bindings.
 2. Implement audio capture module in the main process.
 3. Create the Voice UI components in the Overlay.
 4. Wire audio capture to transcription to planner.

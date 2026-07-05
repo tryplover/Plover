@@ -63,7 +63,8 @@ CREATE TABLE peers (
   id TEXT PRIMARY KEY,
   hostname TEXT,
   last_seen_at TEXT,
-  public_key TEXT
+  public_key TEXT,
+  status TEXT DEFAULT 'discovered'
 );
 
 -- New repo: plugins
