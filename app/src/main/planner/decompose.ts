@@ -48,9 +48,10 @@ export async function decomposeGoal(input: {
       headers,
       body: JSON.stringify(body),
     });
-  } catch {
+  } catch (err) {
     throw new Error(
       "Goal decomposition failed: Can't reach the Plover backend. Is it running on the configured port?",
+      { cause: err },
     );
   }
 
@@ -59,23 +60,25 @@ export async function decomposeGoal(input: {
     try {
       const errorJson = await response.json();
       if (errorJson && errorJson.error) {
-        const { code, message } = errorJson.error || {};
-        if (code === 'gemini_quota_exhausted') {
-          errorMessage =
-            'Daily Gemini quota reached. Try again in an hour, or upgrade your API key in Settings.';
-        } else if (code === 'gemini_invalid_key') {
-          errorMessage = 'Gemini API key missing or invalid. Update it in the backend .env.';
-        } else if (code === 'gemini_timeout') {
-          errorMessage =
-            'This is taking longer than expected. Retry, or try a shorter goal description.';
-        } else if (code === 'network') {
-          errorMessage = 'The backend couldn\'t reach Gemini. Check your internet connection.';
-        } else if (code === 'schema_error') {
-          errorMessage = 'Received a malformed response from the AI. Please try again.';
-        } else if (typeof errorJson.error === 'string') {
+        if (typeof errorJson.error === 'string') {
           errorMessage = errorJson.error;
-        } else if (message) {
-          errorMessage = message;
+        } else if (typeof errorJson.error === 'object') {
+          const { code, message } = errorJson.error as { code?: string; message?: string };
+          if (code === 'gemini_quota_exhausted') {
+            errorMessage =
+              'Daily Gemini quota reached. Try again in an hour, or upgrade your API key in Settings.';
+          } else if (code === 'gemini_invalid_key') {
+            errorMessage = 'Gemini API key missing or invalid. Update it in the backend .env.';
+          } else if (code === 'gemini_timeout') {
+            errorMessage =
+              'This is taking longer than expected. Retry, or try a shorter goal description.';
+          } else if (code === 'network') {
+            errorMessage = 'The backend couldn\'t reach Gemini. Check your internet connection.';
+          } else if (code === 'schema_error') {
+            errorMessage = 'Received a malformed response from the AI. Please try again.';
+          } else if (message) {
+            errorMessage = message;
+          }
         }
       }
     } catch {

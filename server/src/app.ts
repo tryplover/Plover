@@ -15,7 +15,14 @@ import {
 const app = express();
 
 function mapError(err: unknown): { code: string; message: string } {
-  const message = err instanceof Error ? err.message : String(err || 'Unknown error');
+  let message = 'Unknown error';
+  if (err instanceof Error) {
+    message = err.message;
+  } else if (err && typeof err === 'object' && 'message' in err && typeof (err as any).message === 'string') {
+    message = (err as any).message;
+  } else if (err) {
+    message = String(err);
+  }
 
   if (isQuotaError(err) || message === ALL_KEYS_COOLING_DOWN_ERROR) {
     return {
