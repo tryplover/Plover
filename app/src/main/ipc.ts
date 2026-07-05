@@ -295,6 +295,7 @@ export function setupIpcHandlers(
         calendarEvents = await calendarSync.listEvents(start, end);
       } catch (err) {
         console.error('[IPC] Failed to list calendar events for overlay propose:', err);
+        throw err;
       }
     }
 
