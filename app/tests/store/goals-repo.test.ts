@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import Database from 'better-sqlite3';
 import { runMigrations } from '@main/store/db.js';
 import { GoalsRepo } from '@main/store/repos/goals.js';
@@ -62,14 +62,15 @@ describe('GoalsRepo', () => {
     expect(p0?.title).toBe('Paused');
   });
 
-  it('updates a goal and maintains updated_at monotonicity', async () => {
+  it('updates a goal and maintains updated_at monotonicity', () => {
+    vi.useFakeTimers();
     const { repo } = setup();
     const goal = repo.create({ title: 'Old Title', status: 'active' });
     const originalCreatedAt = goal.created_at;
     const originalUpdatedAt = goal.updated_at;
 
-    // Wait a tiny bit to ensure timestamp difference
-    await new Promise(resolve => setTimeout(resolve, 10));
+    // Advance system time to ensure timestamp difference
+    vi.advanceTimersByTime(10);
 
     const updated = repo.update(goal.id, {
       title: 'New Title',
@@ -84,6 +85,8 @@ describe('GoalsRepo', () => {
     const retrieved = repo.get(goal.id);
     expect(retrieved?.title).toBe('New Title');
     expect(retrieved?.status).toBe('done');
+
+    vi.useRealTimers();
   });
 
   it('throws error when updating non-existent goal', () => {

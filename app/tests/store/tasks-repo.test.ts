@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import Database from 'better-sqlite3';
 import { runMigrations } from '@main/store/db.js';
 import { TasksRepo } from '@main/store/repos/tasks.js';
@@ -50,7 +50,8 @@ describe('TasksRepo', () => {
     expect(tasksRepo.get('non-existent')).toBeNull();
   });
 
-  it('updates a task and maintains updated_at monotonicity', async () => {
+  it('updates a task and maintains updated_at monotonicity', () => {
+    vi.useFakeTimers();
     const { goalsRepo, tasksRepo } = setup();
     const goal = seedGoal(goalsRepo);
     const task = tasksRepo.create({
@@ -61,7 +62,8 @@ describe('TasksRepo', () => {
     });
     const originalUpdatedAt = task.updated_at;
 
-    await new Promise(resolve => setTimeout(resolve, 10));
+    // Advance system time to ensure timestamp difference
+    vi.advanceTimersByTime(10);
 
     const updated = tasksRepo.update(task.id, {
       title: 'Updated Title',
@@ -78,6 +80,8 @@ describe('TasksRepo', () => {
     expect(retrieved?.title).toBe('Updated Title');
     expect(retrieved?.status).toBe('scheduled');
     expect(retrieved?.depends_on).toEqual(['new-dep']);
+
+    vi.useRealTimers();
   });
 
   it('lists tasks by goal', () => {
