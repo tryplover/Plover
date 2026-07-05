@@ -36,9 +36,6 @@ export default function Today({ 'data-testid': dataTestId, onTasksUpdated }: Tod
 
   useAppEvents(() => {
     void fetchData();
-    if (onTasksUpdated) {
-      onTasksUpdated();
-    }
   });
 
   const handleTaskStatusToggle = async (taskId: string, currentStatus: Task['status']) => {
