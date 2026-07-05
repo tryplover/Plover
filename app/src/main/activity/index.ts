@@ -1,13 +1,13 @@
 import { app } from 'electron';
 import { WindowTracker } from './window-tracker.js';
-import { GDocsPoller } from './gdocs-poller.js';
+import { GDocsActivitySubscriber } from './gdocs-subscriber.js';
 import { ScreenCapturer } from './screen-capturer.js';
 import { runRetention } from './retention.js';
 import { settingsRepo, activityRepo } from '../store/index.js';
-import { googleAuth } from '../ipc.js';
+import { eventBus } from '../bus.js';
 
 let windowTracker: WindowTracker | null = null;
-let gdocsPoller: GDocsPoller | null = null;
+let gdocsSubscriber: GDocsActivitySubscriber | null = null;
 let screenCapturer: ScreenCapturer | null = null;
 let retentionIntervalId: NodeJS.Timeout | null = null;
 
@@ -27,13 +27,13 @@ export function initActivityMonitoring(): void {
     console.log('[Activity] Window tracking is only supported on macOS (darwin). Skipping.');
   }
 
-  // Initialize and start Google Docs Poller (ticks every 10 minutes)
-  if (!gdocsPoller) {
-    console.log('[Activity] Initializing Google Docs poller...');
-    gdocsPoller = new GDocsPoller(googleAuth, activityRepo, settingsRepo);
-    gdocsPoller.start();
+  // Initialize and start Google Docs Activity Subscriber
+  if (!gdocsSubscriber) {
+    console.log('[Activity] Initializing Google Docs subscriber...');
+    gdocsSubscriber = new GDocsActivitySubscriber(activityRepo, settingsRepo, eventBus);
+    gdocsSubscriber.start();
   } else {
-    console.log('[Activity] Google Docs poller already initialized.');
+    console.log('[Activity] Google Docs subscriber already initialized.');
   }
 
   if (process.platform === 'darwin' && !screenCapturer) {
@@ -63,9 +63,9 @@ export function stopActivityMonitoring(): void {
     windowTracker.stop();
     windowTracker = null;
   }
-  if (gdocsPoller) {
-    gdocsPoller.stop();
-    gdocsPoller = null;
+  if (gdocsSubscriber) {
+    gdocsSubscriber.stop();
+    gdocsSubscriber = null;
   }
   if (screenCapturer) {
     screenCapturer.stop();
