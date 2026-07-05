@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 import { GoogleGenerativeAI, FunctionCallingMode, SchemaType, FunctionDeclaration, FunctionCall, Part } from '@google/generative-ai';
 
 const app = express();
@@ -17,6 +18,28 @@ app.use(
   })
 );
 app.use(express.json());
+
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 30, // Limit each IP or token to 30 requests per windowMs
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  keyGenerator: (req) => {
+    // If AUTH_TOKEN is used, key by token; otherwise by IP
+    const token = req.headers['x-plover-auth-token'];
+    if (typeof token === 'string' && token) {
+      return token;
+    }
+    return req.ip || 'unknown';
+  },
+  validate: { keyGeneratorIpFallback: false },
+  handler: (req, res, _next, options) => {
+    console.warn(`[Server] Rate limit hit: ${req.method} ${req.path} from ${req.ip}`);
+    res.status(options.statusCode).json({ error: options.message });
+  },
+});
+
+app.use('/api/', apiLimiter);
 
 // Type definitions matching the shared types
 interface DecomposeSubtaskInput {
