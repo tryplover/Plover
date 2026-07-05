@@ -26,13 +26,7 @@ export async function runRetention(args: {
       .filter((p): p is string => typeof p === 'string' && p.length > 0);
     const { deleted: batchDeleted } = args.activityRepo.purge({ ids });
     deleted += batchDeleted;
-    for (const p of paths) {
-      try {
-        await fs.unlink(p);
-      } catch {
-        /* file may already be gone — ignore */
-      }
-    }
+    await Promise.allSettled(paths.map((p) => fs.unlink(p)));
   }
   const { deleted: otherDeleted } = args.activityRepo.purge({ olderThan: cutoff });
   deleted += otherDeleted;
