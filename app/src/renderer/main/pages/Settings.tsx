@@ -40,6 +40,7 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [activityMessage, setActivityMessage] = useState<string>('');
   const [exportMessage, setExportMessage] = useState<string>('');
+  const [isExporting, setIsExporting] = useState<boolean>(false);
 
   const fetchSettings = async () => {
     try {
@@ -107,6 +108,7 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
   };
 
   const handleExportData = async (): Promise<void> => {
+    setIsExporting(true);
     try {
       const result = await window.api.exportData();
       if (result.success) {
@@ -119,6 +121,8 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
       console.error('Export failed:', err);
       setExportMessage('Export failed.');
       setTimeout(() => setExportMessage(''), 5000);
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -600,8 +604,8 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
                 Export your goals, tasks, activity, and settings to a portable gzipped JSON file.
               </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <Button variant="secondary" onClick={() => void handleExportData()}>
-                  Export my data
+                <Button variant="secondary" onClick={() => void handleExportData()} disabled={isExporting}>
+                  {isExporting ? 'Exporting...' : 'Export my data'}
                 </Button>
                 {exportMessage && (
                   <span style={{ fontSize: '13px', color: 'var(--plover-text-muted)' }}>{exportMessage}</span>

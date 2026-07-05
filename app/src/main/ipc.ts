@@ -5,8 +5,6 @@ import * as zlib from 'node:zlib';
 import { promisify } from 'node:util';
 import { Goal, Task, CalendarEvent, SummaryRow } from '../shared/types.js';
 import { goalsRepo, tasksRepo, settingsRepo, summariesRepo, activityRepo } from './store/index.js';
-
-const gzip = promisify(zlib.gzip);
 import { decomposeGoal } from './planner/decompose.js';
 import { scheduleTasks } from './planner/schedule.js';
 import { GoogleAuth } from './sync/google-auth.js';
@@ -255,8 +253,8 @@ export function setupIpcHandlers(
         settings: settingsRepo.getAll(),
       };
 
-      const json = JSON.stringify(data, null, 2);
-      const compressed = await gzip(json);
+      const json = JSON.stringify(data);
+      const compressed = await promisify(zlib.gzip)(json);
       await fs.promises.writeFile(filePath, compressed);
 
       return { success: true, filePath };
