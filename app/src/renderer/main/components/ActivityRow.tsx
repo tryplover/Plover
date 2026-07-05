@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { ScreenshotPreview } from './ScreenshotPreview.js';
+import { ACTIVITY_KINDS } from '@shared/activity-kinds.js';
 
 interface Row { id: number; ts: string; kind: string; payload: Record<string, unknown> }
 
 export function ActivityRow({ row, onDelete }: { row: Row; onDelete: () => void }) {
   const [expanded, setExpanded] = useState(false);
+  const kindInfo = ACTIVITY_KINDS.find((k) => k.kind === row.kind);
   return (
     <li className={`activity-row activity-${row.kind}`}>
       <time>{new Date(row.ts).toLocaleString()}</time>
-      <span className="kind">{row.kind}</span>
+      <span className="kind">{kindInfo?.label ?? row.kind}</span>
       <span className="summary">{summarize(row)}</span>
       {row.kind === 'screenshot_captured' && (
         <button onClick={() => setExpanded((v) => !v)}>{expanded ? 'Hide' : 'Show'}</button>
