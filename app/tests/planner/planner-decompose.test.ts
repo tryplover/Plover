@@ -161,7 +161,7 @@ describe('decomposeGoal', () => {
     expect(result.subtasks[2]?.depends_on).toEqual(['0', '1']);
   });
 
-  it('throws an error if server returns non-200 status', async () => {
+  it('throws an error if server returns non-200 status with string error', async () => {
     nock(backendUrl).post('/api/decompose').reply(502, { error: 'Gemini server is overloaded' });
 
     await expect(
@@ -171,6 +171,98 @@ describe('decomposeGoal', () => {
         workingHours: { start: '09:00', end: '18:00' },
       }),
     ).rejects.toThrow('Goal decomposition failed: Gemini server is overloaded');
+  });
+
+  it('throws user-friendly error for gemini_quota_exhausted', async () => {
+    nock(backendUrl)
+      .post('/api/decompose')
+      .reply(502, { error: { code: 'gemini_quota_exhausted', message: 'Quota hit' } });
+
+    await expect(
+      decomposeGoal({
+        goalText: 'Fail Goal',
+        now: new Date(),
+        workingHours: { start: '09:00', end: '18:00' },
+      }),
+    ).rejects.toThrow(
+      'Goal decomposition failed: Daily Gemini quota reached. Try again in an hour, or upgrade your API key in Settings.',
+    );
+  });
+
+  it('throws user-friendly error for gemini_invalid_key', async () => {
+    nock(backendUrl)
+      .post('/api/decompose')
+      .reply(502, { error: { code: 'gemini_invalid_key', message: 'Invalid key' } });
+
+    await expect(
+      decomposeGoal({
+        goalText: 'Fail Goal',
+        now: new Date(),
+        workingHours: { start: '09:00', end: '18:00' },
+      }),
+    ).rejects.toThrow(
+      'Goal decomposition failed: Gemini API key missing or invalid. Update it in the backend .env.',
+    );
+  });
+
+  it('throws user-friendly error for gemini_timeout', async () => {
+    nock(backendUrl)
+      .post('/api/decompose')
+      .reply(502, { error: { code: 'gemini_timeout', message: 'Timeout' } });
+
+    await expect(
+      decomposeGoal({
+        goalText: 'Fail Goal',
+        now: new Date(),
+        workingHours: { start: '09:00', end: '18:00' },
+      }),
+    ).rejects.toThrow(
+      'Goal decomposition failed: This is taking longer than expected. Retry, or try a shorter goal description.',
+    );
+  });
+
+  it('throws user-friendly error for network errors at backend', async () => {
+    nock(backendUrl)
+      .post('/api/decompose')
+      .reply(502, { error: { code: 'network', message: 'Down' } });
+
+    await expect(
+      decomposeGoal({
+        goalText: 'Fail Goal',
+        now: new Date(),
+        workingHours: { start: '09:00', end: '18:00' },
+      }),
+    ).rejects.toThrow(
+      "Goal decomposition failed: The backend couldn't reach Gemini. Check your internet connection.",
+    );
+  });
+
+  it('throws user-friendly error for schema_error', async () => {
+    nock(backendUrl)
+      .post('/api/decompose')
+      .reply(502, { error: { code: 'schema_error', message: 'Malformed' } });
+
+    await expect(
+      decomposeGoal({
+        goalText: 'Fail Goal',
+        now: new Date(),
+        workingHours: { start: '09:00', end: '18:00' },
+      }),
+    ).rejects.toThrow('Goal decomposition failed: Received a malformed response from the AI. Please try again.');
+  });
+
+  it('throws custom message for client-side fetch failures', async () => {
+    nock(backendUrl).post('/api/decompose').replyWithError('ECONNREFUSED');
+
+    await expect(
+      decomposeGoal({
+        goalText: 'Fail Goal',
+        now: new Date(),
+        workingHours: { start: '09:00', end: '18:00' },
+      }),
+    ).rejects.toThrow(
+      "Goal decomposition failed: Can't reach the Plover backend. Is it running on the configured port?",
+    );
   });
 
   it('throws an error if response body is invalid', async () => {
