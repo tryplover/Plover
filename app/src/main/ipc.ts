@@ -1,6 +1,8 @@
-import { ipcMain, BrowserWindow } from 'electron';
+import { ipcMain, BrowserWindow, dialog } from 'electron';
 import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
+import * as zlib from 'node:zlib';
+import { promisify } from 'node:util';
 import { Goal, Task, CalendarEvent, SummaryRow } from '../shared/types.js';
 import { goalsRepo, tasksRepo, settingsRepo, summariesRepo, activityRepo } from './store/index.js';
 import { decomposeGoal } from './planner/decompose.js';
@@ -221,6 +223,46 @@ export function setupIpcHandlers(
       return settingsRepo.getAll();
     },
   );
+
+  ipcMain.handle('settings:exportData', async (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win) return { success: false, error: 'No window found' };
+
+    const now = new Date();
+    const timestamp = now.toISOString().replace(/[:.]/g, '').slice(0, 15);
+    const defaultPath = `plover-export-${timestamp}.json.gz`;
+
+    const { filePath, canceled } = await dialog.showSaveDialog(win, {
+      title: 'Export My Data',
+      defaultPath,
+      filters: [{ name: 'Gzipped JSON', extensions: ['json.gz'] }],
+    });
+
+    if (canceled || !filePath) {
+      return { success: false, error: 'Canceled' };
+    }
+
+    try {
+      const data = {
+        version: 1,
+        exported_at: now.toISOString(),
+        goals: goalsRepo.list(),
+        tasks: tasksRepo.list(),
+        activity: activityRepo.list(),
+        summaries: summariesRepo.listAll(),
+        settings: settingsRepo.getAll(),
+      };
+
+      const json = JSON.stringify(data);
+      const compressed = await promisify(zlib.gzip)(json);
+      await fs.promises.writeFile(filePath, compressed);
+
+      return { success: true, filePath };
+    } catch (err) {
+      console.error('[IPC] Export failed:', err);
+      return { success: false, error: String(err) };
+    }
+  });
 
   ipcMain.handle('settings:watched-folders:get', async () => {
     const settings = settingsRepo.getAll();
