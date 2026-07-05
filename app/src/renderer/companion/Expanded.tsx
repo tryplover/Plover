@@ -1,4 +1,5 @@
 import { motion } from '../lib/motion';
+import { safeAsync } from '../lib/async';
 import { StatusIndicator } from '../components/StatusIndicator';
 import { StepRow } from '../components/StepRow';
 import { Button } from '../components/Button';
@@ -63,7 +64,7 @@ export function Expanded({ view, onCollapse }: Props) {
         <Button
           variant="secondary"
           className="plover-expanded__resume"
-          onClick={() => { window.api.companion.setState('observing').catch(console.error); }}
+          onClick={safeAsync(() => window.api.companion.setState('observing'))}
         >
           ▶ Resume
         </Button>
@@ -73,13 +74,13 @@ export function Expanded({ view, onCollapse }: Props) {
           <span>Still working on this?</span>
           <Button
             variant="primary"
-            onClick={() => { window.api.companion.setState('observing').catch(console.error); }}
+            onClick={safeAsync(() => window.api.companion.setState('observing'))}
           >
             Yes
           </Button>
           <Button
             variant="secondary"
-            onClick={() => { window.api.companion.setState('paused').catch(console.error); }}
+            onClick={safeAsync(() => window.api.companion.setState('paused'))}
           >
             Pause
           </Button>

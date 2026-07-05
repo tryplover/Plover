@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { safeAsync } from '../lib/async';
 import type { ProposedPlan } from '../../preload';
 import { Task } from '../../shared/types';
 
@@ -32,12 +33,11 @@ export function QuickAdd() {
 
   // Load Settings on mount to preset Google Calendar sync
   useEffect(() => {
-    window.api
-      .getSettings()
-      .then((settings) => {
-        setIsGCalSyncEnabled(settings.googleConnected);
-      })
-      .catch(console.error);
+    const loadSettings = safeAsync(async () => {
+      const settings = await window.api.getSettings();
+      setIsGCalSyncEnabled(settings.googleConnected);
+    });
+    loadSettings();
   }, []);
 
   // Auto-focus goal input when expanded in Step 1

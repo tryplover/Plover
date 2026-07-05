@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { safeAsync } from '../lib/async';
 import { AnimatePresence } from '../lib/motion';
 import { Collapsed } from './Collapsed';
 import { Expanded } from './Expanded';
@@ -12,12 +13,14 @@ export function Companion() {
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    const observer = new ResizeObserver(() => {
-      if (container) {
-        const h = container.getBoundingClientRect().height;
-        window.api.companion.resize(Math.ceil(h)).catch(console.error);
-      }
-    });
+    const observer = new ResizeObserver(
+      safeAsync(async () => {
+        if (container) {
+          const h = container.getBoundingClientRect().height;
+          await window.api.companion.resize(Math.ceil(h));
+        }
+      }),
+    );
     observer.observe(container);
     return () => observer.disconnect();
   }, [expanded]);

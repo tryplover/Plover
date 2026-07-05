@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { safeAsync } from '../lib/async';
 import { AnimatePresence, motion, ploverDuration, ploverEasing } from '../lib/motion';
 import { Stepper } from './steps/Stepper';
 import { StepName } from './steps/StepName';
@@ -27,7 +28,8 @@ export function SetupFlow({
     if (onClose) {
       onClose();
     } else {
-      window.api.closeOverlay().catch(console.error);
+      const closeOverlay = safeAsync(() => window.api.closeOverlay());
+      closeOverlay();
     }
   };
 
