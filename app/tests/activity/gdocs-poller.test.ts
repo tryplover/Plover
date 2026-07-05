@@ -83,14 +83,18 @@ describe('GDocsPoller', () => {
   });
 
   it('should poll Google Drive files and record activity if authorized and connected', async () => {
+    vi.useFakeTimers();
+    const now = Date.now();
+    vi.setSystemTime(now);
+
     settingsRepo.update({ googleConnected: true });
     auth.client.setCredentials({ access_token: 'test-token' });
 
     const poller = new GDocsPoller(auth, activityRepo, settingsRepo, 1000);
     const initialPollTime = poller.lastPollTime.toISOString();
 
-    const doc1Time = new Date(Date.now() + 1000).toISOString();
-    const doc2Time = new Date(Date.now() + 2000).toISOString();
+    const doc1Time = new Date(now + 1000).toISOString();
+    const doc2Time = new Date(now + 2000).toISOString();
     const mockFilesResponse = {
       files: [
         {
@@ -147,6 +151,7 @@ describe('GDocsPoller', () => {
     );
 
     expect(poller.lastPollTime.toISOString()).toBe(doc2Time);
+    vi.useRealTimers();
   });
 
   it('should handle API errors gracefully', async () => {
