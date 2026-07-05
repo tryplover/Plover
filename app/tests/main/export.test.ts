@@ -50,7 +50,6 @@ describe('Export IPC Handler', () => {
     vi.mocked(dialog.showSaveDialog).mockResolvedValue({
       filePath: '/path/to/export.json.gz',
       canceled: false,
-      bookmarks: [],
     });
 
     const result = await exportHandler({ sender: {} });
@@ -72,7 +71,6 @@ describe('Export IPC Handler', () => {
     vi.mocked(dialog.showSaveDialog).mockResolvedValue({
       filePath: '',
       canceled: true,
-      bookmarks: [],
     });
 
     const result = await exportHandler({ sender: {} });
