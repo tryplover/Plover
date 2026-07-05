@@ -1,6 +1,17 @@
 # Autonomous PR Agent (Built with Google Antigravity SDK)
 
-This repository houses an autonomous coding agent designed to run continuously in the background, sweep target codebases for fixes/features, run verification tests, and automatically open Pull Requests on GitHub.
+This repository houses an autonomous coding agent that sweeps a target codebase for fixes/features and files GitHub issues describing them. **Google Jules** then picks up those issues (via the `jules` label) and opens the resolving PRs.
+
+## Architecture
+
+- **Issue Finder (`issue_finder.py`)** — runs continuously, sweeps the target repo, and files GitHub issues formatted as Jules-executable task specs (Context / Files / Desired behavior / Verification / Out of scope). Every issue is labeled `jules` by default (override with `JULES_LABEL` env var).
+- **Resolver** — handled by **[Google Jules](https://jules.google)**, which watches for `jules`-labeled issues, spins up a Cloud VM, runs the change, and opens the PR. This replaces the old `agent_runner.py` resolver, which is deprecated.
+
+**Why the split:** issue finding is cheap (one Gemini pass per sweep, no code execution). PR resolution is expensive (VM, multi-file edits, test runs) — Jules gives us a sandboxed executor with 15 free tasks/day and no polling loop to babysit.
+
+### Deprecated: `agent_runner.py`
+
+Kept in the tree only for reference / fallback if Jules quota runs out. Do not run it in production. All new work goes through the Issue Finder → Jules pipeline.
 
 ---
 
@@ -51,22 +62,19 @@ Fill in the environment variables:
 * `GITHUB_TOKEN`: A GitHub Personal Access Token (classic or fine-grained) with read & write repository permissions.
 * `TARGET_REPO`: The repository path you want the agent to monitor (e.g. `OWNER/REPO`).
 
-### 3. Start the Agents
+### 3. Enable Jules on the target repo
 
-This setup runs two agents that collaborate asynchronously:
-1. **Issue Finder Agent (`issue_finder.py`)**: Periodically scans the repository codebase, identifies potential code quality issues, bugs, or missing documentation, and posts them as GitHub issues.
-2. **PR Agent (`agent_runner.py`)**: Periodically checks the repository's open issues, selects one to work on, writes code changes to resolve it, runs verification tests, and opens a Pull Request on GitHub.
+1. Sign in at [jules.google](https://jules.google) and connect it to `TARGET_REPO`.
+2. Confirm Jules is configured to watch the label used by the Issue Finder — `jules` by default, or whatever `JULES_LABEL` is set to in `.env`.
 
-To run the **Issue Finder Agent**:
+### 4. Start the Issue Finder
+
 ```bash
 python issue_finder.py
 ```
+It runs continuously, sweeping the target repo on the configured interval and filing Jules-labeled issues. Jules picks them up asynchronously and opens PRs — nothing else to run locally.
 
-To run the **PR Agent (Issue Resolver)**:
-```bash
-python agent_runner.py
-```
-Both agents run continuously in the background, polling according to their configured trigger intervals.
+> **Deprecated:** `python agent_runner.py` still exists but should not be used. Jules replaces it.
 
 ---
 
