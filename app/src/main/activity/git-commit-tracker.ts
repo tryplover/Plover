@@ -108,6 +108,9 @@ export class GitCommitTracker {
   }
 
   private async readLatestCommit(repoPath: string): Promise<GitCommitInfo | null> {
+    if (repoPath.startsWith('-')) {
+      return null;
+    }
     try {
       const { stdout } = await execFileAsync(
         'git',
