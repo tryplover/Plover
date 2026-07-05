@@ -72,7 +72,7 @@ describe('WindowTracker', () => {
 
     mockActiveWindow.mockRejectedValue(new Error('activeWindow failed'));
 
-    // GDocsPoller.poll now delegates error handling to createPoller
+    // WindowTracker.checkActiveWindow now bubbles up error when called directly
     await expect(tracker.checkActiveWindow()).rejects.toThrow();
 
     const logs = activityRepo.list();

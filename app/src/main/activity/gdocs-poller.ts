@@ -2,7 +2,7 @@ import { google } from 'googleapis';
 import { GoogleAuth } from '@main/sync/google-auth';
 import { ActivityRepo } from '@main/store/repos/activity';
 import { SettingsRepo } from '@main/store/repos/settings';
-import { createPoller } from '@main/lib/poller';
+import { createPoller } from '@main/lib/poller.js';
 
 export class GDocsPoller {
   private googleAuth: GoogleAuth;

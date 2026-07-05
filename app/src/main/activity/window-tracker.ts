@@ -2,7 +2,7 @@ import { activeWindow, openWindows } from 'get-windows';
 import { execFile } from 'node:child_process';
 import { ActivityRepo } from '../store/repos/activity.js';
 import { SettingsRepo } from '../store/repos/settings.js';
-import { createPoller } from '@main/lib/poller';
+import { createPoller } from '@main/lib/poller.js';
 
 const BROWSER_BUNDLES: Record<string, string> = {
   'com.google.Chrome': 'Google Chrome',

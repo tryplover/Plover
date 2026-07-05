@@ -52,7 +52,9 @@ export function initActivityMonitoring(): void {
     retentionPoller = createPoller({
       label: 'Retention',
       intervalMs: 6 * 60 * 60 * 1000,
-      onTick: () => runRetention({ activityRepo, settingsRepo, now: new Date() }),
+      onTick: async () => {
+        await runRetention({ activityRepo, settingsRepo, now: new Date() });
+      },
     });
     retentionPoller.start();
   }
