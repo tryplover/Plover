@@ -126,9 +126,7 @@ describe('InferenceEngine', () => {
 
     fetchSpy.mockResolvedValue(new Response('boom', { status: 500 }));
 
-    await expect(engine.runInferencePass()).rejects.toThrow(
-      'Server responded with status 500',
-    );
+    await engine.runInferencePass();
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(settingsRepo.getAll().lastInferenceTs).toBeNull();
@@ -145,7 +143,7 @@ describe('InferenceEngine', () => {
 
     fetchSpy.mockRejectedValue(new Error('ECONNREFUSED'));
 
-    await expect(engine.runInferencePass()).rejects.toThrow('ECONNREFUSED');
+    await engine.runInferencePass();
 
     expect(settingsRepo.getAll().lastInferenceTs).toBeNull();
   });
@@ -230,7 +228,7 @@ describe('InferenceEngine', () => {
       errorPayload = payload;
     });
 
-    await expect(engine.runInferencePass()).rejects.toThrow();
+    await engine.runInferencePass();
 
     expect(errorPayload).not.toBeNull();
     const ep = errorPayload as { message: string } | null;
