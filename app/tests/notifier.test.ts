@@ -31,12 +31,15 @@ describe('Notifier', () => {
     expect(notifier.getQueue()).toHaveLength(0);
   });
 
-  it('does not queue a notification when not supported', () => {
+  it('queues a notification when not supported', () => {
     mockIsSupported.mockReturnValue(false);
     notifier.show('Queued Title', 'Queued Body');
 
     expect(mockShow).not.toHaveBeenCalled();
-    expect(notifier.getQueue()).toHaveLength(0);
+    const queue = notifier.getQueue();
+    expect(queue).toHaveLength(1);
+    expect(queue[0]?.title).toBe('Queued Title');
+    expect(queue[0]?.body).toBe('Queued Body');
   });
 
   it('queues a notification when show() throws', () => {
@@ -52,13 +55,11 @@ describe('Notifier', () => {
   });
 
   it('flushes the queue when a successful notification is shown', () => {
-    mockIsSupported.mockReturnValue(true);
-    mockShow.mockImplementationOnce(() => {
-      throw new Error('Temporary failure');
-    });
+    mockIsSupported.mockReturnValue(false);
     notifier.show('First', 'First Body');
     expect(notifier.getQueue()).toHaveLength(1);
 
+    mockIsSupported.mockReturnValue(true);
     notifier.show('Second', 'Second Body');
 
     // Should show 'Second' AND flush 'First'
@@ -67,10 +68,7 @@ describe('Notifier', () => {
   });
 
   it('respects the maximum queue size', () => {
-    mockIsSupported.mockReturnValue(true);
-    mockShow.mockImplementation(() => {
-      throw new Error('Temporary failure');
-    });
+    mockIsSupported.mockReturnValue(false);
     // notifier has maxQueueSize = 50
     for (let i = 0; i < 60; i++) {
       notifier.show(`Title ${i}`, `Body ${i}`);
@@ -82,24 +80,21 @@ describe('Notifier', () => {
     expect(queue[49]?.title).toBe('Title 59');
   });
 
-  it('flushQueue stops on failure and preserves the remaining queue items', () => {
-    mockIsSupported.mockReturnValue(true);
-    mockShow.mockImplementation(() => {
-      throw new Error('Temporary failure');
-    });
+  it('flushQueue attempts to show all items but does not re-queue on failure', () => {
+    mockIsSupported.mockReturnValue(false);
     notifier.show('Q1', 'B1');
     notifier.show('Q2', 'B2');
     expect(notifier.getQueue()).toHaveLength(2);
 
-    // Reset call count before flushing
-    mockShow.mockClear();
+    mockIsSupported.mockReturnValue(true);
+    mockShow.mockImplementationOnce(() => {
+      throw new Error('Temporary failure');
+    });
 
     notifier.flushQueue();
 
-    // Q1 failed, so Q2 should not be attempted and should remain in the queue
-    expect(mockShow).toHaveBeenCalledTimes(1);
-    const queue = notifier.getQueue();
-    expect(queue).toHaveLength(1);
-    expect(queue[0]?.title).toBe('Q2');
+    // Q1 failed, Q2 should still be attempted
+    expect(mockShow).toHaveBeenCalledTimes(2);
+    expect(notifier.getQueue()).toHaveLength(0);
   });
 });
