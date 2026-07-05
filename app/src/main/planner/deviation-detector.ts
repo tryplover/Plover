@@ -32,13 +32,31 @@ export class DeviationDetector {
   checkCompletedBlocks(): MissedBlock[] {
     const now = this.clock();
     const activePastTasks = this.tasksRepo.listActiveScheduledBefore(now);
+    if (activePastTasks.length === 0) return [];
+
+    let minStart: string | undefined;
+    let maxEnd: string | undefined;
+
+    for (const task of activePastTasks) {
+      // These are checked by the repo but we handle them for type safety
+      if (!task.scheduled_start || !task.scheduled_end) continue;
+      if (!minStart || task.scheduled_start < minStart) minStart = task.scheduled_start;
+      if (!maxEnd || task.scheduled_end > maxEnd) maxEnd = task.scheduled_end;
+    }
+
+    if (!minStart || !maxEnd) return [];
+
+    const allActivity = this.activityRepo.listBetween(minStart, maxEnd);
     const missed: MissedBlock[] = [];
 
     for (const task of activePastTasks) {
-      if (!task.scheduled_start || !task.scheduled_end) continue;
+      const taskStart = task.scheduled_start;
+      const taskEnd = task.scheduled_end;
 
-      const activity = this.activityRepo.listBetween(task.scheduled_start, task.scheduled_end);
-      if (activity.length === 0) {
+      if (!taskStart || !taskEnd) continue;
+
+      const hasActivity = allActivity.some((a) => a.ts >= taskStart && a.ts <= taskEnd);
+      if (!hasActivity) {
         missed.push({ task, reason: 'afk', evidenceCount: 0 });
       }
     }
