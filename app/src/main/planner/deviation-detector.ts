@@ -1,5 +1,5 @@
-import { Notification } from 'electron';
 import { Task, CalendarEvent } from '@shared/types.js';
+import { notifier } from '../notifier.js';
 import { TasksRepo } from '../store/repos/tasks.js';
 import { ActivityRepo } from '../store/repos/activity.js';
 import { SettingsRepo } from '../store/repos/settings.js';
@@ -25,7 +25,7 @@ export class DeviationDetector {
     private activityRepo: ActivityRepo,
     private settingsRepo: SettingsRepo,
     private calendar: CalendarPort,
-    private notify: (title: string, body: string) => void = defaultNotify,
+    private notify: (title: string, body: string) => void = (t, b) => notifier.show(t, b),
     private clock: () => Date = () => new Date(),
   ) {}
 
@@ -216,14 +216,6 @@ export class DeviationDetector {
         );
       }
     }
-  }
-}
-
-function defaultNotify(title: string, body: string): void {
-  try {
-    new Notification({ title, body }).show();
-  } catch (err) {
-    console.error('[DeviationDetector] Notification failed:', err);
   }
 }
 
