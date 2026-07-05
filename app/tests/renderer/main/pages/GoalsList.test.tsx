@@ -45,7 +45,7 @@ describe('GoalsList', () => {
       id: 'task-1',
       goal_id: 'goal-1',
       title: 'Task 1',
-      status: 'pending' as Task['status'],
+      status: 'scheduled',
       scheduled_start: new Date().toISOString(),
     } as Task;
     const mockGoal = { id: 'goal-1', title: 'Goal 1' } as Goal;

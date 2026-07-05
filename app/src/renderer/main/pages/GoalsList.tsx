@@ -95,7 +95,6 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
     } catch (err) {
       console.error('Failed to update task status:', err);
       setError('Failed to update task status. Please try again.');
-      setTimeout(() => setError(null), 5000);
     }
   };
 
