@@ -92,14 +92,16 @@ describe('IPC Handlers', () => {
     settingsRepo.update({ googleConnected: true });
     const spy = vi.spyOn(calendarSync, 'listEvents').mockRejectedValue(new Error('Calendar API error'));
 
-    const calls = (ipcMain.handle as ReturnType<typeof vi.fn>).mock.calls;
-    const proposeCall = calls.find((call) => call[0] === 'goal:propose');
-    const handler = proposeCall?.[1] as (event: unknown, goalText: string) => Promise<ProposedPlan>;
+    try {
+      const calls = (ipcMain.handle as ReturnType<typeof vi.fn>).mock.calls;
+      const proposeCall = calls.find((call) => call[0] === 'goal:propose');
+      const handler = proposeCall?.[1] as (event: unknown, goalText: string) => Promise<ProposedPlan>;
 
-    await expect(handler({}, 'Write an essay on octopuses')).rejects.toThrow('Calendar API error');
-
-    spy.mockRestore();
-    settingsRepo.update({ googleConnected: false });
+      await expect(handler({}, 'Write an essay on octopuses')).rejects.toThrow('Calendar API error');
+    } finally {
+      spy.mockRestore();
+      settingsRepo.update({ googleConnected: false });
+    }
   });
 
   it('handles goal:commit by saving and hiding the window', async () => {
