@@ -1,10 +1,10 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { Notification } from 'electron';
 import { TasksRepo } from '../store/repos/tasks.js';
 import { ActivityRepo } from '../store/repos/activity.js';
 import { TypedEventBus } from '../bus.js';
 import { FolderEventPayload } from '@shared/events.js';
-import { notifier } from '../notifier.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -36,7 +36,7 @@ export class GitCommitTracker {
     private activityRepo: ActivityRepo,
     private bus: TypedEventBus,
     private matchCommit: CommitMatcher = defaultMatchCommit,
-    private notify: (title: string, body: string) => void = (t, b) => notifier.show(t, b),
+    private notify: (title: string, body: string) => void = defaultNotify,
   ) {}
 
   start(): void {
@@ -108,6 +108,9 @@ export class GitCommitTracker {
   }
 
   private async readLatestCommit(repoPath: string): Promise<GitCommitInfo | null> {
+    if (repoPath.startsWith('-')) {
+      return null;
+    }
     try {
       const { stdout } = await execFileAsync(
         'git',
@@ -164,3 +167,10 @@ async function defaultMatchCommit(
   return (await response.json()) as MatchCommitResponse;
 }
 
+function defaultNotify(title: string, body: string): void {
+  try {
+    new Notification({ title, body }).show();
+  } catch (err) {
+    console.error('[GitCommitTracker] Notification failed:', err);
+  }
+}

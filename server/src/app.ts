@@ -1,59 +1,8 @@
 import express from 'express';
 import cors from 'cors';
-import { FunctionCallingMode, SchemaType, FunctionDeclaration, FunctionCall, Part } from '@google/generative-ai';
-import type { GenerateContentRequest, GenerateContentResult } from '@google/generative-ai';
-import { KeyPool } from './gemini-keys.js';
-import {
-  generateContentWithKeyRotation,
-  ALL_KEYS_COOLING_DOWN_ERROR,
-  isQuotaError,
-  isInvalidKeyError,
-  isTimeoutError,
-  isNetworkError,
-} from './gemini-client.js';
+import { GoogleGenerativeAI, FunctionCallingMode, SchemaType, FunctionDeclaration, FunctionCall, Part } from '@google/generative-ai';
 
 const app = express();
-
-function mapError(err: unknown): { code: string; message: string } {
-  let message = 'Unknown error';
-  if (err instanceof Error) {
-    message = err.message;
-  } else if (err && typeof err === 'object' && 'message' in err && typeof (err as any).message === 'string') {
-    message = (err as any).message;
-  } else if (err) {
-    message = String(err);
-  }
-
-  if (isQuotaError(err) || message === ALL_KEYS_COOLING_DOWN_ERROR) {
-    return {
-      code: 'gemini_quota_exhausted',
-      message: 'Daily Gemini quota reached.',
-    };
-  }
-  if (isInvalidKeyError(err)) {
-    return {
-      code: 'gemini_invalid_key',
-      message: 'Gemini API key missing or invalid.',
-    };
-  }
-  if (isTimeoutError(err)) {
-    return {
-      code: 'gemini_timeout',
-      message: 'Gemini request timed out.',
-    };
-  }
-  if (isNetworkError(err)) {
-    return {
-      code: 'network',
-      message: 'Network error reaching Gemini.',
-    };
-  }
-
-  return {
-    code: 'unknown',
-    message,
-  };
-}
 
 const FALLBACK_MODELS = [
   'gemini-2.0-flash',
@@ -61,39 +10,6 @@ const FALLBACK_MODELS = [
   'gemini-2.5-flash',
   'gemini-2.5-pro',
 ];
-
-let cachedPool: KeyPool | null | undefined;
-function getKeyPool(): KeyPool | null {
-  if (cachedPool !== undefined) return cachedPool;
-  cachedPool = KeyPool.fromEnv(process.env);
-  return cachedPool;
-}
-
-async function runWithFallback(
-  pool: KeyPool,
-  candidates: string[],
-  request: GenerateContentRequest,
-  label: string,
-  opts: { generationConfig?: { temperature?: number } } = {},
-): Promise<GenerateContentResult> {
-  let lastError: unknown = null;
-  for (const modelName of candidates) {
-    try {
-      console.log(`[Server] Attempting ${label} using model: ${modelName}`);
-      return await generateContentWithKeyRotation(pool, request, {
-        modelName,
-        generationConfig: opts.generationConfig,
-      });
-    } catch (err) {
-      console.warn(`[Server] ${label} failed using ${modelName}:`, err);
-      lastError = err;
-      if (err instanceof Error && err.message === ALL_KEYS_COOLING_DOWN_ERROR) break;
-    }
-  }
-  throw lastError instanceof Error
-    ? lastError
-    : new Error(typeof lastError === 'string' ? lastError : 'All Gemini models failed');
-}
 
 app.use(cors());
 app.use(express.json());
@@ -218,15 +134,21 @@ app.post('/api/decompose', async (req, res): Promise<any> => {
     }
   }
 
-  const pool = getKeyPool();
-  if (!pool) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
     console.error('Server GEMINI_API_KEY is not set');
     return res.status(500).json({ error: 'Server configuration error: GEMINI_API_KEY is missing' });
   }
 
   try {
+    const client = new GoogleGenerativeAI(apiKey);
     const defaultModelName = (process.env.GEMINI_MODEL || 'gemini-2.0-flash').trim();
-    const candidates = [defaultModelName, ...FALLBACK_MODELS.filter((m) => m !== defaultModelName)];
+    const fallbackNames = FALLBACK_MODELS.filter((m) => m !== defaultModelName);
+
+    const candidates = [
+      defaultModelName,
+      ...fallbackNames
+    ];
 
     const baseDecomposePrompt = `You are a productivity planner.
 The user wants to achieve this goal: "${goalText}"
@@ -254,12 +176,20 @@ Guidelines:
 
     const prompt = baseDecomposePrompt + activityBlock;
 
-    let response: GenerateContentResult;
-    try {
-      response = await runWithFallback(
-        pool,
-        candidates,
-        {
+    let response;
+    let lastError: Error | null = null;
+
+    for (const modelName of candidates) {
+      try {
+        console.log(`[Server] Attempting goal decomposition using model: ${modelName}`);
+        const model = client.getGenerativeModel({
+          model: modelName,
+          generationConfig: {
+            temperature: 0.1,
+          },
+        });
+
+        response = await model.generateContent({
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
           tools: [{ functionDeclarations: [decomposeGoalDeclaration] }],
           toolConfig: {
@@ -268,12 +198,18 @@ Guidelines:
               allowedFunctionNames: ['decomposeGoal'],
             },
           },
-        },
-        'goal decomposition',
-        { generationConfig: { temperature: 0.1 } },
-      );
-    } catch (err) {
-      return res.status(502).json({ error: mapError(err) });
+        });
+        break; // Successfully got response, break the loop
+      } catch (err) {
+        console.warn(`[Server] Decomposition failed using ${modelName}:`, err);
+        lastError = err instanceof Error ? err : new Error(String(err));
+      }
+    }
+
+    if (!response) {
+      return res.status(502).json({
+        error: `All Gemini models failed. Last error: ${lastError?.message || 'Unknown'}`
+      });
     }
 
     // Extract the function call
@@ -294,22 +230,16 @@ Guidelines:
     }
 
     if (!call) {
-      return res.status(502).json({
-        error: { code: 'schema_error', message: 'Gemini failed to call the decomposeGoal function' },
-      });
+      return res.status(502).json({ error: 'Gemini failed to call the decomposeGoal function' });
     }
 
     if (call.name !== 'decomposeGoal') {
-      return res.status(502).json({
-        error: { code: 'schema_error', message: `Unexpected function call from Gemini: ${call.name}` },
-      });
+      return res.status(502).json({ error: `Unexpected function call from Gemini: ${call.name}` });
     }
 
     const args = call.args as unknown as DecomposeResponseArgs;
     if (!args || !args.goal || !args.subtasks || !Array.isArray(args.subtasks)) {
-      return res.status(502).json({
-        error: { code: 'schema_error', message: 'Invalid arguments returned in decomposeGoal function call' },
-      });
+      return res.status(502).json({ error: 'Invalid arguments returned in decomposeGoal function call' });
     }
 
     const rawDeadline = args.goal.deadline ? String(args.goal.deadline).trim() : undefined;
@@ -360,7 +290,7 @@ Guidelines:
     });
   } catch (err: any) {
     console.error('[Server] API error:', err);
-    res.status(500).json({ error: mapError(err) });
+    res.status(500).json({ error: err.message || 'Internal server error' });
   }
 });
 
@@ -452,15 +382,17 @@ app.post('/api/infer-progress', async (req, res): Promise<any> => {
     return res.status(400).json({ error: 'No valid activity entries in activity array' });
   }
 
-  const pool = getKeyPool();
-  if (!pool) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
     console.error('Server GEMINI_API_KEY is not set');
     return res.status(500).json({ error: 'Server configuration error: GEMINI_API_KEY is missing' });
   }
 
   try {
+    const client = new GoogleGenerativeAI(apiKey);
     const defaultModelName = (process.env.GEMINI_MODEL || 'gemini-2.0-flash').trim();
-    const candidates = [defaultModelName, ...FALLBACK_MODELS.filter((m) => m !== defaultModelName)];
+    const fallbackNames = FALLBACK_MODELS.filter((m) => m !== defaultModelName);
+    const candidates = [defaultModelName, ...fallbackNames];
 
     const taskList = tasks
       .map((t: { id: string; title: string; status?: string }) =>
@@ -486,12 +418,17 @@ For each active task, decide whether the activity above is evidence that the use
 
 You MUST call the tool "inferProgress" with the result.`;
 
-    let response: GenerateContentResult;
-    try {
-      response = await runWithFallback(
-        pool,
-        candidates,
-        {
+    let response;
+    let lastError: Error | null = null;
+
+    for (const modelName of candidates) {
+      try {
+        console.log(`[Server] Attempting progress inference using model: ${modelName}`);
+        const model = client.getGenerativeModel({
+          model: modelName,
+          generationConfig: { temperature: 0.1 },
+        });
+        response = await model.generateContent({
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
           tools: [{ functionDeclarations: [inferProgressDeclaration] }],
           toolConfig: {
@@ -500,13 +437,17 @@ You MUST call the tool "inferProgress" with the result.`;
               allowedFunctionNames: ['inferProgress'],
             },
           },
-        },
-        'progress inference',
-        { generationConfig: { temperature: 0.1 } },
-      );
-    } catch (err) {
+        });
+        break;
+      } catch (err) {
+        console.warn(`[Server] Progress inference failed using ${modelName}:`, err);
+        lastError = err instanceof Error ? err : new Error(String(err));
+      }
+    }
+
+    if (!response) {
       return res.status(502).json({
-        error: `All Gemini models failed. Last error: ${(err instanceof Error && err.message) || 'Unknown'}`,
+        error: `All Gemini models failed. Last error: ${lastError?.message || 'Unknown'}`,
       });
     }
 
@@ -622,15 +563,17 @@ app.post('/api/match-commit', async (req, res): Promise<any> => {
     return res.status(400).json({ error: 'No valid tasks in tasks array' });
   }
 
-  const pool = getKeyPool();
-  if (!pool) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
     console.error('Server GEMINI_API_KEY is not set');
     return res.status(500).json({ error: 'Server configuration error: GEMINI_API_KEY is missing' });
   }
 
   try {
+    const client = new GoogleGenerativeAI(apiKey);
     const defaultModelName = (process.env.GEMINI_MODEL || 'gemini-2.0-flash').trim();
-    const candidates = [defaultModelName, ...FALLBACK_MODELS.filter((m) => m !== defaultModelName)];
+    const fallbackNames = FALLBACK_MODELS.filter((m) => m !== defaultModelName);
+    const candidates = [defaultModelName, ...fallbackNames];
 
     const taskList = tasks
       .map((t: { id: string; title: string }) => `- ${t.id} | ${t.title}`)
@@ -654,12 +597,17 @@ Pick the single best matching task id. If no task is a clear match (commit is ge
 
 You MUST call the tool "matchCommit" with the result.`;
 
-    let response: GenerateContentResult;
-    try {
-      response = await runWithFallback(
-        pool,
-        candidates,
-        {
+    let response;
+    let lastError: Error | null = null;
+
+    for (const modelName of candidates) {
+      try {
+        console.log(`[Server] Attempting commit match using model: ${modelName}`);
+        const model = client.getGenerativeModel({
+          model: modelName,
+          generationConfig: { temperature: 0.1 },
+        });
+        response = await model.generateContent({
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
           tools: [{ functionDeclarations: [matchCommitDeclaration] }],
           toolConfig: {
@@ -668,13 +616,17 @@ You MUST call the tool "matchCommit" with the result.`;
               allowedFunctionNames: ['matchCommit'],
             },
           },
-        },
-        'commit match',
-        { generationConfig: { temperature: 0.1 } },
-      );
-    } catch (err) {
+        });
+        break;
+      } catch (err) {
+        console.warn(`[Server] Commit match failed using ${modelName}:`, err);
+        lastError = err instanceof Error ? err : new Error(String(err));
+      }
+    }
+
+    if (!response) {
       return res.status(502).json({
-        error: `All Gemini models failed. Last error: ${(err instanceof Error && err.message) || 'Unknown'}`,
+        error: `All Gemini models failed. Last error: ${lastError?.message || 'Unknown'}`,
       });
     }
 
@@ -745,13 +697,11 @@ app.post('/api/infer-screen', async (req, res): Promise<any> => {
   if (approxBytes > 5 * 1024 * 1024) {
     return res.status(400).json({ error: 'Screenshot too large (>5MB)' });
   }
-  const pool = getKeyPool();
-  if (!pool) {
-    console.error('Server GEMINI_API_KEY is not set');
-    return res.status(500).json({ error: 'Server configuration error: GEMINI_API_KEY is missing' });
-  }
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY missing' });
 
   try {
+    const client = new GoogleGenerativeAI(apiKey);
     const defaultModel = (process.env.GEMINI_VISION_MODEL || 'gemini-2.0-flash').trim();
     const candidates = [defaultModel, ...FALLBACK_MODELS].filter((m, i, a) => a.indexOf(m) === i);
 
@@ -760,25 +710,25 @@ app.post('/api/infer-screen', async (req, res): Promise<any> => {
       : 'No window context available.';
     const prompt = `Describe what the user is doing in this screenshot. ${contextLine}\n\nNever include emails, full names beyond first-name greetings, monetary amounts, or chat content in your summary. Call the "inferScreen" tool with the result.`;
 
-    let response: GenerateContentResult;
-    try {
-      response = await runWithFallback(
-        pool,
-        candidates,
-        {
+    let response: any;
+    let lastError: Error | null = null;
+    for (const modelName of candidates) {
+      try {
+        const model = client.getGenerativeModel({ model: modelName, generationConfig: { temperature: 0.1 } });
+        response = await model.generateContent({
           contents: [{ role: 'user', parts: [
             { inlineData: { mimeType: 'image/png', data: screenshotBase64 } },
             { text: prompt },
           ] }],
           tools: [{ functionDeclarations: [inferScreenDeclaration] }],
           toolConfig: { functionCallingConfig: { mode: FunctionCallingMode.ANY, allowedFunctionNames: ['inferScreen'] } },
-        },
-        'screen inference',
-        { generationConfig: { temperature: 0.1 } },
-      );
-    } catch (err) {
-      return res.status(502).json({ error: `All Gemini models failed. Last error: ${(err instanceof Error && err.message) || 'Unknown'}` });
+        });
+        break;
+      } catch (err) {
+        lastError = err instanceof Error ? err : new Error(String(err));
+      }
     }
+    if (!response) return res.status(502).json({ error: `All Gemini models failed. Last: ${lastError?.message}` });
 
     const calls = typeof response.response.functionCalls === 'function' ? response.response.functionCalls() : undefined;
     const call: FunctionCall | undefined = calls?.[0] ?? response.response.candidates?.[0]?.content?.parts?.find((p: Part) => !!p.functionCall)?.functionCall;

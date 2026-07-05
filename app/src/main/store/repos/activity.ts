@@ -92,7 +92,7 @@ export class ActivityRepo {
     const limitSql = Number.isFinite(limitVal) ? ` LIMIT ${Math.max(1, Math.min(1000, Math.round(limitVal)))}` : '';
     const offsetSql = Number.isFinite(offsetVal) ? ` OFFSET ${Math.max(0, Math.round(offsetVal))}` : '';
     const rows = this.db
-      .prepare(`SELECT id, ts, kind, payload FROM activity ${whereSql} ORDER BY id DESC${limitSql}${offsetSql}`)
+      .prepare(`SELECT id, ts, kind, payload FROM activity ${whereSql} ORDER BY ts DESC${limitSql}${offsetSql}`)
       .all(...params) as ActivityDbRow[];
     return rows.map((row) => ({ id: row.id, ts: row.ts, kind: row.kind, payload: JSON.parse(row.payload) as Record<string, unknown> }));
   }

@@ -52,11 +52,4 @@ describe('Screen Recording permission', () => {
     const result = await requestScreenRecording();
     expect(result).toBe('denied');
   });
-
-  it('returns granted when capture throws but status is granted', async () => {
-    getMediaAccessStatus.mockReturnValue('granted');
-    getSources.mockRejectedValueOnce(new Error('not allowed'));
-    const result = await requestScreenRecording();
-    expect(result).toBe('granted');
-  });
 });

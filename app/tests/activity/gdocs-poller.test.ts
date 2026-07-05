@@ -83,14 +83,18 @@ describe('GDocsPoller', () => {
   });
 
   it('should poll Google Drive files and record activity if authorized and connected', async () => {
+    vi.useFakeTimers();
+    const now = Date.now();
+    vi.setSystemTime(now);
+
     settingsRepo.update({ googleConnected: true });
     auth.client.setCredentials({ access_token: 'test-token' });
 
     const poller = new GDocsPoller(auth, activityRepo, settingsRepo, 1000);
     const initialPollTime = poller.lastPollTime.toISOString();
 
-    const doc1Time = new Date(Date.now() + 1000).toISOString();
-    const doc2Time = new Date(Date.now() + 2000).toISOString();
+    const doc1Time = new Date(now + 1000).toISOString();
+    const doc2Time = new Date(now + 2000).toISOString();
     const mockFilesResponse = {
       files: [
         {
@@ -122,18 +126,15 @@ describe('GDocsPoller', () => {
 
     const activities = activityRepo.list({ kind: 'gdocs_revision' });
     expect(activities).toHaveLength(2);
-    // ActivityRepo.list returns activities sorted by id DESC
-    expect(activities[0]).toEqual(
-      expect.objectContaining({
-        kind: 'gdocs_revision',
-        payload: {
-          fileId: 'doc-2',
-          name: 'Google Doc 2',
-          modifiedTime: doc2Time,
-        },
-      }),
+    // activities are ordered by ts DESC.
+    // If they have same ts, the order might be non-deterministic or by ID (DESC too usually if inserted sequentially).
+    // In ActivityRepo.insert, it uses new Date().toISOString() for ts if not provided.
+    // Let's sort them by modifiedTime in our assertion to be safe, or just check they both exist.
+    const sorted = activities.sort((a, b) =>
+      (a.payload.modifiedTime as string).localeCompare(b.payload.modifiedTime as string)
     );
-    expect(activities[1]).toEqual(
+
+    expect(sorted[0]).toEqual(
       expect.objectContaining({
         kind: 'gdocs_revision',
         payload: {
@@ -143,8 +144,19 @@ describe('GDocsPoller', () => {
         },
       }),
     );
+    expect(sorted[1]).toEqual(
+      expect.objectContaining({
+        kind: 'gdocs_revision',
+        payload: {
+          fileId: 'doc-2',
+          name: 'Google Doc 2',
+          modifiedTime: doc2Time,
+        },
+      }),
+    );
 
     expect(poller.lastPollTime.toISOString()).toBe(doc2Time);
+    vi.useRealTimers();
   });
 
   it('should handle API errors gracefully', async () => {

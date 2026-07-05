@@ -1,27 +1,8 @@
 import { watch, FSWatcher } from 'chokidar';
-import { Notification } from 'electron';
 import { ActivityRepo } from '../store/repos/activity.js';
 import { SettingsRepo } from '../store/repos/settings.js';
 import { TypedEventBus } from '../bus.js';
 import { FolderEventPayload } from '@shared/events.js';
-
-export type NotifyFn = (title: string, body: string) => void;
-
-const getErrorMessage = (err: unknown): string => {
-  return err instanceof Error ? err.message : String(err);
-};
-
-const defaultNotify: NotifyFn = (title, body) => {
-  try {
-    if (Notification.isSupported()) {
-      new Notification({ title, body }).show();
-    } else {
-      console.warn('[FolderWatcher] Notifications are not supported on this platform.');
-    }
-  } catch (err) {
-    console.error('[FolderWatcher] Notification failed:', err);
-  }
-};
 
 export class FolderWatcher {
   private watcher: FSWatcher | null = null;
@@ -32,53 +13,52 @@ export class FolderWatcher {
     private activityRepo: ActivityRepo,
     private settingsRepo: SettingsRepo,
     private bus: TypedEventBus,
-    private notify: NotifyFn = defaultNotify,
   ) {}
 
   watch(paths: string[]): Promise<void> {
-    const p = this.watchChain.then(() => this.internalWatch(paths));
-    this.watchChain = p.catch((err) => {
-      console.error('[FolderWatcher] Error in watch:', err);
-      this.notify('Folder Watcher Error', `Failed to watch folders: ${getErrorMessage(err)}`);
-    });
-    return p;
+    this.watchChain = this.watchChain
+      .then(() => this.internalWatch(paths))
+      .catch((err) => {
+        console.error('[FolderWatcher] Error in watch:', err);
+      });
+    return this.watchChain;
   }
 
   unwatch(paths: string[]): Promise<void> {
-    const p = this.watchChain.then(async () => {
-      for (const path of paths) {
-        this.watchedPaths.delete(path);
-      }
+    this.watchChain = this.watchChain
+      .then(async () => {
+        for (const path of paths) {
+          this.watchedPaths.delete(path);
+        }
 
-      if (this.watchedPaths.size === 0) {
+        if (this.watchedPaths.size === 0) {
+          if (this.watcher) {
+            await this.watcher.close();
+            this.watcher = null;
+          }
+        } else {
+          await this.internalWatch(Array.from(this.watchedPaths));
+        }
+      })
+      .catch((err) => {
+        console.error('[FolderWatcher] Error in unwatch:', err);
+      });
+    return this.watchChain;
+  }
+
+  closeAllWatchers(): Promise<void> {
+    this.watchChain = this.watchChain
+      .then(async () => {
         if (this.watcher) {
           await this.watcher.close();
           this.watcher = null;
         }
-      } else {
-        await this.internalWatch(Array.from(this.watchedPaths));
-      }
-    });
-    this.watchChain = p.catch((err) => {
-      console.error('[FolderWatcher] Error in unwatch:', err);
-      this.notify('Folder Watcher Error', `Failed to unwatch folders: ${getErrorMessage(err)}`);
-    });
-    return p;
-  }
-
-  closeAllWatchers(): Promise<void> {
-    const p = this.watchChain.then(async () => {
-      if (this.watcher) {
-        await this.watcher.close();
-        this.watcher = null;
-      }
-      this.watchedPaths.clear();
-    });
-    this.watchChain = p.catch((err) => {
-      console.error('[FolderWatcher] Error in closeAllWatchers:', err);
-      this.notify('Folder Watcher Error', `Failed to close watchers: ${getErrorMessage(err)}`);
-    });
-    return p;
+        this.watchedPaths.clear();
+      })
+      .catch((err) => {
+        console.error('[FolderWatcher] Error in closeAllWatchers:', err);
+      });
+    return this.watchChain;
   }
 
   private async internalWatch(paths: string[]): Promise<void> {
@@ -122,7 +102,6 @@ export class FolderWatcher {
 
     this.watcher.on('error', (err: unknown) => {
       console.error('[FolderWatcher] chokidar watcher error:', err);
-      this.notify('Folder Watcher Error', `Chokidar error: ${getErrorMessage(err)}`);
     });
   }
 

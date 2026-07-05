@@ -41,45 +41,18 @@ export async function decomposeGoal(input: {
     body.recentActivity = input.recentActivity.slice(0, 200);
   }
 
-  let response: Response;
-  try {
-    response = await fetch(`${backendUrl}/api/decompose`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-    });
-  } catch (err) {
-    throw new Error(
-      "Goal decomposition failed: Can't reach the Plover backend. Is it running on the configured port?",
-      { cause: err },
-    );
-  }
+  const response = await fetch(`${backendUrl}/api/decompose`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+  });
 
   if (!response.ok) {
     let errorMessage = `Server responded with status ${response.status}`;
     try {
       const errorJson = await response.json();
       if (errorJson && errorJson.error) {
-        if (typeof errorJson.error === 'string') {
-          errorMessage = errorJson.error;
-        } else if (typeof errorJson.error === 'object') {
-          const { code, message } = errorJson.error as { code?: string; message?: string };
-          if (code === 'gemini_quota_exhausted') {
-            errorMessage =
-              'Daily Gemini quota reached. Try again in an hour, or upgrade your API key in Settings.';
-          } else if (code === 'gemini_invalid_key') {
-            errorMessage = 'Gemini API key missing or invalid. Update it in the backend .env.';
-          } else if (code === 'gemini_timeout') {
-            errorMessage =
-              'This is taking longer than expected. Retry, or try a shorter goal description.';
-          } else if (code === 'network') {
-            errorMessage = 'The backend couldn\'t reach Gemini. Check your internet connection.';
-          } else if (code === 'schema_error') {
-            errorMessage = 'Received a malformed response from the AI. Please try again.';
-          } else if (message) {
-            errorMessage = message;
-          }
-        }
+        errorMessage = errorJson.error;
       }
     } catch {
       // Ignore JSON parse error, stick to status message
