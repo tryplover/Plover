@@ -31,16 +31,16 @@ describe('ActivityRepo', () => {
     const t2 = '2026-01-01T10:05:00.000Z';
     const t3 = '2026-01-01T10:10:00.000Z';
 
-    repo.insert({ kind: 'file_modified', payload: { path: '/file1.txt', kind: 'md' }, ts: t1 });
-    repo.insert({ kind: 'file_added', payload: { path: '/file2.txt', kind: 'md' }, ts: t2 });
-    repo.insert({ kind: 'file_modified', payload: { path: '/file3.txt', kind: 'md' }, ts: t3 });
+    repo.insert({ kind: 'file_modified', payload: { x: 1 }, ts: t1 });
+    repo.insert({ kind: 'file_added', payload: { x: 2 }, ts: t2 });
+    repo.insert({ kind: 'file_modified', payload: { x: 3 }, ts: t3 });
 
     const result = repo.listSince(t2);
     expect(result).toHaveLength(2);
     const [r0, r1] = result;
     expect(r0?.kind).toBe('file_added');
     expect(r1?.kind).toBe('file_modified');
-    expect((r0?.payload as { path: string }).path).toBe('/file2.txt');
+    expect((r0?.payload as { x: number }).x).toBe(2);
   });
 
   it('listBetween returns rows within a time range', () => {
@@ -53,18 +53,18 @@ describe('ActivityRepo', () => {
     const t3 = '2026-01-01T10:10:00.000Z';
     const t4 = '2026-01-01T10:15:00.000Z';
 
-    repo.insert({ kind: 'file_modified', payload: { path: '/file1.txt', kind: 'md' }, ts: t1 });
-    repo.insert({ kind: 'file_added', payload: { path: '/file2.txt', kind: 'md' }, ts: t2 });
-    repo.insert({ kind: 'file_modified', payload: { path: '/file3.txt', kind: 'md' }, ts: t3 });
-    repo.insert({ kind: 'file_added', payload: { path: '/file4.txt', kind: 'md' }, ts: t4 });
+    repo.insert({ kind: 'file_modified', payload: { x: 1 }, ts: t1 });
+    repo.insert({ kind: 'file_added', payload: { x: 2 }, ts: t2 });
+    repo.insert({ kind: 'file_modified', payload: { x: 3 }, ts: t3 });
+    repo.insert({ kind: 'file_added', payload: { x: 4 }, ts: t4 });
 
     const result = repo.listBetween(t2, t3);
     expect(result).toHaveLength(2);
     const [r0, r1] = result;
     expect(r0?.kind).toBe('file_added');
     expect(r1?.kind).toBe('file_modified');
-    expect((r0?.payload as { path: string }).path).toBe('/file2.txt');
-    expect((r1?.payload as { path: string }).path).toBe('/file3.txt');
+    expect((r0?.payload as { x: number }).x).toBe(2);
+    expect((r1?.payload as { x: number }).x).toBe(3);
   });
 
   it('generates timestamps if not provided', () => {

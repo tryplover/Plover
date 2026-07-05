@@ -50,7 +50,7 @@ export class ActivityRepo {
       rawPayload = {};
     }
 
-    const payload = (typeof rawPayload === 'object' && rawPayload !== null && !Array.isArray(rawPayload))
+    const payload = (typeof rawPayload === 'object' && rawPayload !== null)
       ? (rawPayload as Record<string, unknown>)
       : {};
 
@@ -106,22 +106,11 @@ export class ActivityRepo {
       }
     }
 
-    const knownKinds = new Set([
-      'window_focus',
-      'gdocs_revision',
-      'screenshot_captured',
-      'screenshot_inferred',
-      'file_added',
-      'file_modified',
-      'git_commit',
-    ]);
-    const kind = knownKinds.has(row.kind) ? `${row.kind}:invalid` : row.kind;
-
     return {
       id: row.id,
       ts: row.ts,
-      kind,
-      payload,
+      kind: row.kind,
+      payload: payload,
     } as ActivityRow;
   }
 
