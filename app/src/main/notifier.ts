@@ -15,7 +15,7 @@ export class Notifier {
    */
   show(title: string, body: string): void {
     if (!Notification.isSupported()) {
-      this.enqueue(title, body);
+      console.warn('[Notifier] Notifications are not supported on this platform.');
       return;
     }
 
@@ -47,13 +47,20 @@ export class Notifier {
     const toProcess = [...this.queue];
     this.queue = [];
 
-    for (const item of toProcess) {
+    for (let i = 0; i < toProcess.length; i++) {
+      const item = toProcess[i];
       try {
         new Notification({ title: item.title, body: item.body }).show();
       } catch (err) {
         console.error('[Notifier] Failed to flush notification from queue:', err);
-        // If it fails again, we don't re-queue to avoid potential infinite retry loops
-        // for notifications that might be permanently unshowable.
+        // Stop flushing and preserve the remaining unprocessed notifications in the queue.
+        // We discard the failed one to avoid potential infinite retry loops for permanently unshowable notifications.
+        const remaining = toProcess.slice(i + 1);
+        this.queue = [...remaining, ...this.queue];
+        if (this.queue.length > this.maxQueueSize) {
+          this.queue = this.queue.slice(-this.maxQueueSize);
+        }
+        break;
       }
     }
   }
