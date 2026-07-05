@@ -23,11 +23,15 @@ export function SetupFlow({
   });
   const [plan, setPlan] = useState<ProposedPlan | null>(null);
 
-  const close = () => {
+  const close = async () => {
     if (onClose) {
       onClose();
     } else {
-      window.api.closeOverlay().catch(console.error);
+      try {
+        await window.api.closeOverlay();
+      } catch (err) {
+        console.error('Failed to close overlay:', err);
+      }
     }
   };
 

@@ -63,7 +63,13 @@ export function Expanded({ view, onCollapse }: Props) {
         <Button
           variant="secondary"
           className="plover-expanded__resume"
-          onClick={() => { window.api.companion.setState('observing').catch(console.error); }}
+          onClick={async () => {
+            try {
+              await window.api.companion.setState('observing');
+            } catch (err) {
+              console.error('Failed to resume:', err);
+            }
+          }}
         >
           ▶ Resume
         </Button>
@@ -73,13 +79,25 @@ export function Expanded({ view, onCollapse }: Props) {
           <span>Still working on this?</span>
           <Button
             variant="primary"
-            onClick={() => { window.api.companion.setState('observing').catch(console.error); }}
+            onClick={async () => {
+              try {
+                await window.api.companion.setState('observing');
+              } catch (err) {
+                console.error('Failed to resume:', err);
+              }
+            }}
           >
             Yes
           </Button>
           <Button
             variant="secondary"
-            onClick={() => { window.api.companion.setState('paused').catch(console.error); }}
+            onClick={async () => {
+              try {
+                await window.api.companion.setState('paused');
+              } catch (err) {
+                console.error('Failed to pause:', err);
+              }
+            }}
           >
             Pause
           </Button>

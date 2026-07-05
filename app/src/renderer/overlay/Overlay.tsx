@@ -10,14 +10,16 @@ export function Overlay() {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const resizeWindow = () => {
+    const resizeWindow = async () => {
       if (!containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
       const height = Math.ceil(rect.height);
       const width = Math.ceil(rect.width);
-      window.api.resizeOverlay(height, width).catch((err) => {
+      try {
+        await window.api.resizeOverlay(height, width);
+      } catch (err) {
         console.error('Failed to resize overlay:', err);
-      });
+      }
     };
 
     resizeWindow();
@@ -33,11 +35,13 @@ export function Overlay() {
   }, []);
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = async (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        window.api.closeOverlay().catch((err) => {
+        try {
+          await window.api.closeOverlay();
+        } catch (err) {
           console.error('Failed to close overlay:', err);
-        });
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);

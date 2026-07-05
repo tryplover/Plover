@@ -12,10 +12,14 @@ export function Companion() {
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    const observer = new ResizeObserver(() => {
+    const observer = new ResizeObserver(async () => {
       if (container) {
         const h = container.getBoundingClientRect().height;
-        window.api.companion.resize(Math.ceil(h)).catch(console.error);
+        try {
+          await window.api.companion.resize(Math.ceil(h));
+        } catch (err) {
+          console.error('Failed to resize companion:', err);
+        }
       }
     });
     observer.observe(container);
