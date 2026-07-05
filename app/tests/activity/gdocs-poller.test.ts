@@ -122,7 +122,10 @@ describe('GDocsPoller', () => {
 
     const activities = activityRepo.list({ kind: 'gdocs_revision' });
     expect(activities).toHaveLength(2);
-    expect(activities[0]).toEqual(
+    const doc1Activity = activities.find(a => (a.payload as { fileId?: string }).fileId === 'doc-1');
+    const doc2Activity = activities.find(a => (a.payload as { fileId?: string }).fileId === 'doc-2');
+
+    expect(doc1Activity).toEqual(
       expect.objectContaining({
         kind: 'gdocs_revision',
         payload: {
@@ -132,7 +135,7 @@ describe('GDocsPoller', () => {
         },
       }),
     );
-    expect(activities[1]).toEqual(
+    expect(doc2Activity).toEqual(
       expect.objectContaining({
         kind: 'gdocs_revision',
         payload: {
