@@ -15,11 +15,9 @@ export function useAppEvents(callback: () => void) {
 
   useEffect(() => {
     const unsubscribe = window.api.on('app-event', (event: unknown) => {
-      if (event && typeof event === 'object' && 'type' in event) {
-        const appEvent = event as { type: string };
-        if (DEFAULT_EVENTS.includes(appEvent.type)) {
-          savedCallback.current();
-        }
+      const appEvent = event as { type: string };
+      if (DEFAULT_EVENTS.includes(appEvent.type)) {
+        savedCallback.current();
       }
     });
 

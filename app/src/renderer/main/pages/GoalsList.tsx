@@ -54,6 +54,9 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
 
   useAppEvents(() => {
     void fetchData();
+    if (onTasksUpdated) {
+      onTasksUpdated();
+    }
   });
 
   const toggleExpandGoal = (goalId: string) => {
