@@ -1,8 +1,16 @@
 import { join } from 'node:path';
+import { existsSync } from 'node:fs';
 
 try {
-  // Load .env from the server root directory (one level up from src/)
-  process.loadEnvFile(join(import.meta.dirname, '../.env'));
+  const candidates = [
+    join(import.meta.dirname, '../.env'),
+    join(process.cwd(), 'server', '.env'),
+    join(process.cwd(), '.env'),
+  ];
+  const envPath = candidates.find((path) => existsSync(path));
+  if (envPath) {
+    process.loadEnvFile(envPath);
+  }
 } catch {
   /* env may be set externally */
 }

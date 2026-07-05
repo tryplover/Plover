@@ -2,10 +2,15 @@ import { join } from 'node:path';
 import { existsSync } from 'node:fs';
 
 try {
-  // Load .env from the app root directory (two levels up from src/main/)
-  const appEnvPath = join(import.meta.dirname, '../../.env');
+  const candidates = [
+    join(import.meta.dirname, '../../.env'),
+    join(import.meta.dirname, '../.env'),
+    join(process.cwd(), 'app', '.env'),
+    join(process.cwd(), '.env'),
+  ];
+  const appEnvPath = candidates.find((path) => existsSync(path));
 
-  if (existsSync(appEnvPath)) {
+  if (appEnvPath) {
     process.loadEnvFile(appEnvPath);
   }
 } catch {
