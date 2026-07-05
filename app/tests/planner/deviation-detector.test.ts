@@ -290,9 +290,9 @@ describe('DeviationDetector.rescheduleTask', () => {
 
     const tasks = tasksRepo.list();
     expect(tasks).toHaveLength(2);
-    const eventIds = tasks.map((t) => t.calendar_event_id);
-    expect(eventIds).toContain('new-a');
-    expect(eventIds).toContain('new-b');
+    const [t0, t1] = tasks;
+    expect(t0?.calendar_event_id).toBe('new-a');
+    expect(t1?.calendar_event_id).toBe('new-b');
 
     expect(consoleSpy).toHaveBeenCalled();
     consoleSpy.mockRestore();
