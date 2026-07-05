@@ -2,7 +2,6 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { setupIpcHandlers } from '../../src/main/ipc';
 import { ipcMain, dialog, BrowserWindow } from 'electron';
 import * as nodeFs from 'node:fs';
-import * as zlib from 'node:zlib';
 
 type IpcHandler = (event: unknown, ...args: unknown[]) => unknown;
 
@@ -47,11 +46,12 @@ describe('Export IPC Handler', () => {
     expect(exportHandler).toBeDefined();
 
     const mockWin = {};
-    vi.mocked(BrowserWindow.fromWebContents).mockReturnValue(mockWin as any);
+    vi.mocked(BrowserWindow.fromWebContents).mockReturnValue(mockWin as unknown as BrowserWindow);
     vi.mocked(dialog.showSaveDialog).mockResolvedValue({
       filePath: '/path/to/export.json.gz',
       canceled: false,
-    } as any);
+      bookmarks: [],
+    });
 
     const result = await exportHandler({ sender: {} });
 
@@ -68,11 +68,12 @@ describe('Export IPC Handler', () => {
     const exportHandler = handlers.find(h => h[0] === 'settings:exportData')?.[1] as IpcHandler;
 
     const mockWin = {};
-    vi.mocked(BrowserWindow.fromWebContents).mockReturnValue(mockWin as any);
+    vi.mocked(BrowserWindow.fromWebContents).mockReturnValue(mockWin as unknown as BrowserWindow);
     vi.mocked(dialog.showSaveDialog).mockResolvedValue({
       filePath: '',
       canceled: true,
-    } as any);
+      bookmarks: [],
+    });
 
     const result = await exportHandler({ sender: {} });
 
