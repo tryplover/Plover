@@ -1,8 +1,6 @@
-import { ipcMain, BrowserWindow, dialog } from 'electron';
+import { ipcMain, BrowserWindow } from 'electron';
 import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
-import * as zlib from 'node:zlib';
-import { promisify } from 'node:util';
 import { Goal, Task, CalendarEvent, SummaryRow } from '../shared/types.js';
 import { goalsRepo, tasksRepo, settingsRepo, summariesRepo, activityRepo } from './store/index.js';
 import { decomposeGoal } from './planner/decompose.js';
@@ -224,46 +222,6 @@ export function setupIpcHandlers(
     },
   );
 
-  ipcMain.handle('settings:exportData', async (event) => {
-    const win = BrowserWindow.fromWebContents(event.sender);
-    if (!win) return { success: false, error: 'No window found' };
-
-    const now = new Date();
-    const timestamp = now.toISOString().replace(/[:.]/g, '').slice(0, 15);
-    const defaultPath = `plover-export-${timestamp}.json.gz`;
-
-    const { filePath, canceled } = await dialog.showSaveDialog(win, {
-      title: 'Export My Data',
-      defaultPath,
-      filters: [{ name: 'Gzipped JSON', extensions: ['json.gz'] }],
-    });
-
-    if (canceled || !filePath) {
-      return { success: false, error: 'Canceled' };
-    }
-
-    try {
-      const data = {
-        version: 1,
-        exported_at: now.toISOString(),
-        goals: goalsRepo.list(),
-        tasks: tasksRepo.list(),
-        activity: activityRepo.list(),
-        summaries: summariesRepo.listAll(),
-        settings: settingsRepo.getAll(),
-      };
-
-      const json = JSON.stringify(data);
-      const compressed = await promisify(zlib.gzip)(json);
-      await fs.promises.writeFile(filePath, compressed);
-
-      return { success: true, filePath };
-    } catch (err) {
-      console.error('[IPC] Export failed:', err);
-      return { success: false, error: String(err) };
-    }
-  });
-
   ipcMain.handle('settings:watched-folders:get', async () => {
     const settings = settingsRepo.getAll();
     return settings.watchedFolders;
@@ -337,7 +295,6 @@ export function setupIpcHandlers(
         calendarEvents = await calendarSync.listEvents(start, end);
       } catch (err) {
         console.error('[IPC] Failed to list calendar events for overlay propose:', err);
-        throw err;
       }
     }
 
@@ -348,13 +305,8 @@ export function setupIpcHandlers(
       horizonDays: settings.horizonDays,
     });
 
-    const slotMap = new Map<string, (typeof slots)[number]>();
-    for (const s of slots) {
-      slotMap.set(s.taskId, s);
-    }
-
     const subtasksWithSlots = result.subtasks.map((t, idx) => {
-      const slot = slotMap.get(`temp-${idx}`);
+      const slot = slots.find((s) => s.taskId === `temp-${idx}`);
       return {
         title: t.title,
         estimate_minutes: t.estimate_minutes,
@@ -520,14 +472,9 @@ async function saveGoalAndTasksInternal(
   const isGoogleConnected = settingsRepo.getAll().googleConnected;
   const taskIds: string[] = subtaskInputs.map(() => randomUUID());
 
-  const slotMap = new Map<number, (typeof scheduledSlots)[number]>();
-  for (const s of scheduledSlots) {
-    slotMap.set(s.tempIndex, s);
-  }
-
   const prepared = subtaskInputs.map((taskInput, index) => {
     const taskId = taskIds[index] ?? randomUUID();
-    const slot = slotMap.get(index);
+    const slot = scheduledSlots.find((s) => s.tempIndex === index);
 
     const depends_on: string[] = [];
     if (Array.isArray(taskInput.depends_on)) {
@@ -625,11 +572,6 @@ export function startEventForwarding(): void {
   eventBus.on('summary.created', (summary: SummaryRow) => {
     broadcast('summary:created', summary);
     broadcast('app-event', { type: 'summary.created', payload: summary });
-  });
-
-  eventBus.on('inference.error', (payload: { message: string }) => {
-    broadcast('inference:error', payload);
-    broadcast('app-event', { type: 'inference.error', payload });
   });
 }
 

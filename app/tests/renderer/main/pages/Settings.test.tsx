@@ -28,7 +28,6 @@ beforeEach(() => {
       getScreenRecordingStatus: vi.fn().mockResolvedValue('not-determined'),
       requestScreenRecording: vi.fn().mockResolvedValue('not-determined'),
       purgeActivity: vi.fn().mockResolvedValue({ deleted: 0 }),
-      exportData: vi.fn().mockResolvedValue({ success: true, filePath: '/mock/path' }),
       on: vi.fn().mockReturnValue(mockUnsubscribe),
     },
     writable: true,
@@ -50,15 +49,5 @@ describe('Settings', () => {
   it('forwards data-testid to root element', async () => {
     render(<Settings data-testid="page-settings" />);
     expect(await screen.findByTestId('page-settings')).toBeTruthy();
-  });
-
-  it('renders the Data portability section heading', async () => {
-    render(<Settings />);
-    expect(await screen.findByRole('heading', { name: 'Data portability' })).toBeTruthy();
-  });
-
-  it('renders the Export my data button', async () => {
-    render(<Settings />);
-    expect(await screen.findByRole('button', { name: 'Export my data' })).toBeTruthy();
   });
 });

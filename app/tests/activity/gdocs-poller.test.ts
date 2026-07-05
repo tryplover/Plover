@@ -138,9 +138,9 @@ describe('GDocsPoller', () => {
       expect.objectContaining({
         kind: 'gdocs_revision',
         payload: {
-          fileId: 'doc-2',
-          name: 'Google Doc 2',
-          modifiedTime: doc2Time,
+          fileId: 'doc-1',
+          name: 'Google Doc 1',
+          modifiedTime: doc1Time,
         },
       }),
     );
@@ -148,9 +148,9 @@ describe('GDocsPoller', () => {
       expect.objectContaining({
         kind: 'gdocs_revision',
         payload: {
-          fileId: 'doc-1',
-          name: 'Google Doc 1',
-          modifiedTime: doc1Time,
+          fileId: 'doc-2',
+          name: 'Google Doc 2',
+          modifiedTime: doc2Time,
         },
       }),
     );

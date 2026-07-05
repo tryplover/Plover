@@ -93,7 +93,6 @@ export interface PloverApi {
     activityRetentionDays: number;
     planner_useRecentActivityContext: boolean;
   }>;
-  exportData: () => Promise<{ success: boolean; filePath?: string; error?: string }>;
   updateSettings: (
     settings: Partial<{
       googleConnected: boolean;
@@ -168,7 +167,6 @@ const api: PloverApi = {
   saveGoalAndTasks: (goal, tasks, scheduledSlots) =>
     ipcRenderer.invoke('goals:save', goal, tasks, scheduledSlots),
   getSettings: () => ipcRenderer.invoke('settings:get'),
-  exportData: () => ipcRenderer.invoke('settings:exportData'),
   updateSettings: (settings) => ipcRenderer.invoke('settings:update', settings),
   connectCalendar: () => ipcRenderer.invoke('calendar:connect'),
   disconnectCalendar: () => ipcRenderer.invoke('calendar:disconnect'),

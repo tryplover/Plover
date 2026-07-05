@@ -29,9 +29,14 @@ describe('GitCommitTracker Security', () => {
   });
 
   it('does NOT call git if repoPath starts with a dash', async () => {
-    const mockExecFile = vi.mocked(child_process.execFile);
-    mockExecFile.mockImplementation((_file: string, _args: string[], _options: unknown, callback: (err: null, res: { stdout: string }) => void) => {
-      callback(null, { stdout: 'hash\nmessage' });
+    const mockExecFile = child_process.execFile as unknown as ReturnType<typeof vi.fn>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockExecFile.mockImplementation((_file: any, _args: any, _options: any, callback: any) => {
+      if (typeof callback === 'function') {
+        callback(null, { stdout: 'hash\nmessage' });
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return {} as any;
     });
 
     // A crafted path that looks like a git option
