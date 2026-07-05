@@ -7,9 +7,17 @@ import { FolderEventPayload } from '@shared/events.js';
 
 export type NotifyFn = (title: string, body: string) => void;
 
+const getErrorMessage = (err: unknown): string => {
+  return err instanceof Error ? err.message : String(err);
+};
+
 const defaultNotify: NotifyFn = (title, body) => {
   try {
-    new Notification({ title, body }).show();
+    if (Notification.isSupported()) {
+      new Notification({ title, body }).show();
+    } else {
+      console.warn('[FolderWatcher] Notifications are not supported on this platform.');
+    }
   } catch (err) {
     console.error('[FolderWatcher] Notification failed:', err);
   }
@@ -31,7 +39,7 @@ export class FolderWatcher {
     const p = this.watchChain.then(() => this.internalWatch(paths));
     this.watchChain = p.catch((err) => {
       console.error('[FolderWatcher] Error in watch:', err);
-      this.notify('Folder Watcher Error', `Failed to watch folders: ${err}`);
+      this.notify('Folder Watcher Error', `Failed to watch folders: ${getErrorMessage(err)}`);
     });
     return p;
   }
@@ -53,7 +61,7 @@ export class FolderWatcher {
     });
     this.watchChain = p.catch((err) => {
       console.error('[FolderWatcher] Error in unwatch:', err);
-      this.notify('Folder Watcher Error', `Failed to unwatch folders: ${err}`);
+      this.notify('Folder Watcher Error', `Failed to unwatch folders: ${getErrorMessage(err)}`);
     });
     return p;
   }
@@ -68,7 +76,7 @@ export class FolderWatcher {
     });
     this.watchChain = p.catch((err) => {
       console.error('[FolderWatcher] Error in closeAllWatchers:', err);
-      this.notify('Folder Watcher Error', `Failed to close watchers: ${err}`);
+      this.notify('Folder Watcher Error', `Failed to close watchers: ${getErrorMessage(err)}`);
     });
     return p;
   }
@@ -114,7 +122,7 @@ export class FolderWatcher {
 
     this.watcher.on('error', (err: unknown) => {
       console.error('[FolderWatcher] chokidar watcher error:', err);
-      this.notify('Folder Watcher Error', `Chokidar error: ${err}`);
+      this.notify('Folder Watcher Error', `Chokidar error: ${getErrorMessage(err)}`);
     });
   }
 
