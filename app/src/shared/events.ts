@@ -18,20 +18,18 @@ export interface EventPayloads {
 }
 
 export type AppEvent =
-  | { type: 'goal.created'; payload: { goalId: string } }
-  | { type: 'goal.updated'; payload: { goalId: string } }
-  | { type: 'task.scheduled'; payload: { taskId: string; start: string; end: string } }
-  | { type: 'task.completed'; payload: { taskId: string } }
-  | { type: 'calendar.synced'; payload: { syncedCount: number } }
-  | { type: 'summary.created'; payload: SummaryRow }
-  | { type: 'inference.error'; payload: { message: string } };
+  | { type: 'goal.created'; goalId: string }
+  | { type: 'goal.updated'; goalId: string }
+  | { type: 'task.scheduled'; taskId: string; start: string; end: string }
+  | { type: 'task.completed'; taskId: string }
+  | { type: 'calendar.synced'; syncedCount: number }
+  | ({ type: 'summary.created' } & SummaryRow);
 
-export interface AppEventMap {
-  'goal.created': { goalId: string };
-  'goal.updated': { goalId: string };
-  'task.scheduled': { taskId: string; start: string; end: string };
-  'task.completed': { taskId: string };
-  'calendar.synced': { syncedCount: number };
-  'summary.created': SummaryRow;
-  'inference.error': { message: string };
+export function isAppEvent(x: unknown): x is AppEvent {
+  return (
+    typeof x === 'object' &&
+    x !== null &&
+    'type' in x &&
+    typeof (x as { type: unknown }).type === 'string'
+  );
 }

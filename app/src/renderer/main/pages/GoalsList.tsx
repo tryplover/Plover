@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useAppEvents } from '../../hooks/useAppEvents';
 import { Goal, Task } from '../../../shared/types';
 import { StepRow } from '../../components/StepRow';
 import { ProgressLine } from '../../components/ProgressLine';
@@ -53,25 +54,25 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchData();
+  }, [fetchData]);
 
-    const unsubscribe = window.api.on('app-event', (event: unknown) => {
-      const appEvent = event as { type: string };
-      if (
-        appEvent.type === 'goal.created' ||
-        appEvent.type === 'task.completed' ||
-        appEvent.type === 'task.scheduled'
-      ) {
-        void fetchData();
-        if (onTasksUpdated) {
-          onTasksUpdated();
+  useAppEvents(
+    useCallback(
+      (appEvent) => {
+        if (
+          appEvent.type === 'goal.created' ||
+          appEvent.type === 'task.completed' ||
+          appEvent.type === 'task.scheduled'
+        ) {
+          void fetchData();
+          if (onTasksUpdated) {
+            onTasksUpdated();
+          }
         }
-      }
-    });
-
-    return () => {
-      unsubscribe();
-    };
-  }, [fetchData, onTasksUpdated]);
+      },
+      [fetchData, onTasksUpdated],
+    ),
+  );
 
   const toggleExpandGoal = (goalId: string) => {
     setExpandedGoals((prev) => ({

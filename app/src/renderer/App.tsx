@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useAppEvents } from './hooks/useAppEvents';
 import GoalsList from './main/pages/GoalsList';
 import AIProgress from './main/pages/AIProgress';
 import Settings from './main/pages/Settings';
@@ -29,23 +30,24 @@ export function App() {
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchTodayCount();
-
-    const unsubscribe = window.api.on('app-event', (event: unknown) => {
-      const appEvent = event as { type: string };
-      if (
-        appEvent.type === 'task.completed' ||
-        appEvent.type === 'task.scheduled' ||
-        appEvent.type === 'goal.created' ||
-        appEvent.type === 'calendar.synced'
-      ) {
-        void fetchTodayCount();
-      }
-    });
-
-    return () => {
-      unsubscribe();
-    };
   }, [onboardingCompleted, fetchTodayCount]);
+
+  useAppEvents(
+    useCallback(
+      (appEvent) => {
+        if (!onboardingCompleted) return;
+        if (
+          appEvent.type === 'task.completed' ||
+          appEvent.type === 'task.scheduled' ||
+          appEvent.type === 'goal.created' ||
+          appEvent.type === 'calendar.synced'
+        ) {
+          void fetchTodayCount();
+        }
+      },
+      [onboardingCompleted, fetchTodayCount],
+    ),
+  );
 
   const handleOnboardingComplete = () => {
     localStorage.setItem('plover_onboarding_completed', 'true');

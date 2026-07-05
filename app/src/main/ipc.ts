@@ -592,39 +592,37 @@ async function saveGoalAndTasksInternal(
 export function startEventForwarding(): void {
   eventBus.on('goal.created', (goal: Goal) => {
     broadcast('goal:created', goal);
-    broadcast('app-event', { type: 'goal.created', payload: { goalId: goal.id } });
+    broadcast('app-event', { type: 'goal.created', goalId: goal.id });
   });
 
   eventBus.on('goal.updated', (goal: Goal) => {
     broadcast('goal:updated', goal);
-    broadcast('app-event', { type: 'goal.updated', payload: { goalId: goal.id } });
+    broadcast('app-event', { type: 'goal.updated', goalId: goal.id });
   });
 
   eventBus.on('task.scheduled', (task: Task) => {
     broadcast('task:scheduled', task);
     broadcast('app-event', {
       type: 'task.scheduled',
-      payload: {
-        taskId: task.id,
-        start: task.scheduled_start ?? '',
-        end: task.scheduled_end ?? '',
-      },
+      taskId: task.id,
+      start: task.scheduled_start ?? '',
+      end: task.scheduled_end ?? '',
     });
   });
 
   eventBus.on('task.completed', (task: Task) => {
     broadcast('task:completed', task);
-    broadcast('app-event', { type: 'task.completed', payload: { taskId: task.id } });
+    broadcast('app-event', { type: 'task.completed', taskId: task.id });
   });
 
   eventBus.on('calendar.synced', () => {
     broadcast('calendar:synced');
-    broadcast('app-event', { type: 'calendar.synced', payload: { syncedCount: 0 } });
+    broadcast('app-event', { type: 'calendar.synced', syncedCount: 0 });
   });
 
   eventBus.on('summary.created', (summary: SummaryRow) => {
     broadcast('summary:created', summary);
-    broadcast('app-event', { type: 'summary.created', payload: summary });
+    broadcast('app-event', { type: 'summary.created', ...summary });
   });
 
   eventBus.on('inference.error', (payload: { message: string }) => {
