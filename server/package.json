@@ -8,7 +8,8 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "NODE_PATH=../app/node_modules ../app/node_modules/.bin/vitest run test/infer-screen.test.ts test/decompose-context.test.ts"
+<<<<<<< HEAD
+    "test": "NODE_PATH=../app/node_modules ../app/node_modules/.bin/vitest run test/infer-screen.test.ts test/decompose-context.test.ts test/gemini-keys.test.ts test/gemini-client.test.ts test/cors.test.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
