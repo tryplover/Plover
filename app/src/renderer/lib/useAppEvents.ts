@@ -5,7 +5,10 @@ export function useAppEvents(
   types: readonly AppEventType[],
   handler: () => void | Promise<void>,
 ) {
-  const typeSet = useMemo(() => new Set(types), [types]);
+  // Memoize typeSet based on the contents of the types array. This prevents
+  // re-subscriptions if the parent component passes a new array literal on every render.
+  const typeKey = types.join(',');
+  const typeSet = useMemo(() => new Set(typeKey.split(',') as AppEventType[]), [typeKey]);
   const handlerRef = useRef(handler);
 
   useEffect(() => {
