@@ -15,9 +15,13 @@ function isObject(val: unknown): val is Record<string, unknown> {
 function handleGoogleError(error: unknown): never {
   if (isObject(error)) {
     const status =
-      error.status ||
-      error.code ||
-      (isObject(error.response) ? error.response.status : undefined);
+      typeof error.status === 'number'
+        ? error.status
+        : isObject(error.response) && typeof error.response.status === 'number'
+        ? error.response.status
+        : typeof error.code === 'number'
+        ? error.code
+        : undefined;
     const message = typeof error.message === 'string' ? error.message : 'Google API Error';
 
     if (status === 401) {
@@ -106,9 +110,13 @@ export class GoogleCalendarSync implements CalendarSync {
     } catch (error: unknown) {
       if (isObject(error)) {
         const status =
-          error.status ||
-          error.code ||
-          (isObject(error.response) ? error.response.status : undefined);
+          typeof error.status === 'number'
+            ? error.status
+            : isObject(error.response) && typeof error.response.status === 'number'
+            ? error.response.status
+            : typeof error.code === 'number'
+            ? error.code
+            : undefined;
         if (status === 404 || status === 410) {
           return;
         }
