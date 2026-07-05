@@ -1,65 +1,106 @@
 import { google } from 'googleapis';
+import { Notification } from 'electron';
 import { GoogleAuth } from '@main/sync/google-auth';
 import { ActivityRepo } from '@main/store/repos/activity';
 import { SettingsRepo } from '@main/store/repos/settings';
+
+const MAX_DELAY_MS = 60 * 60 * 1000; // 1 hour
+const FAILURE_THRESHOLD = 5;
 
 export class GDocsPoller {
   private googleAuth: GoogleAuth;
   private activityRepo: ActivityRepo;
   private settingsRepo: SettingsRepo;
   private intervalMs: number;
-  private intervalId: NodeJS.Timeout | null = null;
+  private timeoutId: NodeJS.Timeout | null = null;
   public lastPollTime: Date;
   private isPolling = false;
+  private consecutiveFailures = 0;
+  private notify: (title: string, body: string) => void;
+  private running = false;
 
   constructor(
     googleAuth: GoogleAuth,
     activityRepo: ActivityRepo,
     settingsRepo: SettingsRepo,
     intervalMs: number = 10 * 60 * 1000,
+    notify: (title: string, body: string) => void = defaultNotify,
   ) {
     this.googleAuth = googleAuth;
     this.activityRepo = activityRepo;
     this.settingsRepo = settingsRepo;
     this.intervalMs = intervalMs;
+    this.notify = notify;
 
     const saved = this.settingsRepo.get('lastGDocsPollTime');
     this.lastPollTime = saved ? new Date(saved) : new Date();
   }
 
   start(): void {
-    if (this.intervalId) return;
-    this.intervalId = setInterval(() => {
-      this.poll().catch((err) => {
-        console.error('Error in GDocsPoller interval tick:', err);
+    if (this.running) return;
+    this.running = true;
+    this.scheduleTick(this.intervalMs);
+  }
+
+  private scheduleTick(delayMs: number): void {
+    if (!this.running) return;
+    this.timeoutId = setTimeout(() => {
+      this.tick().catch((err) => {
+        console.error('Error in GDocsPoller tick:', err);
       });
-    }, this.intervalMs);
+    }, delayMs);
+  }
+
+  private async tick(): Promise<void> {
+    if (!this.running) return;
+    const success = await this.poll();
+    if (!this.running) return;
+
+    if (success) {
+      this.consecutiveFailures = 0;
+      this.scheduleTick(this.intervalMs);
+    } else {
+      this.consecutiveFailures++;
+      if (this.consecutiveFailures === FAILURE_THRESHOLD) {
+        this.notify(
+          'Plover',
+          'Google Docs polling failed multiple times. Please check your connection.',
+        );
+      }
+      this.scheduleTick(this.calculateNextDelay());
+    }
+  }
+
+  private calculateNextDelay(): number {
+    const backoffFactor = Math.pow(2, this.consecutiveFailures - 1);
+    return Math.min(this.intervalMs * backoffFactor, MAX_DELAY_MS);
   }
 
   stop(): void {
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-      this.intervalId = null;
+    this.running = false;
+    if (this.timeoutId) {
+      clearTimeout(this.timeoutId);
+      this.timeoutId = null;
     }
   }
 
-  async poll(): Promise<void> {
+  async poll(): Promise<boolean> {
     const settings = this.settingsRepo.getAll();
     if (settings.pauseAllTracking || !settings.gdocsPollingEnabled) {
-      return;
+      return true;
     }
 
     if (settings.googleConnected !== true) {
-      return;
+      return true;
     }
 
     const isAuthorized = await this.googleAuth.isAuthorized();
     if (!isAuthorized) {
-      return;
+      return true;
     }
 
     if (this.isPolling) {
-      return;
+      return true;
     }
     this.isPolling = true;
 
@@ -91,10 +132,20 @@ export class GDocsPoller {
           }
         }
       }
+      return true;
     } catch (error) {
       console.error('Failed to poll GDocs revisions:', error);
+      return false;
     } finally {
       this.isPolling = false;
     }
+  }
+}
+
+function defaultNotify(title: string, body: string): void {
+  try {
+    new Notification({ title, body }).show();
+  } catch (err) {
+    console.error('[GDocsPoller] Notification failed:', err);
   }
 }

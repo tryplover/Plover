@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
+import { describe, expect, it, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import nock from 'nock';
 import Database from 'better-sqlite3';
 import { runMigrations } from '../../src/main/store/db';
@@ -32,6 +32,9 @@ vi.mock('electron', () => ({
   shell: {
     openExternal: vi.fn().mockResolvedValue(true),
   },
+  Notification: vi.fn().mockImplementation(() => ({
+    show: vi.fn(),
+  })),
 }));
 
 describe('GDocsPoller', () => {
@@ -39,6 +42,7 @@ describe('GDocsPoller', () => {
   let settingsRepo: SettingsRepo;
   let activityRepo: ActivityRepo;
   let auth: GoogleAuth;
+  let mockNotify: Mock;
 
   beforeEach(() => {
     mockKeychain.clear();
@@ -47,6 +51,7 @@ describe('GDocsPoller', () => {
     settingsRepo = new SettingsRepo(db);
     activityRepo = new ActivityRepo(db);
     auth = new GoogleAuth();
+    mockNotify = vi.fn();
   });
 
   afterEach(() => {
@@ -58,7 +63,7 @@ describe('GDocsPoller', () => {
     settingsRepo.update({ googleConnected: false });
     auth.client.setCredentials({ access_token: 'test-token' });
 
-    const poller = new GDocsPoller(auth, activityRepo, settingsRepo, 1000);
+    const poller = new GDocsPoller(auth, activityRepo, settingsRepo, 1000, mockNotify);
 
     const isAuthorizedSpy = vi.spyOn(auth, 'isAuthorized');
 
@@ -72,7 +77,7 @@ describe('GDocsPoller', () => {
     settingsRepo.update({ googleConnected: true });
     // client has no credentials, so isAuthorized is false
 
-    const poller = new GDocsPoller(auth, activityRepo, settingsRepo, 1000);
+    const poller = new GDocsPoller(auth, activityRepo, settingsRepo, 1000, mockNotify);
 
     const isAuthorizedSpy = vi.spyOn(auth, 'isAuthorized');
 
@@ -86,7 +91,7 @@ describe('GDocsPoller', () => {
     settingsRepo.update({ googleConnected: true });
     auth.client.setCredentials({ access_token: 'test-token' });
 
-    const poller = new GDocsPoller(auth, activityRepo, settingsRepo, 1000);
+    const poller = new GDocsPoller(auth, activityRepo, settingsRepo, 1000, mockNotify);
     const initialPollTime = poller.lastPollTime.toISOString();
 
     const doc1Time = new Date(Date.now() + 1000).toISOString();
@@ -122,8 +127,8 @@ describe('GDocsPoller', () => {
 
     const activities = activityRepo.list({ kind: 'gdocs_revision' });
     expect(activities).toHaveLength(2);
-    const doc1Activity = activities.find(a => (a.payload as { fileId?: string }).fileId === 'doc-1');
-    const doc2Activity = activities.find(a => (a.payload as { fileId?: string }).fileId === 'doc-2');
+    const doc1Activity = activities.find((a) => (a.payload as { fileId?: string }).fileId === 'doc-1');
+    const doc2Activity = activities.find((a) => (a.payload as { fileId?: string }).fileId === 'doc-2');
 
     expect(doc1Activity).toEqual(
       expect.objectContaining({
@@ -153,7 +158,7 @@ describe('GDocsPoller', () => {
     settingsRepo.update({ googleConnected: true });
     auth.client.setCredentials({ access_token: 'test-token' });
 
-    const poller = new GDocsPoller(auth, activityRepo, settingsRepo, 1000);
+    const poller = new GDocsPoller(auth, activityRepo, settingsRepo, 1000, mockNotify);
 
     nock('https://www.googleapis.com')
       .get('/drive/v3/files')
@@ -161,37 +166,100 @@ describe('GDocsPoller', () => {
       .reply(500, 'Internal Server Error')
       .persist();
 
-    await expect(poller.poll()).resolves.not.toThrow();
+    const result = await poller.poll();
+    expect(result).toBe(false);
     expect(activityRepo.list()).toHaveLength(0);
   });
 
-  it('should trigger polling periodically via start/stop and setInterval', async () => {
+  it('should trigger polling periodically via start/stop and setTimeout', async () => {
     vi.useFakeTimers();
     settingsRepo.update({ googleConnected: true });
     auth.client.setCredentials({ access_token: 'test-token' });
 
-    const poller = new GDocsPoller(auth, activityRepo, settingsRepo, 1000);
-    const pollSpy = vi.spyOn(poller, 'poll').mockResolvedValue(undefined);
+    const poller = new GDocsPoller(auth, activityRepo, settingsRepo, 1000, mockNotify);
+    const pollSpy = vi.spyOn(poller, 'poll').mockResolvedValue(true);
 
     poller.start();
 
     await vi.advanceTimersByTimeAsync(1000);
     expect(pollSpy).toHaveBeenCalledTimes(1);
 
-    await vi.advanceTimersByTimeAsync(2000);
-    expect(pollSpy).toHaveBeenCalledTimes(3);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(pollSpy).toHaveBeenCalledTimes(2);
 
     poller.stop();
 
     await vi.advanceTimersByTimeAsync(2000);
+    expect(pollSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('implements exponential backoff on failure', async () => {
+    vi.useFakeTimers();
+    settingsRepo.update({ googleConnected: true });
+    auth.client.setCredentials({ access_token: 'test-token' });
+
+    const poller = new GDocsPoller(auth, activityRepo, settingsRepo, 1000, mockNotify);
+    const pollSpy = vi.spyOn(poller, 'poll').mockResolvedValue(false);
+
+    poller.start();
+
+    // 1st failure, delay 1000
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(pollSpy).toHaveBeenCalledTimes(1);
+
+    // Next delay 1000 * 2^0 = 1000
+    await vi.advanceTimersByTimeAsync(900);
+    expect(pollSpy).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(100);
+    expect(pollSpy).toHaveBeenCalledTimes(2);
+
+    // 2nd failure, next delay 1000 * 2^1 = 2000
+    await vi.advanceTimersByTimeAsync(1900);
+    expect(pollSpy).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(100);
     expect(pollSpy).toHaveBeenCalledTimes(3);
+
+    // 3rd failure, next delay 1000 * 2^2 = 4000
+    await vi.advanceTimersByTimeAsync(3900);
+    expect(pollSpy).toHaveBeenCalledTimes(3);
+    await vi.advanceTimersByTimeAsync(100);
+    expect(pollSpy).toHaveBeenCalledTimes(4);
+
+    // Reset on success
+    pollSpy.mockResolvedValue(true);
+    await vi.advanceTimersByTimeAsync(8000); // 4th failure was at 7000ms from start of this block?
+    // Wait... 4th poll was just triggered.
+    expect(pollSpy).toHaveBeenCalledTimes(5);
+    // 4th poll succeeded, next delay should be 1000
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(pollSpy).toHaveBeenCalledTimes(6);
+  });
+
+  it('notifies user after 5 consecutive failures', async () => {
+    vi.useFakeTimers();
+    settingsRepo.update({ googleConnected: true });
+    auth.client.setCredentials({ access_token: 'test-token' });
+
+    const poller = new GDocsPoller(auth, activityRepo, settingsRepo, 1000, mockNotify);
+    vi.spyOn(poller, 'poll').mockResolvedValue(false);
+
+    poller.start();
+
+    for (let i = 0; i < 5; i++) {
+      await vi.runOnlyPendingTimersAsync();
+    }
+
+    expect(mockNotify).toHaveBeenCalledWith(
+      'Plover',
+      'Google Docs polling failed multiple times. Please check your connection.',
+    );
   });
 
   it('skips polling when gdocsPollingEnabled is false', async () => {
     settingsRepo.update({ googleConnected: true, gdocsPollingEnabled: false });
     auth.client.setCredentials({ access_token: 'test-token' });
 
-    const poller = new GDocsPoller(auth, activityRepo, settingsRepo, 1000);
+    const poller = new GDocsPoller(auth, activityRepo, settingsRepo, 1000, mockNotify);
 
     const isAuthorizedSpy = vi.spyOn(auth, 'isAuthorized');
 
@@ -205,7 +273,7 @@ describe('GDocsPoller', () => {
     settingsRepo.update({ googleConnected: true, pauseAllTracking: true });
     auth.client.setCredentials({ access_token: 'test-token' });
 
-    const poller = new GDocsPoller(auth, activityRepo, settingsRepo, 1000);
+    const poller = new GDocsPoller(auth, activityRepo, settingsRepo, 1000, mockNotify);
 
     const isAuthorizedSpy = vi.spyOn(auth, 'isAuthorized');
 
