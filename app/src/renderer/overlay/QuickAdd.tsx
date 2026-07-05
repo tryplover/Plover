@@ -33,10 +33,11 @@ export function QuickAdd() {
 
   // Load Settings on mount to preset Google Calendar sync
   useEffect(() => {
-    void safeAsync(async () => {
+    const loadSettings = safeAsync(async () => {
       const settings = await window.api.getSettings();
       setIsGCalSyncEnabled(settings.googleConnected);
-    })();
+    });
+    loadSettings();
   }, []);
 
   // Auto-focus goal input when expanded in Step 1

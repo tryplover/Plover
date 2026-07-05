@@ -28,7 +28,8 @@ export function SetupFlow({
     if (onClose) {
       onClose();
     } else {
-      safeAsync(() => window.api.closeOverlay())();
+      const closeOverlay = safeAsync(() => window.api.closeOverlay());
+      closeOverlay();
     }
   };
 
