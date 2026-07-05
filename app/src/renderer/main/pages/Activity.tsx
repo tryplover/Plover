@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { ActivityRow } from '../components/ActivityRow.js';
+import { ACTIVITY_KINDS } from '@shared/activity-kinds.js';
 
 interface Row { id: number; ts: string; kind: string; payload: Record<string, unknown> }
 const KINDS_DEFAULT: string[] = [];
 const PAGE_SIZE = 100;
+const ALL = ACTIVITY_KINDS.map((k) => k.kind);
 
 export function Activity() {
   const [rows, setRows] = useState<Row[]>([]);
@@ -54,24 +56,23 @@ export function Activity() {
 }
 
 function KindFilter({ kinds, onChange }: { kinds: string[]; onChange: (k: string[]) => void }) {
-  const ALL = ['window_focus', 'gdocs_revision', 'file_modified', 'file_added', 'git_commit', 'screenshot_captured', 'screenshot_inferred'];
   return (
     <div className="kind-filter">
-      {ALL.map((k) => (
-        <label key={k}>
+      {ACTIVITY_KINDS.map((k) => (
+        <label key={k.kind}>
           <input
             type="checkbox"
-            checked={kinds.length === 0 || kinds.includes(k)}
+            checked={kinds.length === 0 || kinds.includes(k.kind)}
             onChange={(e) => {
               if (e.target.checked) {
-                const next = [...kinds.filter((x) => x !== k), k];
+                const next = [...kinds.filter((x) => x !== k.kind), k.kind];
                 onChange(next.length === ALL.length ? [] : next);
               } else {
-                onChange(kinds.length ? kinds.filter((x) => x !== k) : ALL.filter((x) => x !== k));
+                onChange(kinds.length ? kinds.filter((x) => x !== k.kind) : ALL.filter((x) => x !== k.kind));
               }
             }}
           />
-          {k}
+          {k.label}
         </label>
       ))}
     </div>
