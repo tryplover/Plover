@@ -8,7 +8,7 @@ beforeAll(async () => {
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
 });
 
-afterAll(() => server.close());
+afterAll(() => new Promise<void>((resolve) => server.close(() => resolve())));
 
 function requestWithOrigin(origin: string): Promise<http.IncomingMessage> {
   return new Promise((resolve, reject) => {

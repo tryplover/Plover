@@ -47,9 +47,13 @@ async function runWithFallback(
     : new Error(typeof lastError === 'string' ? lastError : 'All Gemini models failed');
 }
 
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
+  : ['http://localhost:5173', 'http://localhost:3000'];
+
 app.use(
   cors({
-    origin: ['http://localhost:5173', 'http://localhost:3000'],
+    origin: allowedOrigins,
   })
 );
 app.use(express.json());
