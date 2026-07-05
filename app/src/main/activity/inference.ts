@@ -77,14 +77,12 @@ export class InferenceEngine {
         }),
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      this.bus.emit('inference.error', { message: 'Network error: ' + message });
+      console.error('[InferenceEngine] Network error:', err);
       return;
     }
 
     if (!response.ok) {
-      const message = 'Server responded with status ' + response.status;
-      this.bus.emit('inference.error', { message });
+      console.error('[InferenceEngine] Server responded with status', response.status);
       return;
     }
 
@@ -92,14 +90,12 @@ export class InferenceEngine {
     try {
       payload = (await response.json()) as InferProgressResponse;
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      this.bus.emit('inference.error', { message: 'Failed to parse response: ' + message });
+      console.error('[InferenceEngine] Failed to parse response JSON:', err);
       return;
     }
 
-    if (!payload || !payload.task_progress || !Array.isArray(payload.task_progress)) {
-      const message = 'Invalid response payload: missing task_progress';
-      this.bus.emit('inference.error', { message });
+    if (!payload.task_progress || !Array.isArray(payload.task_progress)) {
+      console.error('[InferenceEngine] Invalid response payload');
       return;
     }
 

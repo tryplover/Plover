@@ -20,41 +20,13 @@ export interface RotationOptions {
 
 export const ALL_KEYS_COOLING_DOWN_ERROR = 'All Gemini API keys are cooling down';
 
-const QUOTA_MESSAGE_RE = /quota|rate.?limit|resource.?exhausted|429|too.?many.?requests/i;
-const INVALID_KEY_RE = /api.?key|invalid.?key|unauthorized|forbidden|401|403/i;
-const TIMEOUT_RE = /timeout|deadline.?exceeded|request.?timed.?out|408|504/i;
-const NETWORK_RE = /network|eai_again|getaddrinfo|enotfound|connect.?etimedout|econnrefused|econnreset|fetch.?failed/i;
+const QUOTA_MESSAGE_RE = /quota|rate.?limit|resource.?exhausted/i;
 
 export function isQuotaError(err: unknown): boolean {
   if (!err || typeof err !== 'object') return false;
   const anyErr = err as { status?: unknown; message?: unknown };
   if (anyErr.status === 429) return true;
   if (typeof anyErr.message === 'string' && QUOTA_MESSAGE_RE.test(anyErr.message)) return true;
-  return false;
-}
-
-export function isInvalidKeyError(err: unknown): boolean {
-  if (!err || typeof err !== 'object') return false;
-  const anyErr = err as { status?: unknown; message?: unknown };
-  if (anyErr.status === 401 || anyErr.status === 403) return true;
-  if (typeof anyErr.message === 'string' && INVALID_KEY_RE.test(anyErr.message)) return true;
-  return false;
-}
-
-export function isTimeoutError(err: unknown): boolean {
-  if (!err || typeof err !== 'object') return false;
-  const anyErr = err as { status?: unknown; message?: unknown };
-  if (anyErr.status === 408 || anyErr.status === 504) return true;
-  if (typeof anyErr.message === 'string' && TIMEOUT_RE.test(anyErr.message)) return true;
-  return false;
-}
-
-export function isNetworkError(err: unknown): boolean {
-  if (!err || typeof err !== 'object') return false;
-  const anyErr = err as { message?: unknown; code?: unknown; cause?: unknown };
-  if (typeof anyErr.message === 'string' && NETWORK_RE.test(anyErr.message)) return true;
-  if (typeof anyErr.code === 'string' && NETWORK_RE.test(anyErr.code)) return true;
-  if (anyErr.cause && isNetworkError(anyErr.cause)) return true;
   return false;
 }
 

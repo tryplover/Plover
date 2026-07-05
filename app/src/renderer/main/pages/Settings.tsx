@@ -39,8 +39,6 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
   const [screenPermission, setScreenPermission] = useState<string>('not-determined');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [activityMessage, setActivityMessage] = useState<string>('');
-  const [exportMessage, setExportMessage] = useState<string>('');
-  const [isExporting, setIsExporting] = useState<boolean>(false);
 
   const fetchSettings = async () => {
     try {
@@ -101,29 +99,9 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
   };
 
   const handleDeleteAllActivity = async (): Promise<void> => {
-    if (!confirm('Are you sure you want to delete ALL activity? This cannot be undone.')) return;
     await window.api.purgeActivity({ olderThan: new Date(0).toISOString() });
     setActivityMessage('All activity deleted.');
     setTimeout(() => setActivityMessage(''), 2000);
-  };
-
-  const handleExportData = async (): Promise<void> => {
-    setIsExporting(true);
-    try {
-      const result = await window.api.exportData();
-      if (result.success) {
-        setExportMessage(`Data exported to ${result.filePath}`);
-      } else if (result.error !== 'Canceled') {
-        setExportMessage(`Export failed: ${result.error}`);
-      }
-      setTimeout(() => setExportMessage(''), 5000);
-    } catch (err) {
-      console.error('Export failed:', err);
-      setExportMessage('Export failed.');
-      setTimeout(() => setExportMessage(''), 5000);
-    } finally {
-      setIsExporting(false);
-    }
   };
 
   const triggerAutoSave = async (
@@ -576,39 +554,6 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
                 </Button>
                 {activityMessage && (
                   <span style={{ fontSize: '13px', color: 'var(--plover-text-muted)' }}>{activityMessage}</span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div
-            style={{
-              backgroundColor: 'var(--plover-surface)',
-              borderRadius: 'var(--plover-radius-lg)',
-              padding: '24px',
-              marginBottom: '32px',
-            }}
-          >
-            <h2
-              style={{
-                fontSize: '18px',
-                fontWeight: 600,
-                marginBottom: '16px',
-                color: 'var(--plover-text)',
-              }}
-            >
-              Data portability
-            </h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <p style={{ fontSize: '14px', color: 'var(--plover-text-muted)', margin: 0 }}>
-                Export your goals, tasks, activity, and settings to a portable gzipped JSON file.
-              </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <Button variant="secondary" onClick={() => void handleExportData()} disabled={isExporting}>
-                  {isExporting ? 'Exporting...' : 'Export my data'}
-                </Button>
-                {exportMessage && (
-                  <span style={{ fontSize: '13px', color: 'var(--plover-text-muted)' }}>{exportMessage}</span>
                 )}
               </div>
             </div>

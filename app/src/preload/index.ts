@@ -47,34 +47,14 @@ export interface PloverApi {
     >[];
   }>;
   scheduleTasks: (
-    tasks: Omit<
-      Task,
-      | 'id'
-      | 'goal_id'
-      | 'status'
-      | 'created_at'
-      | 'updated_at'
-      | 'scheduled_start'
-      | 'scheduled_end'
-      | 'calendar_event_id'
-    >[],
+    tasks: unknown,
     calendarEvents: CalendarEvent[],
     workingHours: { start: string; end: string },
     horizonDays: number,
   ) => Promise<{ taskId: string; start: string; end: string }[]>;
   saveGoalAndTasks: (
-    goal: Omit<Goal, 'id' | 'created_at' | 'updated_at' | 'status'>,
-    tasks: Omit<
-      Task,
-      | 'id'
-      | 'goal_id'
-      | 'status'
-      | 'created_at'
-      | 'updated_at'
-      | 'scheduled_start'
-      | 'scheduled_end'
-      | 'calendar_event_id'
-    >[],
+    goal: unknown,
+    tasks: unknown,
     scheduledSlots: { tempIndex: number; start: string; end: string }[],
   ) => Promise<{ goal: Goal; tasks: Task[] }>;
 
@@ -94,23 +74,8 @@ export interface PloverApi {
     activityRetentionDays: number;
     planner_useRecentActivityContext: boolean;
   }>;
-  exportData: () => Promise<{ success: boolean; filePath?: string; error?: string }>;
   updateSettings: (
-    settings: Partial<{
-      googleConnected: boolean;
-      workingHours: { start: string; end: string };
-      horizonDays: number;
-      pauseScheduling: boolean;
-      pauseAllTracking: boolean;
-      windowTrackingEnabled: boolean;
-      gdocsPollingEnabled: boolean;
-      fileWatchingEnabled: boolean;
-      screenCaptureEnabled: boolean;
-      screenCaptureIntervalMinutes: number;
-      screenVisionInferenceEnabled: boolean;
-      activityRetentionDays: number;
-      planner_useRecentActivityContext: boolean;
-    }>,
+    settings: unknown,
   ) => Promise<{
     googleConnected: boolean;
     workingHours: { start: string; end: string };
@@ -133,7 +98,7 @@ export interface PloverApi {
 
   // Overlay Window API
   proposeGoal: (goalText: string) => Promise<ProposedPlan>;
-  commitGoal: (plan: ProposedPlan) => Promise<{ goalId: string }>;
+  commitGoal: (plan: unknown) => Promise<{ goalId: string }>;
   closeOverlay: () => Promise<void>;
   resizeOverlay: (height: number, width?: number) => Promise<void>;
   openSetupWindow: () => Promise<void>;
@@ -142,7 +107,7 @@ export interface PloverApi {
   setTrackingState: (tracking: boolean) => Promise<void>;
 
   // Activity
-  listActivity: (args?: { since?: string; until?: string; kinds?: string[]; limit?: number; offset?: number }) => Promise<{ id: number; ts: string; kind: string; payload: Record<string, unknown> }[]>;
+  listActivity: (args?: unknown) => Promise<{ id: number; ts: string; kind: string; payload: Record<string, unknown> }[]>;
   getActivityById: (id: number) => Promise<{ id: number; ts: string; kind: string; payload: Record<string, unknown> } | null>;
   purgeActivity: (args: { olderThan?: string; ids?: number[] }) => Promise<{ deleted: number }>;
   getScreenshot: (id: number) => Promise<{ dataUrl: string } | null>;
@@ -163,33 +128,32 @@ const api: PloverApi = {
   getGoals: () => ipcRenderer.invoke('goals:get'),
   getTasks: () => ipcRenderer.invoke('tasks:get'),
   getSummaries: () => ipcRenderer.invoke('summaries:get'),
-  updateTaskStatus: (id: string, status: Task['status']) => ipcRenderer.invoke('tasks:updateStatus', id, status),
-  decomposeGoal: (goalText: string) => ipcRenderer.invoke('goals:decompose', goalText),
-  scheduleTasks: (tasks: unknown, calendarEvents: unknown, workingHours: unknown, horizonDays: unknown) =>
+  updateTaskStatus: (id, status) => ipcRenderer.invoke('tasks:updateStatus', id, status),
+  decomposeGoal: (goalText) => ipcRenderer.invoke('goals:decompose', goalText),
+  scheduleTasks: (tasks, calendarEvents, workingHours, horizonDays) =>
     ipcRenderer.invoke('tasks:schedule', tasks, calendarEvents, workingHours, horizonDays),
-  saveGoalAndTasks: (goal: unknown, tasks: unknown, scheduledSlots: unknown) =>
+  saveGoalAndTasks: (goal, tasks, scheduledSlots) =>
     ipcRenderer.invoke('goals:save', goal, tasks, scheduledSlots),
   getSettings: () => ipcRenderer.invoke('settings:get'),
-  exportData: () => ipcRenderer.invoke('settings:exportData'),
-  updateSettings: (settings: unknown) => ipcRenderer.invoke('settings:update', settings),
+  updateSettings: (settings) => ipcRenderer.invoke('settings:update', settings),
   connectCalendar: () => ipcRenderer.invoke('calendar:connect'),
   disconnectCalendar: () => ipcRenderer.invoke('calendar:disconnect'),
 
   // Overlay
-  proposeGoal: (goalText: string) => ipcRenderer.invoke('goal:propose', goalText),
-  commitGoal: (plan: unknown) => ipcRenderer.invoke('goal:commit', plan),
+  proposeGoal: (goalText) => ipcRenderer.invoke('goal:propose', goalText),
+  commitGoal: (plan) => ipcRenderer.invoke('goal:commit', plan),
   closeOverlay: () => ipcRenderer.invoke('overlay:close'),
-  resizeOverlay: (height: number, width?: number) => ipcRenderer.invoke('overlay:resize', height, width),
+  resizeOverlay: (height, width) => ipcRenderer.invoke('overlay:resize', height, width),
   openSetupWindow: () => ipcRenderer.invoke('overlay:openWindow'),
   listActiveWindows: () => ipcRenderer.invoke('windows:list'),
-  setIgnoreMouseEvents: (ignore: boolean) => ipcRenderer.invoke('overlay:set-ignore-mouse-events', ignore),
-  setTrackingState: (tracking: boolean) => ipcRenderer.invoke('overlay:set-tracking', tracking),
+  setIgnoreMouseEvents: (ignore) => ipcRenderer.invoke('overlay:set-ignore-mouse-events', ignore),
+  setTrackingState: (tracking) => ipcRenderer.invoke('overlay:set-tracking', tracking),
 
   // Activity
-  listActivity: (args: unknown) => ipcRenderer.invoke('activity:list', args ?? {}),
-  getActivityById: (id: number) => ipcRenderer.invoke('activity:getById', id),
-  purgeActivity: (args: { olderThan?: string; ids?: number[] }) => ipcRenderer.invoke('activity:purge', args),
-  getScreenshot: (id: number) => ipcRenderer.invoke('activity:getScreenshot', id),
+  listActivity: (args) => ipcRenderer.invoke('activity:list', args ?? {}),
+  getActivityById: (id) => ipcRenderer.invoke('activity:getById', id),
+  purgeActivity: (args) => ipcRenderer.invoke('activity:purge', args),
+  getScreenshot: (id) => ipcRenderer.invoke('activity:getScreenshot', id),
 
   // Permissions
   getScreenRecordingStatus: () => ipcRenderer.invoke('permissions:screenRecording:status'),
@@ -199,9 +163,9 @@ const api: PloverApi = {
   companion: {
     show: () => ipcRenderer.invoke('companion:show'),
     hide: () => ipcRenderer.invoke('companion:hide'),
-    setActiveTask: (taskId: string | null) => ipcRenderer.invoke('companion:setActiveTask', taskId),
-    setState: (kind: StateKind) => ipcRenderer.invoke('companion:setState', kind),
-    resize: (height: number) => ipcRenderer.invoke('companion:resize', height),
+    setActiveTask: (taskId) => ipcRenderer.invoke('companion:setActiveTask', taskId),
+    setState: (kind) => ipcRenderer.invoke('companion:setState', kind),
+    resize: (height) => ipcRenderer.invoke('companion:resize', height),
     getInitialState: () => ipcRenderer.invoke('companion:getInitialState'),
   },
 

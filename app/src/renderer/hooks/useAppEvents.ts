@@ -1,11 +1,20 @@
 import { useEffect } from 'react';
 import { AppEvent } from '../../shared/events';
 
-export function useAppEvents(callback: (event: AppEvent) => void) {
+/**
+ * useAppEvents is a refresh hook that triggers a callback whenever any of the
+ * specified event types occur. It follows main process diverged pattern
+ * where useAppEvents returns a self-contained refresh logic.
+ */
+export function useAppEvents(eventTypes: AppEvent['type'][], onRefresh: () => void) {
   useEffect(() => {
-    const unsubscribe = window.api.on('app-event', callback);
+    const unsubscribe = window.api.on('app-event', (event: AppEvent) => {
+      if (eventTypes.includes(event.type)) {
+        onRefresh();
+      }
+    });
     return () => {
       unsubscribe();
     };
-  }, [callback]);
+  }, [eventTypes, onRefresh]);
 }

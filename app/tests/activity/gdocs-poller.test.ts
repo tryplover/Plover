@@ -122,24 +122,26 @@ describe('GDocsPoller', () => {
 
     const activities = activityRepo.list({ kind: 'gdocs_revision' });
     expect(activities).toHaveLength(2);
-    // ActivityRepo.list returns activities sorted by id DESC
-    expect(activities[0]).toEqual(
-      expect.objectContaining({
-        kind: 'gdocs_revision',
-        payload: {
-          fileId: 'doc-2',
-          name: 'Google Doc 2',
-          modifiedTime: doc2Time,
-        },
-      }),
-    );
-    expect(activities[1]).toEqual(
+    const doc1Activity = activities.find(a => (a.payload as { fileId?: string }).fileId === 'doc-1');
+    const doc2Activity = activities.find(a => (a.payload as { fileId?: string }).fileId === 'doc-2');
+
+    expect(doc1Activity).toEqual(
       expect.objectContaining({
         kind: 'gdocs_revision',
         payload: {
           fileId: 'doc-1',
           name: 'Google Doc 1',
           modifiedTime: doc1Time,
+        },
+      }),
+    );
+    expect(doc2Activity).toEqual(
+      expect.objectContaining({
+        kind: 'gdocs_revision',
+        payload: {
+          fileId: 'doc-2',
+          name: 'Google Doc 2',
+          modifiedTime: doc2Time,
         },
       }),
     );

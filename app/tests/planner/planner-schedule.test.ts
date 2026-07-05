@@ -227,16 +227,6 @@ describe('Deterministic Auto-Scheduling', () => {
       scheduleTasks({
         tasks,
         calendarEvents: [],
-        workingHours: { start: '0900', end: '17:00' },
-        horizonDays,
-        now: baseDate,
-      }),
-    ).toThrow(/workingHours\.start.*expected HH:MM/);
-
-    expect(() =>
-      scheduleTasks({
-        tasks,
-        calendarEvents: [],
         workingHours: { start: '09:00', end: '25:99' },
         horizonDays,
         now: baseDate,

@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useAppEvents } from '../../hooks/useAppEvents';
 import { Goal, Task } from '../../../shared/types';
 import { StepRow } from '../../components/StepRow';
 import { ProgressLine } from '../../components/ProgressLine';
@@ -17,7 +16,6 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
   const [goals, setGoals] = useState<Goal[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   // Modal State
   const [showSetupModal, setShowSetupModal] = useState(false);
@@ -45,7 +43,6 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
       }
     } catch (err) {
       console.error('Failed to load goals & tasks:', err);
-      setError('Failed to load goals and tasks. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -54,25 +51,25 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchData();
-  }, [fetchData]);
 
-  useAppEvents(
-    useCallback(
-      (appEvent) => {
-        if (
-          appEvent.type === 'goal.created' ||
-          appEvent.type === 'task.completed' ||
-          appEvent.type === 'task.scheduled'
-        ) {
-          void fetchData();
-          if (onTasksUpdated) {
-            onTasksUpdated();
-          }
+    const unsubscribe = window.api.on('app-event', (event: unknown) => {
+      const appEvent = event as { type: string };
+      if (
+        appEvent.type === 'goal.created' ||
+        appEvent.type === 'task.completed' ||
+        appEvent.type === 'task.scheduled'
+      ) {
+        void fetchData();
+        if (onTasksUpdated) {
+          onTasksUpdated();
         }
-      },
-      [fetchData, onTasksUpdated],
-    ),
-  );
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [fetchData, onTasksUpdated]);
 
   const toggleExpandGoal = (goalId: string) => {
     setExpandedGoals((prev) => ({
@@ -95,7 +92,6 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
       }
     } catch (err) {
       console.error('Failed to update task status:', err);
-      setError('Failed to update task status. Please try again.');
     }
   };
 
@@ -144,41 +140,6 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
         position: 'relative',
       }}
     >
-    {/* Error Banner */}
-    {error && (
-      <div
-        style={{
-          padding: '12px 16px',
-          marginBottom: '20px',
-          background: 'rgba(255, 95, 86, 0.1)',
-          border: '1px solid rgba(255, 95, 86, 0.3)',
-          borderRadius: 'var(--plover-radius-sm)',
-          color: '#ff5f56',
-          fontSize: '14px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <span>{error}</span>
-        <button
-          onClick={() => setError(null)}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: '#ff5f56',
-            cursor: 'pointer',
-            fontSize: '16px',
-            padding: '4px',
-            lineHeight: 1,
-          }}
-          aria-label="Close error"
-        >
-          ✕
-        </button>
-      </div>
-    )}
-
       {/* Header */}
       <div
         style={{

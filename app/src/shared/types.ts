@@ -39,10 +39,3 @@ export interface SummaryRow {
   summary: string;
   signal: number;
 }
-
-export interface Session {
-  id: string;
-  task_id: string | null;
-  started_at: string | null;
-  ended_at: string | null;
-}
