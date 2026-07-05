@@ -209,7 +209,7 @@ describe('DeviationDetector.rescheduleTask', () => {
 
   it('continues rescheduling even if deleteEvent fails in rescheduleTask', async () => {
     const { detector, tasksRepo, goalsRepo, calendar, notifySpy } = freshHarness();
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const { taskId } = seedScheduledTask(
       goalsRepo,
       tasksRepo,
@@ -263,7 +263,7 @@ describe('DeviationDetector.rescheduleTask', () => {
 
   it('runDeviationPass continues even if deleteEvent fails for a task', async () => {
     const { detector, tasksRepo, goalsRepo, calendar } = freshHarness();
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     seedScheduledTask(
       goalsRepo,
       tasksRepo,
