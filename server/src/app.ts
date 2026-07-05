@@ -11,7 +11,11 @@ const FALLBACK_MODELS = [
   'gemini-2.5-pro',
 ];
 
-app.use(cors());
+app.use(
+  cors({
+    origin: ['http://localhost:5173', 'http://localhost:3000'],
+  })
+);
 app.use(express.json());
 
 // Type definitions matching the shared types
