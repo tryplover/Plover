@@ -4,9 +4,35 @@ import { Session } from '@shared/types.js';
 
 export class SessionsRepo {
   private db: Database.Database;
+  private insertStmt: Database.Statement;
+  private getStmt: Database.Statement;
+  private listForTaskStmt: Database.Statement;
+  private updateStmt: Database.Statement;
+  private deleteStmt: Database.Statement;
 
   constructor(db: Database.Database) {
     this.db = db;
+    this.insertStmt = db.prepare(`
+      INSERT INTO sessions (id, task_id, started_at, ended_at)
+      VALUES (?, ?, ?, ?)
+    `);
+    this.getStmt = db.prepare(`
+      SELECT id, task_id, started_at, ended_at
+      FROM sessions
+      WHERE id = ?
+    `);
+    this.listForTaskStmt = db.prepare(`
+      SELECT id, task_id, started_at, ended_at
+      FROM sessions
+      WHERE task_id = ?
+      ORDER BY started_at ASC
+    `);
+    this.updateStmt = db.prepare(`
+      UPDATE sessions
+      SET task_id = ?, started_at = ?, ended_at = ?
+      WHERE id = ?
+    `);
+    this.deleteStmt = db.prepare('DELETE FROM sessions WHERE id = ?');
   }
 
   create(input: Omit<Session, 'id'>): Session {
@@ -18,34 +44,18 @@ export class SessionsRepo {
       ended_at: input.ended_at,
     };
 
-    const stmt = this.db.prepare(`
-      INSERT INTO sessions (id, task_id, started_at, ended_at)
-      VALUES (?, ?, ?, ?)
-    `);
-
-    stmt.run(session.id, session.task_id, session.started_at, session.ended_at);
+    this.insertStmt.run(session.id, session.task_id, session.started_at, session.ended_at);
 
     return session;
   }
 
   get(id: string): Session | null {
-    const stmt = this.db.prepare(`
-      SELECT id, task_id, started_at, ended_at
-      FROM sessions
-      WHERE id = ?
-    `);
-    const row = stmt.get(id) as Session | undefined;
+    const row = this.getStmt.get(id) as Session | undefined;
     return row || null;
   }
 
   listForTask(taskId: string): Session[] {
-    const stmt = this.db.prepare(`
-      SELECT id, task_id, started_at, ended_at
-      FROM sessions
-      WHERE task_id = ?
-      ORDER BY started_at ASC
-    `);
-    return stmt.all(taskId) as Session[];
+    return this.listForTaskStmt.all(taskId) as Session[];
   }
 
   update(id: string, patch: Partial<Session>): Session {
@@ -60,19 +70,12 @@ export class SessionsRepo {
       id,
     };
 
-    const stmt = this.db.prepare(`
-      UPDATE sessions
-      SET task_id = ?, started_at = ?, ended_at = ?
-      WHERE id = ?
-    `);
-
-    stmt.run(updated.task_id, updated.started_at, updated.ended_at, id);
+    this.updateStmt.run(updated.task_id, updated.started_at, updated.ended_at, id);
 
     return updated;
   }
 
   delete(id: string): void {
-    const stmt = this.db.prepare('DELETE FROM sessions WHERE id = ?');
-    stmt.run(id);
+    this.deleteStmt.run(id);
   }
 }
