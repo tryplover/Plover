@@ -164,7 +164,7 @@ async function defaultMatchCommit(
   return (await response.json()) as MatchCommitResponse;
 }
 
-function defaultNotify(title: string, body: string): void {
+export function defaultNotify(title: string, body: string): void {
   try {
     new Notification({ title, body }).show();
   } catch (err) {
