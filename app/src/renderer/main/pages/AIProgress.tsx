@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { SummaryRow } from '../../../shared/types';
 import { StatusIndicator } from '../../components/StatusIndicator';
+import { useAppEvents } from '../../lib/useAppEvents';
 
 interface AIProgressProps {
   'data-testid'?: string;
@@ -29,18 +30,9 @@ export default function AIProgress({ 'data-testid': dataTestId }: AIProgressProp
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchSummaries();
-
-    const unsubscribe = window.api.on('app-event', (event: unknown) => {
-      const appEvent = event as { type: string };
-      if (appEvent.type === 'summary.created' || appEvent.type === 'task.completed') {
-        void fetchSummaries();
-      }
-    });
-
-    return () => {
-      unsubscribe();
-    };
   }, [fetchSummaries]);
+
+  useAppEvents(['summary.created', 'task.completed'], fetchSummaries);
 
   const formatTimestamp = (isoString: string) => {
     try {

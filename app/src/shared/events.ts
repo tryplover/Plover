@@ -32,3 +32,21 @@ export interface AppEventMap {
   'calendar.synced': { syncedCount: number };
   'summary.created': SummaryRow;
 }
+
+export type AppEventType = AppEvent['type'];
+
+export function isAppEvent(event: unknown): event is AppEvent {
+  if (typeof event !== 'object' || event === null) return false;
+  const e = event as { type?: unknown };
+  return (
+    typeof e.type === 'string' &&
+    [
+      'goal.created',
+      'goal.updated',
+      'task.scheduled',
+      'task.completed',
+      'calendar.synced',
+      'summary.created',
+    ].includes(e.type)
+  );
+}
