@@ -32,3 +32,13 @@ export interface AppEventMap {
   'calendar.synced': { syncedCount: number };
   'summary.created': SummaryRow;
 }
+
+export function isAppEvent(x: unknown): x is AppEvent {
+  return (
+    typeof x === 'object' &&
+    x !== null &&
+    'type' in x &&
+    typeof (x as { type: unknown }).type === 'string'
+  );
+}
+}

@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useAppEvents } from '../../hooks/useAppEvents';
 import { Goal, Task } from '../../../shared/types';
 import { StepRow } from '../../components/StepRow';
 import { ProgressLine } from '../../components/ProgressLine';
 import { Button } from '../../components/Button';
 import { SetupFlow } from '../../overlay/SetupFlow';
-import { useAppEvents } from '../../hooks/useAppEvents';
 
 interface GoalsListProps {
   'data-testid'?: string;
@@ -52,12 +52,23 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
     void fetchData();
   }, [fetchData]);
 
-  useAppEvents(() => {
-    void fetchData();
-    if (onTasksUpdated) {
-      onTasksUpdated();
-    }
-  });
+  useAppEvents(
+    useCallback(
+      (appEvent) => {
+        if (
+          appEvent.type === 'goal.created' ||
+          appEvent.type === 'task.completed' ||
+          appEvent.type === 'task.scheduled'
+        ) {
+          void fetchData();
+          if (onTasksUpdated) {
+            onTasksUpdated();
+          }
+        }
+      },
+      [fetchData, onTasksUpdated],
+    ),
+  );
 
   const toggleExpandGoal = (goalId: string) => {
     setExpandedGoals((prev) => ({

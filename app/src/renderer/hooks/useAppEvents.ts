@@ -1,28 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
+import { AppEvent } from '../../shared/events.js';
 
-const DEFAULT_EVENTS = ['goal.created', 'task.completed', 'task.scheduled', 'calendar.synced'];
-
-/**
- * Hook to subscribe to common app events that should trigger a data refresh.
- * @param callback Function to call when a relevant event occurs.
- */
-export function useAppEvents(callback: () => void) {
-  const savedCallback = useRef(callback);
-
+export function useAppEvents(callback: (event: AppEvent) => void) {
   useEffect(() => {
-    savedCallback.current = callback;
-  }, [callback]);
-
-  useEffect(() => {
-    const unsubscribe = window.api.on('app-event', (event: unknown) => {
-      const appEvent = event as { type: string };
-      if (DEFAULT_EVENTS.includes(appEvent.type)) {
-        savedCallback.current();
-      }
-    });
-
+    const unsubscribe = window.api.on('app-event', callback);
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [callback]);
 }

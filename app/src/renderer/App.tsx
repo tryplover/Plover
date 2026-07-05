@@ -34,10 +34,22 @@ export function App() {
     void fetchTodayCount();
   }, [onboardingCompleted, fetchTodayCount]);
 
-  useAppEvents(() => {
-    if (!onboardingCompleted) return;
-    void fetchTodayCount();
-  });
+  useAppEvents(
+    useCallback(
+      (appEvent) => {
+        if (!onboardingCompleted) return;
+        if (
+          appEvent.type === 'task.completed' ||
+          appEvent.type === 'task.scheduled' ||
+          appEvent.type === 'goal.created' ||
+          appEvent.type === 'calendar.synced'
+        ) {
+          void fetchTodayCount();
+        }
+      },
+      [onboardingCompleted, fetchTodayCount],
+    ),
+  );
 
   const handleOnboardingComplete = () => {
     localStorage.setItem('plover_onboarding_completed', 'true');

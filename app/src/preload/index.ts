@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { Task, Goal, CalendarEvent, SummaryRow } from '../shared/types.js';
+import { AppEvent } from '../shared/events.js';
 
 export interface ProposedPlan {
   goal: Omit<Goal, 'id' | 'created_at' | 'updated_at' | 'status'>;
@@ -153,7 +154,8 @@ export interface PloverApi {
   companion: CompanionApi;
 
   // Event Subscription
-  on: (channel: string, callback: (...args: unknown[]) => void) => () => void;
+  on(channel: 'app-event', callback: (event: AppEvent) => void): () => void;
+  on(channel: string, callback: (...args: unknown[]) => void): () => void;
 }
 
 const api: PloverApi = {
@@ -202,14 +204,14 @@ const api: PloverApi = {
   },
 
   // Events
-  on: (channel, callback) => {
+  on: (channel: string, callback: (...args: unknown[]) => void) => {
     const subscription = (_event: unknown, ...args: unknown[]) => callback(...args);
     ipcRenderer.on(channel, subscription);
     return () => {
       ipcRenderer.off(channel, subscription);
     };
   },
-};
+} as unknown as PloverApi;
 
 contextBridge.exposeInMainWorld('api', api);
 
