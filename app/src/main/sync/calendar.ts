@@ -8,16 +8,21 @@ export interface CalendarSync {
   deleteEvent(eventId: string): Promise<void>;
 }
 
+function isObject(val: unknown): val is Record<string, unknown> {
+  return val !== null && typeof val === 'object';
+}
+
 function handleGoogleError(error: unknown): never {
-  if (error && typeof error === 'object') {
-    const err = error as Record<string, unknown>;
+  if (isObject(error)) {
     const status =
-      err.status ||
-      err.code ||
-      (err.response &&
-        typeof err.response === 'object' &&
-        (err.response as Record<string, unknown>).status);
-    const message = err.message || 'Google API Error';
+      typeof error.status === 'number'
+        ? error.status
+        : isObject(error.response) && typeof error.response.status === 'number'
+        ? error.response.status
+        : typeof error.code === 'number'
+        ? error.code
+        : undefined;
+    const message = typeof error.message === 'string' ? error.message : 'Google API Error';
 
     if (status === 401) {
       throw new AuthenticationError(`Authentication failed: ${message}`);
@@ -103,14 +108,15 @@ export class GoogleCalendarSync implements CalendarSync {
         eventId: eventId,
       });
     } catch (error: unknown) {
-      if (error && typeof error === 'object') {
-        const err = error as Record<string, unknown>;
+      if (isObject(error)) {
         const status =
-          err.status ||
-          err.code ||
-          (err.response &&
-            typeof err.response === 'object' &&
-            (err.response as Record<string, unknown>).status);
+          typeof error.status === 'number'
+            ? error.status
+            : isObject(error.response) && typeof error.response.status === 'number'
+            ? error.response.status
+            : typeof error.code === 'number'
+            ? error.code
+            : undefined;
         if (status === 404 || status === 410) {
           return;
         }
