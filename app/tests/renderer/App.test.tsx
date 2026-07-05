@@ -31,15 +31,17 @@ describe('App', () => {
     expect(await screen.findByText('Plover')).toBeTruthy();
   });
 
-  it('renders all three nav tabs', async () => {
+  it('renders all nav tabs', async () => {
     render(<App />);
-    expect(await screen.findByTestId('nav-goals')).toBeTruthy();
+    expect(await screen.findByTestId('nav-today')).toBeTruthy();
+    expect(screen.getByTestId('nav-goals')).toBeTruthy();
     expect(screen.getByTestId('nav-progress')).toBeTruthy();
+    expect(screen.getByTestId('nav-activity')).toBeTruthy();
     expect(screen.getByTestId('nav-settings')).toBeTruthy();
   });
 
-  it('shows Goals page by default', async () => {
+  it('shows Today page by default', async () => {
     render(<App />);
-    expect(await screen.findByTestId('page-goals')).toBeTruthy();
+    expect(await screen.findByTestId('page-today')).toBeTruthy();
   });
 });
