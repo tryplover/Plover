@@ -171,7 +171,10 @@ export class DeviationDetector {
       now,
     });
 
-    const placementMap = new Map(placements.map((p) => [p.taskId, p]));
+    const placementMap = new Map<string, { taskId: string; start: Date; end: Date }>();
+    for (const p of placements) {
+      placementMap.set(p.taskId, p);
+    }
 
     for (const task of activeTasks) {
       const p = placementMap.get(task.id);
