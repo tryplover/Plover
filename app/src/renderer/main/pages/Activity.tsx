@@ -5,6 +5,7 @@ import { ACTIVITY_KINDS } from '@shared/activity-kinds.js';
 interface Row { id: number; ts: string; kind: string; payload: Record<string, unknown> }
 const KINDS_DEFAULT: string[] = [];
 const PAGE_SIZE = 100;
+const ALL = ACTIVITY_KINDS.map((k) => k.kind);
 
 export function Activity() {
   const [rows, setRows] = useState<Row[]>([]);
@@ -55,7 +56,6 @@ export function Activity() {
 }
 
 function KindFilter({ kinds, onChange }: { kinds: string[]; onChange: (k: string[]) => void }) {
-  const ALL = ACTIVITY_KINDS.map((k) => k.kind);
   return (
     <div className="kind-filter">
       {ACTIVITY_KINDS.map((k) => (

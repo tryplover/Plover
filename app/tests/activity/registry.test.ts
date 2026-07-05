@@ -1,25 +1,46 @@
 import { describe, it, expect } from 'vitest';
-import { execSync } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { ACTIVITY_KINDS } from '../../src/shared/activity-kinds.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const srcMainPath = path.resolve(__dirname, '../../src/main');
+
+function walkDir(dir: string, callback: (filePath: string) => void) {
+  if (!fs.existsSync(dir)) return;
+  const files = fs.readdirSync(dir, { withFileTypes: true });
+  for (const file of files) {
+    const res = path.resolve(dir, file.name);
+    if (file.isDirectory()) {
+      walkDir(res, callback);
+    } else if (file.isFile() && /\.(ts|js|tsx|jsx)$/.test(file.name)) {
+      callback(res);
+    }
+  }
+}
 
 describe('Activity Registry', () => {
   it('should contain all kinds used in the codebase', () => {
-    // Grep for activityRepo.log('kind', ...) or activityRepo.insert({ kind: 'kind', ... })
-    // and similar patterns in src/main
-    // Filter out console.log and other generic logs
-    const grepOutput = execSync(
-      "grep -rhE \"(activityRepo\\\\.log|activityRepo\\\\.insert|activityRepo\\\\.list)\\\\s*\\\\(\\\\s*{\\\\s*kind:|activityRepo\\\\.log\\\\s*\\\\('\" src/main",
-      { encoding: 'utf8' }
-    );
-
-    const kindRegex = /(?:kind:\s*'|log\s*\(')([^']+)'/g;
     const foundKinds = new Set<string>();
-    let match;
-    while ((match = kindRegex.exec(grepOutput)) !== null) {
-      if (match[1]) {
-        foundKinds.add(match[1]);
+    const lineRegex = /(activityRepo\.(log|insert|list))\s*\(\s*\{\s*kind:|activityRepo\.log\s*\('/;
+    const kindRegex = /(?:kind:\s*'|log\s*\(')([^']+)'/g;
+
+    walkDir(srcMainPath, (filePath) => {
+      const content = fs.readFileSync(filePath, 'utf8');
+      const lines = content.split('\n');
+      for (const line of lines) {
+        if (lineRegex.test(line)) {
+          let match;
+          kindRegex.lastIndex = 0;
+          while ((match = kindRegex.exec(line)) !== null) {
+            if (match[1]) {
+              foundKinds.add(match[1]);
+            }
+          }
+        }
       }
-    }
+    });
 
     const registeredKinds = new Set(ACTIVITY_KINDS.map((k) => k.kind));
 

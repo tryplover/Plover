@@ -4,9 +4,11 @@ import { ACTIVITY_KINDS } from '@shared/activity-kinds.js';
 
 interface Row { id: number; ts: string; kind: string; payload: Record<string, unknown> }
 
+const KIND_MAP = new Map(ACTIVITY_KINDS.map((k) => [k.kind, k]));
+
 export function ActivityRow({ row, onDelete }: { row: Row; onDelete: () => void }) {
   const [expanded, setExpanded] = useState(false);
-  const kindInfo = ACTIVITY_KINDS.find((k) => k.kind === row.kind);
+  const kindInfo = KIND_MAP.get(row.kind);
   return (
     <li className={`activity-row activity-${row.kind}`}>
       <time>{new Date(row.ts).toLocaleString()}</time>
