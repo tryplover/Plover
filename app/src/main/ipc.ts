@@ -305,7 +305,10 @@ export function setupIpcHandlers(
       horizonDays: settings.horizonDays,
     });
 
-    const slotMap = new Map(slots.map((s) => [s.taskId, s]));
+    const slotMap = new Map<string, (typeof slots)[number]>();
+    for (const s of slots) {
+      slotMap.set(s.taskId, s);
+    }
 
     const subtasksWithSlots = result.subtasks.map((t, idx) => {
       const slot = slotMap.get(`temp-${idx}`);
@@ -474,7 +477,10 @@ async function saveGoalAndTasksInternal(
   const isGoogleConnected = settingsRepo.getAll().googleConnected;
   const taskIds: string[] = subtaskInputs.map(() => randomUUID());
 
-  const slotMap = new Map(scheduledSlots.map((s) => [s.tempIndex, s]));
+  const slotMap = new Map<number, (typeof scheduledSlots)[number]>();
+  for (const s of scheduledSlots) {
+    slotMap.set(s.tempIndex, s);
+  }
 
   const prepared = subtaskInputs.map((taskInput, index) => {
     const taskId = taskIds[index] ?? randomUUID();
