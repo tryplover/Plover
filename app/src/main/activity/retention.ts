@@ -22,7 +22,7 @@ export async function runRetention(args: {
     if (screenshots.length === 0) break;
     const ids = screenshots.map((r) => r.id);
     const paths = screenshots
-      .map((r) => (r.payload as { filePath?: string }).filePath)
+      .map((r) => (r.kind === 'screenshot_captured' ? r.payload.filePath : undefined))
       .filter((p): p is string => typeof p === 'string' && p.length > 0);
     const { deleted: batchDeleted } = args.activityRepo.purge({ ids });
     deleted += batchDeleted;
