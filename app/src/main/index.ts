@@ -113,7 +113,11 @@ void app.whenReady().then(async () => {
   folderWatcher = new FolderWatcher(activityRepo, settingsRepo, eventBus);
   const settings = settingsRepo.getAll();
   if (settings.watchedFolders.length > 0) {
-    await folderWatcher.watch(settings.watchedFolders);
+    try {
+      await folderWatcher.watch(settings.watchedFolders);
+    } catch (err) {
+      console.error('[Main] Failed to start initial folder watch:', err);
+    }
   }
 
   inferenceEngine = new InferenceEngine(
