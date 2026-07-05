@@ -5,6 +5,12 @@ export interface FolderEventPayload {
   kind: 'md' | 'git_commit_editmsg' | 'other';
 }
 
+export interface GDocsRevisionPayload {
+  fileId: string;
+  name: string;
+  modifiedTime: string;
+}
+
 export interface EventPayloads {
   'goal.created': Goal;
   'goal.updated': Goal;
@@ -13,6 +19,7 @@ export interface EventPayloads {
   'calendar.synced': undefined;
   'folder.file_changed': FolderEventPayload;
   'folder.file_added': FolderEventPayload;
+  'gdocs.revision': GDocsRevisionPayload;
   'summary.created': SummaryRow;
 }
 

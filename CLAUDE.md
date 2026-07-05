@@ -407,6 +407,14 @@ Subagents that need to install deps will hit this same wall and report "network/
 
 **Fix:** Create `server/.env` and assign `PORT=3001` (or another unused port), and create `app/.env` to configure `PLOVER_BACKEND_URL=http://localhost:3001`. Both processes must be restarted to load their respective environment files.
 
+- **Google API calls must live in Sync module**
+
+**Symptom:** Activity module had direct dependencies on `googleapis` and `GoogleAuth`.
+
+**Root cause:** This violated the architectural rule that only Sync talks to Google APIs, leading to logic duplication and OAuth scope creep.
+
+**Fix:** Move polling logic to `Sync` module. Use the event bus (`gdocs.revision` event) to notify the `Activity` module of updates. Refactor Activity tracker into a subscriber that only writes to `ActivityRepo`.
+
 ### 2026-06-24 — Clicking "Open setup overlay" opens duplicate main window instead of setup flow
 
 **Symptom:** In the "Today" page empty state, clicking "Open setup overlay" opens a new window, but the window renders a duplicate of the main application (with sidebar/main tabs) rather than the setup/overlay flow.

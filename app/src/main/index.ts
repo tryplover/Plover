@@ -1,11 +1,12 @@
 import './load-env.js';
 import { app, BrowserWindow, globalShortcut } from 'electron';
 import { join } from 'node:path';
-import { setupIpc, calendarSync } from './ipc.js';
+import { setupIpc, calendarSync, googleAuth } from './ipc.js';
 import { activityRepo, settingsRepo, tasksRepo, summariesRepo } from './store/index.js';
 import { FolderWatcher } from './activity/folder-watcher.js';
 import { InferenceEngine } from './activity/inference.js';
 import { GitCommitTracker } from './activity/git-commit-tracker.js';
+import { GDocsPoller } from './sync/gdocs-poller.js';
 import { DeviationDetector } from './planner/deviation-detector.js';
 import { eventBus } from './bus.js';
 import { clearAllTimers, schedulePeriodic } from './lifecycle/periodic.js';
@@ -20,6 +21,7 @@ let overlayWindow: BrowserWindow | null = null;
 let folderWatcher: FolderWatcher | null = null;
 let inferenceEngine: InferenceEngine | null = null;
 let gitCommitTracker: GitCommitTracker | null = null;
+let gdocsPoller: GDocsPoller | null = null;
 let deviationLoopDispose: (() => void) | null = null;
 
 function createMainWindow(): void {
@@ -128,6 +130,9 @@ void app.whenReady().then(async () => {
   gitCommitTracker = new GitCommitTracker(tasksRepo, activityRepo, eventBus);
   gitCommitTracker.start();
 
+  gdocsPoller = new GDocsPoller(googleAuth, settingsRepo, eventBus);
+  gdocsPoller.start();
+
   const deviationDetector = new DeviationDetector(
     tasksRepo,
     activityRepo,
@@ -184,6 +189,9 @@ app.on('before-quit', () => {
   }
   if (gitCommitTracker) {
     gitCommitTracker.stop();
+  }
+  if (gdocsPoller) {
+    gdocsPoller.stop();
   }
   if (deviationLoopDispose) {
     deviationLoopDispose();

@@ -1,12 +1,12 @@
 import { google } from 'googleapis';
-import { GoogleAuth } from '@main/sync/google-auth';
-import { ActivityRepo } from '@main/store/repos/activity';
-import { SettingsRepo } from '@main/store/repos/settings';
+import { GoogleAuth } from './google-auth.js';
+import { SettingsRepo } from '../store/repos/settings.js';
+import { TypedEventBus } from '../bus.js';
 
 export class GDocsPoller {
   private googleAuth: GoogleAuth;
-  private activityRepo: ActivityRepo;
   private settingsRepo: SettingsRepo;
+  private eventBus: TypedEventBus;
   private intervalMs: number;
   private intervalId: NodeJS.Timeout | null = null;
   public lastPollTime: Date;
@@ -14,13 +14,13 @@ export class GDocsPoller {
 
   constructor(
     googleAuth: GoogleAuth,
-    activityRepo: ActivityRepo,
     settingsRepo: SettingsRepo,
+    eventBus: TypedEventBus,
     intervalMs: number = 10 * 60 * 1000,
   ) {
     this.googleAuth = googleAuth;
-    this.activityRepo = activityRepo;
     this.settingsRepo = settingsRepo;
+    this.eventBus = eventBus;
     this.intervalMs = intervalMs;
 
     const saved = this.settingsRepo.get('lastGDocsPollTime');
@@ -78,7 +78,7 @@ export class GDocsPoller {
           const name = file.name || 'Untitled Document';
           const modifiedTime = file.modifiedTime;
 
-          this.activityRepo.log('gdocs_revision', {
+          this.eventBus.emit('gdocs.revision', {
             fileId,
             name,
             modifiedTime,
