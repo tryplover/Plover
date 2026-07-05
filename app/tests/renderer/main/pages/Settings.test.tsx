@@ -29,6 +29,23 @@ beforeEach(() => {
       requestScreenRecording: vi.fn().mockResolvedValue('not-determined'),
       openScreenRecordingSettings: vi.fn().mockResolvedValue(undefined),
       purgeActivity: vi.fn().mockResolvedValue({ deleted: 0 }),
+      getAuthStatus: vi.fn().mockResolvedValue({
+        signedIn: false,
+        email: null,
+        plan: 'free',
+      }),
+      signIn: vi.fn().mockResolvedValue({
+        signedIn: true,
+        email: 'user@example.com',
+        plan: 'free',
+      }),
+      signOut: vi.fn().mockResolvedValue(undefined),
+      refreshSubscription: vi.fn().mockResolvedValue({
+        signedIn: true,
+        email: 'user@example.com',
+        plan: 'free',
+      }),
+      openUpgradePage: vi.fn().mockResolvedValue(undefined),
       on: vi.fn().mockReturnValue(mockUnsubscribe),
     },
     writable: true,

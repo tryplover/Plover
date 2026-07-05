@@ -24,6 +24,7 @@
   "dependencies": {
     "@fontsource/instrument-serif": "^5.2.8",
     "@fontsource/inter": "^5.2.8",
+    "@supabase/supabase-js": "^2.110.0",
     "better-sqlite3": "^12.10.1",
     "chokidar": "^5.0.0",
     "framer-motion": "^12.42.0",

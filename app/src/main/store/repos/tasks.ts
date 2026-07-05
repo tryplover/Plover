@@ -12,6 +12,7 @@ export class TasksRepo {
   private listStmt: Database.Statement;
   private listActiveScheduledBeforeStmt: Database.Statement;
   private deleteByGoalStmt: Database.Statement;
+  private countCreatedBetweenStmt: Database.Statement;
 
   constructor(db: Database.Database) {
     this.db = db;
@@ -73,6 +74,10 @@ export class TasksRepo {
     this.deleteByGoalStmt = this.db.prepare(`
       DELETE FROM tasks
       WHERE goal_id = ?
+    `);
+    this.countCreatedBetweenStmt = this.db.prepare(`
+      SELECT COUNT(*) as count FROM tasks
+      WHERE created_at >= ? AND created_at < ?
     `);
   }
 
@@ -303,5 +308,12 @@ export class TasksRepo {
 
   deleteByGoal(goalId: string): void {
     this.deleteByGoalStmt.run(goalId);
+  }
+
+  countCreatedBetween(start: Date, end: Date): number {
+    const row = this.countCreatedBetweenStmt.get(start.toISOString(), end.toISOString()) as {
+      count: number;
+    };
+    return row.count;
   }
 }

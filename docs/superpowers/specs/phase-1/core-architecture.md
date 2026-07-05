@@ -14,6 +14,7 @@ Phase 1 covers exactly:
 - Google Calendar sync (OAuth + writes) — [features/calendar-sync.md](./features/calendar-sync.md)
 - Local todo views (Today / Goals / Settings) — [features/todo-views.md](./features/todo-views.md)
 - Overlay quick-add (global hotkey) — [features/overlay-quick-add.md](./features/overlay-quick-add.md)
+- Supabase OAuth sign-in + subscription-tier gating (free = 10 tasks/week; paid = unlimited). Backed by the shared Supabase project used by plover-website.
 
 **Deferred to later phases — do not add yet:**
 
@@ -44,7 +45,7 @@ Notes:
 
 ## Hard constraints
 
-1. **Local-only data.** SQLite + local filesystem. No backend server. The only outbound HTTP traffic allowed is to `generativelanguage.googleapis.com` (Gemini), `www.googleapis.com` (Calendar), and the Google OAuth endpoints. Add a runtime allowlist check around the HTTP client.
+1. **Local-only user data.** SQLite + local filesystem for goals, tasks, sessions, activity, and summaries. The app additionally reads subscription-tier metadata (`profiles.plan`) from the shared Supabase project used by `plover-website` — this is the only cloud read of per-user data. Outbound HTTP allowlist (documented, not yet enforced at runtime): `generativelanguage.googleapis.com` (Gemini), `www.googleapis.com` (Calendar/Docs), Google OAuth endpoints, `*.supabase.co` (auth + subscription reads). Follow-up issue tracks moving this from doc-only to runtime enforcement in the HTTP client.
 2. **Privacy posture.** Never capture keystroke content. Never upload screenshots anywhere except (later) Gemini Vision with explicit user consent surfaced in settings.
 3. **Permissions.** Phase 1 does not need Screen Recording or Accessibility — defer those to the Monitor milestone. Do not request them now.
 4. **Module boundaries are load-bearing.** Modules communicate via an in-process event bus and the typed `Store` repositories. No module imports another's internals.

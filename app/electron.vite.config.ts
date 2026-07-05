@@ -16,6 +16,7 @@ export default defineConfig({
           'google-auth-library',
           'googleapis',
           '@google/generative-ai',
+          '@supabase/supabase-js',
         ],
       },
     },

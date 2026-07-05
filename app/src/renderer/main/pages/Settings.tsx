@@ -31,6 +31,16 @@ const defaultActivitySettings: ActivitySettings = {
 };
 
 export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
+  const [authStatus, setAuthStatus] = useState<{
+    signedIn: boolean;
+    email: string | null;
+    plan: 'paid' | 'free';
+  }>({
+    signedIn: false,
+    email: null,
+    plan: 'free',
+  });
+  const [authBusy, setAuthBusy] = useState(false);
   const [googleConnected, setGoogleConnected] = useState(false);
   const [workingHours, setWorkingHours] = useState({ start: '09:00', end: '18:00' });
   const [horizonDays, setHorizonDays] = useState(14);
@@ -79,6 +89,16 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchSettings();
     void window.api.getScreenRecordingStatus().then(setScreenPermission);
+    void window.api.getAuthStatus().then(setAuthStatus);
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = window.api.on('auth:status-changed', (status) => {
+      setAuthStatus(status as { signedIn: boolean; email: string | null; plan: 'paid' | 'free' });
+    });
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const triggerActivitySave = async (patch: Partial<ActivitySettings>): Promise<void> => {
@@ -184,6 +204,39 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
     void triggerAutoSave({ pauseScheduling: nextVal });
   };
 
+  const handleSignIn = async () => {
+    setAuthBusy(true);
+    try {
+      const status = await window.api.signIn();
+      setAuthStatus(status);
+    } catch (err) {
+      console.error('Sign-in failed:', err);
+      alert(err instanceof Error ? err.message : 'Sign-in failed');
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    setAuthBusy(true);
+    try {
+      await window.api.signOut();
+      setAuthStatus({ signedIn: false, email: null, plan: 'free' });
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  const handleRefreshSubscription = async () => {
+    setAuthBusy(true);
+    try {
+      const status = await window.api.refreshSubscription();
+      setAuthStatus(status);
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
   return (
     <div
       data-testid={dataTestId}
@@ -248,6 +301,68 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
 
       <div style={{ flex: 1, overflowY: 'auto', paddingRight: '40px', paddingBottom: '24px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          <div
+            style={{
+              backgroundColor: 'var(--plover-surface)',
+              borderRadius: 'var(--plover-radius-lg)',
+              padding: '24px',
+            }}
+          >
+            <h2
+              style={{
+                fontSize: '18px',
+                fontWeight: 600,
+                marginBottom: '16px',
+                color: 'var(--plover-text)',
+              }}
+            >
+              Plover Account
+            </h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--plover-text)' }}>
+                  {authStatus.signedIn ? authStatus.email : 'Not signed in'}
+                </p>
+                {authStatus.signedIn && (
+                  <p
+                    style={{
+                      fontSize: '13px',
+                      color: 'var(--plover-text-muted)',
+                      marginTop: '4px',
+                    }}
+                  >
+                    Plan: {authStatus.plan === 'paid' ? 'Pro' : 'Basic (10 tasks/week)'}
+                  </p>
+                )}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {authStatus.signedIn && (
+                  <Button
+                    variant="secondary"
+                    onClick={handleRefreshSubscription}
+                    disabled={authBusy}
+                  >
+                    Refresh status
+                  </Button>
+                )}
+                <Button
+                  variant={authStatus.signedIn ? 'secondary' : 'primary'}
+                  onClick={authStatus.signedIn ? handleSignOut : handleSignIn}
+                  disabled={authBusy}
+                >
+                  {authStatus.signedIn ? 'Sign out' : 'Sign in'}
+                </Button>
+              </div>
+            </div>
+            {authStatus.signedIn && authStatus.plan === 'free' && (
+              <div style={{ marginTop: '16px' }}>
+                <Button variant="primary" onClick={() => window.api.openUpgradePage()}>
+                  Upgrade to Pro
+                </Button>
+              </div>
+            )}
+          </div>
+
           <div
             style={{
               backgroundColor: 'var(--plover-surface)',

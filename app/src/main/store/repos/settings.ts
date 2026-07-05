@@ -17,6 +17,11 @@ export interface SettingsData {
   screenVisionInferenceEnabled: boolean;
   activityRetentionDays: number;
   planner_useRecentActivityContext: boolean;
+
+  supabaseUserId: string | null;
+  supabaseUserEmail: string | null;
+  subscriptionPlan: 'paid' | 'free';
+  subscriptionCheckedAt: string | null;
 }
 
 export class SettingsRepo {
@@ -85,7 +90,13 @@ export class SettingsRepo {
       0,
       Number.isFinite(rawRetention) ? Math.round(rawRetention) : 30,
     );
-    const planner_useRecentActivityContext = map.get('planner_useRecentActivityContext') !== 'false';
+    const planner_useRecentActivityContext =
+      map.get('planner_useRecentActivityContext') !== 'false';
+
+    const supabaseUserId = map.get('supabaseUserId') ?? null;
+    const supabaseUserEmail = map.get('supabaseUserEmail') ?? null;
+    const subscriptionPlan = map.get('subscriptionPlan') === 'paid' ? 'paid' : 'free';
+    const subscriptionCheckedAt = map.get('subscriptionCheckedAt') ?? null;
 
     return {
       googleConnected,
@@ -103,6 +114,10 @@ export class SettingsRepo {
       screenVisionInferenceEnabled,
       activityRetentionDays,
       planner_useRecentActivityContext,
+      supabaseUserId,
+      supabaseUserEmail,
+      subscriptionPlan,
+      subscriptionCheckedAt,
     };
   }
 
@@ -152,10 +167,37 @@ export class SettingsRepo {
       this.set('screenVisionInferenceEnabled', String(patch.screenVisionInferenceEnabled));
     }
     if (patch.activityRetentionDays !== undefined) {
-      this.set('activityRetentionDays', String(Math.max(0, Math.round(patch.activityRetentionDays))));
+      this.set(
+        'activityRetentionDays',
+        String(Math.max(0, Math.round(patch.activityRetentionDays))),
+      );
     }
     if (patch.planner_useRecentActivityContext !== undefined) {
       this.set('planner_useRecentActivityContext', String(patch.planner_useRecentActivityContext));
+    }
+    if (patch.supabaseUserId !== undefined) {
+      if (patch.supabaseUserId === null) {
+        this.deleteStmt.run('supabaseUserId');
+      } else {
+        this.set('supabaseUserId', patch.supabaseUserId);
+      }
+    }
+    if (patch.supabaseUserEmail !== undefined) {
+      if (patch.supabaseUserEmail === null) {
+        this.deleteStmt.run('supabaseUserEmail');
+      } else {
+        this.set('supabaseUserEmail', patch.supabaseUserEmail);
+      }
+    }
+    if (patch.subscriptionPlan !== undefined) {
+      this.set('subscriptionPlan', patch.subscriptionPlan);
+    }
+    if (patch.subscriptionCheckedAt !== undefined) {
+      if (patch.subscriptionCheckedAt === null) {
+        this.deleteStmt.run('subscriptionCheckedAt');
+      } else {
+        this.set('subscriptionCheckedAt', patch.subscriptionCheckedAt);
+      }
     }
   }
 }

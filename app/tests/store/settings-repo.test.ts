@@ -51,3 +51,58 @@ describe('SettingsRepo — Phase 2 activity tracking keys', () => {
     expect(repo.getAll().screenCaptureIntervalMinutes).toBe(60);
   });
 });
+
+describe('SettingsRepo — Supabase auth & subscription keys', () => {
+  let db: Database.Database;
+  let repo: SettingsRepo;
+
+  beforeEach(() => {
+    db = new Database(':memory:');
+    runMigrations(db);
+    repo = new SettingsRepo(db);
+  });
+
+  it('returns correct defaults for Supabase/subscription fields on fresh DB', () => {
+    const s = repo.getAll();
+    expect(s.supabaseUserId).toBe(null);
+    expect(s.supabaseUserEmail).toBe(null);
+    expect(s.subscriptionPlan).toBe('free');
+    expect(s.subscriptionCheckedAt).toBe(null);
+  });
+
+  it('roundtrips updated Supabase/subscription fields', () => {
+    repo.update({
+      supabaseUserId: 'user-123',
+      supabaseUserEmail: 'test@example.com',
+      subscriptionPlan: 'paid',
+      subscriptionCheckedAt: '2026-07-05T10:30:00Z',
+    });
+    const s = repo.getAll();
+    expect(s.supabaseUserId).toBe('user-123');
+    expect(s.supabaseUserEmail).toBe('test@example.com');
+    expect(s.subscriptionPlan).toBe('paid');
+    expect(s.subscriptionCheckedAt).toBe('2026-07-05T10:30:00Z');
+  });
+
+  it('clears nullable Supabase/subscription fields when set to null', () => {
+    repo.update({
+      supabaseUserId: 'user-123',
+      supabaseUserEmail: 'test@example.com',
+      subscriptionCheckedAt: '2026-07-05T10:30:00Z',
+    });
+    const beforeClear = repo.getAll();
+    expect(beforeClear.supabaseUserId).toBe('user-123');
+    expect(beforeClear.supabaseUserEmail).toBe('test@example.com');
+    expect(beforeClear.subscriptionCheckedAt).toBe('2026-07-05T10:30:00Z');
+
+    repo.update({
+      supabaseUserId: null,
+      supabaseUserEmail: null,
+      subscriptionCheckedAt: null,
+    });
+    const afterClear = repo.getAll();
+    expect(afterClear.supabaseUserId).toBe(null);
+    expect(afterClear.supabaseUserEmail).toBe(null);
+    expect(afterClear.subscriptionCheckedAt).toBe(null);
+  });
+});

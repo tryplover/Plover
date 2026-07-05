@@ -1,5 +1,11 @@
 import { Goal, Task } from '../shared/types';
 
+export interface AuthStatus {
+  signedIn: boolean;
+  email: string | null;
+  plan: 'paid' | 'free';
+}
+
 export interface PloverAPI {
   getGoals(): Promise<Goal[]>;
   getTasks(): Promise<Task[]>;
@@ -97,10 +103,14 @@ export interface PloverAPI {
   }>;
   connectCalendar(): Promise<boolean>;
   disconnectCalendar(): Promise<void>;
+  signIn(): Promise<AuthStatus>;
+  signOut(): Promise<void>;
+  getAuthStatus(): Promise<AuthStatus>;
+  refreshSubscription(): Promise<AuthStatus>;
+  openUpgradePage(): Promise<void>;
   listActiveWindows(): Promise<{ app: string; title: string }[]>;
   setIgnoreMouseEvents(ignore: boolean): Promise<void>;
   setTrackingState(tracking: boolean): Promise<void>;
-
   getScreenRecordingStatus(): Promise<
     'granted' | 'denied' | 'not-determined' | 'restricted' | 'unsupported'
   >;

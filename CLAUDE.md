@@ -133,17 +133,24 @@ These are not style preferences. The core architecture doc calls them
 - **NudgeEngine** reads `Tasks` + `Summaries`, writes notifications / overlay
   events. Never mutates tasks. (Phase 2+)
 - **Sync** is the **only** module that talks to Google APIs.
+- **Auth** (`app/src/main/auth/`) is the only module that talks to Supabase.
 - Modules communicate via the in-process event bus + typed `Store` repos. No
   module imports another module's internals.
 
 ## Hard constraints
 
-- **Local-only data.** SQLite + local filesystem. User data is strictly stored locally. No cloud sync.
+- **Local-only user data.** SQLite + local filesystem for goals, tasks,
+  sessions, activity, and summaries. The app additionally reads
+  subscription-tier metadata (`profiles.plan`) from the shared Supabase
+  project used by `plover-website` — this is the only cloud read of
+  per-user data.
 - **Backend API Proxy.** Outbound Gemini API calls are proxied through a secure backend server to protect developer API keys in production.
 
-- **Outbound HTTP allowlist:** `generativelanguage.googleapis.com` (Gemini),
-  `www.googleapis.com` (Calendar/Docs), Google OAuth endpoints. Enforced at the
-  HTTP client.
+- **Outbound HTTP allowlist (documented, not yet enforced at runtime):**
+  `generativelanguage.googleapis.com` (Gemini), `www.googleapis.com`
+  (Calendar/Docs), Google OAuth endpoints, `*.supabase.co` (auth +
+  subscription reads). Follow-up issue tracks moving this from doc-only
+  to runtime enforcement in the HTTP client.
 - **Never capture keystroke content.** Counts only.
 - **Never upload screenshots** anywhere except (later) Gemini Vision with
   explicit user consent surfaced in Settings.
@@ -160,6 +167,9 @@ These are not style preferences. The core architecture doc calls them
 - Google Calendar OAuth + auto-scheduling
 - Local Today / Goals / Settings views
 - Overlay quick-add (global hotkey)
+- Supabase OAuth sign-in + subscription-tier gating (free = 10 tasks/week;
+  paid = unlimited). Backed by the shared Supabase project used by
+  plover-website.
 
 **Deferred to later phases — do not add yet:**
 - Activity monitoring (screenshots, window titles, keystroke counts)
@@ -168,6 +178,13 @@ These are not style preferences. The core architecture doc calls them
 - Nudge engine
 - Windows port
 - Multi-account, plugins, multi-device sync
+
+## Subscription & quotas
+
+- **Free-tier quota:** Basic (free) plan users are capped at 10 tasks planned
+  per week (`FREE_WEEKLY_TASK_LIMIT` in `app/src/main/planner/quota.ts`); Pro
+  (paid) is unlimited. Enforced once, in `saveGoalAndTasks`
+  (`app/src/main/planner/goal-manager.ts`).
 
 ## Code conventions
 
@@ -428,5 +445,13 @@ Subagents that need to install deps will hit this same wall and report "network/
 **Root cause:** The Bash/PowerShell tool's shell runs in a sandboxed subprocess context that has no attached interactive Windows desktop/session. Electron is a GUI app that needs a real window station to create a `BrowserWindow`; without one it exits immediately and silently (no console output at all, since it never gets far enough to log anything). This is a different execution context from the one the `computer-use` MCP tools see and control (the user's actual visible desktop) — processes launched via Bash/PowerShell here are invisible to `computer-use`, and vice versa there's no way to attach `computer-use` to a process spawned this way.
 
 **Fix:** Don't try to visually verify Electron GUI changes by launching `pnpm dev`/the Electron binary through the Bash/PowerShell tool and then screenshotting via `computer-use` — it will silently fail with no diagnostic signal. For UI changes in this repo, verify via `pnpm typecheck && pnpm lint && pnpm test`, a careful manual read of the diff, and (if genuinely needed) ask the user to run `pnpm dev` themselves and confirm visually on their own desktop session.
+
+### 2026-07-05 — `supabase-client.ts`'s module-level `createClient(...)` crashed the whole main process, not just tests
+
+**Symptom:** After wiring `app/src/main/ipc.ts` to import `./auth/supabase-auth.js` (which imports `./auth/supabase-client.js`), previously-passing suites `tests/ipc.test.ts` and `tests/main/ipc.test.ts` started failing with `Error: supabaseUrl is required.` thrown from `@supabase/supabase-js`'s `createClient`, even though neither test exercises auth at all. The same crash also hit the real app: since `SUPABASE_URL` is unset for every user/dev (Supabase config is a brand-new optional feature nobody has set up yet), the Electron main process threw and failed to start entirely, every time — not just a test artifact.
+
+**Root cause:** `app/src/main/auth/supabase-client.ts` called `createClient(process.env.SUPABASE_URL || '', process.env.SUPABASE_ANON_KEY || '', ...)` at module-evaluation time (top-level `export const supabase = createClient(...)`), and `@supabase/supabase-js` validates the URL synchronously and throws immediately if it's an empty string. This violated this codebase's own established convention for API clients that need env-configured secrets — see `gemini.ts`'s `getGeminiClient()`, which reads its key lazily inside a getter specifically so an unset key only fails when the client is actually used, not at import time.
+
+**Fix:** Made `supabase-client.ts` lazy: replaced the eager `export const supabase = createClient(...)` with `export function getSupabaseClient(): SupabaseClient` that constructs a module-level singleton on first call. `supabase-auth.ts` now calls `getSupabaseClient()` at each use site instead of importing a pre-built `supabase` const. `ipc.ts`'s `restoreSupabaseSessionAndRefreshPlan()` (the startup auth-restore call) is also now wrapped in try/catch so a missing/invalid Supabase config degrades gracefully instead of surfacing as an unhandled rejection; the explicit `auth:signIn` etc. IPC handlers are unchanged since a user deliberately clicking "sign in" without Supabase configured should still see an error. With this fix, importing `ipc.ts`/`supabase-auth.ts` no longer throws at module-evaluation time, so the `vi.mock('.../auth/supabase-auth', ...)` workaround previously added to `tests/ipc.test.ts` and `tests/main/ipc.test.ts` was removed — neither file's tests call into the auth module, so nothing needed to be mocked once the client was made lazy.
 
 

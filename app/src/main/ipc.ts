@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow } from 'electron';
+import { ipcMain, BrowserWindow, shell } from 'electron';
 import { Goal, Task, CalendarEvent } from '../shared/types.js';
 import { goalsRepo, tasksRepo, settingsRepo, summariesRepo, activityRepo } from './store/index.js';
 import { decomposeGoal } from './planner/decompose.js';
@@ -22,6 +22,7 @@ import {
 import { SettingsData } from './store/repos/settings.js';
 import { startSignup } from './auth/signup-flow.js';
 import { withAuthRetry } from './auth/with-auth-retry.js';
+import * as supabaseAuth from './auth/supabase-auth.js';
 
 export const googleAuth = new GoogleAuth();
 export const calendarSync = new GoogleCalendarSync(googleAuth);
@@ -44,6 +45,7 @@ export function setupIpcHandlers(
   createOverlayWindow?: (variant: 'overlay' | 'window') => BrowserWindow,
 ): void {
   void googleAuth.loadSavedCredentials();
+  void restoreSupabaseSessionAndRefreshPlan();
 
   // Goals
   ipcMain.handle('goals:get', async () => {
@@ -226,6 +228,72 @@ export function setupIpcHandlers(
   ipcMain.handle('calendar:disconnect', async () => {
     await googleAuth.disconnect();
     settingsRepo.update({ googleConnected: false });
+  });
+
+  // Auth
+  ipcMain.handle('auth:signIn', async () => {
+    try {
+      await supabaseAuth.signIn();
+      const user = await supabaseAuth.getCurrentUser();
+      if (!user) {
+        throw new Error('Sign-in completed but no user session was found.');
+      }
+      const plan = await supabaseAuth.fetchSubscriptionPlan(user.id);
+      settingsRepo.update({
+        supabaseUserId: user.id,
+        supabaseUserEmail: user.email,
+        subscriptionPlan: plan,
+        subscriptionCheckedAt: new Date().toISOString(),
+      });
+      const status = { signedIn: true, email: user.email, plan };
+      broadcast('auth:status-changed', status);
+      return status;
+    } catch (err) {
+      console.error('[Auth] Sign-in failed:', err);
+      throw err instanceof Error ? err : new Error('Sign-in failed');
+    }
+  });
+
+  ipcMain.handle('auth:signOut', async () => {
+    await supabaseAuth.signOut();
+    settingsRepo.update({
+      supabaseUserId: null,
+      supabaseUserEmail: null,
+      subscriptionPlan: 'free',
+      subscriptionCheckedAt: null,
+    });
+    const status = { signedIn: false, email: null, plan: 'free' as const };
+    broadcast('auth:status-changed', status);
+  });
+
+  ipcMain.handle('auth:getStatus', async () => {
+    const settings = settingsRepo.getAll();
+    return {
+      signedIn: !!settings.supabaseUserId,
+      email: settings.supabaseUserEmail,
+      plan: settings.subscriptionPlan,
+    };
+  });
+
+  ipcMain.handle('auth:refreshSubscription', async () => {
+    const settings = settingsRepo.getAll();
+    if (!settings.supabaseUserId) {
+      return { signedIn: false, email: null, plan: 'free' as const };
+    }
+    const plan = await supabaseAuth.fetchSubscriptionPlan(settings.supabaseUserId);
+    settingsRepo.update({
+      subscriptionPlan: plan,
+      subscriptionCheckedAt: new Date().toISOString(),
+    });
+    const status = { signedIn: true, email: settings.supabaseUserEmail, plan };
+    broadcast('auth:status-changed', status);
+    return status;
+  });
+
+  ipcMain.handle('auth:openUpgradePage', async () => {
+    await shell.openExternal(
+      `${process.env.PLOVER_WEBSITE_URL || 'https://tryplover.com'}/pricing`,
+    );
   });
 
   // Overlay API
@@ -435,6 +503,28 @@ export function setupIpcHandlers(
   ipcMain.handle('window:close', (_event) => {
     BrowserWindow.fromWebContents(_event.sender)?.close();
   });
+}
+
+async function restoreSupabaseSessionAndRefreshPlan(): Promise<void> {
+  try {
+    supabaseAuth.startAutoRefresh();
+    const hasSession = await supabaseAuth.restoreSession();
+    if (!hasSession) return;
+    const user = await supabaseAuth.getCurrentUser();
+    if (!user) return;
+    const plan = await supabaseAuth.fetchSubscriptionPlan(user.id);
+    settingsRepo.update({
+      supabaseUserId: user.id,
+      supabaseUserEmail: user.email,
+      subscriptionPlan: plan,
+      subscriptionCheckedAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.warn(
+      '[Auth] Failed to restore Supabase session (Supabase may not be configured):',
+      err,
+    );
+  }
 }
 
 export function setupIpc(

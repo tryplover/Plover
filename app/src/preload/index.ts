@@ -14,6 +14,12 @@ export interface ProposedPlan {
 
 export type StateKind = 'observing' | 'paused' | 'done' | 'not-sure';
 
+export interface AuthStatus {
+  signedIn: boolean;
+  email: string | null;
+  plan: 'paid' | 'free';
+}
+
 export interface CompanionApi {
   show: () => Promise<void>;
   hide: () => Promise<void>;
@@ -132,6 +138,13 @@ export interface PloverApi {
   connectCalendar: () => Promise<boolean>;
   disconnectCalendar: () => Promise<void>;
 
+  // Plover Account (Supabase auth + subscription)
+  signIn: () => Promise<AuthStatus>;
+  signOut: () => Promise<void>;
+  getAuthStatus: () => Promise<AuthStatus>;
+  refreshSubscription: () => Promise<AuthStatus>;
+  openUpgradePage: () => Promise<void>;
+
   // Overlay Window API
   proposeGoal: (goalText: string) => Promise<ProposedPlan>;
   commitGoal: (plan: ProposedPlan) => Promise<{ goalId: string }>;
@@ -185,6 +198,11 @@ const api: PloverApi = {
   updateSettings: (settings) => ipcRenderer.invoke('settings:update', settings),
   connectCalendar: () => ipcRenderer.invoke('calendar:connect'),
   disconnectCalendar: () => ipcRenderer.invoke('calendar:disconnect'),
+  signIn: () => ipcRenderer.invoke('auth:signIn'),
+  signOut: () => ipcRenderer.invoke('auth:signOut'),
+  getAuthStatus: () => ipcRenderer.invoke('auth:getStatus'),
+  refreshSubscription: () => ipcRenderer.invoke('auth:refreshSubscription'),
+  openUpgradePage: () => ipcRenderer.invoke('auth:openUpgradePage'),
 
   // Overlay
   proposeGoal: (goalText) => ipcRenderer.invoke('goal:propose', goalText),

@@ -3,6 +3,7 @@ import { Goal, Task, SummaryRow } from '../../shared/types.js';
 import { goalsRepo, tasksRepo, settingsRepo } from '../store/index.js';
 import { eventBus } from '../bus.js';
 import { GoogleCalendarSync } from '../sync/calendar.js';
+import { getWeekBoundaries, isWithinWeeklyTaskQuota, FREE_WEEKLY_TASK_LIMIT } from './quota.js';
 
 export async function saveGoalAndTasks(
   goalInput: Omit<Goal, 'id' | 'created_at' | 'updated_at' | 'status'>,
@@ -20,6 +21,17 @@ export async function saveGoalAndTasks(
   scheduledSlots: { tempIndex: number; start: string; end: string }[],
   calendarSync: GoogleCalendarSync,
 ) {
+  const settings = settingsRepo.getAll();
+  if (settings.subscriptionPlan !== 'paid') {
+    const { weekStart, weekEnd } = getWeekBoundaries(new Date());
+    const createdThisWeek = tasksRepo.countCreatedBetween(weekStart, weekEnd);
+    if (!isWithinWeeklyTaskQuota('free', createdThisWeek, subtaskInputs.length)) {
+      throw new Error(
+        `You've reached the free plan's limit of ${FREE_WEEKLY_TASK_LIMIT} tasks per week. Upgrade to Pro for unlimited tasks, or wait until next week.`,
+      );
+    }
+  }
+
   const goal = goalsRepo.create({
     title: goalInput.title,
     description: goalInput.description || '',
@@ -27,7 +39,7 @@ export async function saveGoalAndTasks(
     status: 'active',
   });
 
-  const isGoogleConnected = settingsRepo.getAll().googleConnected;
+  const isGoogleConnected = settings.googleConnected;
   const taskIds: string[] = subtaskInputs.map(() => randomUUID());
 
   const prepared = subtaskInputs.map((taskInput, index) => {
