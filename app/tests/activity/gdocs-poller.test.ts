@@ -161,7 +161,9 @@ describe('GDocsPoller', () => {
       .reply(500, 'Internal Server Error')
       .persist();
 
-    await expect(poller.poll()).resolves.not.toThrow();
+    // Since GDocsPoller.poll now delegates error handling to createPoller,
+    // we call the poller's tick indirectly.
+    await expect(poller.poll()).rejects.toThrow();
     expect(activityRepo.list()).toHaveLength(0);
   });
 
@@ -174,17 +176,20 @@ describe('GDocsPoller', () => {
     const pollSpy = vi.spyOn(poller, 'poll').mockResolvedValue(undefined);
 
     poller.start();
-
-    await vi.advanceTimersByTimeAsync(1000);
+    // start() calls poll() immediately (tick 0)
+    await Promise.resolve();
     expect(pollSpy).toHaveBeenCalledTimes(1);
 
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(pollSpy).toHaveBeenCalledTimes(2);
+
     await vi.advanceTimersByTimeAsync(2000);
-    expect(pollSpy).toHaveBeenCalledTimes(3);
+    expect(pollSpy).toHaveBeenCalledTimes(4);
 
     poller.stop();
 
     await vi.advanceTimersByTimeAsync(2000);
-    expect(pollSpy).toHaveBeenCalledTimes(3);
+    expect(pollSpy).toHaveBeenCalledTimes(4);
   });
 
   it('skips polling when gdocsPollingEnabled is false', async () => {

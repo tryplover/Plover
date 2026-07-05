@@ -72,7 +72,8 @@ describe('WindowTracker', () => {
 
     mockActiveWindow.mockRejectedValue(new Error('activeWindow failed'));
 
-    await tracker.checkActiveWindow();
+    // GDocsPoller.poll now delegates error handling to createPoller
+    await expect(tracker.checkActiveWindow()).rejects.toThrow();
 
     const logs = activityRepo.list();
     expect(logs).toHaveLength(0);
@@ -179,21 +180,26 @@ describe('WindowTracker', () => {
     });
 
     tracker.start();
+    // start() calls checkActiveWindow immediately (tick 0)
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(mockActiveWindow).toHaveBeenCalledTimes(1);
+    expect(activityRepo.list()).toHaveLength(1);
 
     // Advance by 10s to trigger first interval execution
     await vi.advanceTimersByTimeAsync(10000);
-    expect(mockActiveWindow).toHaveBeenCalledTimes(1);
+    expect(mockActiveWindow).toHaveBeenCalledTimes(2);
     expect(activityRepo.list()).toHaveLength(1);
 
     // Advance by another 10s to trigger second interval execution
     await vi.advanceTimersByTimeAsync(10000);
-    expect(mockActiveWindow).toHaveBeenCalledTimes(2);
+    expect(mockActiveWindow).toHaveBeenCalledTimes(3);
 
     tracker.stop();
 
     // Advance again by 10s, should not call exec anymore
     await vi.advanceTimersByTimeAsync(10000);
-    expect(mockActiveWindow).toHaveBeenCalledTimes(2);
+    expect(mockActiveWindow).toHaveBeenCalledTimes(3);
   });
 });
 

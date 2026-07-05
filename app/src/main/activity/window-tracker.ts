@@ -2,6 +2,7 @@ import { activeWindow, openWindows } from 'get-windows';
 import { execFile } from 'node:child_process';
 import { ActivityRepo } from '../store/repos/activity.js';
 import { SettingsRepo } from '../store/repos/settings.js';
+import { createPoller } from '@main/lib/poller';
 
 const BROWSER_BUNDLES: Record<string, string> = {
   'com.google.Chrome': 'Google Chrome',
@@ -22,56 +23,49 @@ interface WindowMeta {
 export class WindowTracker {
   private activityRepo: ActivityRepo;
   private settingsRepo: SettingsRepo;
-  private intervalId: NodeJS.Timeout | null = null;
+  private poller: ReturnType<typeof createPoller>;
   private lastApp: string | null = null;
   private lastTitle: string | null = null;
   private lastLogTime = 0;
-  private isChecking = false;
 
   constructor(activityRepo: ActivityRepo, settingsRepo: SettingsRepo) {
     this.activityRepo = activityRepo;
     this.settingsRepo = settingsRepo;
+
+    this.poller = createPoller({
+      label: 'WindowTracker',
+      intervalMs: 10000,
+      onTick: () => this.checkActiveWindow(),
+    });
   }
 
   start(): void {
     if (process.platform !== 'darwin' && process.platform !== 'win32') return;
-    if (this.intervalId) return;
-    this.intervalId = setInterval(() => { void this.checkActiveWindow(); }, 10000);
+    this.poller.start();
   }
 
   stop(): void {
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-      this.intervalId = null;
-    }
+    this.poller.stop();
   }
 
   async checkActiveWindow(): Promise<void> {
     if (process.platform !== 'darwin' && process.platform !== 'win32') return;
-    if (this.isChecking) return;
-    this.isChecking = true;
-    try {
-      const settings = this.settingsRepo.getAll();
-      if (settings.pauseAllTracking || settings.pauseScheduling || !settings.windowTrackingEnabled) return;
+    const settings = this.settingsRepo.getAll();
+    if (settings.pauseAllTracking || settings.pauseScheduling || !settings.windowTrackingEnabled) return;
 
-      const meta = await this.getActiveWindowFromOS();
-      const now = Date.now();
-      const hasChanged = meta.app !== this.lastApp || meta.title !== this.lastTitle;
-      const reachedTimeLimit = now - this.lastLogTime >= 60000;
-      if (hasChanged || reachedTimeLimit) {
-        this.lastApp = meta.app;
-        this.lastTitle = meta.title;
-        this.lastLogTime = now;
-        const payload: Record<string, unknown> = { app: meta.app, title: meta.title };
-        if (meta.bundleId) payload.bundleId = meta.bundleId;
-        if (meta.browserUrl) payload.browserUrl = meta.browserUrl;
-        if (meta.browserTabTitle) payload.browserTabTitle = meta.browserTabTitle;
-        this.activityRepo.log('window_focus', payload);
-      }
-    } catch (err) {
-      console.error('Error tracking active window:', err);
-    } finally {
-      this.isChecking = false;
+    const meta = await this.getActiveWindowFromOS();
+    const now = Date.now();
+    const hasChanged = meta.app !== this.lastApp || meta.title !== this.lastTitle;
+    const reachedTimeLimit = now - this.lastLogTime >= 60000;
+    if (hasChanged || reachedTimeLimit) {
+      this.lastApp = meta.app;
+      this.lastTitle = meta.title;
+      this.lastLogTime = now;
+      const payload: Record<string, unknown> = { app: meta.app, title: meta.title };
+      if (meta.bundleId) payload.bundleId = meta.bundleId;
+      if (meta.browserUrl) payload.browserUrl = meta.browserUrl;
+      if (meta.browserTabTitle) payload.browserTabTitle = meta.browserTabTitle;
+      this.activityRepo.log('window_focus', payload);
     }
   }
 
