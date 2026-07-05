@@ -8,7 +8,10 @@ const DEFAULT_EVENTS = ['goal.created', 'task.completed', 'task.scheduled', 'cal
  */
 export function useAppEvents(callback: () => void) {
   const savedCallback = useRef(callback);
-  savedCallback.current = callback;
+
+  useEffect(() => {
+    savedCallback.current = callback;
+  }, [callback]);
 
   useEffect(() => {
     const unsubscribe = window.api.on('app-event', (event: unknown) => {
