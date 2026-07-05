@@ -76,6 +76,16 @@ export class ActivityRepo {
     this.insert({ kind, payload, ts });
   }
 
+  logMany(activities: { kind: string; payload: Record<string, unknown>; ts?: string }[]): void {
+    if (activities.length === 0) return;
+    const transaction = this.db.transaction((items) => {
+      for (const item of items) {
+        this.log(item.kind, item.payload, item.ts);
+      }
+    });
+    transaction(activities);
+  }
+
   list(filter?: { kind?: string; kinds?: string[]; since?: string; until?: string; limit?: number; offset?: number }): ActivityRow[] {
     const where: string[] = [];
     const params: unknown[] = [];

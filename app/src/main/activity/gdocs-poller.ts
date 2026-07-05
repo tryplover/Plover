@@ -72,24 +72,39 @@ export class GDocsPoller {
       });
 
       const files = response.data.files || [];
+      const activities: { kind: string; payload: Record<string, unknown>; ts?: string }[] = [];
+      let latestTime = this.lastPollTime;
+
       for (const file of files) {
         if (file.id && file.modifiedTime) {
           const fileId = file.id;
           const name = file.name || 'Untitled Document';
           const modifiedTime = file.modifiedTime;
 
-          this.activityRepo.log('gdocs_revision', {
-            fileId,
-            name,
-            modifiedTime,
+          activities.push({
+            kind: 'gdocs_revision',
+            payload: {
+              fileId,
+              name,
+              modifiedTime,
+            },
+            ts: modifiedTime,
           });
 
           const fileTime = new Date(modifiedTime);
-          if (fileTime > this.lastPollTime) {
-            this.lastPollTime = fileTime;
-            this.settingsRepo.set('lastGDocsPollTime', this.lastPollTime.toISOString());
+          if (fileTime > latestTime) {
+            latestTime = fileTime;
           }
         }
+      }
+
+      if (activities.length > 0) {
+        this.activityRepo.logMany(activities);
+      }
+
+      if (latestTime > this.lastPollTime) {
+        this.lastPollTime = latestTime;
+        this.settingsRepo.set('lastGDocsPollTime', this.lastPollTime.toISOString());
       }
     } catch (error) {
       console.error('Failed to poll GDocs revisions:', error);

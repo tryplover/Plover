@@ -122,13 +122,14 @@ describe('GDocsPoller', () => {
 
     const activities = activityRepo.list({ kind: 'gdocs_revision' });
     expect(activities).toHaveLength(2);
+    // list() returns in descending order of ts
     expect(activities[0]).toEqual(
       expect.objectContaining({
         kind: 'gdocs_revision',
         payload: {
-          fileId: 'doc-1',
-          name: 'Google Doc 1',
-          modifiedTime: doc1Time,
+          fileId: 'doc-2',
+          name: 'Google Doc 2',
+          modifiedTime: doc2Time,
         },
       }),
     );
@@ -136,9 +137,9 @@ describe('GDocsPoller', () => {
       expect.objectContaining({
         kind: 'gdocs_revision',
         payload: {
-          fileId: 'doc-2',
-          name: 'Google Doc 2',
-          modifiedTime: doc2Time,
+          fileId: 'doc-1',
+          name: 'Google Doc 1',
+          modifiedTime: doc1Time,
         },
       }),
     );
