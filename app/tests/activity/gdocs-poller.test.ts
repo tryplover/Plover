@@ -130,9 +130,10 @@ describe('GDocsPoller', () => {
     // If they have same ts, the order might be non-deterministic or by ID (DESC too usually if inserted sequentially).
     // In ActivityRepo.insert, it uses new Date().toISOString() for ts if not provided.
     // Let's sort them by modifiedTime in our assertion to be safe, or just check they both exist.
-    const sorted = activities.sort((a, b) =>
-      (a.payload.modifiedTime as string).localeCompare(b.payload.modifiedTime as string)
-    );
+    const sorted = activities.sort((a, b) => {
+      if (a.kind !== 'gdocs_revision' || b.kind !== 'gdocs_revision') return 0;
+      return a.payload.modifiedTime.localeCompare(b.payload.modifiedTime);
+    });
 
     expect(sorted[0]).toEqual(
       expect.objectContaining({
