@@ -171,8 +171,10 @@ export class DeviationDetector {
       now,
     });
 
+    const placementMap = new Map(placements.map((p) => [p.taskId, p]));
+
     for (const task of activeTasks) {
-      const p = placements.find((pl) => pl.taskId === task.id);
+      const p = placementMap.get(task.id);
       if (!p) continue;
 
       const isMissed = missedTaskIds.has(task.id);
