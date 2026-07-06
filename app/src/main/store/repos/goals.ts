@@ -4,9 +4,26 @@ import { Goal } from '@shared/types.js';
 
 export class GoalsRepo {
   private db: Database.Database;
+  private createStmt: Database.Statement;
+  private getStmt: Database.Statement;
+  private updateStmt: Database.Statement;
 
   constructor(db: Database.Database) {
     this.db = db;
+    this.createStmt = this.db.prepare(`
+      INSERT INTO goals (id, title, description, deadline, status, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    this.getStmt = this.db.prepare(`
+      SELECT id, title, description, deadline, status, created_at, updated_at
+      FROM goals
+      WHERE id = ?
+    `);
+    this.updateStmt = this.db.prepare(`
+      UPDATE goals
+      SET title = ?, description = ?, deadline = ?, status = ?, updated_at = ?
+      WHERE id = ?
+    `);
   }
 
   create(input: Omit<Goal, 'id' | 'created_at' | 'updated_at'>): Goal {
@@ -22,12 +39,7 @@ export class GoalsRepo {
       updated_at: now,
     };
 
-    const stmt = this.db.prepare(`
-      INSERT INTO goals (id, title, description, deadline, status, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(
+    this.createStmt.run(
       goal.id,
       goal.title,
       goal.description ?? null,
@@ -41,12 +53,7 @@ export class GoalsRepo {
   }
 
   get(id: string): Goal | null {
-    const stmt = this.db.prepare(`
-      SELECT id, title, description, deadline, status, created_at, updated_at
-      FROM goals
-      WHERE id = ?
-    `);
-    const row = stmt.get(id) as
+    const row = this.getStmt.get(id) as
       | {
           id: string;
           title: string;
@@ -118,13 +125,7 @@ export class GoalsRepo {
       updated_at: now,
     };
 
-    const stmt = this.db.prepare(`
-      UPDATE goals
-      SET title = ?, description = ?, deadline = ?, status = ?, updated_at = ?
-      WHERE id = ?
-    `);
-
-    stmt.run(
+    this.updateStmt.run(
       updated.title,
       updated.description ?? null,
       updated.deadline ?? null,
