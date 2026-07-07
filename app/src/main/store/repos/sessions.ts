@@ -55,8 +55,10 @@ export class SessionsRepo {
     }
 
     const updated: Session = {
-      ...existing,
-      ...patch,
+      id,
+      task_id: patch.task_id !== undefined ? patch.task_id : existing.task_id,
+      started_at: patch.started_at !== undefined ? patch.started_at : existing.started_at,
+      ended_at: patch.ended_at !== undefined ? patch.ended_at : existing.ended_at,
     };
 
     const stmt = this.db.prepare(`
