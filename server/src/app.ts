@@ -5,6 +5,10 @@ import { GoogleGenerativeAI, FunctionCallingMode, SchemaType, FunctionDeclaratio
 
 const app = express();
 
+// Trust proxy so req.ip reflects X-Forwarded-For; env-configurable per deployment topology.
+const trustProxy = process.env.TRUST_PROXY ?? '1';
+app.set('trust proxy', /^\d+$/.test(trustProxy) ? Number(trustProxy) : trustProxy);
+
 const FALLBACK_MODELS = [
   'gemini-2.0-flash',
   'gemini-2.0-flash-lite',
@@ -50,18 +54,9 @@ app.use(express.json());
 
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 30, // Limit each IP or token to 30 requests per windowMs
+  max: 30, // Limit each IP to 30 requests per windowMs
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  keyGenerator: (req) => {
-    // If AUTH_TOKEN is used, key by token; otherwise by IP
-    const token = req.headers['x-plover-auth-token'];
-    if (typeof token === 'string' && token) {
-      return token;
-    }
-    return req.ip || 'unknown';
-  },
-  validate: { keyGeneratorIpFallback: false },
   handler: (req, res, _next, options) => {
     console.warn(`[Server] Rate limit hit: ${req.method} ${req.path} from ${req.ip}`);
     res.status(options.statusCode).json({ error: options.message });

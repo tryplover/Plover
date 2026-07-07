@@ -1,4 +1,4 @@
-import { describe, it, expect, afterAll, beforeAll, vi } from 'vitest';
+import { describe, it, expect, afterAll, beforeAll } from 'vitest';
 import http from 'node:http';
 import app from '../src/app.js';
 
@@ -37,10 +37,11 @@ function makeRequest(path: string, headers: Record<string, string> = {}): Promis
 }
 
 describe('Rate Limiting', () => {
-  it('allows up to 30 requests and then returns 429', async () => {
-    // We'll use a unique token to avoid interference from other tests or previous runs
-    const testToken = `test-token-${Date.now()}`;
-    const headers = { 'x-plover-auth-token': testToken };
+  it('allows up to 30 requests from one IP and then returns 429', async () => {
+    // Unique X-Forwarded-For per test so each test gets its own bucket
+    // (trust proxy is enabled, so req.ip resolves to this value).
+    const clientIp = '10.0.0.1';
+    const headers = { 'X-Forwarded-For': clientIp };
 
     // First 30 requests should NOT be 429 (they might be 401 or 400 because we send empty body, but not 429)
     for (let i = 0; i < 30; i++) {
@@ -53,19 +54,19 @@ describe('Rate Limiting', () => {
     expect(res31.statusCode).toBe(429);
   }, 10000);
 
-  it('keys differently for different tokens', async () => {
-    const tokenA = `token-a-${Date.now()}`;
-    const tokenB = `token-b-${Date.now()}`;
+  it('keys differently for different IPs', async () => {
+    const ipA = '10.0.0.2';
+    const ipB = '10.0.0.3';
 
-    // Exhaust token A
+    // Exhaust IP A
     for (let i = 0; i < 30; i++) {
-      await makeRequest('/api/decompose', { 'x-plover-auth-token': tokenA });
+      await makeRequest('/api/decompose', { 'X-Forwarded-For': ipA });
     }
-    const resA = await makeRequest('/api/decompose', { 'x-plover-auth-token': tokenA });
+    const resA = await makeRequest('/api/decompose', { 'X-Forwarded-For': ipA });
     expect(resA.statusCode).toBe(429);
 
-    // Token B should still be allowed
-    const resB = await makeRequest('/api/decompose', { 'x-plover-auth-token': tokenB });
+    // IP B should still be allowed
+    const resB = await makeRequest('/api/decompose', { 'X-Forwarded-For': ipB });
     expect(resB.statusCode).not.toBe(429);
   }, 20000);
 });
