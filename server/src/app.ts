@@ -1,8 +1,13 @@
 import express from 'express';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 import { GoogleGenerativeAI, FunctionCallingMode, SchemaType, FunctionDeclaration, FunctionCall, Part } from '@google/generative-ai';
 
 const app = express();
+
+// Trust proxy so req.ip reflects X-Forwarded-For; env-configurable per deployment topology.
+const trustProxy = process.env.TRUST_PROXY ?? '1';
+app.set('trust proxy', /^\d+$/.test(trustProxy) ? Number(trustProxy) : trustProxy);
 
 const FALLBACK_MODELS = [
   'gemini-2.0-flash',
@@ -46,6 +51,19 @@ app.use(
   })
 );
 app.use(express.json());
+
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 30, // Limit each IP to 30 requests per windowMs
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  handler: (req, res, _next, options) => {
+    console.warn(`[Server] Rate limit hit: ${req.method} ${req.path} from ${req.ip}`);
+    res.status(options.statusCode).json({ error: options.message });
+  },
+});
+
+app.use('/api/', apiLimiter);
 
 // Type definitions matching the shared types
 interface DecomposeSubtaskInput {
