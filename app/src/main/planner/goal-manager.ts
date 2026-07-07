@@ -38,8 +38,11 @@ export async function saveGoalAndTasks(
     if (Array.isArray(taskInput.depends_on)) {
       for (const depStr of taskInput.depends_on) {
         const depIdx = parseInt(depStr, 10);
+        if (isNaN(depIdx) || depIdx < 0 || depIdx >= index) {
+          continue;
+        }
         const depId = taskIds[depIdx];
-        if (!isNaN(depIdx) && depId) {
+        if (depId) {
           depends_on.push(depId);
         }
       }

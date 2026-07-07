@@ -29,12 +29,12 @@ export const Step3WatchedSources: React.FC<Step3WatchedSourcesProps> = ({
           overflowY: 'auto',
         }}
       >
-        {activeWindows.map((win) => {
+        {activeWindows.map((win, idx) => {
           const label = `${win.app} — ${win.title}`;
           const isSelected = selectedWindows.includes(label);
           return (
             <div
-              key={label}
+              key={`${idx}-${win.app}-${win.title}`}
               className={`plover-window-card ${isSelected ? 'selected' : ''}`}
               onClick={() => {
                 if (isSelected) {

@@ -94,7 +94,10 @@ export const Step2TaskBreakdown: React.FC<Step2TaskBreakdownProps> = ({
             <input
               type="number"
               value={task.estimate_minutes}
-              onChange={(e) => handleSubtaskEstimateChange(idx, parseInt(e.target.value, 10))}
+              onChange={(e) => {
+                const n = parseInt(e.target.value, 10);
+                handleSubtaskEstimateChange(idx, Number.isFinite(n) ? n : 0);
+              }}
               style={{
                 width: '50px',
                 background: 'rgba(255,255,255,0.05)',
