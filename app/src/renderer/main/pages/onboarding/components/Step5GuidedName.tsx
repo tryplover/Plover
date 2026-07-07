@@ -1,4 +1,4 @@
-import React from 'react';
+
 
 interface Step5GuidedNameProps {
   appName: string;
