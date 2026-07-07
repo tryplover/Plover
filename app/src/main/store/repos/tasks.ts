@@ -4,9 +4,71 @@ import { Task } from '@shared/types.js';
 
 export class TasksRepo {
   private db: Database.Database;
+  private createStmt: Database.Statement;
+  private getStmt: Database.Statement;
+  private listByGoalStmt: Database.Statement;
+  private listScheduledBetweenStmt: Database.Statement;
+  private updateStmt: Database.Statement;
+  private listStmt: Database.Statement;
+  private listActiveScheduledBeforeStmt: Database.Statement;
 
   constructor(db: Database.Database) {
     this.db = db;
+    this.createStmt = this.db.prepare(`
+      INSERT INTO tasks (
+        id, goal_id, title, estimate_minutes, depends_on,
+        scheduled_start, scheduled_end, calendar_event_id, status,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    this.getStmt = this.db.prepare(`
+      SELECT id, goal_id, title, estimate_minutes, depends_on,
+             scheduled_start, scheduled_end, calendar_event_id, status,
+             created_at, updated_at
+      FROM tasks
+      WHERE id = ?
+    `);
+    this.listByGoalStmt = this.db.prepare(`
+      SELECT id, goal_id, title, estimate_minutes, depends_on,
+             scheduled_start, scheduled_end, calendar_event_id, status,
+             created_at, updated_at
+      FROM tasks
+      WHERE goal_id = ?
+    `);
+    this.listScheduledBetweenStmt = this.db.prepare(`
+      SELECT id, goal_id, title, estimate_minutes, depends_on,
+             scheduled_start, scheduled_end, calendar_event_id, status,
+             created_at, updated_at
+      FROM tasks
+      WHERE scheduled_start IS NOT NULL
+        AND (
+          (scheduled_start >= ? AND scheduled_start <= ?)
+          OR (scheduled_start < ? AND status NOT IN ('done', 'skipped'))
+        )
+    `);
+    this.updateStmt = this.db.prepare(`
+      UPDATE tasks
+      SET goal_id = ?, title = ?, estimate_minutes = ?, depends_on = ?,
+          scheduled_start = ?, scheduled_end = ?, calendar_event_id = ?, status = ?,
+          updated_at = ?
+      WHERE id = ?
+    `);
+    this.listStmt = this.db.prepare(`
+      SELECT id, goal_id, title, estimate_minutes, depends_on,
+             scheduled_start, scheduled_end, calendar_event_id, status,
+             created_at, updated_at
+      FROM tasks
+    `);
+    this.listActiveScheduledBeforeStmt = this.db.prepare(`
+      SELECT id, goal_id, title, estimate_minutes, depends_on,
+             scheduled_start, scheduled_end, calendar_event_id, status,
+             created_at, updated_at
+      FROM tasks
+      WHERE status NOT IN ('done', 'skipped')
+        AND scheduled_start IS NOT NULL
+        AND scheduled_end IS NOT NULL
+        AND scheduled_end < ?
+    `);
   }
 
   create(input: Omit<Task, 'id' | 'created_at' | 'updated_at'> & { id?: string }): Task {
@@ -26,15 +88,7 @@ export class TasksRepo {
       updated_at: now,
     };
 
-    const stmt = this.db.prepare(`
-      INSERT INTO tasks (
-        id, goal_id, title, estimate_minutes, depends_on,
-        scheduled_start, scheduled_end, calendar_event_id, status,
-        created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(
+    this.createStmt.run(
       task.id,
       task.goal_id,
       task.title,
@@ -52,15 +106,7 @@ export class TasksRepo {
   }
 
   get(id: string): Task | null {
-    const stmt = this.db.prepare(`
-      SELECT id, goal_id, title, estimate_minutes, depends_on,
-             scheduled_start, scheduled_end, calendar_event_id, status,
-             created_at, updated_at
-      FROM tasks
-      WHERE id = ?
-    `);
-
-    const row = stmt.get(id) as
+    const row = this.getStmt.get(id) as
       | {
           id: string;
           goal_id: string;
@@ -96,15 +142,7 @@ export class TasksRepo {
   }
 
   listByGoal(goalId: string): Task[] {
-    const stmt = this.db.prepare(`
-      SELECT id, goal_id, title, estimate_minutes, depends_on,
-             scheduled_start, scheduled_end, calendar_event_id, status,
-             created_at, updated_at
-      FROM tasks
-      WHERE goal_id = ?
-    `);
-
-    const rows = stmt.all(goalId) as {
+    const rows = this.listByGoalStmt.all(goalId) as {
       id: string;
       goal_id: string;
       title: string;
@@ -134,19 +172,11 @@ export class TasksRepo {
   }
 
   listScheduledBetween(start: Date, end: Date): Task[] {
-    const stmt = this.db.prepare(`
-      SELECT id, goal_id, title, estimate_minutes, depends_on,
-             scheduled_start, scheduled_end, calendar_event_id, status,
-             created_at, updated_at
-      FROM tasks
-      WHERE scheduled_start IS NOT NULL
-        AND (
-          (scheduled_start >= ? AND scheduled_start <= ?)
-          OR (scheduled_start < ? AND status NOT IN ('done', 'skipped'))
-        )
-    `);
-
-    const rows = stmt.all(start.toISOString(), end.toISOString(), start.toISOString()) as {
+    const rows = this.listScheduledBetweenStmt.all(
+      start.toISOString(),
+      end.toISOString(),
+      start.toISOString(),
+    ) as {
       id: string;
       goal_id: string;
       title: string;
@@ -190,15 +220,7 @@ export class TasksRepo {
       updated_at: now,
     };
 
-    const stmt = this.db.prepare(`
-      UPDATE tasks
-      SET goal_id = ?, title = ?, estimate_minutes = ?, depends_on = ?,
-          scheduled_start = ?, scheduled_end = ?, calendar_event_id = ?, status = ?,
-          updated_at = ?
-      WHERE id = ?
-    `);
-
-    stmt.run(
+    this.updateStmt.run(
       updated.goal_id,
       updated.title,
       updated.estimate_minutes,
@@ -215,14 +237,7 @@ export class TasksRepo {
   }
 
   list(): Task[] {
-    const stmt = this.db.prepare(`
-      SELECT id, goal_id, title, estimate_minutes, depends_on,
-             scheduled_start, scheduled_end, calendar_event_id, status,
-             created_at, updated_at
-      FROM tasks
-    `);
-
-    const rows = stmt.all() as {
+    const rows = this.listStmt.all() as {
       id: string;
       goal_id: string;
       title: string;
@@ -252,18 +267,7 @@ export class TasksRepo {
   }
 
   listActiveScheduledBefore(now: Date): Task[] {
-    const stmt = this.db.prepare(`
-      SELECT id, goal_id, title, estimate_minutes, depends_on,
-             scheduled_start, scheduled_end, calendar_event_id, status,
-             created_at, updated_at
-      FROM tasks
-      WHERE status NOT IN ('done', 'skipped')
-        AND scheduled_start IS NOT NULL
-        AND scheduled_end IS NOT NULL
-        AND scheduled_end < ?
-    `);
-
-    const rows = stmt.all(now.toISOString()) as {
+    const rows = this.listActiveScheduledBeforeStmt.all(now.toISOString()) as {
       id: string;
       goal_id: string;
       title: string;
