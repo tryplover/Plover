@@ -37,23 +37,20 @@ beforeEach(() => {
 
 describe('Settings', () => {
   it('renders the Settings heading', async () => {
-    await act(async () => {
-      render(<Settings />);
-    });
+    render(<Settings />);
     expect(await screen.findByRole('heading', { name: 'Settings' })).toBeTruthy();
+    await act(async () => {});
   });
 
   it('renders the Account section heading', async () => {
-    await act(async () => {
-      render(<Settings />);
-    });
+    render(<Settings />);
     expect(await screen.findByRole('heading', { name: 'Account' })).toBeTruthy();
+    await act(async () => {});
   });
 
   it('forwards data-testid to root element', async () => {
-    await act(async () => {
-      render(<Settings data-testid="page-settings" />);
-    });
+    render(<Settings data-testid="page-settings" />);
     expect(await screen.findByTestId('page-settings')).toBeTruthy();
+    await act(async () => {});
   });
 });
