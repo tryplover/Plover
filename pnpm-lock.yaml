@@ -7076,10 +7076,6 @@ snapshots:
 
   node-abi@4.33.0:
     dependencies:
-      semver: 7.8.5
-
-  node-abi@4.33.0:
-    dependencies:
       semver: 7.8.1
 
   node-addon-api@4.3.0: {}
