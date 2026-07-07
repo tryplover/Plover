@@ -20,7 +20,7 @@ vi.mock('electron', () => {
   };
 });
 
-import { startEventForwarding } from '../src/main/ipc.js';
+import { startEventForwarding } from '../src/main/planner/goal-manager.js';
 import { eventBus } from '../src/main/bus.js';
 
 describe('Event forwarding', () => {
@@ -30,7 +30,18 @@ describe('Event forwarding', () => {
   });
 
   it('forwards eventBus events to open BrowserWindow webContents', () => {
-    startEventForwarding();
+    const broadcast = (channel: string, payload?: unknown) => {
+      for (const win of BrowserWindow.getAllWindows()) {
+        if (!win.isDestroyed()) {
+          if (payload === undefined) {
+            win.webContents.send(channel);
+          } else {
+            win.webContents.send(channel, payload);
+          }
+        }
+      }
+    };
+    startEventForwarding(broadcast);
 
     const mockGoal: Goal = {
       id: 'g-1',
@@ -55,7 +66,18 @@ describe('Event forwarding', () => {
   });
 
   it('does not forward events to destroyed windows', () => {
-    startEventForwarding();
+    const broadcast = (channel: string, payload?: unknown) => {
+      for (const win of BrowserWindow.getAllWindows()) {
+        if (!win.isDestroyed()) {
+          if (payload === undefined) {
+            win.webContents.send(channel);
+          } else {
+            win.webContents.send(channel, payload);
+          }
+        }
+      }
+    };
+    startEventForwarding(broadcast);
 
     const windows = BrowserWindow.getAllWindows();
     const mockWindowInstance = windows[0];

@@ -1,10 +1,10 @@
 import { ipcMain, BrowserWindow } from 'electron';
-import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
-import { Goal, Task, CalendarEvent, SummaryRow } from '../shared/types.js';
+import { Goal, Task, CalendarEvent } from '../shared/types.js';
 import { goalsRepo, tasksRepo, settingsRepo, summariesRepo, activityRepo } from './store/index.js';
 import { decomposeGoal } from './planner/decompose.js';
 import { scheduleTasks } from './planner/schedule.js';
+import { saveGoalAndTasks, startEventForwarding } from './planner/goal-manager.js';
 import { GoogleAuth } from './sync/google-auth.js';
 import { GoogleCalendarSync } from './sync/calendar.js';
 import { eventBus } from './bus.js';
@@ -13,6 +13,7 @@ import { createCompanionWindow } from './windows/companion.js';
 import { listActiveWindows } from './activity/window-tracker.js';
 import { getScreenRecordingStatus, requestScreenRecording } from './permissions/screen-recording.js';
 import { SettingsData } from './store/repos/settings.js';
+
 export const googleAuth = new GoogleAuth();
 export const calendarSync = new GoogleCalendarSync(googleAuth);
 
@@ -148,7 +149,7 @@ export function setupIpcHandlers(
       >[],
       scheduledSlots: { tempIndex: number; start: string; end: string }[],
     ) => {
-      return saveGoalAndTasksInternal(goalInput, subtaskInputs, scheduledSlots);
+      return saveGoalAndTasks(goalInput, subtaskInputs, scheduledSlots, calendarSync);
     },
   );
 
@@ -329,7 +330,7 @@ export function setupIpcHandlers(
       end: task.scheduled_end || '',
     }));
 
-    const result = await saveGoalAndTasksInternal(plan.goal, plan.subtasks, slotsForSave);
+    const result = await saveGoalAndTasks(plan.goal, plan.subtasks, slotsForSave, calendarSync);
 
     const overlayWin = getOverlayWindow();
     if (overlayWin) {
@@ -447,139 +448,11 @@ export function setupIpcHandlers(
   ipcMain.handle('permissions:screenRecording:request', async () => requestScreenRecording());
 }
 
-async function saveGoalAndTasksInternal(
-  goalInput: Omit<Goal, 'id' | 'created_at' | 'updated_at' | 'status'>,
-  subtaskInputs: Omit<
-    Task,
-    | 'id'
-    | 'goal_id'
-    | 'status'
-    | 'created_at'
-    | 'updated_at'
-    | 'scheduled_start'
-    | 'scheduled_end'
-    | 'calendar_event_id'
-  >[],
-  scheduledSlots: { tempIndex: number; start: string; end: string }[],
-) {
-  const goal = goalsRepo.create({
-    title: goalInput.title,
-    description: goalInput.description || '',
-    deadline: goalInput.deadline,
-    status: 'active',
-  });
-
-  const isGoogleConnected = settingsRepo.getAll().googleConnected;
-  const taskIds: string[] = subtaskInputs.map(() => randomUUID());
-
-  const prepared = subtaskInputs.map((taskInput, index) => {
-    const taskId = taskIds[index] ?? randomUUID();
-    const slot = scheduledSlots.find((s) => s.tempIndex === index);
-
-    const depends_on: string[] = [];
-    if (Array.isArray(taskInput.depends_on)) {
-      for (const depStr of taskInput.depends_on) {
-        const depIdx = parseInt(depStr, 10);
-        const depId = taskIds[depIdx];
-        if (!isNaN(depIdx) && depId) {
-          depends_on.push(depId);
-        }
-      }
-    }
-
-    return { taskInput, taskId, slot, depends_on };
-  });
-
-  const created = prepared.map((p) => ({
-    ...p,
-    task: tasksRepo.create({
-      id: p.taskId,
-      goal_id: goal.id,
-      title: p.taskInput.title,
-      estimate_minutes: p.taskInput.estimate_minutes,
-      depends_on: p.depends_on,
-      scheduled_start: p.slot?.start || undefined,
-      scheduled_end: p.slot?.end || undefined,
-      status: p.slot && p.slot.start ? 'scheduled' : 'todo',
-    }),
-  }));
-
-  const newTasks: Task[] = await Promise.all(
-    created.map(async ({ taskInput, taskId, slot, task }) => {
-      if (!isGoogleConnected || !slot || !slot.start || !slot.end) {
-        return task;
-      }
-      try {
-        const calendarEventId = await calendarSync.createEvent({
-          taskId,
-          title: taskInput.title,
-          start: new Date(slot.start),
-          end: new Date(slot.end),
-        });
-        return tasksRepo.update(taskId, { calendar_event_id: calendarEventId });
-      } catch (err) {
-        console.error(`Failed to sync calendar event for task ${taskInput.title}:`, err);
-        return task;
-      }
-    }),
-  );
-
-  // Emit eventBus events
-  eventBus.emit('goal.created', goal);
-  for (const t of newTasks) {
-    if (t.scheduled_start) {
-      eventBus.emit('task.scheduled', t);
-    }
-  }
-  eventBus.emit('calendar.synced');
-
-  return { goal, tasks: newTasks };
-}
-
-export function startEventForwarding(): void {
-  eventBus.on('goal.created', (goal: Goal) => {
-    broadcast('goal:created', goal);
-    broadcast('app-event', { type: 'goal.created', payload: { goalId: goal.id } });
-  });
-
-  eventBus.on('goal.updated', (goal: Goal) => {
-    broadcast('goal:updated', goal);
-    broadcast('app-event', { type: 'goal.updated', payload: { goalId: goal.id } });
-  });
-
-  eventBus.on('task.scheduled', (task: Task) => {
-    broadcast('task:scheduled', task);
-    broadcast('app-event', {
-      type: 'task.scheduled',
-      payload: {
-        taskId: task.id,
-        start: task.scheduled_start ?? '',
-        end: task.scheduled_end ?? '',
-      },
-    });
-  });
-
-  eventBus.on('task.completed', (task: Task) => {
-    broadcast('task:completed', task);
-    broadcast('app-event', { type: 'task.completed', payload: { taskId: task.id } });
-  });
-
-  eventBus.on('calendar.synced', () => {
-    broadcast('calendar:synced');
-    broadcast('app-event', { type: 'calendar.synced', payload: { syncedCount: 0 } });
-  });
-
-  eventBus.on('summary.created', (summary: SummaryRow) => {
-    broadcast('summary:created', summary);
-    broadcast('app-event', { type: 'summary.created', payload: summary });
-  });
-}
-
 export function setupIpc(
   getOverlayWindow: () => BrowserWindow | null,
   onWatchedFoldersChange?: (folders: string[]) => Promise<void> | void,
   createOverlayWindow?: (variant: 'overlay' | 'window') => BrowserWindow,
 ): void {
   setupIpcHandlers(getOverlayWindow, onWatchedFoldersChange, createOverlayWindow);
-  startEventForwarding();
+  startEventForwarding(broadcast);
 }

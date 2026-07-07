@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import GoalsList from '../../../../src/renderer/main/pages/GoalsList';
 
 const mockUnsubscribe = vi.fn();
@@ -27,7 +27,7 @@ describe('GoalsList', () => {
   it('renders the goal input placeholder in the setup flow modal', async () => {
     render(<GoalsList />);
     const createBtn = await screen.findByRole('button', { name: '+ Create Goal' });
-    createBtn.click();
+    fireEvent.click(createBtn);
     expect(
       await screen.findByPlaceholderText('Finish the methods section of my thesis'),
     ).toBeTruthy();
