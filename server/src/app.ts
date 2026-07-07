@@ -11,16 +11,14 @@ const FALLBACK_MODELS = [
   'gemini-2.5-pro',
 ];
 
-function sanitizeString(str: string): string {
-  // Strip control characters (including newlines/tabs if we want strictly one line,
-  // but usually we just want to avoid control codes. Let's keep it simple: strip 0-31 except common ones?)
-  // The requirement says "strip control chars".
+function sanitizeString(str: unknown): string {
+  if (typeof str !== 'string') return '';
   const clean = str.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
   return clean.slice(0, 200);
 }
 
 function sanitizePayload(payload: any, depth = 0): any {
-  if (depth >= 2) return undefined;
+  if (depth > 4) return undefined;
   if (typeof payload === 'string') return sanitizeString(payload);
   if (Array.isArray(payload)) {
     return payload

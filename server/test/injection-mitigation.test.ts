@@ -74,7 +74,7 @@ describe('Injection Mitigation', () => {
         workingHours: { start: '09:00', end: '18:00' },
         recentActivity: [{
           kind: 'test',
-          payload: { key: longString, nested: { level2: { level3: 'too deep' } } },
+          payload: { key: longString, nested: { level2: 'shallow value' }, tooDeep: { l2: { l3: { l4: { l5: { l6: 'past-limit' } } } } } },
           ts: '2026-06-25T00:00:00Z'
         }],
       });
@@ -86,8 +86,36 @@ describe('Injection Mitigation', () => {
       // String should be truncated
       expect(capturedPrompt).not.toContain(longString);
       expect(capturedPrompt).toContain('A'.repeat(200));
-      // Nesting should be limited (level 3 removed or flattened)
-      expect(capturedPrompt).not.toContain('too deep');
+      // Shallow nested value one level deep should be preserved (regression test for depth-check bug)
+      expect(capturedPrompt).toContain('shallow value');
+      // Nesting beyond the limit should be dropped
+      expect(capturedPrompt).not.toContain('past-limit');
+    });
+
+    it('does not crash when recentActivity payload contains non-string values', async () => {
+      let capturedPrompt = '';
+      generateContent.mockImplementationOnce(async (req: any) => {
+        capturedPrompt = req.contents[0]?.parts[0]?.text ?? '';
+        return {
+          response: {
+            functionCalls: () => [{ name: 'decomposeGoal', args: { goal: { title: 'T', description: 'D' }, subtasks: [] } }],
+          },
+        };
+      });
+
+      const res = await post(server, '/api/decompose', {
+        goalText: 'Goal',
+        now: '2026-06-25T00:00:00Z',
+        workingHours: { start: '09:00', end: '18:00' },
+        recentActivity: [{
+          kind: 'test',
+          payload: { count: 42, active: true, missing: null, deep: { flag: false, note: 'kept' } },
+          ts: '2026-06-25T00:00:00Z'
+        }],
+      });
+
+      expect(res.status).toBe(200);
+      expect(capturedPrompt).toContain('kept');
     });
   });
 
@@ -171,6 +199,30 @@ describe('Injection Mitigation', () => {
       expect(capturedPrompt).toContain('[END UNTRUSTED DATA]');
       expect(capturedPrompt).not.toContain(longTitle);
       expect(capturedPrompt).toContain('T'.repeat(200));
+    });
+
+    it('does not crash when windowContext fields are missing or non-string', async () => {
+      let capturedPrompt = '';
+      generateContent.mockImplementationOnce(async (req: any) => {
+        capturedPrompt = req.contents[0]?.parts[1]?.text ?? '';
+        return {
+          response: {
+            functionCalls: () => [{ name: 'inferScreen', args: { summary: 'S', activeApp: 'A', confidence: 1 } }],
+          },
+        };
+      });
+
+      const res = await post(server, '/api/infer-screen', {
+        screenshotBase64: 'base64data',
+        windowContext: { app: undefined, title: null, browserUrl: 42 },
+      });
+
+      expect(res.status).toBe(200);
+      expect(capturedPrompt).toContain('[BEGIN UNTRUSTED DATA]');
+      expect(capturedPrompt).toContain('[END UNTRUSTED DATA]');
+      // Non-string fields must sanitize to '' rather than crashing
+      expect(capturedPrompt).toContain('app=""');
+      expect(capturedPrompt).toContain('title=""');
     });
   });
 });
