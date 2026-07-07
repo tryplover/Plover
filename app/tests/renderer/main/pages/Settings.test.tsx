@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import Settings from '../../../../src/renderer/main/pages/Settings';
 
 const mockUnsubscribe = vi.fn();
@@ -39,15 +39,24 @@ describe('Settings', () => {
   it('renders the Settings heading', async () => {
     render(<Settings />);
     expect(await screen.findByRole('heading', { name: 'Settings' })).toBeTruthy();
+    await act(async () => {
+      await Promise.resolve();
+    });
   });
 
   it('renders the Account section heading', async () => {
     render(<Settings />);
     expect(await screen.findByRole('heading', { name: 'Account' })).toBeTruthy();
+    await act(async () => {
+      await Promise.resolve();
+    });
   });
 
   it('forwards data-testid to root element', async () => {
     render(<Settings data-testid="page-settings" />);
     expect(await screen.findByTestId('page-settings')).toBeTruthy();
+    await act(async () => {
+      await Promise.resolve();
+    });
   });
 });
