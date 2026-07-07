@@ -1,5 +1,4 @@
 
-
 interface Step8GuidedProgressProps {
   onBack: () => void;
   onNext: () => void;

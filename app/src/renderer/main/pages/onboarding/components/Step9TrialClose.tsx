@@ -1,5 +1,4 @@
 
-
 interface Step9TrialCloseProps {
   onBack: () => void;
   onFinish: () => void;

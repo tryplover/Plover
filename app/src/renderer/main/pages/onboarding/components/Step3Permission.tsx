@@ -1,5 +1,4 @@
 
-
 interface Step3PermissionProps {
   onBack: () => void;
   onNext: () => void;

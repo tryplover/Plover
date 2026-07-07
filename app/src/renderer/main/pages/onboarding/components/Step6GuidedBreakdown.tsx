@@ -1,5 +1,4 @@
 
-
 interface Step6GuidedBreakdownProps {
   appName: string;
   onBack: () => void;

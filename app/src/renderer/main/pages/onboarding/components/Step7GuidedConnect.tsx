@@ -1,5 +1,4 @@
 
-
 interface Step7GuidedConnectProps {
   onBack: () => void;
   onNext: () => void;

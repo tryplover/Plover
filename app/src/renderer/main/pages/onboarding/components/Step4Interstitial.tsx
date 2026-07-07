@@ -1,5 +1,4 @@
 
-
 interface Step4InterstitialProps {
   onBack: () => void;
   onNext: () => void;

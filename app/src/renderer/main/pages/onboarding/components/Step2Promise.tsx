@@ -1,5 +1,4 @@
 
-
 interface Step2PromiseProps {
   onBack: () => void;
   onNext: () => void;

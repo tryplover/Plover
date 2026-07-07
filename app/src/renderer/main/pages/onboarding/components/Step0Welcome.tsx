@@ -1,5 +1,4 @@
 
-
 interface Step0WelcomeProps {
   onNext: () => void;
 }
