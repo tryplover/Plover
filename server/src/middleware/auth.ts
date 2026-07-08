@@ -1,0 +1,13 @@
+import { Request, Response, NextFunction } from 'express';
+
+export function authMiddleware(req: Request, res: Response, next: NextFunction) {
+  const authToken = process.env.AUTH_TOKEN;
+  if (authToken) {
+    const clientToken = req.headers['x-plover-auth-token'];
+    if (clientToken !== authToken) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+  }
+  next();
+}
