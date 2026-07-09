@@ -83,9 +83,7 @@ export function Step7GuidedConnect({ onNext, onBack }: Step7GuidedConnectProps) 
                       <div className="plover-onboarding__mockup-app-name">
                         Notion — Research notes
                       </div>
-                      <div className="plover-onboarding__mockup-app-status">
-                        Open • Notion
-                      </div>
+                      <div className="plover-onboarding__mockup-app-status">Open • Notion</div>
                     </div>
                   </div>
                   <button className="plover-onboarding__mockup-app-watch-btn">Watch</button>
@@ -103,9 +101,7 @@ export function Step7GuidedConnect({ onNext, onBack }: Step7GuidedConnectProps) 
                       <div className="plover-onboarding__mockup-app-name">
                         Preview — sources.pdf
                       </div>
-                      <div className="plover-onboarding__mockup-app-status">
-                        Open • Preview
-                      </div>
+                      <div className="plover-onboarding__mockup-app-status">Open • Preview</div>
                     </div>
                   </div>
                   <button className="plover-onboarding__mockup-app-watch-btn">Watch</button>

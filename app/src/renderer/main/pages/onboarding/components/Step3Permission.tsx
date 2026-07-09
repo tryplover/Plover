@@ -51,8 +51,8 @@ export function Step3Permission({ onNext, onBack }: Step3PermissionProps) {
 
           <h1 className="plover-onboarding__title--center">Now, let's turn it on.</h1>
           <p className="plover-onboarding__desc--center">
-            Plover needs screen-recording permission to read your chosen window. macOS will
-            ask you to confirm.
+            Plover needs screen-recording permission to read your chosen window. macOS will ask you
+            to confirm.
           </p>
 
           <div className="plover-onboarding__btn-row" style={{ justifyContent: 'center' }}>

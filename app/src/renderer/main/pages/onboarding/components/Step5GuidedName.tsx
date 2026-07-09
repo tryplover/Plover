@@ -5,12 +5,7 @@ interface Step5GuidedNameProps {
   onBack: () => void;
 }
 
-export function Step5GuidedName({
-  appName,
-  setAppName,
-  onNext,
-  onBack,
-}: Step5GuidedNameProps) {
+export function Step5GuidedName({ appName, setAppName, onNext, onBack }: Step5GuidedNameProps) {
   return (
     <section className="plover-onboarding__slide" data-testid="step-guided-name">
       <div className="plover-onboarding__centered">

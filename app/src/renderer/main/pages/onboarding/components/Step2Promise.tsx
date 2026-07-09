@@ -11,8 +11,8 @@ export function Step2Promise({ onNext, onBack }: Step2PromiseProps) {
         <div className="plover-onboarding__centered-content">
           <h1 className="plover-onboarding__title--center">Before we go further ...</h1>
           <p className="plover-onboarding__desc--center">
-            Plover needs screen-recording permission to read the windows you work in. We
-            promise 3 things:
+            Plover needs screen-recording permission to read the windows you work in. We promise 3
+            things:
           </p>
 
           <div className="plover-onboarding__cards-stack">

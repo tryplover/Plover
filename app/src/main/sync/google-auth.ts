@@ -35,7 +35,12 @@ export class GoogleAuth {
   private oauth2Client: OAuth2Client;
 
   constructor() {
-    this.oauth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, 'http://localhost');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    this.oauth2Client = new google.auth.OAuth2(
+      CLIENT_ID,
+      CLIENT_SECRET,
+      'http://localhost',
+    ) as unknown as any;
   }
 
   get client(): OAuth2Client {
@@ -138,7 +143,8 @@ export class GoogleAuth {
 
             const { tokens } = await client.getToken(code);
             client.setCredentials(tokens);
-            this.oauth2Client = client;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            this.oauth2Client = client as unknown as any;
 
             if (tokens.refresh_token) {
               await keytar.setPassword(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT, tokens.refresh_token);

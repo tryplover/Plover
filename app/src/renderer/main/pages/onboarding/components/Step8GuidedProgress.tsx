@@ -10,9 +10,7 @@ export function Step8GuidedProgress({ onNext, onBack }: Step8GuidedProgressProps
         <div className="plover-onboarding__center-glow" />
         <div className="plover-onboarding__centered-content">
           <span className="plover-onboarding__label-capsule">✓ You're all set</span>
-          <h1 className="plover-onboarding__title--center">
-            That's it. Plover's watching now.
-          </h1>
+          <h1 className="plover-onboarding__title--center">That's it. Plover's watching now.</h1>
           <p className="plover-onboarding__desc--center">
             Get to work — the bar fills as you go. Glance over whenever you like.
           </p>

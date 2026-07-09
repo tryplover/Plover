@@ -17,11 +17,7 @@ export function Step0Welcome({ onNext }: Step0WelcomeProps) {
           Plover is a progress bar that quietly fills as your work gets done.
         </p>
         <div>
-          <button
-            className="plover-onboarding__btn"
-            onClick={onNext}
-            data-testid="btn-get-started"
-          >
+          <button className="plover-onboarding__btn" onClick={onNext} data-testid="btn-get-started">
             Get started →
           </button>
         </div>

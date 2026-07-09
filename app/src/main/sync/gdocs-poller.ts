@@ -64,14 +64,16 @@ export class GDocsPoller {
     this.isPolling = true;
 
     try {
-      const drive = google.drive({ version: 'v3', auth: this.googleAuth.client });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const drive = google.drive({ version: 'v3', auth: this.googleAuth.client as unknown as any });
       const response = await drive.files.list({
         q: `mimeType = 'application/vnd.google-apps.document' and modifiedTime > '${this.lastPollTime.toISOString()}' and trashed = false`,
         fields: 'files(id, name, modifiedTime)',
         orderBy: 'modifiedTime asc',
       });
 
-      const files = response.data.files || [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const files = (response.data as unknown as any).files || [];
       for (const file of files) {
         if (file.id && file.modifiedTime) {
           const fileId = file.id;

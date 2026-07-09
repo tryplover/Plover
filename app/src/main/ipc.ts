@@ -11,7 +11,10 @@ import { eventBus } from './bus.js';
 import { ProposedPlan } from '../preload/index.js';
 import { createCompanionWindow } from './windows/companion.js';
 import { listActiveWindows } from './activity/window-tracker.js';
-import { getScreenRecordingStatus, requestScreenRecording } from './permissions/screen-recording.js';
+import {
+  getScreenRecordingStatus,
+  requestScreenRecording,
+} from './permissions/screen-recording.js';
 import { SettingsData } from './store/repos/settings.js';
 
 export const googleAuth = new GoogleAuth();
@@ -59,7 +62,8 @@ export function setupIpcHandlers(
 
   ipcMain.handle('goals:decompose', async (_, goalText: string) => {
     const settings = settingsRepo.getAll();
-    let recentActivity: { kind: string; payload: Record<string, unknown>; ts: string }[] | undefined;
+    let recentActivity:
+      { kind: string; payload: Record<string, unknown>; ts: string }[] | undefined;
     if (settings.planner_useRecentActivityContext) {
       const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
       recentActivity = activityRepo
@@ -157,9 +161,19 @@ export function setupIpcHandlers(
 
   // --- ACTIVITY ---
 
-  ipcMain.handle('activity:list', async (_, args: {
-    since?: string; until?: string; kinds?: string[]; limit?: number; offset?: number;
-  }) => activityRepo.list(args ?? {}));
+  ipcMain.handle(
+    'activity:list',
+    async (
+      _,
+      args: {
+        since?: string;
+        until?: string;
+        kinds?: string[];
+        limit?: number;
+        offset?: number;
+      },
+    ) => activityRepo.list(args ?? {}),
+  );
 
   ipcMain.handle('activity:getById', async (_, id: number) => activityRepo.getById(Number(id)));
 
@@ -194,7 +208,12 @@ export function setupIpcHandlers(
       const PAGE = 500;
       let offset = 0;
       for (;;) {
-        const page = activityRepo.list({ kinds: ['screenshot_captured'], until: olderThan, limit: PAGE, offset });
+        const page = activityRepo.list({
+          kinds: ['screenshot_captured'],
+          until: olderThan,
+          limit: PAGE,
+          offset,
+        });
         const screenshotPage = page.filter((r) => r.ts < olderThan);
         const filePaths = screenshotPage
           .map((r) => (r.payload as { filePath?: string }).filePath)
@@ -215,13 +234,10 @@ export function setupIpcHandlers(
     return settingsRepo.getAll();
   });
 
-  ipcMain.handle(
-    'settings:update',
-    async (_: unknown, patch: Partial<SettingsData>) => {
-      settingsRepo.update(patch);
-      return settingsRepo.getAll();
-    },
-  );
+  ipcMain.handle('settings:update', async (_: unknown, patch: Partial<SettingsData>) => {
+    settingsRepo.update(patch);
+    return settingsRepo.getAll();
+  });
 
   ipcMain.handle('settings:watched-folders:get', async () => {
     const settings = settingsRepo.getAll();
@@ -265,7 +281,8 @@ export function setupIpcHandlers(
 
   ipcMain.handle('goal:propose', async (_event, goalText: string): Promise<ProposedPlan> => {
     const settings = settingsRepo.getAll();
-    let recentActivity: { kind: string; payload: Record<string, unknown>; ts: string }[] | undefined;
+    let recentActivity:
+      { kind: string; payload: Record<string, unknown>; ts: string }[] | undefined;
     if (settings.planner_useRecentActivityContext) {
       const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
       recentActivity = activityRepo

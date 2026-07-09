@@ -50,9 +50,10 @@ export class ActivityRepo {
       rawPayload = {};
     }
 
-    const payload = (typeof rawPayload === 'object' && rawPayload !== null)
-      ? (rawPayload as Record<string, unknown>)
-      : {};
+    const payload =
+      typeof rawPayload === 'object' && rawPayload !== null
+        ? (rawPayload as Record<string, unknown>)
+        : {};
 
     switch (row.kind) {
       case 'window_focus': {
@@ -152,7 +153,14 @@ export class ActivityRepo {
     this.insert({ kind, payload, ts });
   }
 
-  list(filter?: { kind?: string; kinds?: string[]; since?: string; until?: string; limit?: number; offset?: number }): ActivityRow[] {
+  list(filter?: {
+    kind?: string;
+    kinds?: string[];
+    since?: string;
+    until?: string;
+    limit?: number;
+    offset?: number;
+  }): ActivityRow[] {
     const where: string[] = [];
     const params: unknown[] = [];
     if (filter?.kind) {
@@ -174,10 +182,16 @@ export class ActivityRepo {
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
     const limitVal = filter?.limit !== undefined ? Number(filter.limit) : NaN;
     const offsetVal = filter?.offset !== undefined ? Number(filter.offset) : NaN;
-    const limitSql = Number.isFinite(limitVal) ? ` LIMIT ${Math.max(1, Math.min(1000, Math.round(limitVal)))}` : '';
-    const offsetSql = Number.isFinite(offsetVal) ? ` OFFSET ${Math.max(0, Math.round(offsetVal))}` : '';
+    const limitSql = Number.isFinite(limitVal)
+      ? ` LIMIT ${Math.max(1, Math.min(1000, Math.round(limitVal)))}`
+      : '';
+    const offsetSql = Number.isFinite(offsetVal)
+      ? ` OFFSET ${Math.max(0, Math.round(offsetVal))}`
+      : '';
     const rows = this.db
-      .prepare(`SELECT id, ts, kind, payload FROM activity ${whereSql} ORDER BY ts DESC${limitSql}${offsetSql}`)
+      .prepare(
+        `SELECT id, ts, kind, payload FROM activity ${whereSql} ORDER BY ts DESC${limitSql}${offsetSql}`,
+      )
       .all(...params) as ActivityDbRow[];
     return rows.map((row) => this.parseRow(row));
   }

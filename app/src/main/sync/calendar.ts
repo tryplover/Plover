@@ -33,7 +33,8 @@ export class GoogleCalendarSync implements CalendarSync {
   constructor(private auth: GoogleAuth) {}
 
   private get calendar() {
-    return google.calendar({ version: 'v3', auth: this.auth.client });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return google.calendar({ version: 'v3', auth: this.auth.client as unknown as any });
   }
 
   async listEvents(rangeStart: Date, rangeEnd: Date): Promise<CalendarEvent[]> {
