@@ -4,9 +4,33 @@ import { Session } from '@shared/types.js';
 
 export class SessionsRepo {
   private db: Database.Database;
+  private createStmt: Database.Statement;
+  private getStmt: Database.Statement;
+  private listStmt: Database.Statement;
+  private updateStmt: Database.Statement;
+  private deleteStmt: Database.Statement;
 
   constructor(db: Database.Database) {
     this.db = db;
+    this.createStmt = this.db.prepare(`
+      INSERT INTO sessions (id, task_id, started_at, ended_at)
+      VALUES (?, ?, ?, ?)
+    `);
+    this.getStmt = this.db.prepare(`
+      SELECT id, task_id, started_at, ended_at
+      FROM sessions
+      WHERE id = ?
+    `);
+    this.listStmt = this.db.prepare(`
+      SELECT id, task_id, started_at, ended_at
+      FROM sessions
+    `);
+    this.updateStmt = this.db.prepare(`
+      UPDATE sessions
+      SET task_id = ?, started_at = ?, ended_at = ?
+      WHERE id = ?
+    `);
+    this.deleteStmt = this.db.prepare('DELETE FROM sessions WHERE id = ?');
   }
 
   create(input: Omit<Session, 'id'>): Session {
@@ -18,34 +42,18 @@ export class SessionsRepo {
       ended_at: input.ended_at,
     };
 
-    const stmt = this.db.prepare(`
-      INSERT INTO sessions (id, task_id, started_at, ended_at)
-      VALUES (?, ?, ?, ?)
-    `);
-
-    stmt.run(session.id, session.task_id, session.started_at, session.ended_at);
+    this.createStmt.run(session.id, session.task_id, session.started_at, session.ended_at);
 
     return session;
   }
 
   get(id: string): Session | null {
-    const stmt = this.db.prepare(`
-      SELECT id, task_id, started_at, ended_at
-      FROM sessions
-      WHERE id = ?
-    `);
-
-    const row = stmt.get(id) as Session | undefined;
+    const row = this.getStmt.get(id) as Session | undefined;
     return row ?? null;
   }
 
   list(): Session[] {
-    const stmt = this.db.prepare(`
-      SELECT id, task_id, started_at, ended_at
-      FROM sessions
-    `);
-
-    return stmt.all() as Session[];
+    return this.listStmt.all() as Session[];
   }
 
   update(id: string, patch: Partial<Omit<Session, 'id'>>): Session {
@@ -61,19 +69,12 @@ export class SessionsRepo {
       ended_at: patch.ended_at !== undefined ? patch.ended_at : existing.ended_at,
     };
 
-    const stmt = this.db.prepare(`
-      UPDATE sessions
-      SET task_id = ?, started_at = ?, ended_at = ?
-      WHERE id = ?
-    `);
-
-    stmt.run(updated.task_id, updated.started_at, updated.ended_at, id);
+    this.updateStmt.run(updated.task_id, updated.started_at, updated.ended_at, id);
 
     return updated;
   }
 
   delete(id: string): void {
-    const stmt = this.db.prepare('DELETE FROM sessions WHERE id = ?');
-    stmt.run(id);
+    this.deleteStmt.run(id);
   }
 }
