@@ -8,6 +8,7 @@ import { saveGoalAndTasks, startEventForwarding } from './planner/goal-manager.j
 import { GoogleAuth } from './sync/google-auth.js';
 import { GoogleCalendarSync } from './sync/calendar.js';
 import { eventBus } from './bus.js';
+import { ProposedPlan } from '../preload/index.js';
 import { createCompanionWindow } from './windows/companion.js';
 import { listActiveWindows } from './activity/window-tracker.js';
 import { handleActivityPurge } from './activity/purge-handler.js';
