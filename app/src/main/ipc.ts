@@ -36,7 +36,8 @@ export function setupIpcHandlers(
 ): void {
   void googleAuth.loadSavedCredentials();
 
-  // Goals
+  // --- GOALS ---
+
   ipcMain.handle('goals:get', async () => {
     return goalsRepo.list();
   });
@@ -56,19 +57,6 @@ export function setupIpcHandlers(
     return goal;
   });
 
-  // Tasks
-  ipcMain.handle('tasks:get', async () => {
-    return tasksRepo.list();
-  });
-
-  ipcMain.handle('tasks:updateStatus', async (_, id: string, status: Task['status']) => {
-    const task = tasksRepo.update(id, { status });
-    if (status === 'done') {
-      eventBus.emit('task.completed', task);
-    }
-    return task;
-  });
-
   ipcMain.handle('goals:decompose', async (_, goalText: string) => {
     const settings = settingsRepo.getAll();
     let recentActivity: { kind: string; payload: Record<string, unknown>; ts: string }[] | undefined;
@@ -84,6 +72,42 @@ export function setupIpcHandlers(
       workingHours: settings.workingHours,
       ...(recentActivity ? { recentActivity } : {}),
     });
+  });
+
+  ipcMain.handle(
+    'goals:save',
+    async (
+      _,
+      goalInput: Omit<Goal, 'id' | 'created_at' | 'updated_at' | 'status'>,
+      subtaskInputs: Omit<
+        Task,
+        | 'id'
+        | 'goal_id'
+        | 'status'
+        | 'created_at'
+        | 'updated_at'
+        | 'scheduled_start'
+        | 'scheduled_end'
+        | 'calendar_event_id'
+      >[],
+      scheduledSlots: { tempIndex: number; start: string; end: string }[],
+    ) => {
+      return saveGoalAndTasks(goalInput, subtaskInputs, scheduledSlots, calendarSync);
+    },
+  );
+
+  // --- TASKS ---
+
+  ipcMain.handle('tasks:get', async () => {
+    return tasksRepo.list();
+  });
+
+  ipcMain.handle('tasks:updateStatus', async (_, id: string, status: Task['status']) => {
+    const task = tasksRepo.update(id, { status });
+    if (status === 'done') {
+      eventBus.emit('task.completed', task);
+    }
+    return task;
   });
 
   ipcMain.handle(
@@ -131,29 +155,8 @@ export function setupIpcHandlers(
     },
   );
 
-  ipcMain.handle(
-    'goals:save',
-    async (
-      _,
-      goalInput: Omit<Goal, 'id' | 'created_at' | 'updated_at' | 'status'>,
-      subtaskInputs: Omit<
-        Task,
-        | 'id'
-        | 'goal_id'
-        | 'status'
-        | 'created_at'
-        | 'updated_at'
-        | 'scheduled_start'
-        | 'scheduled_end'
-        | 'calendar_event_id'
-      >[],
-      scheduledSlots: { tempIndex: number; start: string; end: string }[],
-    ) => {
-      return saveGoalAndTasks(goalInput, subtaskInputs, scheduledSlots, calendarSync);
-    },
-  );
+  // --- ACTIVITY ---
 
-  // Activity
   ipcMain.handle('activity:list', async (_, args: {
     since?: string; until?: string; kinds?: string[]; limit?: number; offset?: number;
   }) => activityRepo.list(args ?? {}));
@@ -175,17 +178,17 @@ export function setupIpcHandlers(
 
   ipcMain.handle('activity:purge', async (_, args: { olderThan?: string; ids?: number[] }) => {
     if (args?.ids && args.ids.length > 0) {
-      const orphanPaths = activityRepo
+      const filePaths = activityRepo
         .getByIds(args.ids.map(Number))
         .filter((r) => r.kind === 'screenshot_captured')
         .map((r) => (r.payload as { filePath?: string }).filePath)
         .filter((p): p is string => typeof p === 'string');
+
       const result = activityRepo.purge({ ids: args.ids });
-      for (const p of orphanPaths) {
-        try { await fs.promises.unlink(p); } catch { /* ignore */ }
-      }
+      await activityRepo.deleteScreenshotFiles(filePaths);
       return result;
     }
+
     if (args?.olderThan) {
       const olderThan = args.olderThan;
       const PAGE = 500;
@@ -197,11 +200,7 @@ export function setupIpcHandlers(
           .map((r) => (r.payload as { filePath?: string }).filePath)
           .filter((p): p is string => typeof p === 'string');
 
-        const BATCH_SIZE = 50;
-        for (let i = 0; i < filePaths.length; i += BATCH_SIZE) {
-          const batch = filePaths.slice(i, i + BATCH_SIZE);
-          await Promise.allSettled(batch.map((p) => fs.promises.unlink(p)));
-        }
+        await activityRepo.deleteScreenshotFiles(filePaths);
         if (page.length < PAGE) break;
         offset += PAGE;
       }
@@ -210,7 +209,8 @@ export function setupIpcHandlers(
     return { deleted: 0 };
   });
 
-  // Settings
+  // --- SETTINGS ---
+
   ipcMain.handle('settings:get', async () => {
     return settingsRepo.getAll();
   });
@@ -236,12 +236,14 @@ export function setupIpcHandlers(
     return folders;
   });
 
-  // Summaries
+  // --- SUMMARIES ---
+
   ipcMain.handle('summaries:get', async () => {
     return summariesRepo.listAll();
   });
 
-  // Calendar
+  // --- CALENDAR ---
+
   ipcMain.handle('calendar:connect', async () => {
     try {
       await googleAuth.authorize();
@@ -259,7 +261,8 @@ export function setupIpcHandlers(
     settingsRepo.update({ googleConnected: false });
   });
 
-  // Overlay API
+  // --- OVERLAY API ---
+
   ipcMain.handle('goal:propose', async (_event, goalText: string): Promise<ProposedPlan> => {
     const settings = settingsRepo.getAll();
     let recentActivity: { kind: string; payload: Record<string, unknown>; ts: string }[] | undefined;
@@ -380,7 +383,8 @@ export function setupIpcHandlers(
     }
   });
 
-  // Companion
+  // --- COMPANION ---
+
   let companion: BrowserWindow | null = null;
   let companionKind = 'observing';
   let companionActiveTaskId: string | null = null;
@@ -420,6 +424,8 @@ export function setupIpcHandlers(
     kind: companionKind,
     activeTaskId: companionActiveTaskId,
   }));
+
+  // --- WINDOWS & PERMISSIONS ---
 
   ipcMain.handle('windows:list', async () => {
     try {

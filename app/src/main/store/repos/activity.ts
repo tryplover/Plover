@@ -213,4 +213,14 @@ export class ActivityRepo {
       .all(...ids) as ActivityDbRow[];
     return rows.map((row) => this.parseRow(row));
   }
+
+  async deleteScreenshotFiles(filePaths: string[]): Promise<void> {
+    if (filePaths.length === 0) return;
+    const fs = await import('node:fs');
+    const BATCH_SIZE = 50;
+    for (let i = 0; i < filePaths.length; i += BATCH_SIZE) {
+      const batch = filePaths.slice(i, i + BATCH_SIZE);
+      await Promise.allSettled(batch.map((p) => fs.promises.unlink(p)));
+    }
+  }
 }
