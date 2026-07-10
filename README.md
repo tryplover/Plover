@@ -76,9 +76,6 @@ package today — splitting only if it ever earns its weight.
   order, cross-cutting acceptance criteria
 - **[Phase 1 store layer](docs/superpowers/specs/phase-1/store-layer.md)** —
   SQLite migrations + typed repos that every feature reads/writes through
-- **[Phase 1 feature specs](docs/superpowers/specs/phase-1/features/)** — one
-  doc per feature (goal capture, decomposition, scheduling, calendar sync,
-  todo views, overlay quick-add)
 - **[CLAUDE.md](CLAUDE.md)** — conventions and footguns; useful for humans too,
   not just Claude
 

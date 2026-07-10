@@ -45,7 +45,6 @@ Note: `docs/plans/` contains *generated implementation plans* used as input to s
 
 - **Product spec:** [docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md](docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md)
 - **Phase 1 core architecture:** [docs/superpowers/specs/phase-1/core-architecture.md](docs/superpowers/specs/phase-1/core-architecture.md)
-- **Phase 1 feature specs:** [docs/superpowers/specs/phase-1/features/](docs/superpowers/specs/phase-1/features/)
 
 The core architecture doc's "Implementation order" section (steps 1–7) is the
 implementation order. Do not jump ahead.
@@ -69,8 +68,7 @@ implementation order. Do not jump ahead.
 │       ├── 2026-05-24-task-tracker-agent-product-spec.md
 │       └── phase-1/
 │           ├── core-architecture.md
-│           ├── store-layer.md
-│           └── features/{typed-goal-capture,subtask-decomposition,scheduling,calendar-sync,todo-views,overlay-quick-add}.md
+│           └── store-layer.md
 └── app/                            # the Electron app (single workspace pkg)
     ├── package.json                # name: "plover"
     ├── electron.vite.config.ts

@@ -40,3 +40,8 @@ yarn-debug.log*
 
 # subagent-driven-development scratch
 .superpowers/
+
+# agent scratch / investigation artifacts
+.firecrawl/
+.claude/worktrees/
+origin/
