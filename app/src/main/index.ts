@@ -35,14 +35,16 @@ if (!gotTheLock) {
   });
 
   function createMainWindow(): void {
+    const isWin = process.platform === 'win32';
     mainWindow = new BrowserWindow({
       width: 1024,
       height: 720,
       title: 'Plover',
       frame: true,
-      transparent: true,
+      transparent: !isWin,
       titleBarStyle: 'hiddenInset',
-      vibrancy: 'under-window',
+      vibrancy: isWin ? undefined : 'under-window',
+      backgroundColor: isWin ? '#141416' : undefined,
       webPreferences: {
         preload: join(import.meta.dirname, '../preload/index.js'),
         sandbox: true,

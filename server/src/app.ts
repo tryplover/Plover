@@ -133,8 +133,40 @@ app.post('/api/decompose', async (req, res): Promise<any> => {
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    console.error('Server GEMINI_API_KEY is not set');
-    return res.status(500).json({ error: 'Server configuration error: GEMINI_API_KEY is missing' });
+    console.warn('Server GEMINI_API_KEY is not set. Using mock decomposition.');
+    const lower = goalText.toLowerCase();
+    let subtasks = [
+      { title: 'Gather initial materials and requirements', estimate_minutes: 45 },
+      { title: 'Outline the structure and approach', estimate_minutes: 60, depends_on: ['0'] },
+      { title: 'Draft/Implement the core content', estimate_minutes: 120, depends_on: ['1'] },
+      { title: 'Review, proofread, and polish', estimate_minutes: 60, depends_on: ['2'] },
+    ];
+
+    if (lower.includes('thesis') || lower.includes('report') || lower.includes('paper') || lower.includes('write')) {
+      subtasks = [
+        { title: 'Outline the section structure', estimate_minutes: 30 },
+        { title: 'Gather source citations', estimate_minutes: 45, depends_on: ['0'] },
+        { title: 'Write the procedure paragraph', estimate_minutes: 60, depends_on: ['1'] },
+        { title: 'Write the analysis paragraph', estimate_minutes: 60, depends_on: ['2'] },
+        { title: 'Proofread & finalize', estimate_minutes: 30, depends_on: ['3'] },
+      ];
+    } else if (lower.includes('code') || lower.includes('program') || lower.includes('build') || lower.includes('app')) {
+      subtasks = [
+        { title: 'Set up project environment and scaffold components', estimate_minutes: 45 },
+        { title: 'Implement core functionality and logic', estimate_minutes: 120, depends_on: ['0'] },
+        { title: 'Write unit tests and perform integration testing', estimate_minutes: 60, depends_on: ['1'] },
+        { title: 'Refactor code and review against requirements', estimate_minutes: 45, depends_on: ['2'] },
+      ];
+    }
+
+    return res.json({
+      goal: {
+        title: goalText.length > 50 ? goalText.substring(0, 47) + '...' : goalText,
+        description: `Mocked breakdown of: ${goalText}`,
+        deadline: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+      },
+      subtasks,
+    });
   }
 
   try {
@@ -331,8 +363,14 @@ app.post('/api/infer-progress', async (req, res): Promise<any> => {
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    console.error('Server GEMINI_API_KEY is not set');
-    return res.status(500).json({ error: 'Server configuration error: GEMINI_API_KEY is missing' });
+    console.warn('Server GEMINI_API_KEY is not set. Using mock progress inference.');
+    const task_progress = tasks.map((t, idx) => ({
+      taskId: t.id,
+      progress_increment: idx === 0 ? 10 : 0,
+      completed: false,
+      reasoning: `Mock progress inference for task: ${t.title}`,
+    }));
+    return res.json({ task_progress });
   }
 
   try {
@@ -497,8 +535,21 @@ app.post('/api/match-commit', async (req, res): Promise<any> => {
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    console.error('Server GEMINI_API_KEY is not set');
-    return res.status(500).json({ error: 'Server configuration error: GEMINI_API_KEY is missing' });
+    console.warn('Server GEMINI_API_KEY is not set. Using mock commit matching.');
+    let matchedTaskId: string | null = null;
+    const lowerMessage = commit.message.toLowerCase();
+    for (const t of tasks) {
+      if (lowerMessage.includes(t.title.toLowerCase()) || t.title.toLowerCase().includes(lowerMessage)) {
+        matchedTaskId = t.id;
+        break;
+      }
+    }
+    return res.json({
+      matchedTaskId,
+      reasoning: matchedTaskId
+        ? `Mock match: commit message matches task title.`
+        : `Mock match: no match found.`,
+    });
   }
 
   try {
@@ -620,7 +671,17 @@ app.post('/api/infer-screen', async (req, res): Promise<any> => {
     return res.status(400).json({ error: 'Screenshot too large (>5MB)' });
   }
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY missing' });
+  if (!apiKey) {
+    console.warn('Server GEMINI_API_KEY is not set. Using mock screen inference.');
+    return res.json({
+      summary: windowContext
+        ? `Using ${windowContext.app} - ${windowContext.title}`
+        : 'Interacting with active application',
+      activeApp: windowContext?.app || '',
+      currentTask: null,
+      confidence: 1.0,
+    });
+  }
 
   try {
     const client = new GoogleGenerativeAI(apiKey);

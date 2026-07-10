@@ -74,7 +74,7 @@ describe('ScreenCapturer', () => {
     const filePath = await capturer.captureOnce();
     expect(filePath).toBeTruthy();
     if (!filePath) return;
-    expect(filePath).toMatch(/\/screenshots\/2026\/06\/25\/[^/]+\.png$/);
+    expect(filePath.replace(/\\/g, '/')).toMatch(/\/screenshots\/2026\/06\/25\/[^/]+\.png$/);
     const onDisk = await fs.readFile(filePath);
     expect(onDisk.equals(png)).toBe(true);
     const rows = activityRepo.list();

@@ -15,6 +15,8 @@ import {
   requestScreenRecording,
 } from './permissions/screen-recording.js';
 import { SettingsData } from './store/repos/settings.js';
+import { promises as fs } from 'node:fs';
+import { ActivityRow } from './store/repos/activity-types.js';
 
 export const googleAuth = new GoogleAuth();
 export const calendarSync = new GoogleCalendarSync(googleAuth);
@@ -390,6 +392,35 @@ export function setupIpcHandlers(
 
   ipcMain.handle('permissions:screenRecording:status', () => getScreenRecordingStatus());
   ipcMain.handle('permissions:screenRecording:request', async () => requestScreenRecording());
+
+  ipcMain.handle('activity:purge', async (_, args: { olderThan?: string; ids?: number[] }) => {
+    let screenshots: ActivityRow[] = [];
+    if (args.ids && args.ids.length > 0) {
+      screenshots = activityRepo.getByIds(args.ids).filter((r) => r.kind === 'screenshot_captured');
+    } else if (args.olderThan) {
+      screenshots = activityRepo.list({
+        kind: 'screenshot_captured',
+        until: args.olderThan,
+        limit: 100000,
+      });
+    }
+
+    const paths = screenshots
+      .map((r) => (r.kind === 'screenshot_captured' ? r.payload.filePath : undefined))
+      .filter((p): p is string => typeof p === 'string' && p.length > 0);
+
+    const result = activityRepo.purge(args);
+
+    for (const p of paths) {
+      try {
+        await fs.unlink(p);
+      } catch {
+        // ignore
+      }
+    }
+
+    return result;
+  });
 }
 
 export function setupIpc(
