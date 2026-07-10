@@ -1,43 +1,25 @@
-import { useState, useEffect, useCallback } from 'react';
-import Today from './main/pages/Today';
+import { useState, useEffect } from 'react';
 import GoalsList from './main/pages/GoalsList';
 import AIProgress from './main/pages/AIProgress';
 import Settings from './main/pages/Settings';
 import { Onboarding } from './main/pages/Onboarding';
-import { Activity } from './main/pages/Activity';
-import { isToday } from './lib/date';
-import { IconTarget, IconGear, IconActivity, IconSun } from './main/icons';
-import { useAppEvents } from './hooks/useAppEvents';
+import { IconTarget, IconGear, IconActivity } from './main/icons';
 
-type Tab = 'today' | 'goals' | 'progress' | 'activity' | 'settings';
+type Tab = 'goals' | 'progress' | 'settings';
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<Tab>('today');
-  const [todayPendingCount, setTodayPendingCount] = useState(0);
+  const [activeTab, setActiveTab] = useState<Tab>('goals');
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean>(() => {
     return localStorage.getItem('plover_onboarding_completed') === 'true';
   });
 
-  const fetchTodayCount = useCallback(async () => {
-    try {
-      const allTasks = await window.api.getTasks();
-      const todayTasks = allTasks.filter((t) => isToday(t.scheduled_start) && t.status !== 'done');
-      setTodayPendingCount(todayTasks.length);
-    } catch (err) {
-      console.error('Failed to fetch task count:', err);
-    }
-  }, []);
-
   useEffect(() => {
-    if (!onboardingCompleted) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void fetchTodayCount();
-  }, [onboardingCompleted, fetchTodayCount]);
-
-  useAppEvents(() => {
-    if (!onboardingCompleted) return;
-    void fetchTodayCount();
-  });
+    const originalBg = document.body.style.background;
+    document.body.style.background = 'transparent';
+    return () => {
+      document.body.style.background = originalBg;
+    };
+  }, []);
 
   const handleOnboardingComplete = () => {
     localStorage.setItem('plover_onboarding_completed', 'true');
@@ -59,16 +41,6 @@ export function App() {
 
           <nav className="nav-links">
             <button
-              className={`nav-item ${activeTab === 'today' ? 'active' : ''}`}
-              onClick={() => setActiveTab('today')}
-              data-testid="nav-today"
-            >
-              <IconSun />
-              <span>Today</span>
-              {todayPendingCount > 0 && <span className="badge">{todayPendingCount}</span>}
-            </button>
-
-            <button
               className={`nav-item ${activeTab === 'goals' ? 'active' : ''}`}
               onClick={() => setActiveTab('goals')}
               data-testid="nav-goals"
@@ -87,14 +59,6 @@ export function App() {
             </button>
 
             <button
-              className={`nav-item ${activeTab === 'activity' ? 'active' : ''}`}
-              onClick={() => setActiveTab('activity')}
-              data-testid="nav-activity"
-            >
-              <span>Activity</span>
-            </button>
-
-            <button
               className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
               onClick={() => setActiveTab('settings')}
               data-testid="nav-settings"
@@ -109,10 +73,8 @@ export function App() {
       </aside>
 
       <main style={{ flexGrow: 1, overflow: 'hidden', height: '100%' }}>
-        {activeTab === 'today' && <Today onTasksUpdated={fetchTodayCount} data-testid="page-today" />}
-        {activeTab === 'goals' && <GoalsList onTasksUpdated={fetchTodayCount} data-testid="page-goals" />}
+        {activeTab === 'goals' && <GoalsList data-testid="page-goals" />}
         {activeTab === 'progress' && <AIProgress data-testid="page-progress" />}
-        {activeTab === 'activity' && <Activity />}
         {activeTab === 'settings' && <Settings data-testid="page-settings" />}
       </main>
     </div>

@@ -139,14 +139,10 @@ export interface PloverApi {
   setIgnoreMouseEvents: (ignore: boolean) => Promise<void>;
   setTrackingState: (tracking: boolean) => Promise<void>;
 
-  // Activity
-  listActivity: (args?: { since?: string; until?: string; kinds?: string[]; limit?: number; offset?: number }) => Promise<{ id: number; ts: string; kind: string; payload: Record<string, unknown> }[]>;
-  getActivityById: (id: number) => Promise<{ id: number; ts: string; kind: string; payload: Record<string, unknown> } | null>;
-  purgeActivity: (args: { olderThan?: string; ids?: number[] }) => Promise<{ deleted: number }>;
-  getScreenshot: (id: number) => Promise<{ dataUrl: string } | null>;
-
   // Permissions
-  getScreenRecordingStatus: () => Promise<'granted' | 'denied' | 'not-determined' | 'restricted' | 'unsupported'>;
+  getScreenRecordingStatus: () => Promise<
+    'granted' | 'denied' | 'not-determined' | 'restricted' | 'unsupported'
+  >;
   requestScreenRecording: () => Promise<'granted' | 'denied' | 'unsupported'>;
 
   // Companion API
@@ -180,12 +176,6 @@ const api: PloverApi = {
   listActiveWindows: () => ipcRenderer.invoke('windows:list'),
   setIgnoreMouseEvents: (ignore) => ipcRenderer.invoke('overlay:set-ignore-mouse-events', ignore),
   setTrackingState: (tracking) => ipcRenderer.invoke('overlay:set-tracking', tracking),
-
-  // Activity
-  listActivity: (args) => ipcRenderer.invoke('activity:list', args ?? {}),
-  getActivityById: (id) => ipcRenderer.invoke('activity:getById', id),
-  purgeActivity: (args) => ipcRenderer.invoke('activity:purge', args),
-  getScreenshot: (id) => ipcRenderer.invoke('activity:getScreenshot', id),
 
   // Permissions
   getScreenRecordingStatus: () => ipcRenderer.invoke('permissions:screenRecording:status'),

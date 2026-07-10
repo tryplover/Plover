@@ -11,6 +11,10 @@ export function Companion() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    document.body.style.background = 'transparent';
+  }, []);
+
+  useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
     const observer = new ResizeObserver(

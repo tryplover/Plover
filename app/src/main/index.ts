@@ -23,185 +23,200 @@ let inferenceEngine: InferenceEngine | null = null;
 let gitCommitTracker: GitCommitTracker | null = null;
 let gdocsPoller: GDocsPoller | null = null;
 let deviationLoopDispose: (() => void) | null = null;
-
-function createMainWindow(): void {
-  mainWindow = new BrowserWindow({
-    width: 1024,
-    height: 720,
-    title: 'Plover',
-    webPreferences: {
-      preload: join(import.meta.dirname, '../preload/index.js'),
-      sandbox: true,
-      contextIsolation: true,
-    },
-  });
-
-  mainWindow.on('closed', () => {
-    mainWindow = null;
-  });
-
-  const devUrl = process.env['ELECTRON_RENDERER_URL'];
-  if (devUrl) {
-    mainWindow.webContents.openDevTools();
-    void mainWindow.loadURL(devUrl);
-  } else {
-    void mainWindow.loadFile(join(import.meta.dirname, '../renderer/index.html'));
-  }
-}
-
-function createOverlayWindow(variant: 'overlay' | 'window' = 'overlay'): BrowserWindow {
-  const isWindow = variant === 'window';
-  const win = new BrowserWindow({
-    width: isWindow ? 720 : 600,
-    height: isWindow ? 640 : 80,
-    frame: isWindow,
-    transparent: !isWindow,
-    alwaysOnTop: !isWindow,
-    skipTaskbar: !isWindow,
-    show: false,
-    resizable: isWindow,
-    titleBarStyle: isWindow ? 'hiddenInset' : undefined,
-    vibrancy: isWindow ? undefined : 'under-window',
-    webPreferences: {
-      preload: join(import.meta.dirname, '../preload/index.js'),
-      sandbox: true,
-      contextIsolation: true,
-    },
-  });
-
-  const devUrl = process.env['ELECTRON_RENDERER_URL'];
-  if (devUrl) {
-    void win.loadURL(`${devUrl}?variant=${variant}`);
-  } else {
-    void win.loadFile(join(import.meta.dirname, '../renderer/index.html'), {
-      search: `variant=${variant}`,
-    });
-  }
-
-  if (!isWindow) {
-    win.on('blur', () => {
-      win.hide();
-    });
-  }
-
-  win.on('closed', () => {
-    if (variant === 'overlay') {
-      overlayWindow = null;
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
     }
   });
 
-  return win;
-}
+  function createMainWindow(): void {
+    mainWindow = new BrowserWindow({
+      width: 1024,
+      height: 720,
+      title: 'Plover',
+      frame: true,
+      transparent: true,
+      titleBarStyle: 'hiddenInset',
+      vibrancy: 'under-window',
+      webPreferences: {
+        preload: join(import.meta.dirname, '../preload/index.js'),
+        sandbox: true,
+        contextIsolation: true,
+      },
+    });
 
-function toggleOverlayWindow(): void {
-  if (!overlayWindow) {
-    overlayWindow = createOverlayWindow('overlay');
-  }
+    mainWindow.on('closed', () => {
+      mainWindow = null;
+    });
 
-  if (overlayWindow) {
-    if (overlayWindow.isVisible()) {
-      overlayWindow.hide();
+    const devUrl = process.env['ELECTRON_RENDERER_URL'];
+    if (devUrl) {
+      mainWindow.webContents.openDevTools();
+      void mainWindow.loadURL(devUrl);
     } else {
-      overlayWindow.setSize(600, 80);
-      overlayWindow.center();
-      overlayWindow.show();
-      overlayWindow.focus();
-      overlayWindow.webContents.send('overlay:reset');
+      void mainWindow.loadFile(join(import.meta.dirname, '../renderer/index.html'));
     }
   }
-}
 
-void app.whenReady().then(async () => {
-  folderWatcher = new FolderWatcher(activityRepo, settingsRepo, eventBus);
-  const settings = settingsRepo.getAll();
-  if (settings.watchedFolders.length > 0) {
-    await folderWatcher.watch(settings.watchedFolders);
-  }
+  function createOverlayWindow(variant: 'overlay' | 'window' = 'overlay'): BrowserWindow {
+    const isWindow = variant === 'window';
+    const win = new BrowserWindow({
+      width: isWindow ? 720 : 440,
+      height: isWindow ? 640 : 180,
+      frame: isWindow,
+      transparent: !isWindow,
+      alwaysOnTop: !isWindow,
+      skipTaskbar: !isWindow,
+      show: false,
+      resizable: isWindow,
+      titleBarStyle: isWindow ? 'hiddenInset' : undefined,
+      vibrancy: isWindow ? undefined : 'under-window',
+      webPreferences: {
+        preload: join(import.meta.dirname, '../preload/index.js'),
+        sandbox: true,
+        contextIsolation: true,
+      },
+    });
 
-  inferenceEngine = new InferenceEngine(
-    tasksRepo,
-    activityRepo,
-    summariesRepo,
-    settingsRepo,
-    eventBus,
-  );
-  inferenceEngine.start();
+    const devUrl = process.env['ELECTRON_RENDERER_URL'];
+    if (devUrl) {
+      void win.loadURL(`${devUrl}?variant=${variant}`);
+    } else {
+      void win.loadFile(join(import.meta.dirname, '../renderer/index.html'), {
+        search: `variant=${variant}`,
+      });
+    }
 
-  gitCommitTracker = new GitCommitTracker(tasksRepo, activityRepo, eventBus);
-  gitCommitTracker.start();
+    if (!isWindow) {
+      win.on('blur', () => {
+        win.hide();
+      });
+    }
 
-  gdocsPoller = new GDocsPoller(googleAuth, settingsRepo, eventBus);
-  gdocsPoller.start();
-
-  const deviationDetector = new DeviationDetector(
-    tasksRepo,
-    activityRepo,
-    settingsRepo,
-    calendarSync,
-  );
-  deviationLoopDispose = schedulePeriodic('deviation', 15 * 60_000, () =>
-    deviationDetector.runDeviationPass(),
-  );
-
-  // Register all typed IPC handlers first
-  setupIpc(
-    () => overlayWindow,
-    async (folders: string[]) => {
-      if (folderWatcher) {
-        await folderWatcher.watch(folders);
+    win.on('closed', () => {
+      if (variant === 'overlay') {
+        overlayWindow = null;
       }
-    },
-    (variant) => createOverlayWindow(variant),
-  );
+    });
 
-  // Initialize passive activity monitoring system
-  initActivityMonitoring();
+    return win;
+  }
 
-  createMainWindow();
-  overlayWindow = createOverlayWindow('overlay');
+  function toggleOverlayWindow(): void {
+    if (!overlayWindow) {
+      overlayWindow = createOverlayWindow('overlay');
+    }
 
-  // Register the global hotkey Option + Space
-  const registered = globalShortcut.register('Option+Space', () => {
-    toggleOverlayWindow();
+    if (overlayWindow) {
+      if (overlayWindow.isVisible()) {
+        overlayWindow.hide();
+      } else {
+        overlayWindow.setSize(440, 180);
+        overlayWindow.center();
+        overlayWindow.show();
+        overlayWindow.focus();
+        overlayWindow.webContents.send('overlay:reset');
+      }
+    }
+  }
+
+  void app.whenReady().then(async () => {
+    folderWatcher = new FolderWatcher(activityRepo, settingsRepo, eventBus);
+    const settings = settingsRepo.getAll();
+    if (settings.watchedFolders.length > 0) {
+      await folderWatcher.watch(settings.watchedFolders);
+    }
+
+    inferenceEngine = new InferenceEngine(
+      tasksRepo,
+      activityRepo,
+      summariesRepo,
+      settingsRepo,
+      eventBus,
+    );
+    inferenceEngine.start();
+
+    gitCommitTracker = new GitCommitTracker(tasksRepo, activityRepo, eventBus);
+    gitCommitTracker.start();
+
+    gdocsPoller = new GDocsPoller(googleAuth, settingsRepo, eventBus);
+    gdocsPoller.start();
+
+    const deviationDetector = new DeviationDetector(
+      tasksRepo,
+      activityRepo,
+      settingsRepo,
+      calendarSync,
+    );
+    deviationLoopDispose = schedulePeriodic('deviation', 15 * 60_000, () =>
+      deviationDetector.runDeviationPass(),
+    );
+
+    // Register all typed IPC handlers first
+    setupIpc(
+      () => overlayWindow,
+      async (folders: string[]) => {
+        if (folderWatcher) {
+          await folderWatcher.watch(folders);
+        }
+      },
+      (variant) => createOverlayWindow(variant),
+    );
+
+    // Initialize passive activity monitoring system
+    initActivityMonitoring();
+
+    createMainWindow();
+    overlayWindow = createOverlayWindow('overlay');
+
+    // Register the global hotkey Option + Space
+    const registered = globalShortcut.register('Option+Space', () => {
+      toggleOverlayWindow();
+    });
+
+    if (!registered) {
+      console.error('[Main] Failed to register global shortcut Option+Space');
+    } else {
+      console.log('[Main] Registered global shortcut Option+Space');
+    }
+
+    app.on('activate', () => {
+      if (mainWindow === null) createMainWindow();
+    });
   });
 
-  if (!registered) {
-    console.error('[Main] Failed to register global shortcut Option+Space');
-  } else {
-    console.log('[Main] Registered global shortcut Option+Space');
-  }
-
-  app.on('activate', () => {
-    if (mainWindow === null) createMainWindow();
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') app.quit();
   });
-});
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
-});
+  app.on('before-quit', () => {
+    if (folderWatcher) {
+      void folderWatcher.closeAllWatchers();
+    }
+    if (inferenceEngine) {
+      inferenceEngine.stop();
+    }
+    if (gitCommitTracker) {
+      gitCommitTracker.stop();
+    }
+    if (gdocsPoller) {
+      gdocsPoller.stop();
+    }
+    if (deviationLoopDispose) {
+      deviationLoopDispose();
+      deviationLoopDispose = null;
+    }
+    clearAllTimers();
+  });
 
-app.on('before-quit', () => {
-  if (folderWatcher) {
-    void folderWatcher.closeAllWatchers();
-  }
-  if (inferenceEngine) {
-    inferenceEngine.stop();
-  }
-  if (gitCommitTracker) {
-    gitCommitTracker.stop();
-  }
-  if (gdocsPoller) {
-    gdocsPoller.stop();
-  }
-  if (deviationLoopDispose) {
-    deviationLoopDispose();
-    deviationLoopDispose = null;
-  }
-  clearAllTimers();
-});
-
-app.on('will-quit', () => {
-  stopActivityMonitoring();
-  // Always clean up shortcuts to prevent leaking hooks in the OS
-  globalShortcut.unregisterAll();
-});
+  app.on('will-quit', () => {
+    stopActivityMonitoring();
+    // Always clean up shortcuts to prevent leaking hooks in the OS
+    globalShortcut.unregisterAll();
+  });
+}

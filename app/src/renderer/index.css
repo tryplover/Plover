@@ -1,8 +1,8 @@
 :root {
   /* Surface */
-  --plover-bg: #0a0b0b;
-  --plover-surface: #141516;
-  --plover-surface-raised: #1c1e1f;
+  --plover-bg: transparent;
+  --plover-surface: rgba(20, 20, 22, 0.4);
+  --plover-surface-raised: rgba(28, 30, 31, 0.55);
   --plover-border: rgba(255, 255, 255, 0.07);
 
   /* Text */
@@ -69,15 +69,18 @@ body {
   display: flex;
   height: 100vh;
   width: 100vw;
+  background-color: rgba(20, 20, 22, 0.45);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
 }
 
 .sidebar {
   width: 240px;
-  background-color: var(--plover-surface);
+  background-color: rgba(255, 255, 255, 0.02);
   border-right: 1px solid var(--plover-border);
   display: flex;
   flex-direction: column;
-  padding: 24px 16px;
+  padding: 40px 16px 24px 16px;
   justify-content: space-between;
 }
 

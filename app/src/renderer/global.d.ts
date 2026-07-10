@@ -100,11 +100,10 @@ export interface PloverAPI {
   listActiveWindows(): Promise<{ app: string; title: string }[]>;
   setIgnoreMouseEvents(ignore: boolean): Promise<void>;
   setTrackingState(tracking: boolean): Promise<void>;
-  listActivity(args?: { since?: string; until?: string; kinds?: string[]; limit?: number; offset?: number }): Promise<{ id: number; ts: string; kind: string; payload: Record<string, unknown> }[]>;
-  getActivityById(id: number): Promise<{ id: number; ts: string; kind: string; payload: Record<string, unknown> } | null>;
-  purgeActivity(args: { olderThan?: string; ids?: number[] }): Promise<{ deleted: number }>;
-  getScreenshot(id: number): Promise<{ dataUrl: string } | null>;
-  getScreenRecordingStatus(): Promise<'granted' | 'denied' | 'not-determined' | 'restricted' | 'unsupported'>;
+
+  getScreenRecordingStatus(): Promise<
+    'granted' | 'denied' | 'not-determined' | 'restricted' | 'unsupported'
+  >;
   requestScreenRecording(): Promise<'granted' | 'denied' | 'unsupported'>;
   on(channel: string, callback: (...args: unknown[]) => void): () => void;
 }

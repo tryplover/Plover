@@ -1,5 +1,4 @@
 import { ipcMain, BrowserWindow } from 'electron';
-import * as fs from 'node:fs';
 import { Goal, Task, CalendarEvent } from '../shared/types.js';
 import { goalsRepo, tasksRepo, settingsRepo, summariesRepo, activityRepo } from './store/index.js';
 import { decomposeGoal } from './planner/decompose.js';
@@ -11,7 +10,10 @@ import { eventBus } from './bus.js';
 import { ProposedPlan } from '../preload/index.js';
 import { createCompanionWindow } from './windows/companion.js';
 import { listActiveWindows } from './activity/window-tracker.js';
-import { getScreenRecordingStatus, requestScreenRecording } from './permissions/screen-recording.js';
+import {
+  getScreenRecordingStatus,
+  requestScreenRecording,
+} from './permissions/screen-recording.js';
 import { SettingsData } from './store/repos/settings.js';
 
 export const googleAuth = new GoogleAuth();
@@ -71,7 +73,8 @@ export function setupIpcHandlers(
 
   ipcMain.handle('goals:decompose', async (_, goalText: string) => {
     const settings = settingsRepo.getAll();
-    let recentActivity: { kind: string; payload: Record<string, unknown>; ts: string }[] | undefined;
+    let recentActivity:
+      { kind: string; payload: Record<string, unknown>; ts: string }[] | undefined;
     if (settings.planner_useRecentActivityContext) {
       const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
       recentActivity = activityRepo
@@ -153,75 +156,15 @@ export function setupIpcHandlers(
     },
   );
 
-  // Activity
-  ipcMain.handle('activity:list', async (_, args: {
-    since?: string; until?: string; kinds?: string[]; limit?: number; offset?: number;
-  }) => activityRepo.list(args ?? {}));
-
-  ipcMain.handle('activity:getById', async (_, id: number) => activityRepo.getById(Number(id)));
-
-  ipcMain.handle('activity:getScreenshot', async (_, id: number) => {
-    const row = activityRepo.getById(Number(id));
-    if (!row || row.kind !== 'screenshot_captured') return null;
-    const filePath = (row.payload as { filePath?: string }).filePath;
-    if (!filePath) return null;
-    try {
-      const bytes = await fs.promises.readFile(filePath);
-      return { dataUrl: `data:image/png;base64,${bytes.toString('base64')}` };
-    } catch {
-      return null;
-    }
-  });
-
-  ipcMain.handle('activity:purge', async (_, args: { olderThan?: string; ids?: number[] }) => {
-    if (args?.ids && args.ids.length > 0) {
-      const orphanPaths = activityRepo
-        .getByIds(args.ids.map(Number))
-        .filter((r) => r.kind === 'screenshot_captured')
-        .map((r) => (r.payload as { filePath?: string }).filePath)
-        .filter((p): p is string => typeof p === 'string');
-      const result = activityRepo.purge({ ids: args.ids });
-      for (const p of orphanPaths) {
-        try { await fs.promises.unlink(p); } catch { /* ignore */ }
-      }
-      return result;
-    }
-    if (args?.olderThan) {
-      const olderThan = args.olderThan;
-      const PAGE = 500;
-      let offset = 0;
-      for (;;) {
-        const page = activityRepo.list({ kinds: ['screenshot_captured'], until: olderThan, limit: PAGE, offset });
-        const screenshotPage = page.filter((r) => r.ts < olderThan);
-        const filePaths = screenshotPage
-          .map((r) => (r.payload as { filePath?: string }).filePath)
-          .filter((p): p is string => typeof p === 'string');
-
-        const BATCH_SIZE = 50;
-        for (let i = 0; i < filePaths.length; i += BATCH_SIZE) {
-          const batch = filePaths.slice(i, i + BATCH_SIZE);
-          await Promise.allSettled(batch.map((p) => fs.promises.unlink(p)));
-        }
-        if (page.length < PAGE) break;
-        offset += PAGE;
-      }
-      return activityRepo.purge({ olderThan });
-    }
-    return { deleted: 0 };
-  });
-
   // Settings
   ipcMain.handle('settings:get', async () => {
     return settingsRepo.getAll();
   });
 
-  ipcMain.handle(
-    'settings:update',
-    async (_: unknown, patch: Partial<SettingsData>) => {
-      settingsRepo.update(patch);
-      return settingsRepo.getAll();
-    },
-  );
+  ipcMain.handle('settings:update', async (_: unknown, patch: Partial<SettingsData>) => {
+    settingsRepo.update(patch);
+    return settingsRepo.getAll();
+  });
 
   ipcMain.handle('settings:watched-folders:get', async () => {
     const settings = settingsRepo.getAll();
@@ -262,7 +205,8 @@ export function setupIpcHandlers(
   // Overlay API
   ipcMain.handle('goal:propose', async (_event, goalText: string): Promise<ProposedPlan> => {
     const settings = settingsRepo.getAll();
-    let recentActivity: { kind: string; payload: Record<string, unknown>; ts: string }[] | undefined;
+    let recentActivity:
+      { kind: string; payload: Record<string, unknown>; ts: string }[] | undefined;
     if (settings.planner_useRecentActivityContext) {
       const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
       recentActivity = activityRepo
