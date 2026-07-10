@@ -21,6 +21,14 @@ vi.mock('electron', () => {
   };
 });
 
+vi.mock('keytar', () => ({
+  default: {
+    getPassword: vi.fn().mockResolvedValue(null),
+    setPassword: vi.fn().mockResolvedValue(undefined),
+    deletePassword: vi.fn().mockResolvedValue(true),
+  }
+}));
+
 // Mock planner functions to avoid real network/Gemini API calls
 vi.mock('../../src/main/planner/decompose', () => ({
   decomposeGoal: vi.fn().mockResolvedValue({

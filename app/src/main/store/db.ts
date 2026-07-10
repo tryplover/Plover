@@ -67,6 +67,15 @@ export const MIGRATIONS: { version: number; sql: string }[] = [
       INSERT INTO settings (key, value) VALUES ('pauseScheduling', 'false');
     `,
   },
+  {
+    version: 3,
+    sql: `
+      CREATE INDEX idx_activity_ts ON activity(ts);
+      CREATE INDEX idx_activity_kind_ts ON activity(kind, ts);
+      CREATE INDEX idx_summaries_task_id_ts ON summaries(task_id, ts);
+      CREATE INDEX idx_summaries_ts ON summaries(ts);
+    `,
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {
