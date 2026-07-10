@@ -105,7 +105,7 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
         paddingTop: '40px',
         paddingBottom: '40px',
         paddingLeft: '40px',
-        paddingRight: '40px',
+        paddingRight: '0px',
         backgroundColor: 'var(--plover-bg)',
         position: 'relative',
       }}
@@ -117,6 +117,7 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
           justifyContent: 'space-between',
           alignItems: 'center',
           marginBottom: '28px',
+          paddingRight: '40px',
         }}
       >
         <h1
@@ -135,7 +136,7 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
       </div>
 
       {/* Main Content Area */}
-      <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingRight: '40px', paddingBottom: '24px' }}>
         {/* All Goals Section */}
         <div>
           <h2

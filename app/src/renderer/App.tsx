@@ -72,7 +72,7 @@ export function App() {
         <div className="sidebar-version">Plover v1.0.0</div>
       </aside>
 
-      <main style={{ flexGrow: 1, overflow: 'hidden', height: '100%' }}>
+      <main className="main-content">
         {activeTab === 'goals' && <GoalsList data-testid="page-goals" />}
         {activeTab === 'progress' && <AIProgress data-testid="page-progress" />}
         {activeTab === 'settings' && <Settings data-testid="page-settings" />}

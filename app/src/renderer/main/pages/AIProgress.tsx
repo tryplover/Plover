@@ -93,11 +93,11 @@ export default function AIProgress({ 'data-testid': dataTestId }: AIProgressProp
         paddingTop: '40px',
         paddingBottom: '40px',
         paddingLeft: '40px',
-        paddingRight: '40px',
+        paddingRight: '0px',
         backgroundColor: 'var(--plover-bg)',
       }}
     >
-      <div style={{ marginBottom: '28px' }}>
+      <div style={{ marginBottom: '28px', paddingRight: '40px' }}>
         <h1
           style={{
             fontFamily: 'var(--plover-font-serif)',
@@ -114,7 +114,7 @@ export default function AIProgress({ 'data-testid': dataTestId }: AIProgressProp
         </p>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingRight: '40px', paddingBottom: '24px' }}>
         {summaries.length === 0 ? (
           <div
             style={{
