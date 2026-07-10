@@ -1,3 +1,0 @@
-google-antigravity
-python-dotenv
-PyGithub
