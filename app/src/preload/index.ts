@@ -148,6 +148,12 @@ export interface PloverApi {
   // Companion API
   companion: CompanionApi;
 
+  // Signup API
+  signup: {
+    start: () => Promise<void>;
+    complete: () => Promise<void>;
+  };
+
   // Event Subscription
   on: (channel: string, callback: (...args: unknown[]) => void) => () => void;
 }
@@ -189,6 +195,12 @@ const api: PloverApi = {
     setState: (kind) => ipcRenderer.invoke('companion:setState', kind),
     resize: (height) => ipcRenderer.invoke('companion:resize', height),
     getInitialState: () => ipcRenderer.invoke('companion:getInitialState'),
+  },
+
+  // Signup
+  signup: {
+    start: () => ipcRenderer.invoke('signup:start'),
+    complete: () => ipcRenderer.invoke('signup:complete'),
   },
 
   // Events

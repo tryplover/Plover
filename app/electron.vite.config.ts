@@ -19,6 +19,11 @@ export default defineConfig({
         ],
       },
     },
+    define: {
+      'import.meta.env.PLOVER_BACKEND_URL': JSON.stringify(
+        process.env.PLOVER_BACKEND_URL ?? 'http://localhost:3000',
+      ),
+    },
     resolve: {
       alias: {
         '@main': resolve('src/main'),

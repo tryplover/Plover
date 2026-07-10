@@ -14,6 +14,13 @@ vi.mock('electron', () => ({
   systemPreferences: { getMediaAccessStatus },
 }));
 
+const mockGetPloverToken = vi.hoisted(() => vi.fn().mockResolvedValue('test-token-xyz'));
+vi.mock('../../src/main/auth/plover-token.js', () => ({
+  getPloverToken: mockGetPloverToken,
+  setPloverToken: vi.fn(),
+  clearPloverToken: vi.fn(),
+}));
+
 import { ActivityRepo } from '../../src/main/store/repos/activity.js';
 import { SettingsRepo } from '../../src/main/store/repos/settings.js';
 import { runMigrations } from '../../src/main/store/db.js';

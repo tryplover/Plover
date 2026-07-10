@@ -15,6 +15,8 @@ import {
   requestScreenRecording,
 } from './permissions/screen-recording.js';
 import { SettingsData } from './store/repos/settings.js';
+import { startSignup } from './auth/signup-flow.js';
+import { withAuthRetry } from './auth/with-auth-retry.js';
 
 export const googleAuth = new GoogleAuth();
 export const calendarSync = new GoogleCalendarSync(googleAuth);
@@ -81,12 +83,18 @@ export function setupIpcHandlers(
         .list({ since, limit: 50 })
         .map((r) => ({ kind: r.kind, payload: r.payload, ts: r.ts }));
     }
-    return decomposeGoal({
-      goalText,
-      now: new Date(),
-      workingHours: settings.workingHours,
-      ...(recentActivity ? { recentActivity } : {}),
-    });
+    return withAuthRetry(() =>
+      decomposeGoal({
+        goalText,
+        now: new Date(),
+        workingHours: settings.workingHours,
+        ...(recentActivity ? { recentActivity } : {}),
+      }),
+    );
+  });
+
+  ipcMain.handle('signup:start', async () => {
+    await startSignup();
   });
 
   ipcMain.handle(

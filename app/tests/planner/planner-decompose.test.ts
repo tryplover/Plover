@@ -1,5 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import nock from 'nock';
+
+const mockGetPloverToken = vi.hoisted(() => vi.fn().mockResolvedValue('test-token-xyz'));
+vi.mock('../../src/main/auth/plover-token.js', () => ({
+  getPloverToken: mockGetPloverToken,
+  setPloverToken: vi.fn(),
+  clearPloverToken: vi.fn(),
+}));
+
 import { decomposeGoal } from '../../src/main/planner/decompose';
 
 describe('decomposeGoal', () => {
@@ -77,8 +85,8 @@ describe('decomposeGoal', () => {
     });
   });
 
-  it('includes custom X-Plover-Auth-Token header when PLOVER_AUTH_TOKEN is set', async () => {
-    process.env.PLOVER_AUTH_TOKEN = 'secret-token';
+  it('includes X-Plover-Auth-Token header from getPloverToken on every request', async () => {
+    mockGetPloverToken.mockResolvedValueOnce('secret-token');
 
     nock(backendUrl)
       .post('/api/decompose')

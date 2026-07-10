@@ -1,0 +1,45 @@
+%% Plover core architecture — post server extraction.
+%% Regenerate SVG: npx --package=@mermaid-js/mermaid-cli mmdc -i core-architecture.mmd -o core-architecture.svg
+flowchart LR
+  subgraph User["User's machine"]
+    direction TB
+    Electron["Plover.app (Electron)<br/>main + renderer + preload"]
+    Keytar["keytar<br/>plover_token, google_oauth"]
+    SQLite["Local SQLite<br/>goals, tasks, activity"]
+    Electron --- Keytar
+    Electron --- SQLite
+  end
+
+  subgraph Browser["System browser"]
+    ChromeSafari["Chrome / Safari<br/>signup flow"]
+  end
+
+  subgraph GCP["Google Cloud (developer's GCP project)"]
+    direction TB
+    CloudRun["Cloud Run: plover-server<br/>Express + Docker"]
+    Firestore["Firestore<br/>users, tokens, rate_limits"]
+    Secrets["Secret Manager<br/>gemini-api-key, oauth-secret"]
+    ArtifactReg["Artifact Registry<br/>container image"]
+    CloudRun --> Firestore
+    CloudRun --> Secrets
+    ArtifactReg -.image pull.-> CloudRun
+  end
+
+  subgraph Google["External Google APIs"]
+    OAuth["Google OAuth<br/>accounts.google.com"]
+    Gemini["Gemini API<br/>generativelanguage.googleapis.com"]
+    CalDocs["Google Calendar / Docs APIs"]
+  end
+
+  Electron -- "HTTPS + X-Plover-Auth-Token" --> CloudRun
+  CloudRun -- "server-side key" --> Gemini
+
+  Electron -- "shell.openExternal" --> ChromeSafari
+  ChromeSafari -- "GET /signup?state=nonce" --> CloudRun
+  ChromeSafari <-- "consent (openid email)" --> OAuth
+  CloudRun -- "verify id_token" --> OAuth
+  CloudRun -- "302 plover://auth?token=..&state=.." --> ChromeSafari
+  ChromeSafari -- "plover:// deep link" --> Electron
+
+  Electron <-- "OAuth (Calendar scopes)" --> OAuth
+  Electron <-- "events / free-busy" --> CalDocs

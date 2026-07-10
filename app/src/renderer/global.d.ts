@@ -106,6 +106,10 @@ export interface PloverAPI {
   >;
   requestScreenRecording(): Promise<'granted' | 'denied' | 'unsupported'>;
   on(channel: string, callback: (...args: unknown[]) => void): () => void;
+  signup: {
+    start: () => Promise<void>;
+    complete: () => Promise<void>;
+  };
 }
 
 declare global {

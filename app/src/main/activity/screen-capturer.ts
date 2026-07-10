@@ -5,6 +5,7 @@ import crypto from 'node:crypto';
 import { ActivityRepo } from '../store/repos/activity.js';
 import { SettingsRepo } from '../store/repos/settings.js';
 import { getScreenRecordingStatus } from '../permissions/screen-recording.js';
+import { authedFetch } from '../http/authed-fetch.js';
 
 export interface ScreenCapturerDeps {
   activityRepo: ActivityRepo;
@@ -86,10 +87,6 @@ export class ScreenCapturer {
   }
 
   private async runInference(screenshotId: number, filePath: string, png: Buffer): Promise<void> {
-    const backendUrl = (process.env.PLOVER_BACKEND_URL ?? 'http://localhost:3000').trim();
-    const authToken = process.env.PLOVER_AUTH_TOKEN;
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (authToken) headers['X-Plover-Auth-Token'] = authToken;
     // Pass the most recent window_focus payload to the backend so Gemini Vision
     // has the active app/title/URL as context instead of falling back to "no context".
     const lastFocus = this.deps.activityRepo.list({ kind: 'window_focus', limit: 1 })[0];
@@ -101,9 +98,9 @@ export class ScreenCapturer {
         }
       : undefined;
 
-    const res = await fetch(`${backendUrl}/api/infer-screen`, {
+    const res = await authedFetch('/api/infer-screen', {
       method: 'POST',
-      headers,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ screenshotBase64: png.toString('base64'), windowContext }),
       signal: AbortSignal.timeout(10000),
     });

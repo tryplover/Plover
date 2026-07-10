@@ -1,5 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import Database from 'better-sqlite3';
+
+const mockGetPloverToken = vi.hoisted(() => vi.fn().mockResolvedValue('test-token-xyz'));
+vi.mock('../../src/main/auth/plover-token.js', () => ({
+  getPloverToken: mockGetPloverToken,
+  setPloverToken: vi.fn(),
+  clearPloverToken: vi.fn(),
+}));
+
 import { runMigrations } from '@main/store/db.js';
 import { TasksRepo } from '@main/store/repos/tasks.js';
 import { GoalsRepo } from '@main/store/repos/goals.js';

@@ -8,9 +8,8 @@ the goal with Gemini, books time on your Google Calendar, watches your screen
 in the background, and tells you when you're on or off track. Nothing leaves
 your machine except calls to Gemini and Google APIs.
 
-> **Status:** Phase 1 — scaffold + tooling complete. Feature work
-> (goal capture → planner → calendar sync → overlay) is the next milestone.
-> See [docs/superpowers/specs/](docs/superpowers/specs/) for the full plan.
+> **Status:** Phase 1 — Scaffold and tooling complete. The backend server is extracted to the standalone repository [plover-server](https://github.com/tryplover/plover-server) and hosted on Google Cloud Run. Feature work (goal capture → planner → calendar sync → overlay) is ongoing.
+> See [docs/superpowers/specs/](docs/superpowers/specs/) for the product specs, and the [GCP & GitHub Setup Details](docs/plans/gcp-setup-details.md) for details on the hosted infrastructure.
 
 ## Quickstart
 

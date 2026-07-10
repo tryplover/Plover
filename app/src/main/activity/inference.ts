@@ -4,6 +4,7 @@ import { SummariesRepo } from '../store/repos/summaries.js';
 import { SettingsRepo } from '../store/repos/settings.js';
 import { schedulePeriodic } from '../lifecycle/periodic.js';
 import { TypedEventBus } from '../bus.js';
+import { authedFetch, UnauthorizedError } from '../http/authed-fetch.js';
 
 const INFERENCE_INTERVAL_MS = 30 * 60_000;
 const EPOCH_TS = '1970-01-01T00:00:00.000Z';
@@ -58,18 +59,11 @@ export class InferenceEngine {
       return;
     }
 
-    const backendUrl = (process.env.PLOVER_BACKEND_URL || 'http://localhost:3000').trim();
-    const authToken = process.env.PLOVER_AUTH_TOKEN;
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (authToken) {
-      headers['X-Plover-Auth-Token'] = authToken;
-    }
-
     let response: Response;
     try {
-      response = await fetch(`${backendUrl}/api/infer-progress`, {
+      response = await authedFetch('/api/infer-progress', {
         method: 'POST',
-        headers,
+        headers: { 'Content-Type': 'application/json' },
         signal: AbortSignal.timeout(15000),
         body: JSON.stringify({
           tasks: activeTasks.map((t) => ({ id: t.id, title: t.title, status: t.status })),
@@ -77,6 +71,7 @@ export class InferenceEngine {
         }),
       });
     } catch (err) {
+      if (err instanceof UnauthorizedError) throw err;
       console.error('[InferenceEngine] Network error:', err);
       return;
     }

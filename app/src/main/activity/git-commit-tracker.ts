@@ -5,6 +5,7 @@ import { TasksRepo } from '../store/repos/tasks.js';
 import { ActivityRepo } from '../store/repos/activity.js';
 import { TypedEventBus } from '../bus.js';
 import { FolderEventPayload } from '@shared/events.js';
+import { authedFetch } from '../http/authed-fetch.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -144,16 +145,9 @@ async function defaultMatchCommit(
   commit: GitCommitInfo,
   tasks: { id: string; title: string }[],
 ): Promise<MatchCommitResponse> {
-  const backendUrl = (process.env.PLOVER_BACKEND_URL || 'http://localhost:3000').trim();
-  const authToken = process.env.PLOVER_AUTH_TOKEN;
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (authToken) {
-    headers['X-Plover-Auth-Token'] = authToken;
-  }
-
-  const response = await fetch(`${backendUrl}/api/match-commit`, {
+  const response = await authedFetch('/api/match-commit', {
     method: 'POST',
-    headers,
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       commit,
       tasks,

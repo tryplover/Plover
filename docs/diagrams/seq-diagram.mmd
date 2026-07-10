@@ -1,0 +1,61 @@
+%% Plover sequence diagrams — signup + normal API call.
+%% Regenerate SVG: npx --package=@mermaid-js/mermaid-cli mmdc -i seq-diagram.mmd -o seq-diagram.svg
+sequenceDiagram
+  autonumber
+  participant E as Electron (Plover.app)
+  participant K as keytar
+  participant B as Browser
+  participant S as Cloud Run (plover-server)
+  participant G as Google OAuth
+  participant F as Firestore
+  participant M as Gemini API
+
+  Note over E,M: Scenario 1 — First-launch signup
+
+  E->>K: getPassword('plover_token')
+  K-->>E: null
+  E->>E: render SignupScreen
+  E->>E: generate 32-byte state nonce (in memory)
+  E->>B: shell.openExternal(/signup?state=nonce)
+  B->>S: GET /signup?state=nonce
+  S->>S: rememberState(nonce)
+  S-->>B: 302 → Google consent
+  B->>G: OAuth consent (openid email)
+  G-->>B: 302 → /oauth/callback?code=..&state=nonce
+  B->>S: GET /oauth/callback
+  S->>G: exchange code, verify id_token
+  G-->>S: { sub, email }
+  S->>F: upsert users/{sub}
+  S->>S: generate raw token, hash SHA-256
+  S->>F: create tokens/{hash}
+  S-->>B: 302 plover://auth?token=raw&state=nonce
+  B->>E: plover:// deep link
+  E->>E: verify state matches in-memory nonce
+  E->>K: setPassword('plover_token', raw)
+  E->>E: drop nonce, load main window
+
+  Note over E,M: Scenario 2 — Normal API call
+
+  E->>K: getPassword('plover_token')
+  K-->>E: raw token
+  E->>S: POST /api/decompose (X-Plover-Auth-Token)
+  S->>S: authMiddleware — hash(token)
+  S->>F: lookup tokens/{hash}
+  F-->>S: { userId, revoked=false }
+
+  alt token missing or revoked
+    S-->>E: 401 Unauthorized
+    E->>E: show re-signup screen
+  else token valid
+    S->>F: atomic increment rate_limits/{userId}_{route}_{yyyymmdd}
+    alt counter over quota
+      F-->>S: over limit
+      S-->>E: 429 + Retry-After
+      E->>E: toast "slow down"
+    else within quota
+      F-->>S: ok
+      S->>M: generateContent(...)
+      M-->>S: { functionCalls }
+      S-->>E: 200 { subtasks }
+    end
+  end

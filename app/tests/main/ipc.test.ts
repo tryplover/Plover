@@ -176,7 +176,11 @@ describe('IPC Handlers', () => {
     expect(mockOverlayWindow.hide).toHaveBeenCalled();
   });
 
-  it('activity:purge with olderThan unlinks screenshot files before purging DB rows', async () => {
+  // Skipped: the `activity:purge` IPC handler was removed alongside the Activity tab
+  // in commit 9e8d534 ("Redesign overlay glassmorphism… remove Today and Activity tabs").
+  // The handler no longer exists in src/main/ipc.ts, so this test has nothing to exercise.
+  // Unrelated to Milestone C-8 authedFetch changes.
+  it.skip('activity:purge with olderThan unlinks screenshot files before purging DB rows', async () => {
     const unlinkSpy = vi.fn().mockResolvedValue(undefined);
     vi.spyOn(nodeFs.promises, 'unlink').mockImplementation(unlinkSpy);
 

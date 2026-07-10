@@ -1,4 +1,5 @@
 import { Goal, Task } from '@shared/types';
+import { authedFetch } from '../http/authed-fetch.js';
 
 /**
  * Decomposes a user goal into a structured goal and a list of subtasks using the secure backend proxy.
@@ -22,16 +23,6 @@ export async function decomposeGoal(input: {
     | 'calendar_event_id'
   >[];
 }> {
-  const backendUrl = (process.env.PLOVER_BACKEND_URL || 'http://localhost:3000').trim();
-  const authToken = process.env.PLOVER_AUTH_TOKEN;
-
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
-  if (authToken) {
-    headers['X-Plover-Auth-Token'] = authToken;
-  }
-
   const body: Record<string, unknown> = {
     goalText: input.goalText,
     now: input.now.toISOString(),
@@ -41,9 +32,9 @@ export async function decomposeGoal(input: {
     body.recentActivity = input.recentActivity.slice(0, 200);
   }
 
-  const response = await fetch(`${backendUrl}/api/decompose`, {
+  const response = await authedFetch('/api/decompose', {
     method: 'POST',
-    headers,
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
 

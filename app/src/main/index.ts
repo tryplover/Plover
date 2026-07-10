@@ -1,5 +1,5 @@
 import './load-env.js';
-import { app, BrowserWindow, globalShortcut } from 'electron';
+import { app, BrowserWindow, globalShortcut, ipcMain } from 'electron';
 import { join } from 'node:path';
 import { setupIpc, calendarSync, googleAuth } from './ipc.js';
 import { activityRepo, settingsRepo, tasksRepo, summariesRepo } from './store/index.js';
@@ -11,10 +11,31 @@ import { DeviationDetector } from './planner/deviation-detector.js';
 import { eventBus } from './bus.js';
 import { clearAllTimers, schedulePeriodic } from './lifecycle/periodic.js';
 import { initActivityMonitoring, stopActivityMonitoring } from './activity/index.js';
+import { completeSignup } from './auth/signup-flow.js';
+import { getPloverToken } from './auth/plover-token.js';
 
 if (!app.isPackaged) {
   app.commandLine.appendSwitch('enable-logging');
 }
+
+app.setAsDefaultProtocolClient('plover');
+
+const bufferedProtocolUrls: string[] = [];
+let appIsReady = false;
+
+function handleProtocolUrl(url: string): void {
+  if (!url.startsWith('plover://')) return;
+  if (!appIsReady) {
+    bufferedProtocolUrls.push(url);
+    return;
+  }
+  completeSignup(url);
+}
+
+app.on('open-url', (event, url) => {
+  event.preventDefault();
+  handleProtocolUrl(url);
+});
 
 let mainWindow: BrowserWindow | null = null;
 let overlayWindow: BrowserWindow | null = null;
@@ -27,7 +48,12 @@ const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();
 } else {
-  app.on('second-instance', () => {
+  app.on('second-instance', (_event, argv) => {
+    for (const arg of argv) {
+      if (arg.startsWith('plover://')) {
+        handleProtocolUrl(arg);
+      }
+    }
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
       mainWindow.focus();
@@ -107,6 +133,35 @@ if (!gotTheLock) {
     return win;
   }
 
+  function createSignupWindow(): BrowserWindow {
+    const win = new BrowserWindow({
+      width: 480,
+      height: 600,
+      title: 'Plover',
+      frame: true,
+      resizable: false,
+      titleBarStyle: 'hiddenInset',
+      vibrancy: 'under-window',
+      transparent: true,
+      webPreferences: {
+        preload: join(import.meta.dirname, '../preload/index.js'),
+        sandbox: true,
+        contextIsolation: true,
+      },
+    });
+
+    const devUrl = process.env['ELECTRON_RENDERER_URL'];
+    if (devUrl) {
+      void win.loadURL(`${devUrl}?variant=signup`);
+    } else {
+      void win.loadFile(join(import.meta.dirname, '../renderer/index.html'), {
+        search: 'variant=signup',
+      });
+    }
+
+    return win;
+  }
+
   function toggleOverlayWindow(): void {
     if (!overlayWindow) {
       overlayWindow = createOverlayWindow('overlay');
@@ -126,6 +181,11 @@ if (!gotTheLock) {
   }
 
   void app.whenReady().then(async () => {
+    appIsReady = true;
+    while (bufferedProtocolUrls.length > 0) {
+      const url = bufferedProtocolUrls.shift();
+      if (url) completeSignup(url);
+    }
     folderWatcher = new FolderWatcher(activityRepo, settingsRepo, eventBus);
     const settings = settingsRepo.getAll();
     if (settings.watchedFolders.length > 0) {
@@ -171,7 +231,23 @@ if (!gotTheLock) {
     // Initialize passive activity monitoring system
     initActivityMonitoring();
 
-    createMainWindow();
+    ipcMain.handle('signup:complete', async () => {
+      for (const w of BrowserWindow.getAllWindows()) {
+        if (w.webContents.getURL().includes('variant=signup')) {
+          w.close();
+        }
+      }
+      if (!mainWindow) {
+        createMainWindow();
+      }
+    });
+
+    const ploverToken = await getPloverToken();
+    if (ploverToken) {
+      createMainWindow();
+    } else {
+      createSignupWindow();
+    }
     overlayWindow = createOverlayWindow('overlay');
 
     // Register the global hotkey Option + Space
