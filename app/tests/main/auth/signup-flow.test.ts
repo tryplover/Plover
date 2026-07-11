@@ -30,7 +30,7 @@ function extractStateFromOpenExternal(): string {
   const parsed = new URL(url);
   const state = parsed.searchParams.get('state');
   expect(state).toBeTruthy();
-  return state!;
+  return state as string;
 }
 
 describe('signup-flow', () => {
@@ -47,7 +47,9 @@ describe('signup-flow', () => {
 
   it('opens external URL matching /signup?state=<nonce>', async () => {
     const promise = startSignup();
-    promise.catch(() => {}); // avoid unhandled rejection warnings
+    promise.catch((err) => {
+      console.log('Caught expected rejection during test:', err.message);
+    }); // avoid unhandled rejection warnings
     extractStateFromOpenExternal();
     _clearPendingForTests();
     await expect(promise).rejects.toThrow(/Cleared for tests/);
@@ -71,7 +73,9 @@ describe('signup-flow', () => {
 
     const winner = await Promise.race([
       promise.then(() => 'resolved').catch(() => 'rejected'),
-      new Promise<string>((r) => setTimeout(() => r('pending'), 200)),
+      new Promise<string>((r) => {
+        setTimeout(() => r('pending'), 200);
+      }),
     ]);
     expect(winner).toBe('pending');
     expect(mockSetPloverToken).not.toHaveBeenCalled();
@@ -85,7 +89,9 @@ describe('signup-flow', () => {
 
     const winner = await Promise.race([
       promise.then(() => 'resolved').catch(() => 'rejected'),
-      new Promise<string>((r) => setTimeout(() => r('pending'), 200)),
+      new Promise<string>((r) => {
+        setTimeout(() => r('pending'), 200);
+      }),
     ]);
     expect(winner).toBe('pending');
     expect(mockSetPloverToken).not.toHaveBeenCalled();
@@ -94,7 +100,9 @@ describe('signup-flow', () => {
   it('rejects after 10-minute timeout', async () => {
     vi.useFakeTimers();
     const promise = startSignup();
-    promise.catch(() => {});
+    promise.catch((err) => {
+      console.log('Caught expected timeout rejection during test:', err.message);
+    });
     extractStateFromOpenExternal();
 
     vi.advanceTimersByTime(10 * 60 * 1000 + 1000);
@@ -105,7 +113,9 @@ describe('signup-flow', () => {
 
   it('supersedes an existing pending signup when startSignup is called again', async () => {
     const first = startSignup();
-    first.catch(() => {});
+    first.catch((err) => {
+      console.log('Caught expected superseded rejection during test:', err.message);
+    });
     const firstState = extractStateFromOpenExternal();
 
     mockShell.openExternal.mockClear();
@@ -137,7 +147,9 @@ describe('signup-flow', () => {
 
   it('ignores malformed URLs', async () => {
     const promise = startSignup();
-    promise.catch(() => {});
+    promise.catch((err) => {
+      console.log('Caught expected error during malformed URL test:', err.message);
+    });
     extractStateFromOpenExternal();
 
     completeSignup('not a url');
@@ -145,7 +157,9 @@ describe('signup-flow', () => {
 
     const winner = await Promise.race([
       promise.then(() => 'resolved').catch(() => 'rejected'),
-      new Promise<string>((r) => setTimeout(() => r('pending'), 100)),
+      new Promise<string>((r) => {
+        setTimeout(() => r('pending'), 100);
+      }),
     ]);
     expect(winner).toBe('pending');
     expect(mockSetPloverToken).not.toHaveBeenCalled();
