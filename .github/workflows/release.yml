@@ -15,10 +15,13 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: write
+      issues: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
+        with:
+          submodules: false
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -35,24 +38,58 @@ jobs:
       - name: Build and Package App
         run: pnpm package
         env:
-          # Disable automatic code signing since we do not have Apple Developer Certificates configured in CI secrets yet
+          # Code signing disabled until Apple Developer certs are wired into CI secrets
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - name: Generate tag name
         id: tag
         run: |
           if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            echo "name=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+            echo "name=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
           else
-            echo "name=v$(date -u +'%Y.%m.%d-%H%M')" >> $GITHUB_OUTPUT
+            echo "name=v$(date -u +'%Y.%m.%d-%H%M')" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Upload Binary to GitHub Release
+      - name: Mint Plover-Releases token
+        id: releases_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.PLOVER_RELEASES_APP_ID }}
+          private-key: ${{ secrets.PLOVER_RELEASES_APP_PRIVATE_KEY }}
+          owner: tryplover
+          repositories: Plover-Releases
+
+      - name: Upload binary to Plover-Releases
         uses: softprops/action-gh-release@v3
         with:
+          repository: tryplover/Plover-Releases
+          token: ${{ steps.releases_token.outputs.token }}
           tag_name: ${{ steps.tag.outputs.name }}
+          name: Plover ${{ steps.tag.outputs.name }}
           files: |
             app/dist/*.dmg
             app/dist/*.dmg.blockmap
+
+      - name: Trigger website rebuild
+        if: env.WEBSITE_DEPLOY_HOOK_URL != ''
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WEBSITE_DEPLOY_HOOK_URL: ${{ secrets.WEBSITE_DEPLOY_HOOK_URL }}
+        run: |
+          curl -fsS -X POST "$WEBSITE_DEPLOY_HOOK_URL" -o /dev/null
+
+      - name: Report failure to tracking issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          TAG: ${{ steps.tag.outputs.name }}
+        run: |
+          title="Release pipeline broken"
+          body="Release run failed for tag \`${TAG:-unknown}\`. See ${RUN_URL}"
+          existing=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --label release-broken --json number --jq '.[0].number' || echo "")
+          if [[ -n "$existing" ]]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "$body" --label release-broken || \
+              gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "$body"
+          fi
