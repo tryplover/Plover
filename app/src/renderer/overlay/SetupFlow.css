@@ -36,8 +36,16 @@
   flex-direction: column;
 }
 
+.plover-setup--overlay > div:not(.plover-setup__chrome) {
+  flex: 0 0 auto;
+}
+
 .plover-setup .plover-stepper {
   margin-top: auto;
   order: 10;
   flex-shrink: 0;
+}
+
+.plover-setup--overlay .plover-stepper {
+  margin-top: 20px;
 }

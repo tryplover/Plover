@@ -223,11 +223,11 @@ describe('IPC Handlers', () => {
       width?: number,
     ) => Promise<void>;
 
-    // Height changes
+    // Height changes (window re-centers vertically)
     await handler({}, 200);
     expect(mockOverlayWindow.setBounds).toHaveBeenCalledWith({
       x: 10,
-      y: 20,
+      y: -40,
       width: 600,
       height: 200,
     });

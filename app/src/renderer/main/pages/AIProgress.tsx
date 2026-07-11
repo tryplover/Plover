@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { SummaryRow } from '../../../shared/types';
 import { StatusIndicator } from '../../components/StatusIndicator';
 
@@ -41,6 +41,21 @@ export default function AIProgress({ 'data-testid': dataTestId }: AIProgressProp
       unsubscribe();
     };
   }, [fetchSummaries]);
+
+  const groupedPasses = useMemo(() => {
+    const byTs = new Map<string, JoinedSummary[]>();
+    for (const s of summaries) {
+      const arr = byTs.get(s.ts);
+      if (arr) arr.push(s);
+      else byTs.set(s.ts, [s]);
+    }
+    return Array.from(byTs.entries())
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([ts, entries]) => ({
+        ts,
+        hits: entries.filter((e) => e.signal > 0),
+      }));
+  }, [summaries]);
 
   const formatTimestamp = (isoString: string) => {
     try {
@@ -135,31 +150,39 @@ export default function AIProgress({ 'data-testid': dataTestId }: AIProgressProp
           </div>
         ) : (
           <div className="timeline-feed">
-            {summaries.map((summary, idx) => (
-              <div key={summary.id} className="timeline-feed-item">
+            {groupedPasses.map((pass, idx) => (
+              <div key={pass.ts} className="timeline-feed-item">
                 <div
                   className={`timeline-feed-dot ${idx === 0 ? 'timeline-feed-dot--pulsing' : ''}`}
                 />
                 <div className="timeline-feed-card">
                   <div className="timeline-feed-header">
-                    <div className="timeline-feed-meta">
-                      <span className="timeline-feed-time">{formatTimestamp(summary.ts)}</span>
-                      <div className="timeline-feed-tags">
-                        {summary.goal_title && (
-                          <span className="timeline-feed-tag-goal">{summary.goal_title}</span>
-                        )}
-                        {summary.task_title && (
-                          <span className="timeline-feed-tag-task">{summary.task_title}</span>
-                        )}
-                      </div>
-                    </div>
-                    {summary.signal > 0 && (
-                      <span className="timeline-feed-signal">
-                        +{Math.round(summary.signal * 100)}% Progress
-                      </span>
-                    )}
+                    <span className="timeline-feed-time">{formatTimestamp(pass.ts)}</span>
                   </div>
-                  <p className="timeline-feed-reasoning">“{summary.summary}”</p>
+                  {pass.hits.length === 0 ? (
+                    <p className="timeline-feed-empty">Pass ran — no evidence found</p>
+                  ) : (
+                    <div className="timeline-feed-hits">
+                      {pass.hits.map((hit) => (
+                        <div key={hit.id} className="timeline-feed-hit">
+                          <div className="timeline-feed-hit-header">
+                            <div className="timeline-feed-tags">
+                              {hit.goal_title && (
+                                <span className="timeline-feed-tag-goal">{hit.goal_title}</span>
+                              )}
+                              {hit.task_title && (
+                                <span className="timeline-feed-tag-task">{hit.task_title}</span>
+                              )}
+                            </div>
+                            <span className="timeline-feed-signal">
+                              +{Math.round(hit.signal * 100)}% Progress
+                            </span>
+                          </div>
+                          <p className="timeline-feed-reasoning">“{hit.summary}”</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

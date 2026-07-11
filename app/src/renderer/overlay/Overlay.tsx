@@ -12,16 +12,17 @@ export function Overlay() {
     if (!containerRef.current) return;
 
     const resizeWindow = () => {
-      if (!containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const height = Math.ceil(rect.height);
-      const width = Math.ceil(rect.width);
+      const el = containerRef.current;
+      if (!el) return;
+      const height = Math.ceil(Math.max(el.getBoundingClientRect().height, el.scrollHeight));
+      const width = Math.ceil(el.getBoundingClientRect().width);
       window.api.resizeOverlay(height, width).catch((err) => {
         console.error('Failed to resize overlay:', err);
       });
     };
 
     resizeWindow();
+    const raf = requestAnimationFrame(resizeWindow);
 
     const observer = new ResizeObserver(() => {
       resizeWindow();
@@ -29,6 +30,7 @@ export function Overlay() {
     observer.observe(containerRef.current);
 
     return () => {
+      cancelAnimationFrame(raf);
       observer.disconnect();
     };
   }, []);
@@ -69,7 +71,7 @@ export function Overlay() {
       ? {
           boxSizing: 'border-box' as const,
           width: '100%',
-          padding: '16px',
+          padding: '22px 24px',
           backgroundColor: 'rgba(20, 20, 22, 0.45)',
           backdropFilter: 'blur(24px) saturate(180%)',
           WebkitBackdropFilter: 'blur(24px) saturate(180%)',
