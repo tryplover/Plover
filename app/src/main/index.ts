@@ -256,15 +256,16 @@ if (!gotTheLock) {
     }
     overlayWindow = createOverlayWindow('overlay');
 
-    // Register the global hotkey Option + Space
-    const registered = globalShortcut.register('Option+Space', () => {
+    // Option is mac-only; Alt+Shift+Space elsewhere to avoid Windows' Alt+Space system-menu conflict
+    const hotkey = process.platform === 'darwin' ? 'Option+Space' : 'Alt+Shift+Space';
+    const registered = globalShortcut.register(hotkey, () => {
       toggleOverlayWindow();
     });
 
     if (!registered) {
-      console.error('[Main] Failed to register global shortcut Option+Space');
+      console.error(`[Main] Failed to register global shortcut ${hotkey}`);
     } else {
-      console.log('[Main] Registered global shortcut Option+Space');
+      console.log(`[Main] Registered global shortcut ${hotkey}`);
     }
 
     app.on('activate', () => {

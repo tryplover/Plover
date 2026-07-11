@@ -9,13 +9,40 @@ on:
   workflow_dispatch:
 
 jobs:
-  release:
-    name: Build & Release Desktop Binary
-    runs-on: macos-latest
+  tag:
+    name: Compute tag
+    runs-on: ubuntu-latest
+    outputs:
+      name: ${{ steps.tag.outputs.name }}
+    steps:
+      - name: Generate tag name
+        id: tag
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "name=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=v$(date -u +'%Y.%m.%d-%H%M')" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    name: Build ${{ matrix.label }}
+    needs: tag
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 30
-    permissions:
-      contents: write
-      issues: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            label: macOS
+            asset_glob: |
+              app/dist/*.dmg
+              app/dist/*.dmg.blockmap
+          - os: windows-latest
+            label: Windows
+            asset_glob: |
+              app/dist/*.exe
+              app/dist/*.exe.blockmap
 
     steps:
       - name: Checkout code
@@ -38,18 +65,24 @@ jobs:
       - name: Build and Package App
         run: pnpm package
         env:
-          # Code signing disabled until Apple Developer certs are wired into CI secrets
+          # Code signing disabled until Apple Developer / Windows codesign certs are wired into CI secrets
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
-      - name: Generate tag name
-        id: tag
-        run: |
-          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            echo "name=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "name=v$(date -u +'%Y.%m.%d-%H%M')" >> "$GITHUB_OUTPUT"
-          fi
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: plover-${{ matrix.label }}
+          path: ${{ matrix.asset_glob }}
+          if-no-files-found: error
+          retention-days: 3
 
+  release:
+    name: Publish to Plover-Releases
+    needs: [tag, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
       - name: Mint Plover-Releases token
         id: releases_token
         uses: actions/create-github-app-token@v2
@@ -59,30 +92,39 @@ jobs:
           owner: tryplover
           repositories: Plover-Releases
 
-      - name: Upload binary to Plover-Releases
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v6
+        with:
+          path: artifacts
+
+      - name: Publish release
         uses: softprops/action-gh-release@v3
         with:
           repository: tryplover/Plover-Releases
           token: ${{ steps.releases_token.outputs.token }}
-          tag_name: ${{ steps.tag.outputs.name }}
-          name: Plover ${{ steps.tag.outputs.name }}
-          files: |
-            app/dist/*.dmg
-            app/dist/*.dmg.blockmap
+          tag_name: ${{ needs.tag.outputs.name }}
+          name: Plover ${{ needs.tag.outputs.name }}
+          files: artifacts/**/*
 
       - name: Trigger website rebuild
         if: env.WEBSITE_DEPLOY_HOOK_URL != ''
         env:
           WEBSITE_DEPLOY_HOOK_URL: ${{ secrets.WEBSITE_DEPLOY_HOOK_URL }}
-        run: |
-          curl -fsS -X POST "$WEBSITE_DEPLOY_HOOK_URL" -o /dev/null
+        run: curl -fsS -X POST "$WEBSITE_DEPLOY_HOOK_URL" -o /dev/null
 
+  notify_failure:
+    name: Notify on failure
+    if: failure()
+    needs: [tag, build, release]
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
       - name: Report failure to tracking issue
-        if: failure()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          TAG: ${{ steps.tag.outputs.name }}
+          TAG: ${{ needs.tag.outputs.name }}
         run: |
           title="Release pipeline broken"
           body="Release run failed for tag \`${TAG:-unknown}\`. See ${RUN_URL}"

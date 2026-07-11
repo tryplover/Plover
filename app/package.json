@@ -83,7 +83,14 @@
       "icon": "build/icon.icns"
     },
     "win": {
-      "icon": "build/icon.png"
+      "icon": "build/icon.png",
+      "target": ["nsis"],
+      "artifactName": "Plover-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false
     },
     "linux": {
       "icon": "build/icon.png"
