@@ -60,7 +60,7 @@ describe('SignupScreen', () => {
     render(<SignupScreen />);
     fireEvent.click(screen.getByRole('button', { name: 'Continue with Google' }));
     await act(async () => {
-      startDeferred.resolve();
+      startDeferred.resolve(undefined);
       await startDeferred.promise;
     });
     await waitFor(() => {
