@@ -8,7 +8,7 @@ import { GoogleAuth } from './sync/google-auth.js';
 import { GoogleCalendarSync } from './sync/calendar.js';
 import { eventBus } from './bus.js';
 import { ProposedPlan } from '../preload/index.js';
-import { createCompanionWindow } from './windows/companion.js';
+import { setupCompanionIpc } from './windows/companion.js';
 import { listActiveWindows } from './activity/window-tracker.js';
 import {
   getScreenRecordingStatus,
@@ -333,45 +333,7 @@ export function setupIpcHandlers(
   });
 
   // Companion
-  let companion: BrowserWindow | null = null;
-  let companionKind = 'observing';
-  let companionActiveTaskId: string | null = null;
-
-  function ensureCompanion(): BrowserWindow {
-    if (!companion || companion.isDestroyed()) {
-      companion = createCompanionWindow();
-      companion.on('closed', () => {
-        companion = null;
-      });
-    }
-    return companion;
-  }
-
-  ipcMain.handle('companion:show', () => {
-    ensureCompanion().show();
-  });
-  ipcMain.handle('companion:hide', () => {
-    companion?.hide();
-  });
-  ipcMain.handle('companion:resize', (_e, height: number) => {
-    const w = ensureCompanion();
-    const [width] = w.getSize();
-    if (width !== undefined) {
-      w.setSize(width, Math.max(56, Math.min(640, Math.round(height))));
-    }
-  });
-  ipcMain.handle('companion:setActiveTask', (_e, taskId: string | null) => {
-    companionActiveTaskId = taskId;
-    ensureCompanion().webContents.send('companion:activeTask', taskId);
-  });
-  ipcMain.handle('companion:setState', (_e, kind: string) => {
-    companionKind = kind;
-    ensureCompanion().webContents.send('companion:state', kind);
-  });
-  ipcMain.handle('companion:getInitialState', () => ({
-    kind: companionKind,
-    activeTaskId: companionActiveTaskId,
-  }));
+  setupCompanionIpc();
 
   ipcMain.handle('windows:list', async () => {
     try {

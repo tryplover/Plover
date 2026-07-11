@@ -3,11 +3,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { SignupScreen } from '../../../src/renderer/setup/SignupScreen';
 
-type Deferred<T> = {
+interface Deferred<T> {
   promise: Promise<T>;
   resolve: (value: T) => void;
   reject: (reason: unknown) => void;
-};
+}
 
 function defer<T>(): Deferred<T> {
   let resolve!: (value: T) => void;
@@ -19,13 +19,13 @@ function defer<T>(): Deferred<T> {
   return { promise, resolve, reject };
 }
 
-let startDeferred: Deferred<void>;
+let startDeferred: Deferred<undefined>;
 let completeMock: ReturnType<typeof vi.fn>;
 let startMock: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   vi.clearAllMocks();
-  startDeferred = defer<void>();
+  startDeferred = defer<undefined>();
   startMock = vi.fn(() => startDeferred.promise);
   completeMock = vi.fn().mockResolvedValue(undefined);
   Object.defineProperty(window, 'api', {

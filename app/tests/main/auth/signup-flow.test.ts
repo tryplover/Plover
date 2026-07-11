@@ -30,7 +30,7 @@ function extractStateFromOpenExternal(): string {
   const parsed = new URL(url);
   const state = parsed.searchParams.get('state');
   expect(state).toBeTruthy();
-  return state!;
+  return state ?? '';
 }
 
 describe('signup-flow', () => {
@@ -47,7 +47,9 @@ describe('signup-flow', () => {
 
   it('opens external URL matching /signup?state=<nonce>', async () => {
     const promise = startSignup();
-    promise.catch(() => {}); // avoid unhandled rejection warnings
+    promise.catch(() => {
+      /* avoid unhandled rejection warnings */
+    });
     extractStateFromOpenExternal();
     _clearPendingForTests();
     await expect(promise).rejects.toThrow(/Cleared for tests/);
@@ -94,7 +96,9 @@ describe('signup-flow', () => {
   it('rejects after 10-minute timeout', async () => {
     vi.useFakeTimers();
     const promise = startSignup();
-    promise.catch(() => {});
+    promise.catch(() => {
+      /* ignore timeout rejection */
+    });
     extractStateFromOpenExternal();
 
     vi.advanceTimersByTime(10 * 60 * 1000 + 1000);
@@ -105,7 +109,9 @@ describe('signup-flow', () => {
 
   it('supersedes an existing pending signup when startSignup is called again', async () => {
     const first = startSignup();
-    first.catch(() => {});
+    first.catch(() => {
+      /* ignore superseded rejection */
+    });
     const firstState = extractStateFromOpenExternal();
 
     mockShell.openExternal.mockClear();
@@ -137,7 +143,9 @@ describe('signup-flow', () => {
 
   it('ignores malformed URLs', async () => {
     const promise = startSignup();
-    promise.catch(() => {});
+    promise.catch(() => {
+      /* ignore rejection */
+    });
     extractStateFromOpenExternal();
 
     completeSignup('not a url');
