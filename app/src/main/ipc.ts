@@ -306,9 +306,10 @@ export function setupIpcHandlers(
       const newWidth = width ?? bounds.width;
       if (bounds.height !== height || bounds.width !== newWidth) {
         const newX = bounds.x - Math.round((newWidth - bounds.width) / 2);
+        const newY = bounds.y - Math.round((height - bounds.height) / 2);
         overlayWin.setBounds({
           x: newX,
-          y: bounds.y,
+          y: newY,
           width: newWidth,
           height: height,
         });

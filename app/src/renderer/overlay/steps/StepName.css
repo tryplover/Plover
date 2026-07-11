@@ -6,7 +6,6 @@
 
 .plover-step-name--overlay {
   padding: 0;
-  gap: 12px;
 }
 
 .plover-step-name--overlay h2 {
@@ -76,5 +75,10 @@
 }
 
 .plover-step-name--overlay .plover-step-name__cta {
-  margin-top: 4px;
+  margin-top: 8px;
+}
+
+.plover-step-name--window .plover-step-name__cta {
+  margin-top: 16px;
+  margin-bottom: 32px;
 }

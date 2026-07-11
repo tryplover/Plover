@@ -168,7 +168,8 @@ body {
 .main-content {
   flex-grow: 1;
   height: 100%;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   background-color: var(--plover-bg);
 }
 
@@ -1280,4 +1281,33 @@ input:checked + .slider:before {
   line-height: 1.5;
   color: var(--plover-text);
   font-style: italic;
+}
+
+.timeline-feed-hits {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.timeline-feed-hit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--plover-border);
+  border-radius: var(--plover-radius-sm);
+}
+
+.timeline-feed-hit-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.timeline-feed-empty {
+  font-size: 13px;
+  color: var(--plover-text-dim);
+  margin: 0;
 }

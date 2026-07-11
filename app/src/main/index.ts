@@ -1,5 +1,5 @@
 import './load-env.js';
-import { app, BrowserWindow, globalShortcut, ipcMain } from 'electron';
+import { app, BrowserWindow, globalShortcut, ipcMain, nativeImage } from 'electron';
 import { join } from 'node:path';
 import { setupIpc, calendarSync, googleAuth } from './ipc.js';
 import { activityRepo, settingsRepo, tasksRepo, summariesRepo } from './store/index.js';
@@ -19,6 +19,12 @@ if (!app.isPackaged) {
 }
 
 app.setAsDefaultProtocolClient('plover');
+
+const iconPath = join(import.meta.dirname, '../../build/icon.png');
+const appIcon = nativeImage.createFromPath(iconPath);
+if (!app.isPackaged && process.platform === 'darwin' && !appIcon.isEmpty()) {
+  app.dock?.setIcon(appIcon); 
+}
 
 const bufferedProtocolUrls: string[] = [];
 let appIsReady = false;
@@ -92,8 +98,8 @@ if (!gotTheLock) {
   function createOverlayWindow(variant: 'overlay' | 'window' = 'overlay'): BrowserWindow {
     const isWindow = variant === 'window';
     const win = new BrowserWindow({
-      width: isWindow ? 720 : 440,
-      height: isWindow ? 640 : 180,
+      width: isWindow ? 820 : 560,
+      height: isWindow ? 780 : 480,
       frame: isWindow,
       transparent: !isWindow,
       alwaysOnTop: !isWindow,
@@ -171,7 +177,7 @@ if (!gotTheLock) {
       if (overlayWindow.isVisible()) {
         overlayWindow.hide();
       } else {
-        overlayWindow.setSize(440, 180);
+        overlayWindow.setSize(560, 480);
         overlayWindow.center();
         overlayWindow.show();
         overlayWindow.focus();
