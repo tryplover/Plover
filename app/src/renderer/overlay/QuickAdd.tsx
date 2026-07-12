@@ -6,6 +6,8 @@ import { Step1GoalSetup } from './components/Step1GoalSetup.js';
 import { Step2TaskBreakdown } from './components/Step2TaskBreakdown.js';
 import { Step3WatchedSources } from './components/Step3WatchedSources.js';
 import { Step4Tracking } from './components/Step4Tracking.js';
+import { CollapsedWidget } from './components/CollapsedWidget.js';
+import { PanelHeader } from './components/PanelHeader.js';
 
 export function QuickAdd() {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -297,7 +299,7 @@ export function QuickAdd() {
     setPlan({ ...plan, subtasks: newSubtasks });
   };
 
-  const handleDeleteStep = (index: number) => {
+  const handleSubtaskDelete = (index: number) => {
     if (!plan) return;
     const newSubtasks = plan.subtasks.filter((_, idx) => idx !== index);
     setPlan({ ...plan, subtasks: newSubtasks });
@@ -305,41 +307,7 @@ export function QuickAdd() {
 
   // --- COLLAPSED WIDGET STATE (STEP 1 COLLAPSED) ---
   if (step === 1 && !isExpanded) {
-    return (
-      <div
-        className="plover-floating-bar-widget"
-        onClick={() => setIsExpanded(true)}
-        style={{
-          width: '260px',
-          height: '52px',
-          cursor: 'pointer',
-          justifyContent: 'space-between',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div
-            style={{
-              width: '18px',
-              height: '18px',
-              backgroundColor: 'rgba(159, 225, 203, 0.16)',
-              border: '1px solid rgba(159, 225, 203, 0.5)',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <span style={{ color: '#9fe1cb', fontSize: '12px', fontWeight: 'bold' }}>+</span>
-          </div>
-          <span style={{ fontSize: '13px', fontWeight: 500, color: 'rgba(246, 242, 235, 0.85)' }}>
-            Start a task
-          </span>
-        </div>
-        <span style={{ fontSize: '11px', color: 'rgba(246, 242, 235, 0.3)', fontWeight: 500 }}>
-          Plover
-        </span>
-      </div>
-    );
+    return <CollapsedWidget onExpand={() => setIsExpanded(true)} />;
   }
 
   // --- STEP 4: COLLAPSED FLOATING PROGRESS BAR ---
@@ -362,88 +330,7 @@ export function QuickAdd() {
   // --- EXPANDED WIZARD PANELS (STEP 1, 2, 3) ---
   return (
     <div className="plover-glass-panel plover-wizard-container" style={{ width: '440px' }}>
-      {/* Panel Header */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          padding: '12px 16px',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
-        }}
-      >
-        {/* Traffic lights */}
-        <div style={{ display: 'flex', gap: '6px' }}>
-          <div
-            style={{
-              width: '10px',
-              height: '10px',
-              borderRadius: '50%',
-              backgroundColor: '#ff5f56',
-              cursor: 'pointer',
-            }}
-            onClick={handleCancel}
-          />
-          <div
-            style={{
-              width: '10px',
-              height: '10px',
-              borderRadius: '50%',
-              backgroundColor: '#ffbd2e',
-            }}
-          />
-          <div
-            style={{
-              width: '10px',
-              height: '10px',
-              borderRadius: '50%',
-              backgroundColor: '#27c93f',
-            }}
-          />
-        </div>
-        <div style={{ flex: 1 }} />
-        <span
-          style={{
-            fontSize: '11px',
-            fontWeight: 600,
-            color: 'rgba(246, 242, 235, 0.35)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-          }}
-        >
-          {step === 1
-            ? 'Step 1: Setup Task'
-            : step === 2
-              ? 'Step 2: Edit Breakdown'
-              : 'Step 3: Watch Workflow'}
-        </span>
-        <div style={{ flex: 1 }} />
-        <div style={{ display: 'flex', gap: '3px' }}>
-          <div
-            style={{
-              width: '4px',
-              height: '4px',
-              borderRadius: '50%',
-              backgroundColor: step >= 1 ? '#9fe1cb' : 'rgba(255,255,255,0.2)',
-            }}
-          />
-          <div
-            style={{
-              width: '4px',
-              height: '4px',
-              borderRadius: '50%',
-              backgroundColor: step >= 2 ? '#9fe1cb' : 'rgba(255,255,255,0.2)',
-            }}
-          />
-          <div
-            style={{
-              width: '4px',
-              height: '4px',
-              borderRadius: '50%',
-              backgroundColor: step >= 3 ? '#9fe1cb' : 'rgba(255,255,255,0.2)',
-            }}
-          />
-        </div>
-      </div>
+      <PanelHeader step={step} onCancel={handleCancel} />
 
       {/* Main Body */}
       <div style={{ padding: '20px' }}>
@@ -521,7 +408,7 @@ export function QuickAdd() {
                 isScheduled={isScheduled}
                 handleSubtaskTitleChange={handleSubtaskTitleChange}
                 handleSubtaskEstimateChange={handleSubtaskEstimateChange}
-                handleDeleteStep={handleDeleteStep}
+                handleDeleteStep={handleSubtaskDelete}
                 handleAddStep={handleAddStep}
                 handleCommit={handleCommit}
               />

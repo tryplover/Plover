@@ -4,12 +4,12 @@ import { setPloverToken } from './plover-token.js';
 
 const NONCE_TTL_MS = 10 * 60 * 1000;
 
-type Pending = {
+interface Pending {
   state: string;
   resolve: () => void;
   reject: (err: Error) => void;
   timer: ReturnType<typeof setTimeout>;
-};
+}
 
 const pendingSignups = new Map<string, Pending>();
 

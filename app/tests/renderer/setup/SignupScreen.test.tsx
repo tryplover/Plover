@@ -3,11 +3,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { SignupScreen } from '../../../src/renderer/setup/SignupScreen';
 
-type Deferred<T> = {
+interface Deferred<T> {
   promise: Promise<T>;
   resolve: (value: T) => void;
   reject: (reason: unknown) => void;
-};
+}
 
 function defer<T>(): Deferred<T> {
   let resolve!: (value: T) => void;
@@ -19,14 +19,14 @@ function defer<T>(): Deferred<T> {
   return { promise, resolve, reject };
 }
 
-let startDeferred: Deferred<void>;
+let startDeferred: Deferred<undefined>;
 let completeMock: ReturnType<typeof vi.fn>;
 let startMock: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   vi.clearAllMocks();
-  startDeferred = defer<void>();
-  startMock = vi.fn(() => startDeferred.promise);
+  startDeferred = defer<undefined>();
+  startMock = vi.fn(() => startDeferred.promise as unknown as Promise<void>);
   completeMock = vi.fn().mockResolvedValue(undefined);
   Object.defineProperty(window, 'api', {
     value: {
@@ -60,7 +60,7 @@ describe('SignupScreen', () => {
     render(<SignupScreen />);
     fireEvent.click(screen.getByRole('button', { name: 'Continue with Google' }));
     await act(async () => {
-      startDeferred.resolve();
+      startDeferred.resolve(undefined);
       await startDeferred.promise;
     });
     await waitFor(() => {

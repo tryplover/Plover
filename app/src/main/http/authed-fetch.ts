@@ -31,7 +31,9 @@ export async function authedFetch(path: string, init: RequestInit = {}): Promise
     : `${backendUrl}${path.startsWith('/') ? '' : '/'}${path}`;
   const res = await fetch(url, { ...init, headers });
   if (res.status === 401) {
-    await clearPloverToken().catch(() => {});
+    await clearPloverToken().catch((err) => {
+      console.error('Failed to clear plover token:', err);
+    });
     throw new UnauthorizedError('plover token invalid or revoked');
   }
   return res;
