@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Goal, Task } from '../../../shared/types';
 import { StepRow } from '../../components/StepRow';
 import { ProgressLine } from '../../components/ProgressLine';
@@ -20,6 +20,18 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
   const [showSetupModal, setShowSetupModal] = useState(false);
 
   const [expandedGoals, setExpandedGoals] = useState<Record<string, boolean>>({});
+
+  // Memoize task grouping to avoid O(Goals * Tasks) filtering in the render loop
+  const tasksByGoal = useMemo(() => {
+    const map: Record<string, Task[]> = {};
+    for (const task of tasks) {
+      if (!map[task.goal_id]) {
+        map[task.goal_id] = [];
+      }
+      map[task.goal_id].push(task);
+    }
+    return map;
+  }, [tasks]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -176,7 +188,7 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
               </div>
             ) : (
               goals.map((goal) => {
-                const goalTasks = tasks.filter((t) => t.goal_id === goal.id);
+                const goalTasks = tasksByGoal[goal.id] || [];
                 const doneTasks = goalTasks.filter((t) => t.status === 'done');
                 const progressValue =
                   goalTasks.length > 0 ? doneTasks.length / goalTasks.length : 0;

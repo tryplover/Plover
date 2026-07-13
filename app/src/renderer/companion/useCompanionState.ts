@@ -23,26 +23,36 @@ export function useCompanionState(): CompanionView {
   useEffect(() => {
     let active = true;
 
-    window.api.companion.getInitialState().then(async ({ kind, activeTaskId }) => {
-      if (!active) return;
-      if (activeTaskId) {
-        const tasks = await window.api.getTasks();
+    window.api.companion
+      .getInitialState()
+      .then(async ({ kind, activeTaskId }) => {
         if (!active) return;
-        const task = tasks.find((t) => t.id === activeTaskId) ?? null;
-        setView((v) => ({ ...v, kind: kind as StateKind, task, steps: buildSteps(task, tasks) }));
-      } else {
-        setView((v) => ({ ...v, kind: kind as StateKind }));
-      }
-    }).catch(() => undefined);
+        if (activeTaskId) {
+          const task = await window.api.getTaskById(activeTaskId);
+          if (!active) return;
+          const siblings = task ? await window.api.getTasksByGoal(task.goal_id) : [];
+          if (!active) return;
+          setView((v) => ({
+            ...v,
+            kind: kind as StateKind,
+            task,
+            steps: buildSteps(task, siblings),
+          }));
+        } else {
+          setView((v) => ({ ...v, kind: kind as StateKind }));
+        }
+      })
+      .catch(() => undefined);
 
     const offTask = window.api.on('companion:activeTask', async (taskId: unknown) => {
       if (!active) return;
       const id = taskId as string | null;
       if (!id) return setView((v) => ({ ...v, task: null, steps: [] }));
-      const tasks = await window.api.getTasks();
+      const task = await window.api.getTaskById(id);
       if (!active) return;
-      const task = tasks.find((t) => t.id === id) ?? null;
-      setView((v) => ({ ...v, task, steps: buildSteps(task, tasks) }));
+      const siblings = task ? await window.api.getTasksByGoal(task.goal_id) : [];
+      if (!active) return;
+      setView((v) => ({ ...v, task, steps: buildSteps(task, siblings) }));
     });
     const offState = window.api.on('companion:state', (kind: unknown) => {
       if (!active) return;
