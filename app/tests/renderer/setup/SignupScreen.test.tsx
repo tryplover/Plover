@@ -3,11 +3,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { SignupScreen } from '../../../src/renderer/setup/SignupScreen';
 
-type Deferred<T> = {
+interface Deferred<T> {
   promise: Promise<T>;
   resolve: (value: T) => void;
   reject: (reason: unknown) => void;
-};
+}
 
 function defer<T>(): Deferred<T> {
   let resolve!: (value: T) => void;

@@ -38,28 +38,40 @@ export class SettingsRepo {
   }
 
   getAll(): SettingsData {
-    const googleConnected = this.get('googleConnected') === 'true';
-    const workingHoursRaw = this.get('workingHours') as string | null;
+    const rows = this.db.prepare('SELECT key, value FROM settings').all() as {
+      key: string;
+      value: string;
+    }[];
+    const settingsMap = new Map(rows.map((r) => [r.key, r.value]));
+
+    const googleConnected = settingsMap.get('googleConnected') === 'true';
+    const workingHoursRaw = settingsMap.get('workingHours');
     const workingHours = workingHoursRaw
       ? JSON.parse(workingHoursRaw)
       : { start: '09:00', end: '18:00' };
-    const horizonDays = Number(this.get('horizonDays') ?? '14');
-    const pauseScheduling = this.get('pauseScheduling') === 'true';
-    const watchedFoldersRaw = this.get('watchedFolders');
+    const horizonDays = Number(settingsMap.get('horizonDays') ?? '14');
+    const pauseScheduling = settingsMap.get('pauseScheduling') === 'true';
+    const watchedFoldersRaw = settingsMap.get('watchedFolders');
     const watchedFolders = watchedFoldersRaw ? JSON.parse(watchedFoldersRaw) : [];
-    const lastInferenceTs = this.get('lastInferenceTs');
+    const lastInferenceTs = settingsMap.get('lastInferenceTs') ?? null;
 
-    const pauseAllTracking = this.get('pauseAllTracking') === 'true';
-    const windowTrackingEnabled = this.get('windowTrackingEnabled') !== 'false';
-    const gdocsPollingEnabled = this.get('gdocsPollingEnabled') !== 'false';
-    const fileWatchingEnabled = this.get('fileWatchingEnabled') !== 'false';
-    const screenCaptureEnabled = this.get('screenCaptureEnabled') === 'true';
-    const rawInterval = Number(this.get('screenCaptureIntervalMinutes') ?? '5');
-    const screenCaptureIntervalMinutes = Math.min(60, Math.max(1, Number.isFinite(rawInterval) ? Math.round(rawInterval) : 5));
-    const screenVisionInferenceEnabled = this.get('screenVisionInferenceEnabled') === 'true';
-    const rawRetention = Number(this.get('activityRetentionDays') ?? '30');
-    const activityRetentionDays = Math.max(0, Number.isFinite(rawRetention) ? Math.round(rawRetention) : 30);
-    const planner_useRecentActivityContext = this.get('planner_useRecentActivityContext') !== 'false';
+    const pauseAllTracking = settingsMap.get('pauseAllTracking') === 'true';
+    const windowTrackingEnabled = settingsMap.get('windowTrackingEnabled') !== 'false';
+    const gdocsPollingEnabled = settingsMap.get('gdocsPollingEnabled') !== 'false';
+    const fileWatchingEnabled = settingsMap.get('fileWatchingEnabled') !== 'false';
+    const screenCaptureEnabled = settingsMap.get('screenCaptureEnabled') === 'true';
+    const rawInterval = Number(settingsMap.get('screenCaptureIntervalMinutes') ?? '5');
+    const screenCaptureIntervalMinutes = Math.min(
+      60,
+      Math.max(1, Number.isFinite(rawInterval) ? Math.round(rawInterval) : 5),
+    );
+    const screenVisionInferenceEnabled = settingsMap.get('screenVisionInferenceEnabled') === 'true';
+    const rawRetention = Number(settingsMap.get('activityRetentionDays') ?? '30');
+    const activityRetentionDays = Math.max(
+      0,
+      Number.isFinite(rawRetention) ? Math.round(rawRetention) : 30,
+    );
+    const planner_useRecentActivityContext = settingsMap.get('planner_useRecentActivityContext') !== 'false';
 
     return {
       googleConnected,
