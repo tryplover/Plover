@@ -19,13 +19,13 @@ function defer<T>(): Deferred<T> {
   return { promise, resolve, reject };
 }
 
-let startDeferred: Deferred<void>;
+let startDeferred: Deferred<undefined>;
 let completeMock: ReturnType<typeof vi.fn>;
 let startMock: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   vi.clearAllMocks();
-  startDeferred = defer<void>();
+  startDeferred = defer<undefined>();
   startMock = vi.fn(() => startDeferred.promise);
   completeMock = vi.fn().mockResolvedValue(undefined);
   Object.defineProperty(window, 'api', {
@@ -60,7 +60,7 @@ describe('SignupScreen', () => {
     render(<SignupScreen />);
     fireEvent.click(screen.getByRole('button', { name: 'Continue with Google' }));
     await act(async () => {
-      startDeferred.resolve();
+      startDeferred.resolve(undefined);
       await startDeferred.promise;
     });
     await waitFor(() => {
