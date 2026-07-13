@@ -25,10 +25,12 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
   const tasksByGoal = useMemo(() => {
     const map: Record<string, Task[]> = {};
     for (const task of tasks) {
-      if (!map[task.goal_id]) {
-        map[task.goal_id] = [];
+      const list = map[task.goal_id];
+      if (list) {
+        list.push(task);
+      } else {
+        map[task.goal_id] = [task];
       }
-      map[task.goal_id].push(task);
     }
     return map;
   }, [tasks]);
