@@ -21,24 +21,13 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
 
   const [expandedGoals, setExpandedGoals] = useState<Record<string, boolean>>({});
 
-  // Memoize task grouping to avoid O(Goals * Tasks) filtering in the render loop
-  const tasksByGoal = useMemo(() => {
-    const map: Record<string, Task[]> = {};
-    for (const task of tasks) {
-      const list = map[task.goal_id];
-      if (list) {
-        list.push(task);
-      } else {
-        map[task.goal_id] = [task];
-      }
-    }
-    return map;
-  }, [tasks]);
-
   const fetchData = useCallback(async () => {
     try {
-      const allGoals = await window.api.getGoals();
-      const allTasks = await window.api.getTasks();
+      // ⚡ Bolt: Fetch goals and tasks in parallel to reduce waterfall delay
+      const [allGoals, allTasks] = await Promise.all([
+        window.api.getGoals(),
+        window.api.getTasks(),
+      ]);
       setGoals(allGoals);
       setTasks(allTasks);
 
@@ -96,6 +85,30 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
       console.error('Failed to update task status:', err);
     }
   };
+
+  // ⚡ Bolt: Group tasks by goal and pre-calculate progress in a single pass O(G+T)
+  // to avoid O(G*T) filtering inside the render loop.
+  const goalsWithMetadata = useMemo(() => {
+    const taskMap: Record<string, Task[]> = {};
+    tasks.forEach((task) => {
+      const existing = taskMap[task.goal_id];
+      if (existing) {
+        existing.push(task);
+      } else {
+        taskMap[task.goal_id] = [task];
+      }
+    });
+
+    return goals.map((goal) => {
+      const goalTasks = taskMap[goal.id] || [];
+      const doneTasks = goalTasks.filter((t) => t.status === 'done');
+      return {
+        goal,
+        tasks: goalTasks,
+        progressValue: goalTasks.length > 0 ? doneTasks.length / goalTasks.length : 0,
+      };
+    });
+  }, [goals, tasks]);
 
   if (loading) {
     return (
@@ -189,11 +202,7 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
                 </Button>
               </div>
             ) : (
-              goals.map((goal) => {
-                const goalTasks = tasksByGoal[goal.id] || [];
-                const doneTasks = goalTasks.filter((t) => t.status === 'done');
-                const progressValue =
-                  goalTasks.length > 0 ? doneTasks.length / goalTasks.length : 0;
+              goalsWithMetadata.map(({ goal, tasks: goalTasks, progressValue }) => {
                 const isOpen = !!expandedGoals[goal.id];
 
                 return (
