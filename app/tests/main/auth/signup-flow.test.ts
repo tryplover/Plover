@@ -25,12 +25,12 @@ import {
 
 function extractStateFromOpenExternal(): string {
   expect(mockShell.openExternal).toHaveBeenCalledTimes(1);
-  const url = mockShell.openExternal.mock.calls[0]?.[0] as string;
+  const url = (mockShell.openExternal.mock.calls[0]?.[0] as string | undefined) || '';
   expect(url).toMatch(/^https?:\/\/.+\/signup\?state=[A-Za-z0-9_-]+$/);
   const parsed = new URL(url);
   const state = parsed.searchParams.get('state');
   expect(state).toBeTruthy();
-  return state!;
+  return state || '';
 }
 
 describe('signup-flow', () => {
@@ -47,7 +47,9 @@ describe('signup-flow', () => {
 
   it('opens external URL matching /signup?state=<nonce>', async () => {
     const promise = startSignup();
-    promise.catch(() => {}); // avoid unhandled rejection warnings
+    promise.catch((err: unknown) => {
+      console.log('[test] promise caught:', err);
+    }); // avoid unhandled rejection warnings
     extractStateFromOpenExternal();
     _clearPendingForTests();
     await expect(promise).rejects.toThrow(/Cleared for tests/);
@@ -65,6 +67,9 @@ describe('signup-flow', () => {
 
   it('does nothing when state does not match', async () => {
     const promise = startSignup();
+    promise.catch((err: unknown) => {
+      console.log('[test] promise caught:', err);
+    });
     extractStateFromOpenExternal();
 
     completeSignup('plover://auth?token=xyz&state=WRONG');
@@ -79,6 +84,9 @@ describe('signup-flow', () => {
 
   it('does nothing when token is missing', async () => {
     const promise = startSignup();
+    promise.catch((err: unknown) => {
+      console.log('[test] promise caught:', err);
+    });
     const state = extractStateFromOpenExternal();
 
     completeSignup(`plover://auth?state=${state}`);
@@ -94,7 +102,9 @@ describe('signup-flow', () => {
   it('rejects after 10-minute timeout', async () => {
     vi.useFakeTimers();
     const promise = startSignup();
-    promise.catch(() => {});
+    promise.catch((err: unknown) => {
+      console.log('[test] promise caught:', err);
+    });
     extractStateFromOpenExternal();
 
     vi.advanceTimersByTime(10 * 60 * 1000 + 1000);
@@ -105,7 +115,9 @@ describe('signup-flow', () => {
 
   it('supersedes an existing pending signup when startSignup is called again', async () => {
     const first = startSignup();
-    first.catch(() => {});
+    first.catch((err: unknown) => {
+      console.log('[test] first caught:', err);
+    });
     const firstState = extractStateFromOpenExternal();
 
     mockShell.openExternal.mockClear();
@@ -137,7 +149,9 @@ describe('signup-flow', () => {
 
   it('ignores malformed URLs', async () => {
     const promise = startSignup();
-    promise.catch(() => {});
+    promise.catch((err: unknown) => {
+      console.log('[test] promise caught:', err);
+    });
     extractStateFromOpenExternal();
 
     completeSignup('not a url');

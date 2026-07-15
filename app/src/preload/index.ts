@@ -27,6 +27,8 @@ export interface PloverApi {
   // Main Goals & Tasks
   getGoals: () => Promise<Goal[]>;
   getTasks: () => Promise<Task[]>;
+  getTaskById: (id: string) => Promise<Task | null>;
+  getTasksByGoal: (goalId: string) => Promise<Task[]>;
   getSummaries: () => Promise<
     (SummaryRow & { task_title: string | null; goal_title: string | null })[]
   >;
@@ -161,6 +163,8 @@ export interface PloverApi {
 const api: PloverApi = {
   getGoals: () => ipcRenderer.invoke('goals:get'),
   getTasks: () => ipcRenderer.invoke('tasks:get'),
+  getTaskById: (id) => ipcRenderer.invoke('tasks:getById', id),
+  getTasksByGoal: (goalId) => ipcRenderer.invoke('tasks:getByGoal', goalId),
   getSummaries: () => ipcRenderer.invoke('summaries:get'),
   updateTaskStatus: (id, status) => ipcRenderer.invoke('tasks:updateStatus', id, status),
   decomposeGoal: (goalText) => ipcRenderer.invoke('goals:decompose', goalText),

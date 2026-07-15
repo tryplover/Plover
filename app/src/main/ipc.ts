@@ -65,6 +65,14 @@ export function setupIpcHandlers(
     return tasksRepo.list();
   });
 
+  ipcMain.handle('tasks:getById', async (_, id: string) => {
+    return tasksRepo.get(id);
+  });
+
+  ipcMain.handle('tasks:getByGoal', async (_, goalId: string) => {
+    return tasksRepo.listByGoal(goalId);
+  });
+
   ipcMain.handle('tasks:updateStatus', async (_, id: string, status: Task['status']) => {
     const task = tasksRepo.update(id, { status });
     if (status === 'done') {
