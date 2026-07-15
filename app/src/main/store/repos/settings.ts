@@ -21,45 +21,71 @@ export interface SettingsData {
 
 export class SettingsRepo {
   private db: Database.Database;
+  private getStmt: Database.Statement;
+  private setStmt: Database.Statement;
+  private getAllStmt: Database.Statement;
+  private deleteStmt: Database.Statement;
 
   constructor(db: Database.Database) {
     this.db = db;
+    /**
+     * BOLT ⚡ OPTIMIZATION:
+     * Pre-preparing statements in the constructor avoids the overhead of
+     * re-compiling SQL on every call.
+     */
+    this.getStmt = this.db.prepare('SELECT value FROM settings WHERE key = ?');
+    this.setStmt = this.db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)');
+    this.getAllStmt = this.db.prepare('SELECT key, value FROM settings');
+    this.deleteStmt = this.db.prepare('DELETE FROM settings WHERE key = ?');
   }
 
   get(key: string): string | null {
-    const stmt = this.db.prepare('SELECT value FROM settings WHERE key = ?');
-    const row = stmt.get(key) as { value: string } | undefined;
+    const row = this.getStmt.get(key) as { value: string } | undefined;
     return row ? row.value : null;
   }
 
   set(key: string, value: string): void {
-    const stmt = this.db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)');
-    stmt.run(key, value);
+    this.setStmt.run(key, value);
   }
 
   getAll(): SettingsData {
-    const googleConnected = this.get('googleConnected') === 'true';
-    const workingHoursRaw = this.get('workingHours') as string | null;
+    /**
+     * BOLT ⚡ OPTIMIZATION:
+     * Batch-retrieval reduces database roundtrips from O(N) to O(1).
+     * Previously, this method performed ~13 individual queries.
+     * Now it performs a single scan and handles lookups in-memory.
+     */
+    const rows = this.getAllStmt.all() as { key: string; value: string }[];
+    const map = new Map(rows.map((r) => [r.key, r.value]));
+
+    const googleConnected = map.get('googleConnected') === 'true';
+    const workingHoursRaw = map.get('workingHours') ?? null;
     const workingHours = workingHoursRaw
       ? JSON.parse(workingHoursRaw)
       : { start: '09:00', end: '18:00' };
-    const horizonDays = Number(this.get('horizonDays') ?? '14');
-    const pauseScheduling = this.get('pauseScheduling') === 'true';
-    const watchedFoldersRaw = this.get('watchedFolders');
+    const horizonDays = Number(map.get('horizonDays') ?? '14');
+    const pauseScheduling = map.get('pauseScheduling') === 'true';
+    const watchedFoldersRaw = map.get('watchedFolders');
     const watchedFolders = watchedFoldersRaw ? JSON.parse(watchedFoldersRaw) : [];
-    const lastInferenceTs = this.get('lastInferenceTs');
+    const lastInferenceTs = map.get('lastInferenceTs') ?? null;
 
-    const pauseAllTracking = this.get('pauseAllTracking') === 'true';
-    const windowTrackingEnabled = this.get('windowTrackingEnabled') !== 'false';
-    const gdocsPollingEnabled = this.get('gdocsPollingEnabled') !== 'false';
-    const fileWatchingEnabled = this.get('fileWatchingEnabled') !== 'false';
-    const screenCaptureEnabled = this.get('screenCaptureEnabled') === 'true';
-    const rawInterval = Number(this.get('screenCaptureIntervalMinutes') ?? '5');
-    const screenCaptureIntervalMinutes = Math.min(60, Math.max(1, Number.isFinite(rawInterval) ? Math.round(rawInterval) : 5));
-    const screenVisionInferenceEnabled = this.get('screenVisionInferenceEnabled') === 'true';
-    const rawRetention = Number(this.get('activityRetentionDays') ?? '30');
-    const activityRetentionDays = Math.max(0, Number.isFinite(rawRetention) ? Math.round(rawRetention) : 30);
-    const planner_useRecentActivityContext = this.get('planner_useRecentActivityContext') !== 'false';
+    const pauseAllTracking = map.get('pauseAllTracking') === 'true';
+    const windowTrackingEnabled = map.get('windowTrackingEnabled') !== 'false';
+    const gdocsPollingEnabled = map.get('gdocsPollingEnabled') !== 'false';
+    const fileWatchingEnabled = map.get('fileWatchingEnabled') !== 'false';
+    const screenCaptureEnabled = map.get('screenCaptureEnabled') === 'true';
+    const rawInterval = Number(map.get('screenCaptureIntervalMinutes') ?? '5');
+    const screenCaptureIntervalMinutes = Math.min(
+      60,
+      Math.max(1, Number.isFinite(rawInterval) ? Math.round(rawInterval) : 5),
+    );
+    const screenVisionInferenceEnabled = map.get('screenVisionInferenceEnabled') === 'true';
+    const rawRetention = Number(map.get('activityRetentionDays') ?? '30');
+    const activityRetentionDays = Math.max(
+      0,
+      Number.isFinite(rawRetention) ? Math.round(rawRetention) : 30,
+    );
+    const planner_useRecentActivityContext = map.get('planner_useRecentActivityContext') !== 'false';
 
     return {
       googleConnected,
@@ -98,7 +124,7 @@ export class SettingsRepo {
     }
     if (patch.lastInferenceTs !== undefined) {
       if (patch.lastInferenceTs === null) {
-        this.db.prepare('DELETE FROM settings WHERE key = ?').run('lastInferenceTs');
+        this.deleteStmt.run('lastInferenceTs');
       } else {
         this.set('lastInferenceTs', patch.lastInferenceTs);
       }
