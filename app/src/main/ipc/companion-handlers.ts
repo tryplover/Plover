@@ -13,9 +13,7 @@ export function registerCompanionHandlers(
 
   ipcMain.handle('companion:hide', () => {
     const companion = getCompanion();
-    if (companion && !companion.isDestroyed()) {
-      companion.hide();
-    }
+    companion?.hide();
   });
 
   ipcMain.handle('companion:resize', (_e, height: number) => {
