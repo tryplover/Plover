@@ -37,8 +37,12 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
 
   const fetchData = useCallback(async () => {
     try {
-      const allGoals = await window.api.getGoals();
-      const allTasks = await window.api.getTasks();
+      // Parallelize fetching goals and tasks to reduce cumulative latency.
+      // Savings: min(latency(getGoals), latency(getTasks)).
+      const [allGoals, allTasks] = await Promise.all([
+        window.api.getGoals(),
+        window.api.getTasks(),
+      ]);
       setGoals(allGoals);
       setTasks(allTasks);
 
