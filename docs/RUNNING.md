@@ -148,6 +148,66 @@ PLOVER_BACKEND_URL=https://plover-server-562340206018.us-central1.run.app pnpm p
 Dev builds without the env var fall back to `http://localhost:3000`. Power
 users can override at runtime by exporting `PLOVER_BACKEND_URL` before launch.
 
+### macOS Gatekeeper Bypass (For Un-notarized Developer/Local Builds)
+
+If you package the app locally without official Apple Developer certificates, macOS Gatekeeper will block the app because it was downloaded from the internet and has not been notarized by Apple.
+
+To open and run the app, you can use any of the following three methods:
+
+#### Method 1: The Finder Bypass (Easiest)
+1. Click **OK** to close the warning.
+2. Open Finder and locate the `Plover.app` or packaged DMG (e.g., in `/Applications` or your `Downloads` folder).
+3. Right-click (or hold Control and click) the Plover app icon, then select **Open** from the menu.
+4. A similar warning will appear, but this time it will include an **Open** button. Click **Open** to launch it. macOS will remember this preference and won't prompt you again.
+
+#### Method 2: System Settings
+1. Click **OK** to close the warning.
+2. Open System Settings and go to **Privacy & Security**.
+3. Scroll down to the **Security** section.
+4. You will see a note saying: *"Plover" was blocked from use because it is not from an identified developer.*
+5. Click **Open Anyway** and enter your credentials.
+
+#### Method 3: Terminal Command (Developer Method)
+Run the following command to completely strip the internet download (quarantine) flag from the app bundle:
+
+```bash
+# Clear the quarantine attribute from the app bundle
+xattr -d com.apple.quarantine /Applications/Plover.app
+
+# Or recursively clear all extended attributes (useful if dynamic libraries are also flagged)
+xattr -cr /Applications/Plover.app
+```
+
+---
+
+### Codesigning and Notarization for Production Release
+
+Plover is configured with a custom `afterSign` hook (`app/scripts/notarize.cjs`) that automatically submits packaged darwin builds to Apple's notarization servers.
+
+#### Prerequisites
+1. A paid Apple Developer Account ($99/year).
+2. A **Developer ID Application** certificate installed in your macOS Keychain.
+
+#### Configuration (Environment Variables)
+Before running `pnpm package`, make sure the appropriate signing credentials are set in your environment:
+
+* **Option A: App Store Connect API Key (Recommended for CI/CD)**
+  ```bash
+  export APPLE_API_KEY_ID="10_CHAR_KEY_ID"
+  export APPLE_API_ISSUER="YOUR_ISSUER_UUID"
+  export APPLE_API_KEY="/path/to/AuthKey.p8" # or raw private key contents
+  ```
+  
+* **Option B: Apple ID & App-Specific Password**
+  ```bash
+  export APPLE_ID="your-apple-id@example.com"
+  export APPLE_ID_PASSWORD="your-app-specific-password-from-appleid.apple.com"
+  export APPLE_TEAM_ID="10_CHAR_TEAM_ID"
+  ```
+
+If none of these environment variables are set, the notarization script will print a warning and skip notarization, falling back to an ad-hoc signed build.
+
+
 ## 9. Reset / inspect local state
 
 - **Database:** `~/Library/Application Support/Plover/plover.db` (plus `-wal`

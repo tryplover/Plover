@@ -6,12 +6,16 @@ import { Onboarding } from '../../../../src/renderer/main/pages/Onboarding';
 describe('Onboarding', () => {
   const mockOnComplete = vi.fn();
   const mockSaveGoalAndTasks = vi.fn().mockResolvedValue({ goal: {}, tasks: [] });
+  const mockRequestScreenRecording = vi.fn().mockResolvedValue('granted');
+  const mockOpenScreenRecordingSettings = vi.fn().mockResolvedValue(undefined);
 
   beforeEach(() => {
     vi.clearAllMocks();
     Object.defineProperty(window, 'api', {
       value: {
         saveGoalAndTasks: mockSaveGoalAndTasks,
+        requestScreenRecording: mockRequestScreenRecording,
+        openScreenRecordingSettings: mockOpenScreenRecordingSettings,
       },
       writable: true,
       configurable: true,

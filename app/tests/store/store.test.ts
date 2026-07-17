@@ -110,6 +110,21 @@ describe('Store Layer', () => {
       const repo = new GoalsRepo(db);
       expect(() => repo.update('non-existent', { title: 'New' })).toThrow(/not found/);
     });
+
+    it('handles delete', () => {
+      const db = new Database(':memory:');
+      runMigrations(db);
+      const repo = new GoalsRepo(db);
+
+      const goal = repo.create({
+        title: 'Delete me',
+        status: 'active',
+      });
+      expect(repo.get(goal.id)).not.toBeNull();
+
+      repo.delete(goal.id);
+      expect(repo.get(goal.id)).toBeNull();
+    });
   });
 
   describe('TasksRepo', () => {
@@ -271,6 +286,22 @@ describe('Store Layer', () => {
       runMigrations(db);
       const repo = new TasksRepo(db);
       expect(() => repo.update('non-existent', { title: 'New' })).toThrow(/not found/);
+    });
+
+    it('handles deleteByGoal', () => {
+      const db = new Database(':memory:');
+      runMigrations(db);
+      const goals = new GoalsRepo(db);
+      const tasks = new TasksRepo(db);
+
+      const goal = goals.create({ title: 'Goal', status: 'active' });
+      tasks.create({ goal_id: goal.id, title: 'T1', estimate_minutes: 10, status: 'todo' });
+      tasks.create({ goal_id: goal.id, title: 'T2', estimate_minutes: 20, status: 'todo' });
+
+      expect(tasks.listByGoal(goal.id)).toHaveLength(2);
+
+      tasks.deleteByGoal(goal.id);
+      expect(tasks.listByGoal(goal.id)).toHaveLength(0);
     });
   });
 

@@ -105,6 +105,7 @@ export interface PloverAPI {
     'granted' | 'denied' | 'not-determined' | 'restricted' | 'unsupported'
   >;
   requestScreenRecording(): Promise<'granted' | 'denied' | 'unsupported'>;
+  openScreenRecordingSettings(): Promise<void>;
   on(channel: string, callback: (...args: unknown[]) => void): () => void;
   signup: {
     start: () => Promise<void>;

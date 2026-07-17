@@ -14,6 +14,7 @@ export interface GDocsRevisionPayload {
 export interface EventPayloads {
   'goal.created': Goal;
   'goal.updated': Goal;
+  'goal.deleted': string;
   'task.scheduled': Task;
   'task.completed': Task;
   'calendar.synced': undefined;
@@ -26,6 +27,7 @@ export interface EventPayloads {
 export type AppEvent =
   | { type: 'goal.created'; payload: { goalId: string } }
   | { type: 'goal.updated'; payload: { goalId: string } }
+  | { type: 'goal.deleted'; payload: { goalId: string } }
   | { type: 'task.scheduled'; payload: { taskId: string; start: string; end: string } }
   | { type: 'task.completed'; payload: { taskId: string } }
   | { type: 'calendar.synced'; payload: { syncedCount: number } }
@@ -34,6 +36,7 @@ export type AppEvent =
 export interface AppEventMap {
   'goal.created': { goalId: string };
   'goal.updated': { goalId: string };
+  'goal.deleted': { goalId: string };
   'task.scheduled': { taskId: string; start: string; end: string };
   'task.completed': { taskId: string };
   'calendar.synced': { syncedCount: number };

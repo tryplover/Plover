@@ -27,6 +27,7 @@ beforeEach(() => {
       updateSettings: vi.fn().mockResolvedValue(undefined),
       getScreenRecordingStatus: vi.fn().mockResolvedValue('not-determined'),
       requestScreenRecording: vi.fn().mockResolvedValue('not-determined'),
+      openScreenRecordingSettings: vi.fn().mockResolvedValue(undefined),
       purgeActivity: vi.fn().mockResolvedValue({ deleted: 0 }),
       on: vi.fn().mockReturnValue(mockUnsubscribe),
     },

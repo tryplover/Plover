@@ -3,7 +3,11 @@ import { Goal, Task, CalendarEvent } from '../shared/types.js';
 import { goalsRepo, tasksRepo, settingsRepo, summariesRepo, activityRepo } from './store/index.js';
 import { decomposeGoal } from './planner/decompose.js';
 import { scheduleTasks } from './planner/schedule.js';
-import { saveGoalAndTasks, startEventForwarding } from './planner/goal-manager.js';
+import {
+  saveGoalAndTasks,
+  startEventForwarding,
+  deleteGoalAndTasks,
+} from './planner/goal-manager.js';
 import { GoogleAuth } from './sync/google-auth.js';
 import { GoogleCalendarSync } from './sync/calendar.js';
 import { eventBus } from './bus.js';
@@ -13,6 +17,7 @@ import { listActiveWindows } from './activity/window-tracker.js';
 import {
   getScreenRecordingStatus,
   requestScreenRecording,
+  openScreenRecordingSettings,
 } from './permissions/screen-recording.js';
 import { SettingsData } from './store/repos/settings.js';
 import { startSignup } from './auth/signup-flow.js';
@@ -58,6 +63,11 @@ export function setupIpcHandlers(
     const goal = goalsRepo.update(id, patch);
     eventBus.emit('goal.updated', goal);
     return goal;
+  });
+
+  ipcMain.handle('goals:delete', async (_, id: string) => {
+    await deleteGoalAndTasks(id, calendarSync);
+    return true;
   });
 
   // Tasks
@@ -407,6 +417,9 @@ export function setupIpcHandlers(
 
   ipcMain.handle('permissions:screenRecording:status', () => getScreenRecordingStatus());
   ipcMain.handle('permissions:screenRecording:request', async () => requestScreenRecording());
+  ipcMain.handle('permissions:screenRecording:openSettings', async () =>
+    openScreenRecordingSettings(),
+  );
 }
 
 export function setupIpc(

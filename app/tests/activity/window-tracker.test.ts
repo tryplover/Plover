@@ -5,6 +5,14 @@ import { ActivityRepo } from '@main/store/repos/activity.js';
 import { SettingsRepo } from '@main/store/repos/settings.js';
 import { WindowTracker } from '@main/activity/window-tracker.js';
 
+// Setup electron mock
+const { getMediaAccessStatus } = vi.hoisted(() => ({
+  getMediaAccessStatus: vi.fn().mockReturnValue('granted'),
+}));
+vi.mock('electron', () => ({
+  systemPreferences: { getMediaAccessStatus },
+}));
+
 // Setup get-windows mock
 const mockActiveWindow = vi.fn();
 const mockOpenWindows = vi.fn();
@@ -16,17 +24,23 @@ vi.mock('get-windows', () => ({
 // Setup execFile mock
 const mockExecFile = vi.fn();
 vi.mock('node:child_process', () => ({
-  execFile: (cmd: string, args: string[], opts: object, cb: (err: Error | null, stdout: string, stderr: string) => void) => {
+  execFile: (
+    cmd: string,
+    args: string[],
+    opts: object,
+    cb: (err: Error | null, stdout: string, stderr: string) => void,
+  ) => {
     mockExecFile(cmd, args, opts, cb);
   },
 }));
 
 describe('WindowTracker', () => {
-
   beforeEach(() => {
     vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin');
     vi.useFakeTimers();
     vi.clearAllMocks();
+    getMediaAccessStatus.mockReset();
+    getMediaAccessStatus.mockReturnValue('granted');
     vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin');
   });
 
@@ -249,6 +263,8 @@ describe('WindowTracker — enhanced metadata', () => {
     tracker = new WindowTracker(activityRepo, settingsRepo);
     mockActiveWindow.mockReset();
     mockExecFile.mockReset();
+    getMediaAccessStatus.mockReset();
+    getMediaAccessStatus.mockReturnValue('granted');
   });
 
   afterEach(() => {
@@ -276,7 +292,7 @@ describe('WindowTracker — enhanced metadata', () => {
       title: 'Plover - GitHub',
     });
     mockExecFile.mockImplementationOnce((_cmd, _args, _opts, cb) =>
-      cb(null, 'https://github.com/foo/plover\nPlover · GitHub', '')
+      cb(null, 'https://github.com/foo/plover\nPlover · GitHub', ''),
     );
     await tracker.checkActiveWindow();
     const row = activityRepo.list()[0];
@@ -294,7 +310,7 @@ describe('WindowTracker — enhanced metadata', () => {
       title: 'Some Page',
     });
     mockExecFile.mockImplementationOnce((_cmd, _args, _opts, cb) =>
-      cb(new Error('not allowed'), '', '')
+      cb(new Error('not allowed'), '', ''),
     );
     await tracker.checkActiveWindow();
     const row = activityRepo.list()[0];
@@ -313,5 +329,17 @@ describe('WindowTracker — enhanced metadata', () => {
     });
     await tracker.checkActiveWindow();
     expect(mockExecFile).not.toHaveBeenCalled();
+  });
+
+  it('does not log window focus or call get-windows if screen recording permission is not granted', async () => {
+    getMediaAccessStatus.mockReturnValue('denied');
+    mockActiveWindow.mockResolvedValue({
+      owner: { name: 'Terminal', bundleId: 'com.apple.Terminal' },
+      title: 'zsh',
+    });
+    await tracker.checkActiveWindow();
+    expect(mockActiveWindow).not.toHaveBeenCalled();
+    const logs = activityRepo.list();
+    expect(logs).toHaveLength(0);
   });
 });

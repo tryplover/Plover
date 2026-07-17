@@ -26,6 +26,7 @@ export interface CompanionApi {
 export interface PloverApi {
   // Main Goals & Tasks
   getGoals: () => Promise<Goal[]>;
+  deleteGoal: (id: string) => Promise<boolean>;
   getTasks: () => Promise<Task[]>;
   getTaskById: (id: string) => Promise<Task | null>;
   getTasksByGoal: (goalId: string) => Promise<Task[]>;
@@ -146,6 +147,7 @@ export interface PloverApi {
     'granted' | 'denied' | 'not-determined' | 'restricted' | 'unsupported'
   >;
   requestScreenRecording: () => Promise<'granted' | 'denied' | 'unsupported'>;
+  openScreenRecordingSettings: () => Promise<void>;
 
   // Companion API
   companion: CompanionApi;
@@ -162,6 +164,7 @@ export interface PloverApi {
 
 const api: PloverApi = {
   getGoals: () => ipcRenderer.invoke('goals:get'),
+  deleteGoal: (id) => ipcRenderer.invoke('goals:delete', id),
   getTasks: () => ipcRenderer.invoke('tasks:get'),
   getTaskById: (id) => ipcRenderer.invoke('tasks:getById', id),
   getTasksByGoal: (goalId) => ipcRenderer.invoke('tasks:getByGoal', goalId),
@@ -190,6 +193,7 @@ const api: PloverApi = {
   // Permissions
   getScreenRecordingStatus: () => ipcRenderer.invoke('permissions:screenRecording:status'),
   requestScreenRecording: () => ipcRenderer.invoke('permissions:screenRecording:request'),
+  openScreenRecordingSettings: () => ipcRenderer.invoke('permissions:screenRecording:openSettings'),
 
   // Companion
   companion: {

@@ -7,6 +7,7 @@ export class GoalsRepo {
   private createStmt: Database.Statement;
   private getStmt: Database.Statement;
   private updateStmt: Database.Statement;
+  private deleteStmt: Database.Statement;
 
   constructor(db: Database.Database) {
     this.db = db;
@@ -22,6 +23,10 @@ export class GoalsRepo {
     this.updateStmt = this.db.prepare(`
       UPDATE goals
       SET title = ?, description = ?, deadline = ?, status = ?, updated_at = ?
+      WHERE id = ?
+    `);
+    this.deleteStmt = this.db.prepare(`
+      DELETE FROM goals
       WHERE id = ?
     `);
   }
@@ -135,5 +140,9 @@ export class GoalsRepo {
     );
 
     return updated;
+  }
+
+  delete(id: string): void {
+    this.deleteStmt.run(id);
   }
 }

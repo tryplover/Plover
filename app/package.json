@@ -36,6 +36,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@electron/notarize": "^2.5.0",
     "@eslint/js": "^9.17.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -74,13 +75,17 @@
     "asarUnpack": [
       "**/*.node"
     ],
+    "afterSign": "scripts/notarize.cjs",
     "mac": {
       "target": [
         "dmg"
       ],
       "category": "public.app-category.productivity",
       "identity": "-",
-      "hardenedRuntime": false,
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.inherit.plist",
       "icon": "build/icon.icns"
     },
     "win": {

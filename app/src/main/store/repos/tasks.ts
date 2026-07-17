@@ -11,6 +11,7 @@ export class TasksRepo {
   private updateStmt: Database.Statement;
   private listStmt: Database.Statement;
   private listActiveScheduledBeforeStmt: Database.Statement;
+  private deleteByGoalStmt: Database.Statement;
 
   constructor(db: Database.Database) {
     this.db = db;
@@ -68,6 +69,10 @@ export class TasksRepo {
         AND scheduled_start IS NOT NULL
         AND scheduled_end IS NOT NULL
         AND scheduled_end < ?
+    `);
+    this.deleteByGoalStmt = this.db.prepare(`
+      DELETE FROM tasks
+      WHERE goal_id = ?
     `);
   }
 
@@ -294,5 +299,9 @@ export class TasksRepo {
       created_at: row.created_at,
       updated_at: row.updated_at,
     }));
+  }
+
+  deleteByGoal(goalId: string): void {
+    this.deleteByGoalStmt.run(goalId);
   }
 }

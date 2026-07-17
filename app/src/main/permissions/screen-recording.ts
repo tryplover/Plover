@@ -1,11 +1,7 @@
-import { systemPreferences, desktopCapturer } from 'electron';
+import { systemPreferences, desktopCapturer, shell } from 'electron';
 
 export type ScreenRecordingStatus =
-  | 'granted'
-  | 'denied'
-  | 'not-determined'
-  | 'restricted'
-  | 'unsupported';
+  'granted' | 'denied' | 'not-determined' | 'restricted' | 'unsupported';
 
 export function getScreenRecordingStatus(): ScreenRecordingStatus {
   if (process.platform !== 'darwin') return 'unsupported';
@@ -21,4 +17,11 @@ export async function requestScreenRecording(): Promise<'granted' | 'denied' | '
   }
   const status = systemPreferences.getMediaAccessStatus('screen');
   return status === 'granted' ? 'granted' : 'denied';
+}
+
+export function openScreenRecordingSettings(): void {
+  if (process.platform !== 'darwin') return;
+  void shell.openExternal(
+    'x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture',
+  );
 }

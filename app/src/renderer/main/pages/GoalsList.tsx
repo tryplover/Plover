@@ -97,6 +97,23 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
     }
   };
 
+  const handleDeleteGoal = async (goalId: string) => {
+    const confirmed = window.confirm(
+      'Are you sure you want to delete this goal and all its subtasks? This will also remove any scheduled calendar events.',
+    );
+    if (!confirmed) return;
+
+    try {
+      await window.api.deleteGoal(goalId);
+      void fetchData();
+      if (onTasksUpdated) {
+        onTasksUpdated();
+      }
+    } catch (err) {
+      console.error('Failed to delete goal:', err);
+    }
+  };
+
   if (loading) {
     return (
       <div
@@ -206,21 +223,19 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
                       overflow: 'hidden',
                     }}
                   >
-                    <button
-                      onClick={() => toggleExpandGoal(goal.id)}
+                    <div
                       style={{
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
                         width: '100%',
                         padding: '20px',
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        textAlign: 'left',
                       }}
                     >
-                      <div>
+                      <div
+                        onClick={() => toggleExpandGoal(goal.id)}
+                        style={{ cursor: 'pointer', flex: 1 }}
+                      >
                         <h3
                           style={{ fontSize: '16px', fontWeight: 650, color: 'var(--plover-text)' }}
                         >
@@ -239,20 +254,60 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
                         )}
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <ProgressLine value={progressValue} />
-                        <span
+                        <div
+                          onClick={() => toggleExpandGoal(goal.id)}
                           style={{
-                            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                            transition: 'transform 0.3s',
-                            display: 'inline-block',
-                            color: 'var(--plover-text-muted)',
-                            fontSize: '12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '16px',
+                            cursor: 'pointer',
                           }}
                         >
-                          ▼
-                        </span>
+                          <ProgressLine value={progressValue} />
+                          <span
+                            style={{
+                              transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                              transition: 'transform 0.3s',
+                              display: 'inline-block',
+                              color: 'var(--plover-text-muted)',
+                              fontSize: '12px',
+                            }}
+                          >
+                            ▼
+                          </span>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void handleDeleteGoal(goal.id);
+                          }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: 'var(--plover-text-muted)',
+                            padding: '4px 8px',
+                            fontSize: '13px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderRadius: '4px',
+                            transition: 'all 0.2s',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.color = 'var(--plover-error, #ff453a)';
+                            e.currentTarget.style.backgroundColor = 'rgba(255, 69, 58, 0.1)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.color = 'var(--plover-text-muted)';
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }}
+                          title="Delete Goal"
+                        >
+                          🗑️
+                        </button>
                       </div>
-                    </button>
+                    </div>
 
                     {isOpen && (
                       <div

@@ -104,12 +104,29 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
     setScreenPermission(status);
     if (status !== 'granted') {
       setActivityMessage(
-        'Screen Recording permission is required. Open System Settings → Privacy & Security → Screen Recording, add Plover, then try again.',
+        'Screen Recording permission is required. Open System Settings → Privacy & Security → Screen & System Audio Recording, enable Plover, and then fully restart the app (Cmd+Q).',
       );
       return;
     }
     setActivityMessage('');
     await triggerActivitySave({ screenCaptureEnabled: true });
+  };
+
+  const handleWindowTrackingToggle = async (enabled: boolean): Promise<void> => {
+    if (!enabled) {
+      await triggerActivitySave({ windowTrackingEnabled: false });
+      return;
+    }
+    const status = await window.api.requestScreenRecording();
+    setScreenPermission(status);
+    if (status !== 'granted') {
+      setActivityMessage(
+        'Screen Recording permission is required. Open System Settings → Privacy & Security → Screen & System Audio Recording, enable Plover, and then fully restart the app (Cmd+Q).',
+      );
+      return;
+    }
+    setActivityMessage('');
+    await triggerActivitySave({ windowTrackingEnabled: true });
   };
 
   const triggerAutoSave = async (
@@ -450,13 +467,22 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
               >
                 <label style={{ fontSize: '14px', color: 'var(--plover-text)' }}>
                   Window tracking
+                  {activitySettings.windowTrackingEnabled && screenPermission !== 'granted' && (
+                    <span
+                      style={{
+                        fontSize: '12px',
+                        color: 'var(--plover-text-muted)',
+                        marginLeft: '6px',
+                      }}
+                    >
+                      (permission not granted)
+                    </span>
+                  )}
                 </label>
                 <Chip
                   selected={activitySettings.windowTrackingEnabled}
                   onClick={() =>
-                    void triggerActivitySave({
-                      windowTrackingEnabled: !activitySettings.windowTrackingEnabled,
-                    })
+                    void handleWindowTrackingToggle(!activitySettings.windowTrackingEnabled)
                   }
                 >
                   {activitySettings.windowTrackingEnabled ? 'On' : 'Off'}
@@ -526,9 +552,35 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
                 </Chip>
               </div>
               {activityMessage && (
-                <p style={{ fontSize: '13px', color: 'var(--plover-text-muted)', margin: '0' }}>
-                  {activityMessage}
-                </p>
+                <div style={{ marginTop: '8px' }}>
+                  <p
+                    style={{
+                      fontSize: '13px',
+                      color: 'var(--plover-text-muted)',
+                      margin: '0 0 6px 0',
+                      lineHeight: '1.4',
+                    }}
+                  >
+                    {activityMessage}
+                  </p>
+                  <button
+                    onClick={async () => {
+                      void window.api.openScreenRecordingSettings();
+                    }}
+                    style={{
+                      background: 'var(--plover-border)',
+                      color: 'var(--plover-text)',
+                      border: '1px solid var(--plover-border)',
+                      padding: '4px 12px',
+                      borderRadius: '4px',
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                      transition: 'background 0.2s',
+                    }}
+                  >
+                    Open System Settings →
+                  </button>
+                </div>
               )}
 
               <div

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { setupIpcHandlers, calendarSync } from '../../src/main/ipc';
-import { tasksRepo, settingsRepo, activityRepo } from '../../src/main/store';
+import { goalsRepo, tasksRepo, settingsRepo, activityRepo } from '../../src/main/store';
 import { ipcMain } from 'electron';
 import { ProposedPlan } from '../../src/preload/index';
 import { BrowserWindow } from 'electron';
@@ -26,7 +26,7 @@ vi.mock('keytar', () => ({
     getPassword: vi.fn().mockResolvedValue(null),
     setPassword: vi.fn().mockResolvedValue(undefined),
     deletePassword: vi.fn().mockResolvedValue(true),
-  }
+  },
 }));
 
 // Mock planner functions to avoid real network/Gemini API calls
@@ -200,7 +200,10 @@ describe('IPC Handlers', () => {
     const calls = (ipcMain.handle as ReturnType<typeof vi.fn>).mock.calls;
     const purgeCall = calls.find((call) => call[0] === 'activity:purge');
     expect(purgeCall).toBeDefined();
-    const handler = purgeCall?.[1] as (event: unknown, args: { olderThan?: string; ids?: number[] }) => Promise<{ deleted: number }>;
+    const handler = purgeCall?.[1] as (
+      event: unknown,
+      args: { olderThan?: string; ids?: number[] },
+    ) => Promise<{ deleted: number }>;
 
     const olderThan = '2026-06-01T00:00:00.000Z';
     const result = await handler({}, { olderThan });
@@ -246,5 +249,31 @@ describe('IPC Handlers', () => {
       width: 440,
       height: 80,
     });
+  });
+
+  it('handles goals:delete by deleting the goal and its tasks', async () => {
+    const calls = (ipcMain.handle as ReturnType<typeof vi.fn>).mock.calls;
+    const deleteCall = calls.find((call) => call[0] === 'goals:delete');
+    expect(deleteCall).toBeDefined();
+
+    const handler = deleteCall?.[1] as (event: unknown, id: string) => Promise<boolean>;
+
+    // Create a goal and a task
+    const goal = goalsRepo.create({ title: 'Delete goal test', status: 'active' });
+    tasksRepo.create({
+      goal_id: goal.id,
+      title: 'Delete task test',
+      estimate_minutes: 10,
+      status: 'todo',
+    });
+
+    expect(goalsRepo.get(goal.id)).not.toBeNull();
+    expect(tasksRepo.listByGoal(goal.id)).toHaveLength(1);
+
+    const result = await handler({}, goal.id);
+    expect(result).toBe(true);
+
+    expect(goalsRepo.get(goal.id)).toBeNull();
+    expect(tasksRepo.listByGoal(goal.id)).toHaveLength(0);
   });
 });

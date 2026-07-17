@@ -32,6 +32,12 @@ export function Onboarding({ onComplete }: OnboardingProps) {
     setStep((prev) => prev + 1);
   };
 
+  const handleOpenSettingsAndRequest = async () => {
+    void window.api.requestScreenRecording();
+    void window.api.openScreenRecordingSettings();
+    handleNext();
+  };
+
   const handleBack = () => {
     setStep((prev) => prev - 1);
   };
@@ -426,7 +432,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                   </button>
                   <button
                     className="plover-onboarding__btn"
-                    onClick={handleNext}
+                    onClick={handleOpenSettingsAndRequest}
                     data-testid="btn-grant-settings"
                   >
                     Open System Settings →
