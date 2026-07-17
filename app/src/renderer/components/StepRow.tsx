@@ -6,9 +6,10 @@ export interface StepRowProps {
   label: string;
   state: 'pending' | 'current' | 'done';
   trailing?: React.ReactNode;
+  onChange?: (newLabel: string) => void;
 }
 
-export function StepRow({ index, label, state, trailing }: StepRowProps) {
+export function StepRow({ index, label, state, trailing, onChange }: StepRowProps) {
   return (
     <motion.div
       className="plover-step"
@@ -19,7 +20,16 @@ export function StepRow({ index, label, state, trailing }: StepRowProps) {
       <span className="plover-step__bullet" aria-hidden>
         {state === 'done' ? '✓' : index !== undefined ? index : null}
       </span>
-      <span className="plover-step__label">{label}</span>
+      {onChange ? (
+        <input
+          type="text"
+          className="plover-step__label plover-step__input"
+          value={label}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      ) : (
+        <span className="plover-step__label">{label}</span>
+      )}
       {trailing && <span className="plover-step__trailing">{trailing}</span>}
     </motion.div>
   );

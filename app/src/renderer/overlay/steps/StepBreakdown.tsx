@@ -29,14 +29,18 @@ export function StepBreakdown({ draft, onBack, onNext, variant }: Props) {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [draft.text]);
 
   if (loading) return <p className="plover-step-breakdown__loading">Asking Gemini…</p>;
   if (error || !plan) return <p className="plover-step-breakdown__error">{error ?? 'No plan'}</p>;
 
   const addStep = () => {
-    setPlan((p) => p ? { ...p, subtasks: [...p.subtasks, { title: 'New step', estimate_minutes: 30 }] } : p);
+    setPlan((p) =>
+      p ? { ...p, subtasks: [...p.subtasks, { title: 'New step', estimate_minutes: 30 }] } : p,
+    );
   };
 
   return (
@@ -46,22 +50,44 @@ export function StepBreakdown({ draft, onBack, onNext, variant }: Props) {
       <ol className="plover-step-breakdown__list">
         {plan.subtasks.map((_s, i) => {
           const item = plan.subtasks[i];
+          if (!item) return null;
           return (
             <li key={i}>
               <StepRow
                 index={i + 1}
-                label={item?.title ?? 'Step'}
+                label={item.title}
                 state="pending"
-                trailing={<span className="plover-drag-handle" aria-hidden>⋮⋮</span>}
+                onChange={(newTitle) => {
+                  setPlan((p) => {
+                    if (!p) return p;
+                    const newSubtasks = [...p.subtasks];
+                    const existing = newSubtasks[i];
+                    if (existing) {
+                      newSubtasks[i] = { ...existing, title: newTitle };
+                    }
+                    return { ...p, subtasks: newSubtasks };
+                  });
+                }}
+                trailing={
+                  <span className="plover-drag-handle" aria-hidden>
+                    ⋮⋮
+                  </span>
+                }
               />
             </li>
           );
         })}
       </ol>
-      <button className="plover-step-breakdown__add" onClick={addStep}>+ Add a step</button>
+      <button className="plover-step-breakdown__add" onClick={addStep}>
+        + Add a step
+      </button>
       <footer>
-        <Button variant="secondary" onClick={onBack}>Back</Button>
-        <Button variant="primary" onClick={() => onNext(plan)}>Looks right →</Button>
+        <Button variant="secondary" onClick={onBack}>
+          Back
+        </Button>
+        <Button variant="primary" onClick={() => onNext(plan)}>
+          Looks right →
+        </Button>
       </footer>
     </section>
   );

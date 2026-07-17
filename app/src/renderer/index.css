@@ -69,9 +69,7 @@ body {
   display: flex;
   height: 100vh;
   width: 100vw;
-  background-color: rgba(20, 20, 22, 0.45);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  background-color: #141416;
 }
 
 .sidebar {
@@ -82,6 +80,7 @@ body {
   flex-direction: column;
   padding: 40px 16px 24px 16px;
   justify-content: space-between;
+  -webkit-app-region: drag;
 }
 
 .logo-section {
@@ -90,6 +89,7 @@ body {
   gap: 10px;
   margin-bottom: 32px;
   padding-left: 8px;
+  -webkit-app-region: no-drag;
 }
 
 .logo-icon {
@@ -116,6 +116,7 @@ body {
   flex-direction: column;
   gap: 6px;
   flex-grow: 1;
+  -webkit-app-region: no-drag;
 }
 
 .nav-item {
@@ -167,6 +168,8 @@ body {
 
 .main-content {
   flex-grow: 1;
+  display: flex;
+  flex-direction: column;
   height: 100%;
   overflow: hidden;
   background-color: var(--plover-bg);
@@ -1067,6 +1070,7 @@ input:checked + .slider:before {
   font-size: 11px;
   color: var(--plover-text-muted);
   text-align: center;
+  -webkit-app-region: no-drag;
 }
 
 .plover-input {

@@ -37,6 +37,19 @@
   font-weight: 500;
 }
 
+.plover-step__input {
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  width: 100%;
+}
+
+.plover-step__input:focus {
+  border-bottom: 1px solid var(--plover-border);
+  border-radius: 0;
+}
+
 .plover-step[data-state='done'] .plover-step__label {
   text-decoration: line-through;
   color: var(--plover-text-dim);

@@ -32,12 +32,14 @@
   background-color: rgba(244, 239, 230, 0.8);
   backdrop-filter: blur(12px);
   z-index: 10;
+  -webkit-app-region: drag;
 }
 
 .plover-onboarding__dots {
   display: flex;
   gap: 8px;
   width: 80px;
+  -webkit-app-region: no-drag;
 }
 
 .plover-onboarding__dot {
@@ -64,6 +66,7 @@
   width: 80px;
   text-align: right;
   transition: color var(--plover-duration-fast);
+  -webkit-app-region: no-drag;
 }
 
 .plover-onboarding__lang:hover {

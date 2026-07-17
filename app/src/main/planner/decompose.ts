@@ -41,11 +41,27 @@ export async function decomposeGoal(input: {
     body.recentActivity = input.recentActivity.slice(0, 200);
   }
 
-  const response = await fetch(`${backendUrl}/api/decompose`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(body),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${backendUrl}/api/decompose`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    });
+  } catch (err) {
+    console.warn('[IPC] Backend unreachable, falling back to local mock plan.', err);
+    return {
+      goal: {
+        title:
+          input.goalText.length > 50 ? input.goalText.substring(0, 47) + '...' : input.goalText,
+      },
+      subtasks: [
+        { title: 'First step (edit me)', estimate_minutes: 30 },
+        { title: 'Second step (edit me)', estimate_minutes: 30 },
+        { title: 'Final step (edit me)', estimate_minutes: 30 },
+      ],
+    };
+  }
 
   if (!response.ok) {
     let errorMessage = `Server responded with status ${response.status}`;
