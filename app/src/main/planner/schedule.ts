@@ -145,6 +145,22 @@ export function scheduleTasks(input: {
         continue;
       }
 
+      const dayStartMs = dayStart.getTime();
+      const dayEndMs = dayEnd.getTime();
+
+      /**
+       * BOLT ⚡ OPTIMIZATION:
+       * Pre-filtering calendar events and already scheduled tasks for the current day
+       * avoids scanning the entire horizon on every slot check. This reduces inner loop
+       * lookup complexity from O(total_calendar_events + total_tasks) to O(daily_events + daily_tasks).
+       */
+      const dailyEvents = parsedCalendarEvents.filter(
+        (event) => event.start < dayEndMs && event.end > dayStartMs,
+      );
+      const dailyScheduledTasks = Array.from(scheduledTasks.values()).filter(
+        (task) => task.start.getTime() < dayEndMs && task.end.getTime() > dayStartMs,
+      );
+
       let S = workStart;
       while (S < workEnd) {
         const end = S + durationMs;
@@ -153,16 +169,16 @@ export function scheduleTasks(input: {
           break dayLoop;
         }
 
-        const dailyWindowSize = dayEnd.getTime() - dayStart.getTime();
+        const dailyWindowSize = dayEndMs - dayStartMs;
         if (durationMs <= dailyWindowSize) {
-          if (end > dayEnd.getTime()) {
+          if (end > dayEndMs) {
             break;
           }
         }
 
         let overlapEvent: { start: number; end: number } | null = null;
 
-        for (const event of parsedCalendarEvents) {
+        for (const event of dailyEvents) {
           if (S < event.end && end > event.start) {
             if (!overlapEvent || event.end > overlapEvent.end) {
               overlapEvent = { start: event.start, end: event.end };
@@ -170,9 +186,9 @@ export function scheduleTasks(input: {
           }
         }
 
-        for (const scheduledTask of scheduledTasks.values()) {
-          const taskStart = scheduledTask.start.getTime();
-          const taskEnd = scheduledTask.end.getTime();
+        for (const task of dailyScheduledTasks) {
+          const taskStart = task.start.getTime();
+          const taskEnd = task.end.getTime();
           if (S < taskEnd && end > taskStart) {
             if (!overlapEvent || taskEnd > overlapEvent.end) {
               overlapEvent = { start: taskStart, end: taskEnd };
