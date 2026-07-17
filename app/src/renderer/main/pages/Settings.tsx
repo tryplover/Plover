@@ -95,21 +95,28 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
     }
   };
 
-  const handleScreenCaptureToggle = async (enabled: boolean): Promise<void> => {
-    if (!enabled) {
-      await triggerActivitySave({ screenCaptureEnabled: false });
-      return;
-    }
+  const ensureScreenRecordingPermission = async (): Promise<boolean> => {
     const status = await window.api.requestScreenRecording();
     setScreenPermission(status);
     if (status !== 'granted') {
       setActivityMessage(
         'Screen Recording permission is required. Open System Settings → Privacy & Security → Screen & System Audio Recording, enable Plover, and then fully restart the app (Cmd+Q).',
       );
-      return;
+      return false;
     }
     setActivityMessage('');
-    await triggerActivitySave({ screenCaptureEnabled: true });
+    return true;
+  };
+
+  const handleScreenCaptureToggle = async (enabled: boolean): Promise<void> => {
+    if (!enabled) {
+      await triggerActivitySave({ screenCaptureEnabled: false });
+      return;
+    }
+    const granted = await ensureScreenRecordingPermission();
+    if (granted) {
+      await triggerActivitySave({ screenCaptureEnabled: true });
+    }
   };
 
   const handleWindowTrackingToggle = async (enabled: boolean): Promise<void> => {
@@ -117,16 +124,10 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
       await triggerActivitySave({ windowTrackingEnabled: false });
       return;
     }
-    const status = await window.api.requestScreenRecording();
-    setScreenPermission(status);
-    if (status !== 'granted') {
-      setActivityMessage(
-        'Screen Recording permission is required. Open System Settings → Privacy & Security → Screen & System Audio Recording, enable Plover, and then fully restart the app (Cmd+Q).',
-      );
-      return;
+    const granted = await ensureScreenRecordingPermission();
+    if (granted) {
+      await triggerActivitySave({ windowTrackingEnabled: true });
     }
-    setActivityMessage('');
-    await triggerActivitySave({ windowTrackingEnabled: true });
   };
 
   const triggerAutoSave = async (

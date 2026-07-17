@@ -38,6 +38,16 @@ function broadcast(channel: string, payload?: unknown): void {
   }
 }
 
+function getRecentActivityContext(settings: SettingsData): { kind: string; payload: Record<string, unknown>; ts: string }[] | undefined {
+  if (settings.planner_useRecentActivityContext) {
+    const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    return activityRepo
+      .list({ since, limit: 50 })
+      .map((r) => ({ kind: r.kind, payload: r.payload, ts: r.ts }));
+  }
+  return undefined;
+}
+
 export function setupIpcHandlers(
   getOverlayWindow: () => BrowserWindow | null,
   onWatchedFoldersChange?: (folders: string[]) => Promise<void> | void,
@@ -93,14 +103,7 @@ export function setupIpcHandlers(
 
   ipcMain.handle('goals:decompose', async (_, goalText: string) => {
     const settings = settingsRepo.getAll();
-    let recentActivity:
-      { kind: string; payload: Record<string, unknown>; ts: string }[] | undefined;
-    if (settings.planner_useRecentActivityContext) {
-      const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-      recentActivity = activityRepo
-        .list({ since, limit: 50 })
-        .map((r) => ({ kind: r.kind, payload: r.payload, ts: r.ts }));
-    }
+    const recentActivity = getRecentActivityContext(settings);
     return withAuthRetry(() =>
       decomposeGoal({
         goalText,
@@ -231,14 +234,7 @@ export function setupIpcHandlers(
   // Overlay API
   ipcMain.handle('goal:propose', async (_event, goalText: string): Promise<ProposedPlan> => {
     const settings = settingsRepo.getAll();
-    let recentActivity:
-      { kind: string; payload: Record<string, unknown>; ts: string }[] | undefined;
-    if (settings.planner_useRecentActivityContext) {
-      const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-      recentActivity = activityRepo
-        .list({ since, limit: 50 })
-        .map((r) => ({ kind: r.kind, payload: r.payload, ts: r.ts }));
-    }
+    const recentActivity = getRecentActivityContext(settings);
     const result = await decomposeGoal({
       goalText,
       now: new Date(),

@@ -243,7 +243,7 @@ describe('Google Calendar Sync & OAuth', () => {
 
       nock('https://www.googleapis.com')
         .post('/calendar/v3/calendars/primary/events')
-        .reply(200, (uri, requestBody: unknown) => {
+        .reply(200, (_uri, requestBody: unknown) => {
           const body = requestBody as {
             summary: string;
             start: { dateTime: string };
