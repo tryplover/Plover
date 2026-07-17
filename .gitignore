@@ -6,6 +6,7 @@ node_modules/
 dist/
 out/
 build/
+!app/build/
 .vite/
 
 # test / coverage
