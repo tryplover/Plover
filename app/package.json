@@ -79,12 +79,15 @@
         "dmg"
       ],
       "category": "public.app-category.productivity",
-      "identity": null,
+      "identity": "-",
+      "hardenedRuntime": false,
       "icon": "build/icon.icns"
     },
     "win": {
       "icon": "build/icon.png",
-      "target": ["nsis"],
+      "target": [
+        "nsis"
+      ],
       "artifactName": "Plover-Setup-${version}.${ext}"
     },
     "nsis": {
