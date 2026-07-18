@@ -23,7 +23,7 @@ app.setAsDefaultProtocolClient('plover');
 const iconPath = join(import.meta.dirname, '../../build/icon.png');
 const appIcon = nativeImage.createFromPath(iconPath);
 if (!app.isPackaged && process.platform === 'darwin' && !appIcon.isEmpty()) {
-  app.dock?.setIcon(appIcon); 
+  app.dock?.setIcon(appIcon);
 }
 
 const bufferedProtocolUrls: string[] = [];
@@ -71,10 +71,11 @@ if (!gotTheLock) {
       width: 1024,
       height: 720,
       title: 'Plover',
-      frame: true,
-      transparent: true,
-      titleBarStyle: 'hiddenInset',
-      vibrancy: 'under-window',
+      frame: process.platform !== 'win32',
+      transparent: process.platform !== 'win32',
+      titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
+      titleBarOverlay: process.platform === 'win32' ? { height: 32 } : false,
+      vibrancy: process.platform === 'darwin' ? 'under-window' : undefined,
       webPreferences: {
         preload: join(import.meta.dirname, '../preload/index.js'),
         sandbox: true,
@@ -106,7 +107,12 @@ if (!gotTheLock) {
       skipTaskbar: !isWindow,
       show: false,
       resizable: isWindow,
-      titleBarStyle: isWindow ? 'hiddenInset' : undefined,
+      titleBarStyle: isWindow
+        ? process.platform === 'darwin'
+          ? 'hiddenInset'
+          : 'hidden'
+        : undefined,
+      titleBarOverlay: isWindow && process.platform === 'win32' ? { height: 32 } : false,
       vibrancy: isWindow ? undefined : 'under-window',
       webPreferences: {
         preload: join(import.meta.dirname, '../preload/index.js'),
