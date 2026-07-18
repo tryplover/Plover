@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { scheduleTasks } from '@main/planner/schedule';
-import { Task, CalendarEvent } from '@shared/types';
+import { Task } from '@shared/types';
 
 function createTask(id: string, estimate_minutes: number, depends_on?: string[]): Task {
   return {
@@ -25,7 +25,6 @@ describe('Deterministic Auto-Scheduling', () => {
 
     const result = await scheduleTasks({
       tasks,
-      calendarEvents: [],
       workingHours,
       horizonDays,
       now: baseDate,
@@ -47,64 +46,6 @@ describe('Deterministic Auto-Scheduling', () => {
     expect(r2.end.toISOString()).toBe(new Date('2026-05-24T13:00:00').toISOString());
   });
 
-  it('skips windows occupied by existing calendar events', async () => {
-    const tasks = [createTask('t1', 120)];
-
-    const calendarEvents: CalendarEvent[] = [
-      {
-        id: 'c1',
-        summary: 'Meeting',
-        start: '2026-05-24T10:00:00',
-        end: '2026-05-24T11:30:00',
-      },
-    ];
-
-    const result = await scheduleTasks({
-      tasks,
-      calendarEvents,
-      workingHours,
-      horizonDays,
-      now: baseDate,
-    });
-
-    expect(result).toHaveLength(1);
-    const r1 = result[0];
-    expect(r1).toBeDefined();
-    if (!r1) throw new Error('Task must be scheduled');
-
-    expect(r1.start.toISOString()).toBe(new Date('2026-05-24T11:30:00').toISOString());
-    expect(r1.end.toISOString()).toBe(new Date('2026-05-24T13:30:00').toISOString());
-  });
-
-  it('handles existing events fully blocking a day by moving to the next day', async () => {
-    const tasks = [createTask('t1', 60)];
-
-    const calendarEvents: CalendarEvent[] = [
-      {
-        id: 'c1',
-        summary: 'All Day Block',
-        start: '2026-05-24T09:00:00',
-        end: '2026-05-24T17:00:00',
-      },
-    ];
-
-    const result = await scheduleTasks({
-      tasks,
-      calendarEvents,
-      workingHours,
-      horizonDays,
-      now: baseDate,
-    });
-
-    expect(result).toHaveLength(1);
-    const r1 = result[0];
-    expect(r1).toBeDefined();
-    if (!r1) throw new Error('Task must be scheduled');
-
-    expect(r1.start.toISOString()).toBe(new Date('2026-05-25T09:00:00').toISOString());
-    expect(r1.end.toISOString()).toBe(new Date('2026-05-25T10:00:00').toISOString());
-  });
-
   it('respects a diamond dependency graph', async () => {
     const tasks = [
       createTask('tD', 60, ['tB', 'tC']),
@@ -115,7 +56,6 @@ describe('Deterministic Auto-Scheduling', () => {
 
     const result = await scheduleTasks({
       tasks,
-      calendarEvents: [],
       workingHours,
       horizonDays,
       now: baseDate,
@@ -161,7 +101,6 @@ describe('Deterministic Auto-Scheduling', () => {
 
     const result = await scheduleTasks({
       tasks,
-      calendarEvents: [],
       workingHours,
       horizonDays,
       now: new Date('2026-05-24T16:00:00'),
@@ -181,7 +120,6 @@ describe('Deterministic Auto-Scheduling', () => {
 
     const result = await scheduleTasks({
       tasks,
-      calendarEvents: [],
       workingHours,
       horizonDays,
       now: baseDate,
@@ -202,8 +140,7 @@ describe('Deterministic Auto-Scheduling', () => {
     expect(() =>
       scheduleTasks({
         tasks,
-        calendarEvents: [],
-        workingHours,
+          workingHours,
         horizonDays,
         now: baseDate,
       }),
@@ -216,8 +153,7 @@ describe('Deterministic Auto-Scheduling', () => {
     expect(() =>
       scheduleTasks({
         tasks,
-        calendarEvents: [],
-        workingHours: { start: 'oops', end: '17:00' },
+          workingHours: { start: 'oops', end: '17:00' },
         horizonDays,
         now: baseDate,
       }),
@@ -226,8 +162,7 @@ describe('Deterministic Auto-Scheduling', () => {
     expect(() =>
       scheduleTasks({
         tasks,
-        calendarEvents: [],
-        workingHours: { start: '09:00', end: '25:99' },
+          workingHours: { start: '09:00', end: '25:99' },
         horizonDays,
         now: baseDate,
       }),
@@ -239,7 +174,6 @@ describe('Deterministic Auto-Scheduling', () => {
 
     const result = await scheduleTasks({
       tasks,
-      calendarEvents: [],
       workingHours,
       horizonDays,
       now: baseDate,
@@ -254,7 +188,6 @@ describe('Deterministic Auto-Scheduling', () => {
 
     const result = await scheduleTasks({
       tasks,
-      calendarEvents: [],
       workingHours,
       horizonDays: 1,
       now: baseDate,
@@ -268,7 +201,6 @@ describe('Deterministic Auto-Scheduling', () => {
 
     const result = await scheduleTasks({
       tasks,
-      calendarEvents: [],
       workingHours,
       horizonDays,
       now: baseDate,

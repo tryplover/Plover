@@ -1,24 +1,15 @@
 import { randomUUID } from 'node:crypto';
 import { Goal, Task, SummaryRow } from '../../shared/types.js';
-import { goalsRepo, tasksRepo, settingsRepo } from '../store/index.js';
+import { goalsRepo, tasksRepo } from '../store/index.js';
 import { eventBus } from '../bus.js';
-import { GoogleCalendarSync } from '../sync/calendar.js';
 
 export async function saveGoalAndTasks(
   goalInput: Omit<Goal, 'id' | 'created_at' | 'updated_at' | 'status'>,
   subtaskInputs: Omit<
     Task,
-    | 'id'
-    | 'goal_id'
-    | 'status'
-    | 'created_at'
-    | 'updated_at'
-    | 'scheduled_start'
-    | 'scheduled_end'
-    | 'calendar_event_id'
+    'id' | 'goal_id' | 'status' | 'created_at' | 'updated_at' | 'scheduled_start' | 'scheduled_end'
   >[],
   scheduledSlots: { tempIndex: number; start: string; end: string }[],
-  calendarSync: GoogleCalendarSync,
 ) {
   const goal = goalsRepo.create({
     title: goalInput.title,
@@ -27,7 +18,6 @@ export async function saveGoalAndTasks(
     status: 'active',
   });
 
-  const isGoogleConnected = settingsRepo.getAll().googleConnected;
   const taskIds: string[] = subtaskInputs.map(() => randomUUID());
 
   const prepared = subtaskInputs.map((taskInput, index) => {
@@ -65,25 +55,7 @@ export async function saveGoalAndTasks(
     }),
   }));
 
-  const newTasks: Task[] = await Promise.all(
-    created.map(async ({ taskInput, taskId, slot, task }) => {
-      if (!isGoogleConnected || !slot || !slot.start || !slot.end) {
-        return task;
-      }
-      try {
-        const calendarEventId = await calendarSync.createEvent({
-          taskId,
-          title: taskInput.title,
-          start: new Date(slot.start),
-          end: new Date(slot.end),
-        });
-        return tasksRepo.update(taskId, { calendar_event_id: calendarEventId });
-      } catch (err) {
-        console.error(`Failed to sync calendar event for task ${taskInput.title}:`, err);
-        return task;
-      }
-    }),
-  );
+  const newTasks: Task[] = created.map(({ task }) => task);
 
   // Emit eventBus events
   eventBus.emit('goal.created', goal);
@@ -92,35 +64,15 @@ export async function saveGoalAndTasks(
       eventBus.emit('task.scheduled', t);
     }
   }
-  eventBus.emit('calendar.synced');
 
   return { goal, tasks: newTasks };
 }
 
-export async function deleteGoalAndTasks(
-  goalId: string,
-  calendarSync: GoogleCalendarSync,
-): Promise<void> {
-  const tasks = tasksRepo.listByGoal(goalId);
-  const isGoogleConnected = settingsRepo.getAll().googleConnected;
-
-  if (isGoogleConnected) {
-    for (const task of tasks) {
-      if (task.calendar_event_id) {
-        try {
-          await calendarSync.deleteEvent(task.calendar_event_id);
-        } catch (err) {
-          console.error(`Failed to delete calendar event for task ${task.title}:`, err);
-        }
-      }
-    }
-  }
-
+export async function deleteGoalAndTasks(goalId: string): Promise<void> {
   tasksRepo.deleteByGoal(goalId);
   goalsRepo.delete(goalId);
 
   eventBus.emit('goal.deleted', goalId);
-  eventBus.emit('calendar.synced');
 }
 
 export function startEventForwarding(
@@ -156,11 +108,6 @@ export function startEventForwarding(
   eventBus.on('task.completed', (task: Task) => {
     broadcast('task:completed', task);
     broadcast('app-event', { type: 'task.completed', payload: { taskId: task.id } });
-  });
-
-  eventBus.on('calendar.synced', () => {
-    broadcast('calendar:synced');
-    broadcast('app-event', { type: 'calendar.synced', payload: { syncedCount: 0 } });
   });
 
   eventBus.on('summary.created', (summary: SummaryRow) => {

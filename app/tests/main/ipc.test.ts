@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { setupIpcHandlers, calendarSync } from '../../src/main/ipc';
+import { setupIpcHandlers } from '../../src/main/ipc';
 import { goalsRepo, tasksRepo, settingsRepo, activityRepo } from '../../src/main/store';
 import { ipcMain } from 'electron';
 import { ProposedPlan } from '../../src/preload/index';
@@ -132,55 +132,6 @@ describe('IPC Handlers', () => {
     const result = await handler({}, plan);
     expect(result.goalId).toBeDefined();
     expect(mockOverlayWindow.hide).toHaveBeenCalled();
-  });
-
-  describe('goal:commit calendar sync ordering', () => {
-    const scheduledPlan: ProposedPlan = {
-      goal: { title: 'Synced Goal', description: 'desc', deadline: '2026-06-01' },
-      subtasks: [
-        {
-          title: 'Scheduled subtask',
-          estimate_minutes: 30,
-          scheduled_start: '2026-05-24T09:30:00.000Z',
-          scheduled_end: '2026-05-24T11:00:00.000Z',
-        },
-      ],
-    };
-
-    function getCommitHandler() {
-      const calls = (ipcMain.handle as ReturnType<typeof vi.fn>).mock.calls;
-      const commitCall = calls.find((call) => call[0] === 'goal:commit');
-      return commitCall?.[1] as (event: unknown, plan: ProposedPlan) => Promise<{ goalId: string }>;
-    }
-
-    beforeEach(() => {
-      settingsRepo.update({ googleConnected: true });
-    });
-
-    afterEach(() => {
-      settingsRepo.update({ googleConnected: false });
-      vi.restoreAllMocks();
-    });
-
-    it('persists the task even when calendar event creation fails (no orphaned event)', async () => {
-      vi.spyOn(calendarSync, 'createEvent').mockRejectedValue(new Error('Calendar API down'));
-
-      const result = await getCommitHandler()({}, scheduledPlan);
-
-      const tasks = tasksRepo.listByGoal(result.goalId);
-      expect(tasks).toHaveLength(1);
-      expect(tasks[0]?.calendar_event_id).toBeFalsy();
-    });
-
-    it('backfills calendar_event_id after a successful calendar sync', async () => {
-      vi.spyOn(calendarSync, 'createEvent').mockResolvedValue('gcal-evt-1');
-
-      const result = await getCommitHandler()({}, scheduledPlan);
-
-      const tasks = tasksRepo.listByGoal(result.goalId);
-      expect(tasks).toHaveLength(1);
-      expect(tasks[0]?.calendar_event_id).toBe('gcal-evt-1');
-    });
   });
 
   it('handles overlay:close by hiding the window', async () => {

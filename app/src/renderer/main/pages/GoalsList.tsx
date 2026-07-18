@@ -103,7 +103,7 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
 
   const handleDeleteGoal = async (goalId: string) => {
     const confirmed = window.confirm(
-      'Are you sure you want to delete this goal and all its subtasks? This will also remove any scheduled calendar events.',
+      'Are you sure you want to delete this goal and all its subtasks?',
     );
     if (!confirmed) return;
 

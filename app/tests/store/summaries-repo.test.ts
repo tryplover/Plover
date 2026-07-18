@@ -18,7 +18,6 @@ function seedTask(db: Database.Database, taskId: string): void {
     depends_on: [],
     scheduled_start: undefined,
     scheduled_end: undefined,
-    calendar_event_id: undefined,
   });
 }
 
