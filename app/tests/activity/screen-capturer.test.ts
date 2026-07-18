@@ -41,7 +41,12 @@ describe('ScreenCapturer', () => {
     runMigrations(db);
     activityRepo = new ActivityRepo(db);
     settingsRepo = new SettingsRepo(db);
-    capturer = new ScreenCapturer({ activityRepo, settingsRepo, userDataDir, now: () => new Date('2026-06-25T12:34:56.000Z') });
+    capturer = new ScreenCapturer({
+      activityRepo,
+      settingsRepo,
+      userDataDir,
+      now: () => new Date('2026-06-25T12:34:56.000Z'),
+    });
     getSources.mockReset();
     getMediaAccessStatus.mockReset();
     getMediaAccessStatus.mockReturnValue('granted');
@@ -74,14 +79,16 @@ describe('ScreenCapturer', () => {
   it('captures, writes PNG, and logs payload on success', async () => {
     settingsRepo.update({ screenCaptureEnabled: true });
     const png = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
-    getSources.mockResolvedValueOnce([{
-      name: 'Entire Screen',
-      thumbnail: { toPNG: () => png, getSize: () => ({ width: 1440, height: 900 }) },
-    }]);
+    getSources.mockResolvedValueOnce([
+      {
+        name: 'Entire Screen',
+        thumbnail: { toPNG: () => png, getSize: () => ({ width: 1440, height: 900 }) },
+      },
+    ]);
     const filePath = await capturer.captureOnce();
     expect(filePath).toBeTruthy();
     if (!filePath) return;
-    expect(filePath).toMatch(/\/screenshots\/2026\/06\/25\/[^/]+\.png$/);
+    expect(filePath.replace(/\\/g, '/')).toMatch(/\/screenshots\/2026\/06\/25\/[^/]+\.png$/);
     const onDisk = await fs.readFile(filePath);
     expect(onDisk.equals(png)).toBe(true);
     const rows = activityRepo.list();
@@ -94,10 +101,20 @@ describe('ScreenCapturer', () => {
   it('calls infer-screen and logs screenshot_inferred when vision is enabled', async () => {
     settingsRepo.update({ screenCaptureEnabled: true, screenVisionInferenceEnabled: true });
     const png = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
-    getSources.mockResolvedValueOnce([{ name: 'Entire Screen', thumbnail: { toPNG: () => png, getSize: () => ({ width: 100, height: 100 }) } }]);
+    getSources.mockResolvedValueOnce([
+      {
+        name: 'Entire Screen',
+        thumbnail: { toPNG: () => png, getSize: () => ({ width: 100, height: 100 }) },
+      },
+    ]);
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ summary: 'In Slack', activeApp: 'Slack', currentTask: null, confidence: 0.6 }),
+      json: async () => ({
+        summary: 'In Slack',
+        activeApp: 'Slack',
+        currentTask: null,
+        confidence: 0.6,
+      }),
     });
     vi.stubGlobal('fetch', fetchMock);
     await capturer.captureOnce();
@@ -109,34 +126,68 @@ describe('ScreenCapturer', () => {
 
   it('forwards windowContext from most recent window_focus row in fetch body', async () => {
     settingsRepo.update({ screenCaptureEnabled: true, screenVisionInferenceEnabled: true });
-    activityRepo.log('window_focus', { app: 'Slack', title: 'General', browserUrl: 'https://app.slack.com' });
+    activityRepo.log('window_focus', {
+      app: 'Slack',
+      title: 'General',
+      browserUrl: 'https://app.slack.com',
+    });
     const png = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
-    getSources.mockResolvedValueOnce([{ name: 'Entire Screen', thumbnail: { toPNG: () => png, getSize: () => ({ width: 100, height: 100 }) } }]);
+    getSources.mockResolvedValueOnce([
+      {
+        name: 'Entire Screen',
+        thumbnail: { toPNG: () => png, getSize: () => ({ width: 100, height: 100 }) },
+      },
+    ]);
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ summary: 'In Slack', activeApp: 'Slack', currentTask: null, confidence: 0.8 }),
+      json: async () => ({
+        summary: 'In Slack',
+        activeApp: 'Slack',
+        currentTask: null,
+        confidence: 0.8,
+      }),
     });
     vi.stubGlobal('fetch', fetchMock);
     await capturer.captureOnce();
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [, callOptions] = fetchMock.mock.calls[0] as [string, { body: string }];
-    const body = JSON.parse(callOptions.body) as { screenshotBase64: string; windowContext?: { app: string; title: string; browserUrl?: string } };
-    expect(body.windowContext).toMatchObject({ app: 'Slack', title: 'General', browserUrl: 'https://app.slack.com' });
+    const body = JSON.parse(callOptions.body) as {
+      screenshotBase64: string;
+      windowContext?: { app: string; title: string; browserUrl?: string };
+    };
+    expect(body.windowContext).toMatchObject({
+      app: 'Slack',
+      title: 'General',
+      browserUrl: 'https://app.slack.com',
+    });
     vi.unstubAllGlobals();
   });
 
   it('omits windowContext from fetch body when no window_focus row exists', async () => {
     settingsRepo.update({ screenCaptureEnabled: true, screenVisionInferenceEnabled: true });
     const png = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
-    getSources.mockResolvedValueOnce([{ name: 'Entire Screen', thumbnail: { toPNG: () => png, getSize: () => ({ width: 100, height: 100 }) } }]);
+    getSources.mockResolvedValueOnce([
+      {
+        name: 'Entire Screen',
+        thumbnail: { toPNG: () => png, getSize: () => ({ width: 100, height: 100 }) },
+      },
+    ]);
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ summary: 'Desktop', activeApp: 'Finder', currentTask: null, confidence: 0.7 }),
+      json: async () => ({
+        summary: 'Desktop',
+        activeApp: 'Finder',
+        currentTask: null,
+        confidence: 0.7,
+      }),
     });
     vi.stubGlobal('fetch', fetchMock);
     await capturer.captureOnce();
     const [, callOptions] = fetchMock.mock.calls[0] as [string, { body: string }];
-    const body = JSON.parse(callOptions.body) as { screenshotBase64: string; windowContext?: unknown };
+    const body = JSON.parse(callOptions.body) as {
+      screenshotBase64: string;
+      windowContext?: unknown;
+    };
     expect(body.windowContext).toBeUndefined();
     vi.unstubAllGlobals();
   });

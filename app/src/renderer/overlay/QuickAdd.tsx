@@ -9,6 +9,7 @@ import { Step4Tracking } from './components/Step4Tracking.js';
 
 export function QuickAdd() {
   const inputRef = useRef<HTMLInputElement>(null);
+  const isWindows = window.api?.platform === 'win32';
 
   // Wizard Steps: 1 (Goal/Setup), 2 (Task Breakdown), 3 (Watched Sources), 4 (Floating Progress Bar)
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
@@ -371,35 +372,59 @@ export function QuickAdd() {
           borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
         }}
       >
-        {/* Traffic lights */}
-        <div style={{ display: 'flex', gap: '6px' }}>
-          <div
-            style={{
-              width: '10px',
-              height: '10px',
-              borderRadius: '50%',
-              backgroundColor: '#ff5f56',
-              cursor: 'pointer',
-            }}
+        {/* Window controls */}
+        {!isWindows ? (
+          <div style={{ display: 'flex', gap: '6px' }}>
+            <div
+              style={{
+                width: '10px',
+                height: '10px',
+                borderRadius: '50%',
+                backgroundColor: '#ff5f56',
+                cursor: 'pointer',
+              }}
+              onClick={handleCancel}
+            />
+            <div
+              style={{
+                width: '10px',
+                height: '10px',
+                borderRadius: '50%',
+                backgroundColor: '#ffbd2e',
+              }}
+            />
+            <div
+              style={{
+                width: '10px',
+                height: '10px',
+                borderRadius: '50%',
+                backgroundColor: '#27c93f',
+              }}
+            />
+          </div>
+        ) : (
+          <button
+            type="button"
             onClick={handleCancel}
-          />
-          <div
             style={{
-              width: '10px',
-              height: '10px',
-              borderRadius: '50%',
-              backgroundColor: '#ffbd2e',
+              width: '16px',
+              height: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              color: 'rgba(246, 242, 235, 0.5)',
+              fontSize: '13px',
+              lineHeight: 1,
+              padding: 0,
             }}
-          />
-          <div
-            style={{
-              width: '10px',
-              height: '10px',
-              borderRadius: '50%',
-              backgroundColor: '#27c93f',
-            }}
-          />
-        </div>
+            aria-label="Close"
+          >
+            ×
+          </button>
+        )}
         <div style={{ flex: 1 }} />
         <span
           style={{

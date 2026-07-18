@@ -9,6 +9,9 @@ describe('Onboarding', () => {
   const mockRequestScreenRecording = vi.fn().mockResolvedValue('granted');
   const mockOpenScreenRecordingSettings = vi.fn().mockResolvedValue(undefined);
 
+  const mockSignupStart = vi.fn().mockResolvedValue(undefined);
+  const mockSignupComplete = vi.fn().mockResolvedValue(undefined);
+
   beforeEach(() => {
     vi.clearAllMocks();
     Object.defineProperty(window, 'api', {
@@ -16,9 +19,27 @@ describe('Onboarding', () => {
         saveGoalAndTasks: mockSaveGoalAndTasks,
         requestScreenRecording: mockRequestScreenRecording,
         openScreenRecordingSettings: mockOpenScreenRecordingSettings,
+        signup: {
+          start: mockSignupStart,
+          complete: mockSignupComplete,
+        },
       },
       writable: true,
       configurable: true,
+    });
+  });
+
+  it('allows signing in via Google and completes onboarding directly', async () => {
+    render(<Onboarding onComplete={mockOnComplete} />);
+
+    expect(screen.getByTestId('step-welcome')).toBeTruthy();
+    const continueWithGoogleBtn = screen.getByRole('button', { name: 'Continue with Google' });
+    fireEvent.click(continueWithGoogleBtn);
+
+    await waitFor(() => {
+      expect(mockSignupStart).toHaveBeenCalled();
+      expect(mockSignupComplete).toHaveBeenCalled();
+      expect(mockOnComplete).toHaveBeenCalled();
     });
   });
 

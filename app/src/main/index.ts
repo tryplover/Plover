@@ -12,7 +12,6 @@ import { eventBus } from './bus.js';
 import { clearAllTimers, schedulePeriodic } from './lifecycle/periodic.js';
 import { initActivityMonitoring, stopActivityMonitoring } from './activity/index.js';
 import { completeSignup } from './auth/signup-flow.js';
-import { getPloverToken } from './auth/plover-token.js';
 
 if (!app.isPackaged) {
   app.commandLine.appendSwitch('enable-logging');
@@ -23,7 +22,7 @@ app.setAsDefaultProtocolClient('plover');
 const iconPath = join(import.meta.dirname, '../../build/icon.png');
 const appIcon = nativeImage.createFromPath(iconPath);
 if (!app.isPackaged && process.platform === 'darwin' && !appIcon.isEmpty()) {
-  app.dock?.setIcon(appIcon); 
+  app.dock?.setIcon(appIcon);
 }
 
 const bufferedProtocolUrls: string[] = [];
@@ -71,10 +70,11 @@ if (!gotTheLock) {
       width: 1024,
       height: 720,
       title: 'Plover',
-      frame: true,
-      transparent: true,
-      titleBarStyle: 'hiddenInset',
-      vibrancy: 'under-window',
+      frame: process.platform !== 'win32',
+      transparent: process.platform !== 'win32',
+      titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
+      titleBarOverlay: process.platform === 'win32' ? { height: 32 } : false,
+      vibrancy: process.platform === 'darwin' ? 'under-window' : undefined,
       webPreferences: {
         preload: join(import.meta.dirname, '../preload/index.js'),
         sandbox: true,
@@ -106,7 +106,12 @@ if (!gotTheLock) {
       skipTaskbar: !isWindow,
       show: false,
       resizable: isWindow,
-      titleBarStyle: isWindow ? 'hiddenInset' : undefined,
+      titleBarStyle: isWindow
+        ? process.platform === 'darwin'
+          ? 'hiddenInset'
+          : 'hidden'
+        : undefined,
+      titleBarOverlay: isWindow && process.platform === 'win32' ? { height: 32 } : false,
       vibrancy: isWindow ? undefined : 'under-window',
       webPreferences: {
         preload: join(import.meta.dirname, '../preload/index.js'),
@@ -135,35 +140,6 @@ if (!gotTheLock) {
         overlayWindow = null;
       }
     });
-
-    return win;
-  }
-
-  function createSignupWindow(): BrowserWindow {
-    const win = new BrowserWindow({
-      width: 480,
-      height: 600,
-      title: 'Plover',
-      frame: true,
-      resizable: false,
-      titleBarStyle: 'hiddenInset',
-      vibrancy: 'under-window',
-      transparent: true,
-      webPreferences: {
-        preload: join(import.meta.dirname, '../preload/index.js'),
-        sandbox: true,
-        contextIsolation: true,
-      },
-    });
-
-    const devUrl = process.env['ELECTRON_RENDERER_URL'];
-    if (devUrl) {
-      void win.loadURL(`${devUrl}?variant=signup`);
-    } else {
-      void win.loadFile(join(import.meta.dirname, '../renderer/index.html'), {
-        search: 'variant=signup',
-      });
-    }
 
     return win;
   }
@@ -248,12 +224,7 @@ if (!gotTheLock) {
       }
     });
 
-    const ploverToken = await getPloverToken();
-    if (ploverToken) {
-      createMainWindow();
-    } else {
-      createSignupWindow();
-    }
+    createMainWindow();
     overlayWindow = createOverlayWindow('overlay');
 
     // Option is mac-only; Alt+Shift+Space elsewhere to avoid Windows' Alt+Space system-menu conflict
