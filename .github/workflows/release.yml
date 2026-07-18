@@ -68,6 +68,8 @@ jobs:
           # Code signing disabled until Apple Developer / Windows codesign certs are wired into CI secrets
           CSC_IDENTITY_AUTO_DISCOVERY: false
           PLOVER_BACKEND_URL: https://plover-server-562340206018.us-central1.run.app
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v7

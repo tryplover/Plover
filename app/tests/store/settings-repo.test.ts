@@ -50,4 +50,25 @@ describe('SettingsRepo — Phase 2 activity tracking keys', () => {
     repo.update({ screenCaptureIntervalMinutes: 999 });
     expect(repo.getAll().screenCaptureIntervalMinutes).toBe(60);
   });
+
+  it('defaults supabaseUserId/supabaseUserEmail to null when nothing is stored', () => {
+    const s = repo.getAll();
+    expect(s.supabaseUserId).toBeNull();
+    expect(s.supabaseUserEmail).toBeNull();
+  });
+
+  it('roundtrips supabaseUserId and supabaseUserEmail', () => {
+    repo.update({ supabaseUserId: 'user-1', supabaseUserEmail: 'jordan@example.com' });
+    const s = repo.getAll();
+    expect(s.supabaseUserId).toBe('user-1');
+    expect(s.supabaseUserEmail).toBe('jordan@example.com');
+  });
+
+  it('clears supabaseUserId and supabaseUserEmail when updated to null', () => {
+    repo.update({ supabaseUserId: 'user-1', supabaseUserEmail: 'jordan@example.com' });
+    repo.update({ supabaseUserId: null, supabaseUserEmail: null });
+    const s = repo.getAll();
+    expect(s.supabaseUserId).toBeNull();
+    expect(s.supabaseUserEmail).toBeNull();
+  });
 });

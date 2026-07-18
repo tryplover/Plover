@@ -429,4 +429,12 @@ Subagents that need to install deps will hit this same wall and report "network/
 
 **Fix:** Don't try to visually verify Electron GUI changes by launching `pnpm dev`/the Electron binary through the Bash/PowerShell tool and then screenshotting via `computer-use` — it will silently fail with no diagnostic signal. For UI changes in this repo, verify via `pnpm typecheck && pnpm lint && pnpm test`, a careful manual read of the diff, and (if genuinely needed) ask the user to run `pnpm dev` themselves and confirm visually on their own desktop session.
 
+### 2026-07-18 — concurrent sessions in the same working directory silently swap out HEAD mid-task
+
+**Symptom:** Ran `git checkout -b <new-branch> origin/main` in the primary working directory, then did unrelated work (writing a plan file), then `git commit`. The commit landed on local `main` instead of the new branch. `git reflog` showed a `checkout: moving from <new-branch> to main` event between the branch creation and the commit that this session never issued.
+
+**Root cause:** The user (or another Claude Code session/tool) was actively working in the same primary checkout (`C:\Users\hhl_c\Documents\GitHub\Plover`) at the same time — switching branches and committing on their own branch. A single working directory has exactly one HEAD; whichever actor checks out last wins, and neither actor gets a warning. This is invisible from inside a session — there's no signal that another process touched HEAD except retroactively via `git reflog`.
+
+**Fix:** When there's any chance the user or another session is concurrently using the primary repo directory (ask if unsure — don't assume), do multi-step git work (branch + commits) in an isolated `git worktree` instead: `git worktree add <sibling-path> <branch>`, then run all further `Bash`/`Edit` calls with that path, never the primary directory. If a stray commit already landed on the wrong branch before noticing, recover it non-destructively — `git cherry-pick <sha>` onto the correct branch from the worktree — rather than resetting the branch the other actor is using, which they might be actively building on top of.
+
 

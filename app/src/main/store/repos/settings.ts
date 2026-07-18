@@ -7,6 +7,8 @@ export interface SettingsData {
   pauseScheduling: boolean;
   watchedFolders: string[];
   lastInferenceTs: string | null;
+  supabaseUserId: string | null;
+  supabaseUserEmail: string | null;
 
   pauseAllTracking: boolean;
   windowTrackingEnabled: boolean;
@@ -68,6 +70,8 @@ export class SettingsRepo {
     const watchedFoldersRaw = map.get('watchedFolders');
     const watchedFolders = watchedFoldersRaw ? JSON.parse(watchedFoldersRaw) : [];
     const lastInferenceTs = map.get('lastInferenceTs') ?? null;
+    const supabaseUserId = map.get('supabaseUserId') ?? null;
+    const supabaseUserEmail = map.get('supabaseUserEmail') ?? null;
 
     const pauseAllTracking = map.get('pauseAllTracking') === 'true';
     const windowTrackingEnabled = map.get('windowTrackingEnabled') !== 'false';
@@ -85,7 +89,8 @@ export class SettingsRepo {
       0,
       Number.isFinite(rawRetention) ? Math.round(rawRetention) : 30,
     );
-    const planner_useRecentActivityContext = map.get('planner_useRecentActivityContext') !== 'false';
+    const planner_useRecentActivityContext =
+      map.get('planner_useRecentActivityContext') !== 'false';
 
     return {
       googleConnected,
@@ -94,6 +99,8 @@ export class SettingsRepo {
       pauseScheduling,
       watchedFolders,
       lastInferenceTs,
+      supabaseUserId,
+      supabaseUserEmail,
       pauseAllTracking,
       windowTrackingEnabled,
       gdocsPollingEnabled,
@@ -129,6 +136,20 @@ export class SettingsRepo {
         this.set('lastInferenceTs', patch.lastInferenceTs);
       }
     }
+    if (patch.supabaseUserId !== undefined) {
+      if (patch.supabaseUserId === null) {
+        this.deleteStmt.run('supabaseUserId');
+      } else {
+        this.set('supabaseUserId', patch.supabaseUserId);
+      }
+    }
+    if (patch.supabaseUserEmail !== undefined) {
+      if (patch.supabaseUserEmail === null) {
+        this.deleteStmt.run('supabaseUserEmail');
+      } else {
+        this.set('supabaseUserEmail', patch.supabaseUserEmail);
+      }
+    }
     if (patch.pauseAllTracking !== undefined) {
       this.set('pauseAllTracking', String(patch.pauseAllTracking));
     }
@@ -152,7 +173,10 @@ export class SettingsRepo {
       this.set('screenVisionInferenceEnabled', String(patch.screenVisionInferenceEnabled));
     }
     if (patch.activityRetentionDays !== undefined) {
-      this.set('activityRetentionDays', String(Math.max(0, Math.round(patch.activityRetentionDays))));
+      this.set(
+        'activityRetentionDays',
+        String(Math.max(0, Math.round(patch.activityRetentionDays))),
+      );
     }
     if (patch.planner_useRecentActivityContext !== undefined) {
       this.set('planner_useRecentActivityContext', String(patch.planner_useRecentActivityContext));

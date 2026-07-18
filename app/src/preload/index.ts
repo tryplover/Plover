@@ -164,6 +164,13 @@ export interface PloverApi {
     complete: () => Promise<void>;
   };
 
+  // Plover Account (Supabase) API
+  auth: {
+    signIn: () => Promise<{ signedIn: boolean; email: string | null }>;
+    signOut: () => Promise<{ signedIn: boolean; email: string | null }>;
+    getStatus: () => Promise<{ signedIn: boolean; email: string | null }>;
+  };
+
   // Event Subscription
   on: (channel: string, callback: (...args: unknown[]) => void) => () => void;
 }
@@ -215,6 +222,13 @@ const api: PloverApi = {
   signup: {
     start: () => ipcRenderer.invoke('signup:start'),
     complete: () => ipcRenderer.invoke('signup:complete'),
+  },
+
+  // Plover Account (Supabase)
+  auth: {
+    signIn: () => ipcRenderer.invoke('auth:signIn'),
+    signOut: () => ipcRenderer.invoke('auth:signOut'),
+    getStatus: () => ipcRenderer.invoke('auth:getStatus'),
   },
 
   platform: process.platform,
