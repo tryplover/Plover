@@ -66,7 +66,7 @@ export function scheduleTasks(input: {
     }
   }
 
-  const scheduledTasks = new Map<string, { start: Date; end: Date }>();
+  const scheduledTasks = new Map<string, { start: Date; end: Date; startMs: number; endMs: number }>();
   const { hours: startHours, minutes: startMinutes } = parseHHMM(
     workingHours.start,
     'workingHours.start',
@@ -91,6 +91,43 @@ export function scheduleTasks(input: {
     0,
   ).getTime();
 
+  // Pre-calculate static day parameters and pre-filter static calendar events once per day upfront
+  const daysData = Array.from({ length: horizonDays }, (_, i) => {
+    const currentDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+    const dayStart = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth(),
+      currentDate.getDate(),
+      startHours,
+      startMinutes,
+      0,
+      0,
+    );
+    const dayEnd = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth(),
+      currentDate.getDate(),
+      endHours,
+      endMinutes,
+      0,
+      0,
+    );
+    const dayStartTime = dayStart.getTime();
+    const dayEndTime = dayEnd.getTime();
+    const dailyWindowSize = dayEndTime - dayStartTime;
+
+    const dailyCalendarEvents = parsedCalendarEvents.filter(
+      (event) => event.start < dayEndTime && event.end > dayStartTime,
+    );
+
+    return {
+      dayStartTime,
+      dayEndTime,
+      dailyWindowSize,
+      dailyCalendarEvents,
+    };
+  });
+
   for (const T of sorted) {
     const E = T.estimate_minutes;
     const durationMs = E * 60 * 1000;
@@ -105,8 +142,8 @@ export function scheduleTasks(input: {
           hasUnscheduledDep = true;
           break;
         }
-        if (scheduledDep.end.getTime() > minStartTime) {
-          minStartTime = scheduledDep.end.getTime();
+        if (scheduledDep.endMs > minStartTime) {
+          minStartTime = scheduledDep.endMs;
         }
       }
     }
@@ -118,48 +155,30 @@ export function scheduleTasks(input: {
     let scheduled = false;
 
     dayLoop: for (let i = 0; i < horizonDays; i++) {
-      const currentDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
-      const dayStart = new Date(
-        currentDate.getFullYear(),
-        currentDate.getMonth(),
-        currentDate.getDate(),
-        startHours,
-        startMinutes,
-        0,
-        0,
-      );
-      const dayEnd = new Date(
-        currentDate.getFullYear(),
-        currentDate.getMonth(),
-        currentDate.getDate(),
-        endHours,
-        endMinutes,
-        0,
-        0,
-      );
+      const dayData = daysData[i];
+      if (!dayData) {
+        continue;
+      }
+      const {
+        dayStartTime,
+        dayEndTime,
+        dailyWindowSize,
+        dailyCalendarEvents,
+      } = dayData;
 
-      const workStart = Math.max(minStartTime, dayStart.getTime());
-      const workEnd = dayEnd.getTime();
+      const workStart = Math.max(minStartTime, dayStartTime);
+      const workEnd = dayEndTime;
 
       if (workStart >= workEnd) {
         continue;
       }
 
-      // Pre-filter calendar events and already scheduled tasks for the current day being processed
-      // This reduces lookup complexity in the inner slot-check loop from O(total_events + total_tasks) to O(daily_events + daily_tasks)
-      const dayStartTime = dayStart.getTime();
-      const dayEndTime = dayEnd.getTime();
-
-      const dailyCalendarEvents = parsedCalendarEvents.filter(
-        (event) => event.start < dayEndTime && event.end > dayStartTime,
-      );
-
+      // Filter already scheduled tasks to only include those that overlap with this day
+      // Uses fast primitive numbers to avoid Date creation or object property lookup costs
       const dailyScheduledTasks: { start: number; end: number }[] = [];
       for (const scheduledTask of scheduledTasks.values()) {
-        const taskStart = scheduledTask.start.getTime();
-        const taskEnd = scheduledTask.end.getTime();
-        if (taskStart < dayEndTime && taskEnd > dayStartTime) {
-          dailyScheduledTasks.push({ start: taskStart, end: taskEnd });
+        if (scheduledTask.startMs < dayEndTime && scheduledTask.endMs > dayStartTime) {
+          dailyScheduledTasks.push({ start: scheduledTask.startMs, end: scheduledTask.endMs });
         }
       }
 
@@ -171,9 +190,8 @@ export function scheduleTasks(input: {
           break dayLoop;
         }
 
-        const dailyWindowSize = dayEnd.getTime() - dayStart.getTime();
         if (durationMs <= dailyWindowSize) {
-          if (end > dayEnd.getTime()) {
+          if (end > dayEndTime) {
             break;
           }
         }
@@ -203,7 +221,12 @@ export function scheduleTasks(input: {
           continue;
         }
 
-        scheduledTasks.set(T.id, { start: new Date(S), end: new Date(end) });
+        scheduledTasks.set(T.id, {
+          start: new Date(S),
+          end: new Date(end),
+          startMs: S,
+          endMs: end,
+        });
         scheduled = true;
         break;
       }
