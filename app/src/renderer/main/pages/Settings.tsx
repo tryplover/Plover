@@ -168,21 +168,21 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
     }
   };
 
-  const handleConnectCalendar = async () => {
+  const handleConnectGoogle = async () => {
     try {
       if (googleConnected) {
-        await window.api.disconnectCalendar();
+        await window.api.disconnectGoogle();
         setGoogleConnected(false);
         await triggerAutoSave({ googleConnected: false });
       } else {
-        const success = await window.api.connectCalendar();
+        const success = await window.api.connectGoogle();
         if (success) {
           setGoogleConnected(true);
           await triggerAutoSave({ googleConnected: true });
         }
       }
     } catch (err) {
-      console.error('Google Calendar toggle failed:', err);
+      console.error('Google connection toggle failed:', err);
     }
   };
 
@@ -353,7 +353,7 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--plover-text)' }}>
-                  Google Calendar
+                  Google
                 </p>
                 {googleConnected && (
                   <p
@@ -363,7 +363,7 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
                       marginTop: '4px',
                     }}
                   >
-                    Connected as account
+                    Connect Google to enable Docs progress tracking.
                   </p>
                 )}
               </div>
@@ -391,7 +391,7 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
                 )}
                 <Button
                   variant={googleConnected ? 'secondary' : 'primary'}
-                  onClick={handleConnectCalendar}
+                  onClick={handleConnectGoogle}
                 >
                   {googleConnected ? 'Disconnect' : 'Connect'}
                 </Button>

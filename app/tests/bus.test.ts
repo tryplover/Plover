@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { TypedEventBus, eventBus } from '../src/main/bus.js';
+import { TypedEventBus } from '../src/main/bus.js';
 import { Goal } from '../src/shared/types.js';
 
 describe('TypedEventBus', () => {
@@ -61,37 +61,4 @@ describe('TypedEventBus', () => {
     expect(handler).toHaveBeenCalledTimes(1);
   });
 
-  it('should handle events without payload (void)', () => {
-    const bus = new TypedEventBus();
-    const handler = vi.fn();
-
-    bus.on('calendar.synced', handler);
-    bus.emit('calendar.synced');
-
-    expect(handler).toHaveBeenCalledTimes(1);
-    expect(handler).toHaveBeenCalledWith();
-  });
-
-  it('should support removeAllListeners', () => {
-    const bus = new TypedEventBus();
-    const handler1 = vi.fn();
-    const handler2 = vi.fn();
-
-    bus.on('calendar.synced', handler1);
-    bus.on('calendar.synced', handler2);
-
-    bus.removeAllListeners('calendar.synced');
-    bus.emit('calendar.synced');
-
-    expect(handler1).not.toHaveBeenCalled();
-    expect(handler2).not.toHaveBeenCalled();
-  });
-
-  it('should use the shared global eventBus instance', () => {
-    const handler = vi.fn();
-    eventBus.on('calendar.synced', handler);
-    eventBus.emit('calendar.synced');
-    eventBus.off('calendar.synced', handler);
-    expect(handler).toHaveBeenCalledTimes(1);
-  });
 });

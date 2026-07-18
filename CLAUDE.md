@@ -41,7 +41,7 @@ Note: `docs/plans/` contains *generated implementation plans* used as input to s
 
 ## Project
 
-**Plover** is a local-first Electron desktop agent for productivity. It turns vague goals into a calendar and shepherds the user toward finishing them. Privacy-by-design: user data is strictly local, but outbound Gemini API calls are proxied securely through a backend server to protect the developer API key in production.
+**Plover** is a local-first Electron desktop agent for productivity. It turns vague goals into a structured plan of subtasks and shepherds the user toward finishing them. Privacy-by-design: user data is strictly local, but outbound Gemini API calls are proxied securely through a backend server to protect the developer API key in production.
 
 - **Product spec:** [docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md](docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md)
 - **Phase 1 core architecture:** [docs/superpowers/specs/phase-1/core-architecture.md](docs/superpowers/specs/phase-1/core-architecture.md)
@@ -142,7 +142,7 @@ These are not style preferences. The core architecture doc calls them
 - **Backend API Proxy.** Outbound Gemini API calls are proxied through a secure backend server to protect developer API keys in production.
 
 - **Outbound HTTP allowlist:** `generativelanguage.googleapis.com` (Gemini),
-  `www.googleapis.com` (Calendar/Docs), Google OAuth endpoints. Enforced at the
+  `www.googleapis.com` (Docs), Google OAuth endpoints. Enforced at the
   HTTP client.
 - **Never capture keystroke content.** Counts only.
 - **Never upload screenshots** anywhere except (later) Gemini Vision with
@@ -157,7 +157,7 @@ These are not style preferences. The core architecture doc calls them
 **In Phase 1:**
 - Typed goal capture (text)
 - Gemini-powered subtask decomposition
-- Google Calendar OAuth + auto-scheduling
+- Local subtask scheduling (working-hours aware, no external calendar)
 - Local Today / Goals / Settings views
 - Overlay quick-add (global hotkey)
 
@@ -412,6 +412,14 @@ Subagents that need to install deps will hit this same wall and report "network/
 **Root cause:** This violated the architectural rule that only Sync talks to Google APIs, leading to logic duplication and OAuth scope creep.
 
 **Fix:** Move polling logic to `Sync` module. Use the event bus (`gdocs.revision` event) to notify the `Activity` module of updates. Refactor Activity tracker into a subscriber that only writes to `ActivityRepo`.
+
+### 2026-07-18 — Calendar sync removed but `tasks.calendar_event_id` column intact
+
+**Symptom:** `store/db.ts` still defines `calendar_event_id TEXT` on the `tasks` table even though no application code reads or writes it after the Calendar-sync removal.
+
+**Root cause:** Dropping a column requires a new migration, and existing installs would fail if we altered v1 in place. We deliberately left the column so existing DBs stay usable.
+
+**Fix:** Do NOT re-add references. If you're touching the tasks schema for another reason, bundle a proper `ALTER TABLE tasks DROP COLUMN calendar_event_id` migration then (SQLite ≥3.35 supports it). Until then, treat the column as vestigial.
 
 ### 2026-06-24 — Clicking "Open setup overlay" opens duplicate main window instead of setup flow
 

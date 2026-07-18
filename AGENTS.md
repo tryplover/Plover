@@ -17,8 +17,9 @@ pnpm workspace with two packages:
   developer key isn't shipped to end users
 
 Phase 1 (current) covers: typed goal capture, Gemini-powered subtask
-decomposition, Google Calendar OAuth + auto-scheduling, local Today/Goals/
-Settings views, and an overlay quick-add hotkey.
+decomposition, local subtask scheduling into working-hours windows, local
+Today/Goals/Settings views, and an overlay quick-add hotkey. (Google Calendar
+sync was removed 2026-07-18; the Sync module now only polls Google Docs.)
 
 Deferred (do **not** add): activity monitoring, voice input, inference /
 progress signals, nudge engine, Windows port, multi-account/plugins/sync.

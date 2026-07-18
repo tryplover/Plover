@@ -1,4 +1,4 @@
-import { Task, CalendarEvent } from '@shared/types';
+import { Task } from '@shared/types';
 
 function parseHHMM(value: string, field: string): { hours: number; minutes: number } {
   const parts = value.split(':');
@@ -22,13 +22,12 @@ function parseHHMM(value: string, field: string): { hours: number; minutes: numb
 
 export function scheduleTasks(input: {
   tasks: Task[];
-  calendarEvents: CalendarEvent[];
   workingHours: { start: string; end: string };
   horizonDays: number;
   now?: Date;
 }): { taskId: string; start: Date; end: Date }[] {
   const now = input.now ?? new Date();
-  const { tasks, calendarEvents, workingHours, horizonDays } = input;
+  const { tasks, workingHours, horizonDays } = input;
 
   const sorted: Task[] = [];
   const visited = new Set<string>();
@@ -72,13 +71,6 @@ export function scheduleTasks(input: {
     'workingHours.start',
   );
   const { hours: endHours, minutes: endMinutes } = parseHHMM(workingHours.end, 'workingHours.end');
-
-  const parsedCalendarEvents = calendarEvents
-    .map((event) => ({
-      start: new Date(event.start).getTime(),
-      end: new Date(event.end).getTime(),
-    }))
-    .filter((event) => !Number.isNaN(event.start) && !Number.isNaN(event.end));
 
   const lastDayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + horizonDays - 1);
   const horizonEnd = new Date(
@@ -161,14 +153,6 @@ export function scheduleTasks(input: {
         }
 
         let overlapEvent: { start: number; end: number } | null = null;
-
-        for (const event of parsedCalendarEvents) {
-          if (S < event.end && end > event.start) {
-            if (!overlapEvent || event.end > overlapEvent.end) {
-              overlapEvent = { start: event.start, end: event.end };
-            }
-          }
-        }
 
         for (const scheduledTask of scheduledTasks.values()) {
           const taskStart = scheduledTask.start.getTime();

@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { Task, Goal, CalendarEvent, SummaryRow } from '../shared/types.js';
+import { Task, Goal, SummaryRow } from '../shared/types.js';
 
 export interface ProposedPlan {
   goal: Omit<Goal, 'id' | 'created_at' | 'updated_at' | 'status'>;
@@ -45,7 +45,6 @@ export interface PloverApi {
       | 'updated_at'
       | 'scheduled_start'
       | 'scheduled_end'
-      | 'calendar_event_id'
     >[];
   }>;
   scheduleTasks: (
@@ -60,7 +59,6 @@ export interface PloverApi {
       | 'scheduled_end'
       | 'calendar_event_id'
     >[],
-    calendarEvents: CalendarEvent[],
     workingHours: { start: string; end: string },
     horizonDays: number,
   ) => Promise<{ taskId: string; start: string; end: string }[]>;
@@ -75,7 +73,6 @@ export interface PloverApi {
       | 'updated_at'
       | 'scheduled_start'
       | 'scheduled_end'
-      | 'calendar_event_id'
     >[],
     scheduledSlots: { tempIndex: number; start: string; end: string }[],
   ) => Promise<{ goal: Goal; tasks: Task[] }>;
@@ -128,9 +125,9 @@ export interface PloverApi {
     planner_useRecentActivityContext: boolean;
   }>;
 
-  // Calendar Sync
-  connectCalendar: () => Promise<boolean>;
-  disconnectCalendar: () => Promise<void>;
+  // Google OAuth (for Docs tracking)
+  connectGoogle: () => Promise<boolean>;
+  disconnectGoogle: () => Promise<void>;
 
   // Overlay Window API
   proposeGoal: (goalText: string) => Promise<ProposedPlan>;
@@ -184,14 +181,14 @@ const api: PloverApi = {
   getSummaries: () => ipcRenderer.invoke('summaries:get'),
   updateTaskStatus: (id, status) => ipcRenderer.invoke('tasks:updateStatus', id, status),
   decomposeGoal: (goalText) => ipcRenderer.invoke('goals:decompose', goalText),
-  scheduleTasks: (tasks, calendarEvents, workingHours, horizonDays) =>
-    ipcRenderer.invoke('tasks:schedule', tasks, calendarEvents, workingHours, horizonDays),
+  scheduleTasks: (tasks, workingHours, horizonDays) =>
+    ipcRenderer.invoke('tasks:schedule', tasks, workingHours, horizonDays),
   saveGoalAndTasks: (goal, tasks, scheduledSlots) =>
     ipcRenderer.invoke('goals:save', goal, tasks, scheduledSlots),
   getSettings: () => ipcRenderer.invoke('settings:get'),
   updateSettings: (settings) => ipcRenderer.invoke('settings:update', settings),
-  connectCalendar: () => ipcRenderer.invoke('calendar:connect'),
-  disconnectCalendar: () => ipcRenderer.invoke('calendar:disconnect'),
+  connectGoogle: () => ipcRenderer.invoke('google:connect'),
+  disconnectGoogle: () => ipcRenderer.invoke('google:disconnect'),
 
   // Overlay
   proposeGoal: (goalText) => ipcRenderer.invoke('goal:propose', goalText),

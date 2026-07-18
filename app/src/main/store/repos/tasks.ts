@@ -7,7 +7,6 @@ export class TasksRepo {
   private createStmt: Database.Statement;
   private getStmt: Database.Statement;
   private listByGoalStmt: Database.Statement;
-  private listScheduledBetweenStmt: Database.Statement;
   private updateStmt: Database.Statement;
   private listStmt: Database.Statement;
   private listActiveScheduledBeforeStmt: Database.Statement;
@@ -18,51 +17,40 @@ export class TasksRepo {
     this.createStmt = this.db.prepare(`
       INSERT INTO tasks (
         id, goal_id, title, estimate_minutes, depends_on,
-        scheduled_start, scheduled_end, calendar_event_id, status,
+        scheduled_start, scheduled_end, status,
         created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     this.getStmt = this.db.prepare(`
       SELECT id, goal_id, title, estimate_minutes, depends_on,
-             scheduled_start, scheduled_end, calendar_event_id, status,
+             scheduled_start, scheduled_end, status,
              created_at, updated_at
       FROM tasks
       WHERE id = ?
     `);
     this.listByGoalStmt = this.db.prepare(`
       SELECT id, goal_id, title, estimate_minutes, depends_on,
-             scheduled_start, scheduled_end, calendar_event_id, status,
+             scheduled_start, scheduled_end, status,
              created_at, updated_at
       FROM tasks
       WHERE goal_id = ?
     `);
-    this.listScheduledBetweenStmt = this.db.prepare(`
-      SELECT id, goal_id, title, estimate_minutes, depends_on,
-             scheduled_start, scheduled_end, calendar_event_id, status,
-             created_at, updated_at
-      FROM tasks
-      WHERE scheduled_start IS NOT NULL
-        AND (
-          (scheduled_start >= ? AND scheduled_start <= ?)
-          OR (scheduled_start < ? AND status NOT IN ('done', 'skipped'))
-        )
-    `);
     this.updateStmt = this.db.prepare(`
       UPDATE tasks
       SET goal_id = ?, title = ?, estimate_minutes = ?, depends_on = ?,
-          scheduled_start = ?, scheduled_end = ?, calendar_event_id = ?, status = ?,
+          scheduled_start = ?, scheduled_end = ?, status = ?,
           updated_at = ?
       WHERE id = ?
     `);
     this.listStmt = this.db.prepare(`
       SELECT id, goal_id, title, estimate_minutes, depends_on,
-             scheduled_start, scheduled_end, calendar_event_id, status,
+             scheduled_start, scheduled_end, status,
              created_at, updated_at
       FROM tasks
     `);
     this.listActiveScheduledBeforeStmt = this.db.prepare(`
       SELECT id, goal_id, title, estimate_minutes, depends_on,
-             scheduled_start, scheduled_end, calendar_event_id, status,
+             scheduled_start, scheduled_end, status,
              created_at, updated_at
       FROM tasks
       WHERE status NOT IN ('done', 'skipped')
@@ -87,7 +75,6 @@ export class TasksRepo {
       depends_on: input.depends_on,
       scheduled_start: input.scheduled_start,
       scheduled_end: input.scheduled_end,
-      calendar_event_id: input.calendar_event_id,
       status: input.status,
       created_at: now,
       updated_at: now,
@@ -101,7 +88,6 @@ export class TasksRepo {
       task.depends_on ? JSON.stringify(task.depends_on) : null,
       task.scheduled_start ?? null,
       task.scheduled_end ?? null,
-      task.calendar_event_id ?? null,
       task.status,
       task.created_at,
       task.updated_at,
@@ -120,7 +106,6 @@ export class TasksRepo {
           depends_on: string | null;
           scheduled_start: string | null;
           scheduled_end: string | null;
-          calendar_event_id: string | null;
           status: string;
           created_at: string;
           updated_at: string;
@@ -139,7 +124,6 @@ export class TasksRepo {
       depends_on: row.depends_on ? (JSON.parse(row.depends_on) as string[]) : undefined,
       scheduled_start: row.scheduled_start ?? undefined,
       scheduled_end: row.scheduled_end ?? undefined,
-      calendar_event_id: row.calendar_event_id ?? undefined,
       status: row.status as Task['status'],
       created_at: row.created_at,
       updated_at: row.updated_at,
@@ -155,7 +139,6 @@ export class TasksRepo {
       depends_on: string | null;
       scheduled_start: string | null;
       scheduled_end: string | null;
-      calendar_event_id: string | null;
       status: string;
       created_at: string;
       updated_at: string;
@@ -169,41 +152,6 @@ export class TasksRepo {
       depends_on: row.depends_on ? (JSON.parse(row.depends_on) as string[]) : undefined,
       scheduled_start: row.scheduled_start ?? undefined,
       scheduled_end: row.scheduled_end ?? undefined,
-      calendar_event_id: row.calendar_event_id ?? undefined,
-      status: row.status as Task['status'],
-      created_at: row.created_at,
-      updated_at: row.updated_at,
-    }));
-  }
-
-  listScheduledBetween(start: Date, end: Date): Task[] {
-    const rows = this.listScheduledBetweenStmt.all(
-      start.toISOString(),
-      end.toISOString(),
-      start.toISOString(),
-    ) as {
-      id: string;
-      goal_id: string;
-      title: string;
-      estimate_minutes: number;
-      depends_on: string | null;
-      scheduled_start: string | null;
-      scheduled_end: string | null;
-      calendar_event_id: string | null;
-      status: string;
-      created_at: string;
-      updated_at: string;
-    }[];
-
-    return rows.map((row) => ({
-      id: row.id,
-      goal_id: row.goal_id,
-      title: row.title,
-      estimate_minutes: row.estimate_minutes,
-      depends_on: row.depends_on ? (JSON.parse(row.depends_on) as string[]) : undefined,
-      scheduled_start: row.scheduled_start ?? undefined,
-      scheduled_end: row.scheduled_end ?? undefined,
-      calendar_event_id: row.calendar_event_id ?? undefined,
       status: row.status as Task['status'],
       created_at: row.created_at,
       updated_at: row.updated_at,
@@ -232,7 +180,6 @@ export class TasksRepo {
       updated.depends_on ? JSON.stringify(updated.depends_on) : null,
       updated.scheduled_start ?? null,
       updated.scheduled_end ?? null,
-      updated.calendar_event_id ?? null,
       updated.status,
       updated.updated_at,
       id,
@@ -250,7 +197,6 @@ export class TasksRepo {
       depends_on: string | null;
       scheduled_start: string | null;
       scheduled_end: string | null;
-      calendar_event_id: string | null;
       status: string;
       created_at: string;
       updated_at: string;
@@ -264,7 +210,6 @@ export class TasksRepo {
       depends_on: row.depends_on ? (JSON.parse(row.depends_on) as string[]) : undefined,
       scheduled_start: row.scheduled_start ?? undefined,
       scheduled_end: row.scheduled_end ?? undefined,
-      calendar_event_id: row.calendar_event_id ?? undefined,
       status: row.status as Task['status'],
       created_at: row.created_at,
       updated_at: row.updated_at,
@@ -280,7 +225,6 @@ export class TasksRepo {
       depends_on: string | null;
       scheduled_start: string | null;
       scheduled_end: string | null;
-      calendar_event_id: string | null;
       status: string;
       created_at: string;
       updated_at: string;
@@ -294,7 +238,6 @@ export class TasksRepo {
       depends_on: row.depends_on ? (JSON.parse(row.depends_on) as string[]) : undefined,
       scheduled_start: row.scheduled_start ?? undefined,
       scheduled_end: row.scheduled_end ?? undefined,
-      calendar_event_id: row.calendar_event_id ?? undefined,
       status: row.status as Task['status'],
       created_at: row.created_at,
       updated_at: row.updated_at,
