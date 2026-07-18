@@ -172,6 +172,14 @@
   color: #2e7d32;
 }
 
+.plover-onboarding__brand-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #2e7d32;
+  flex-shrink: 0;
+}
+
 .plover-onboarding__title {
   font-family: var(--plover-font-serif);
   font-size: 54px;
@@ -834,4 +842,97 @@
   background-color: rgba(46, 125, 50, 0.1);
   color: #2e7d32;
   font-size: 10px;
+}
+
+/* Authentication card integration for onboarding */
+.plover-onboarding__auth-container {
+  margin-top: 16px;
+  max-width: 440px;
+}
+
+.plover-onboarding__auth-card {
+  background: rgba(24, 25, 26, 0.03);
+  border: 1px solid rgba(24, 25, 26, 0.08);
+  border-radius: var(--plover-radius-lg);
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.plover-onboarding__auth-heading {
+  font-family: var(--plover-font-serif);
+  font-size: 24px;
+  font-weight: 400;
+  color: #18191a;
+}
+
+.plover-onboarding__auth-subhead {
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(24, 25, 26, 0.6);
+}
+
+.plover-onboarding__btn-google {
+  padding: 12px 20px;
+  border-radius: 9999px;
+  background: #18191a;
+  color: #f4efe6;
+  border: none;
+  font-family: var(--plover-font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform var(--plover-duration-fast) var(--plover-easing-soft),
+    opacity var(--plover-duration-fast) var(--plover-easing-soft);
+  text-align: center;
+  width: 100%;
+}
+
+.plover-onboarding__btn-google:hover:not(:disabled) {
+  transform: translateY(-1px);
+  opacity: 0.92;
+}
+
+.plover-onboarding__btn-google:active:not(:disabled) {
+  transform: translateY(0) scale(0.99);
+}
+
+.plover-onboarding__btn-google:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.plover-onboarding__btn-secondary {
+  background: none;
+  border: none;
+  color: rgba(24, 25, 26, 0.6);
+  font-family: var(--plover-font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: var(--plover-radius-sm);
+  transition:
+    background-color var(--plover-duration-fast) var(--plover-easing-soft),
+    color var(--plover-duration-fast) var(--plover-easing-soft);
+  margin-left: -12px;
+}
+
+.plover-onboarding__btn-secondary:hover {
+  background-color: rgba(24, 25, 26, 0.04);
+  color: #18191a;
+}
+
+.plover-onboarding__auth-status-msg {
+  font-size: 13px;
+  color: rgba(24, 25, 26, 0.6);
+  margin-top: 12px;
+  text-align: left;
+}
+
+.plover-onboarding__auth-status-msg--error {
+  color: #d32f2f;
 }

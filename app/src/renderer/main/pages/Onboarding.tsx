@@ -22,6 +22,24 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   ]);
   const [appName, setAppName] = useState('Finish the methods section of my thesis');
   const isWindows = window.api?.platform === 'win32';
+  const [authState, setAuthState] = useState<
+    { kind: 'idle' } | { kind: 'opened-browser' } | { kind: 'error'; message: string }
+  >({ kind: 'idle' });
+
+  const handleSignIn = () => {
+    setAuthState({ kind: 'opened-browser' });
+    window.api.signup
+      .start()
+      .then(() => window.api.signup.complete())
+      .then(() => {
+        localStorage.setItem('plover_onboarding_completed', 'true');
+        onComplete();
+      })
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : String(err);
+        setAuthState({ kind: 'error', message });
+      });
+  };
 
   const handleToggleUsecase = (label: string) => {
     setSelectedUsecases((prev) =>
@@ -116,7 +134,11 @@ export function Onboarding({ onComplete }: OnboardingProps) {
     <div className="plover-onboarding" data-testid="onboarding-wizard">
       {/* Custom Titlebar */}
       <header className="plover-onboarding__titlebar">
-        <div className="plover-onboarding__left-spacer" />
+        <div className="plover-onboarding__dots">
+          <span className="plover-onboarding__dot plover-onboarding__dot--red" />
+          <span className="plover-onboarding__dot plover-onboarding__dot--yellow" />
+          <span className="plover-onboarding__dot plover-onboarding__dot--green" />
+        </div>
 
         {/* Stepper */}
         <nav className="plover-onboarding__stepper" aria-label="Onboarding Progress">
@@ -171,10 +193,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
         </nav>
 
         {!isWindows ? (
-          <div className="plover-onboarding__lang">English ⌄</div>
+          <div style={{ width: '80px' }} />
         ) : (
           <div className="plover-onboarding__right-container">
-            <div className="plover-onboarding__lang">English ⌄</div>
             <div className="plover-onboarding__win-overlay-spacer" />
           </div>
         )}
@@ -187,24 +208,48 @@ export function Onboarding({ onComplete }: OnboardingProps) {
           <section className="plover-onboarding__slide" data-testid="step-welcome">
             <div className="plover-onboarding__split-left">
               <div className="plover-onboarding__brand">
-                <span className="plover-onboarding__brand-icon" aria-hidden="true">
-                  ❙❙❙
-                </span>
+                <span className="plover-onboarding__brand-dot" aria-hidden="true" />
                 <span>Plover</span>
               </div>
               <h1 className="plover-onboarding__title">See your progress as you actually work.</h1>
               <p className="plover-onboarding__desc">
                 Plover is a progress bar that quietly fills as your work gets done.
               </p>
-              <div>
+
+              <div className="plover-onboarding__auth-container">
                 <button
+                  type="button"
                   className="plover-onboarding__btn"
-                  onClick={handleNext}
-                  data-testid="btn-get-started"
+                  onClick={handleSignIn}
+                  disabled={authState.kind === 'opened-browser'}
                 >
-                  Get started →
+                  {authState.kind === 'error'
+                    ? 'Try again'
+                    : authState.kind === 'opened-browser'
+                      ? 'Waiting for browser…'
+                      : 'Continue with Google'}
                 </button>
+                <div style={{ marginTop: '20px' }}>
+                  <button
+                    className="plover-onboarding__btn-secondary"
+                    onClick={handleNext}
+                    data-testid="btn-get-started"
+                  >
+                    Or set up local-only tracking →
+                  </button>
+                </div>
+                {authState.kind === 'opened-browser' && (
+                  <p className="plover-onboarding__auth-status-msg">
+                    Complete sign-in in your browser. This window will close automatically.
+                  </p>
+                )}
+                {authState.kind === 'error' && (
+                  <p className="plover-onboarding__auth-status-msg plover-onboarding__auth-status-msg--error">
+                    Sign-in failed: {authState.message}
+                  </p>
+                )}
               </div>
+
               <p className="plover-onboarding__disclaimer">
                 By continuing you agree to our Terms and Privacy Policy.
               </p>
