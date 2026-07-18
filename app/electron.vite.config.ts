@@ -16,6 +16,7 @@ export default defineConfig({
           'google-auth-library',
           'googleapis',
           '@google/generative-ai',
+          '@supabase/supabase-js',
         ],
       },
     },
@@ -23,6 +24,8 @@ export default defineConfig({
       'import.meta.env.PLOVER_BACKEND_URL': JSON.stringify(
         process.env.PLOVER_BACKEND_URL ?? 'http://localhost:3000',
       ),
+      'import.meta.env.SUPABASE_URL': JSON.stringify(process.env.SUPABASE_URL ?? ''),
+      'import.meta.env.SUPABASE_ANON_KEY': JSON.stringify(process.env.SUPABASE_ANON_KEY ?? ''),
     },
     resolve: {
       alias: {

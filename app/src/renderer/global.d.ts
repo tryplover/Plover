@@ -111,6 +111,11 @@ export interface PloverAPI {
     start: () => Promise<void>;
     complete: () => Promise<void>;
   };
+  auth: {
+    signIn: () => Promise<{ signedIn: boolean; email: string | null }>;
+    signOut: () => Promise<{ signedIn: boolean; email: string | null }>;
+    getStatus: () => Promise<{ signedIn: boolean; email: string | null }>;
+  };
   platform: string;
   minimizeWindow(): Promise<void>;
   maximizeWindow(): Promise<void>;

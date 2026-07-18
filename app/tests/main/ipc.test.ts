@@ -6,6 +6,20 @@ import { ProposedPlan } from '../../src/preload/index';
 import { BrowserWindow } from 'electron';
 import * as nodeFs from 'node:fs';
 
+const { mockSupabaseAuth } = vi.hoisted(() => {
+  return {
+    mockSupabaseAuth: {
+      signIn: vi.fn(),
+      signOut: vi.fn(),
+      restoreSession: vi.fn(),
+      startAutoRefresh: vi.fn(),
+      getCurrentUser: vi.fn(),
+    },
+  };
+});
+
+vi.mock('../../src/main/auth/supabase-auth.js', () => mockSupabaseAuth);
+
 type IpcHandler = (event: unknown, ...args: unknown[]) => unknown;
 
 // Mock electron
@@ -17,7 +31,9 @@ vi.mock('electron', () => {
         handlers[channel] = handler;
       }),
     },
-    BrowserWindow: vi.fn(),
+    BrowserWindow: Object.assign(vi.fn(), {
+      getAllWindows: vi.fn().mockReturnValue([]),
+    }),
   };
 });
 
@@ -63,6 +79,7 @@ describe('IPC Handlers', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSupabaseAuth.restoreSession.mockResolvedValue(false);
     mockOverlayWindow = {
       hide: vi.fn(),
       getBounds: vi.fn().mockReturnValue({ x: 10, y: 20, width: 600, height: 80 }),
@@ -275,5 +292,73 @@ describe('IPC Handlers', () => {
 
     expect(goalsRepo.get(goal.id)).toBeNull();
     expect(tasksRepo.listByGoal(goal.id)).toHaveLength(0);
+  });
+
+  describe('auth:signIn, auth:signOut, auth:getStatus', () => {
+    function getHandler(channel: string) {
+      const calls = (ipcMain.handle as ReturnType<typeof vi.fn>).mock.calls;
+      const call = calls.find((c) => c[0] === channel);
+      expect(call).toBeDefined();
+      return call?.[1] as (event: unknown, ...args: unknown[]) => Promise<unknown>;
+    }
+
+    afterEach(() => {
+      settingsRepo.update({ supabaseUserId: null, supabaseUserEmail: null });
+    });
+
+    it('calls restoreSession on setup and starts auto refresh if a session exists', async () => {
+      mockSupabaseAuth.restoreSession.mockResolvedValue(true);
+      setupIpcHandlers(getOverlayWindow);
+      // restoreSession's .then() runs on the microtask queue
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(mockSupabaseAuth.startAutoRefresh).toHaveBeenCalled();
+    });
+
+    it('auth:signIn signs in, persists the user, and returns signed-in status', async () => {
+      mockSupabaseAuth.signIn.mockResolvedValue(undefined);
+      mockSupabaseAuth.getCurrentUser.mockResolvedValue({
+        id: 'user-1',
+        email: 'jordan@example.com',
+      });
+
+      const result = await getHandler('auth:signIn')({});
+
+      expect(result).toEqual({ signedIn: true, email: 'jordan@example.com' });
+      expect(settingsRepo.getAll().supabaseUserId).toBe('user-1');
+      expect(settingsRepo.getAll().supabaseUserEmail).toBe('jordan@example.com');
+    });
+
+    it('auth:signIn throws when no user is returned', async () => {
+      mockSupabaseAuth.signIn.mockResolvedValue(undefined);
+      mockSupabaseAuth.getCurrentUser.mockResolvedValue(null);
+
+      await expect(getHandler('auth:signIn')({})).rejects.toThrow();
+    });
+
+    it('auth:signOut clears the persisted user and returns signed-out status', async () => {
+      settingsRepo.update({ supabaseUserId: 'user-1', supabaseUserEmail: 'jordan@example.com' });
+      mockSupabaseAuth.signOut.mockResolvedValue(undefined);
+
+      const result = await getHandler('auth:signOut')({});
+
+      expect(result).toEqual({ signedIn: false, email: null });
+      expect(settingsRepo.getAll().supabaseUserId).toBeNull();
+      expect(settingsRepo.getAll().supabaseUserEmail).toBeNull();
+    });
+
+    it('auth:getStatus reflects persisted settings', async () => {
+      settingsRepo.update({ supabaseUserId: 'user-2', supabaseUserEmail: 'sam@example.com' });
+
+      const result = await getHandler('auth:getStatus')({});
+
+      expect(result).toEqual({ signedIn: true, email: 'sam@example.com' });
+    });
+
+    it('auth:getStatus reports signed-out when nothing is persisted', async () => {
+      const result = await getHandler('auth:getStatus')({});
+
+      expect(result).toEqual({ signedIn: false, email: null });
+    });
   });
 });

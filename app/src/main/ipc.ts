@@ -22,6 +22,7 @@ import {
 import { SettingsData } from './store/repos/settings.js';
 import { startSignup } from './auth/signup-flow.js';
 import { withAuthRetry } from './auth/with-auth-retry.js';
+import * as supabaseAuth from './auth/supabase-auth.js';
 
 export const googleAuth = new GoogleAuth();
 export const calendarSync = new GoogleCalendarSync(googleAuth);
@@ -44,6 +45,9 @@ export function setupIpcHandlers(
   createOverlayWindow?: (variant: 'overlay' | 'window') => BrowserWindow,
 ): void {
   void googleAuth.loadSavedCredentials();
+  void supabaseAuth.restoreSession().then((hasSession) => {
+    if (hasSession) supabaseAuth.startAutoRefresh();
+  });
 
   // Goals
   ipcMain.handle('goals:get', async () => {
@@ -113,6 +117,41 @@ export function setupIpcHandlers(
 
   ipcMain.handle('signup:start', async () => {
     await startSignup();
+  });
+
+  ipcMain.handle('auth:signIn', async () => {
+    try {
+      await supabaseAuth.signIn();
+      const user = await supabaseAuth.getCurrentUser();
+      if (!user) {
+        throw new Error('Supabase sign-in completed but no user was returned');
+      }
+      settingsRepo.update({ supabaseUserId: user.id, supabaseUserEmail: user.email });
+      const status = { signedIn: true, email: user.email };
+      broadcast('auth:status-changed', status);
+      return status;
+    } catch (err) {
+      console.error('[Auth] Sign-in failed:', err);
+      throw err;
+    }
+  });
+
+  ipcMain.handle('auth:signOut', async () => {
+    try {
+      await supabaseAuth.signOut();
+      settingsRepo.update({ supabaseUserId: null, supabaseUserEmail: null });
+      const status = { signedIn: false, email: null };
+      broadcast('auth:status-changed', status);
+      return status;
+    } catch (err) {
+      console.error('[Auth] Sign-out failed:', err);
+      throw err;
+    }
+  });
+
+  ipcMain.handle('auth:getStatus', async () => {
+    const settings = settingsRepo.getAll();
+    return { signedIn: !!settings.supabaseUserId, email: settings.supabaseUserEmail };
   });
 
   ipcMain.handle(
