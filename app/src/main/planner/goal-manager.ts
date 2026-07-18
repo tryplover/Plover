@@ -7,7 +7,14 @@ export async function saveGoalAndTasks(
   goalInput: Omit<Goal, 'id' | 'created_at' | 'updated_at' | 'status'>,
   subtaskInputs: Omit<
     Task,
-    'id' | 'goal_id' | 'status' | 'created_at' | 'updated_at' | 'scheduled_start' | 'scheduled_end'
+    | 'id'
+    | 'goal_id'
+    | 'status'
+    | 'created_at'
+    | 'updated_at'
+    | 'scheduled_start'
+    | 'scheduled_end'
+    | 'sort_index'
   >[],
   scheduledSlots: { tempIndex: number; start: string; end: string }[],
 ) {

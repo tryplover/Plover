@@ -208,6 +208,7 @@ export function setupIpcHandlers(
         | 'scheduled_start'
         | 'scheduled_end'
         | 'calendar_event_id'
+        | 'sort_index'
       >[],
       workingHours: { start: string; end: string },
       horizonDays: number,
@@ -219,6 +220,7 @@ export function setupIpcHandlers(
         estimate_minutes: t.estimate_minutes,
         depends_on: t.depends_on,
         status: 'todo',
+        sort_index: 0,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }));
@@ -322,6 +324,7 @@ export function setupIpcHandlers(
       estimate_minutes: t.estimate_minutes,
       depends_on: t.depends_on,
       status: 'todo',
+      sort_index: 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }));

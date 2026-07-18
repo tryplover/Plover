@@ -45,6 +45,7 @@ export interface PloverApi {
       | 'updated_at'
       | 'scheduled_start'
       | 'scheduled_end'
+      | 'sort_index'
     >[];
   }>;
   scheduleTasks: (
@@ -58,6 +59,7 @@ export interface PloverApi {
       | 'scheduled_start'
       | 'scheduled_end'
       | 'calendar_event_id'
+      | 'sort_index'
     >[],
     workingHours: { start: string; end: string },
     horizonDays: number,
@@ -73,6 +75,7 @@ export interface PloverApi {
       | 'updated_at'
       | 'scheduled_start'
       | 'scheduled_end'
+      | 'sort_index'
     >[],
     scheduledSlots: { tempIndex: number; start: string; end: string }[],
   ) => Promise<{ goal: Goal; tasks: Task[] }>;
