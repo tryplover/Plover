@@ -421,4 +421,12 @@ Subagents that need to install deps will hit this same wall and report "network/
 
 **Fix:** Update `main.tsx` to parse the `variant` query parameter and match both `"overlay"` and `"window"` variants as the overlay/setup flow.
 
+### 2026-07-17 — Electron GUI can't be launched for visual verification via Bash/PowerShell tool on this Windows box
+
+**Symptom:** Ran `pnpm dev` (and, directly, `node_modules/electron/dist/electron.exe .`) via the Bash/PowerShell tools, in both foreground and background modes, to visually confirm a titlebar UI change. Each time, the wrapping shell command reports a clean exit code 0 within seconds and no Electron/`electron.exe` process is left running (`Get-Process` finds nothing), with zero stdout/stderr captured even when redirected to a log file — no crash message, nothing.
+
+**Root cause:** The Bash/PowerShell tool's shell runs in a sandboxed subprocess context that has no attached interactive Windows desktop/session. Electron is a GUI app that needs a real window station to create a `BrowserWindow`; without one it exits immediately and silently (no console output at all, since it never gets far enough to log anything). This is a different execution context from the one the `computer-use` MCP tools see and control (the user's actual visible desktop) — processes launched via Bash/PowerShell here are invisible to `computer-use`, and vice versa there's no way to attach `computer-use` to a process spawned this way.
+
+**Fix:** Don't try to visually verify Electron GUI changes by launching `pnpm dev`/the Electron binary through the Bash/PowerShell tool and then screenshotting via `computer-use` — it will silently fail with no diagnostic signal. For UI changes in this repo, verify via `pnpm typecheck && pnpm lint && pnpm test`, a careful manual read of the diff, and (if genuinely needed) ask the user to run `pnpm dev` themselves and confirm visually on their own desktop session.
+
 
