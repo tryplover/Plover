@@ -145,6 +145,24 @@ export function scheduleTasks(input: {
         continue;
       }
 
+      // Pre-filter calendar events and already scheduled tasks for the current day being processed
+      // This reduces lookup complexity in the inner slot-check loop from O(total_events + total_tasks) to O(daily_events + daily_tasks)
+      const dayStartTime = dayStart.getTime();
+      const dayEndTime = dayEnd.getTime();
+
+      const dailyCalendarEvents = parsedCalendarEvents.filter(
+        (event) => event.start < dayEndTime && event.end > dayStartTime,
+      );
+
+      const dailyScheduledTasks: { start: number; end: number }[] = [];
+      for (const scheduledTask of scheduledTasks.values()) {
+        const taskStart = scheduledTask.start.getTime();
+        const taskEnd = scheduledTask.end.getTime();
+        if (taskStart < dayEndTime && taskEnd > dayStartTime) {
+          dailyScheduledTasks.push({ start: taskStart, end: taskEnd });
+        }
+      }
+
       let S = workStart;
       while (S < workEnd) {
         const end = S + durationMs;
@@ -162,7 +180,8 @@ export function scheduleTasks(input: {
 
         let overlapEvent: { start: number; end: number } | null = null;
 
-        for (const event of parsedCalendarEvents) {
+        // Use pre-filtered daily events to avoid scanning irrelevant global calendar events
+        for (const event of dailyCalendarEvents) {
           if (S < event.end && end > event.start) {
             if (!overlapEvent || event.end > overlapEvent.end) {
               overlapEvent = { start: event.start, end: event.end };
@@ -170,12 +189,11 @@ export function scheduleTasks(input: {
           }
         }
 
-        for (const scheduledTask of scheduledTasks.values()) {
-          const taskStart = scheduledTask.start.getTime();
-          const taskEnd = scheduledTask.end.getTime();
-          if (S < taskEnd && end > taskStart) {
-            if (!overlapEvent || taskEnd > overlapEvent.end) {
-              overlapEvent = { start: taskStart, end: taskEnd };
+        // Use pre-filtered daily scheduled tasks to avoid scanning irrelevant global scheduled tasks
+        for (const task of dailyScheduledTasks) {
+          if (S < task.end && end > task.start) {
+            if (!overlapEvent || task.end > overlapEvent.end) {
+              overlapEvent = { start: task.start, end: task.end };
             }
           }
         }
