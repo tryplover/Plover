@@ -15,6 +15,8 @@ export interface EventPayloads {
   'goal.created': Goal;
   'goal.updated': Goal;
   'goal.deleted': string;
+  'task.created': { task: Task };
+  'task.updated': { task: Task };
   'task.scheduled': Task;
   'task.completed': Task;
   'task.deleted': { id: string };
