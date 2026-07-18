@@ -420,6 +420,21 @@ export function setupIpcHandlers(
   ipcMain.handle('permissions:screenRecording:openSettings', async () =>
     openScreenRecordingSettings(),
   );
+
+  ipcMain.handle('window:minimize', (_event) => {
+    BrowserWindow.fromWebContents(_event.sender)?.minimize();
+  });
+  ipcMain.handle('window:maximize', (_event) => {
+    const win = BrowserWindow.fromWebContents(_event.sender);
+    if (win?.isMaximized()) {
+      win.unmaximize();
+    } else {
+      win?.maximize();
+    }
+  });
+  ipcMain.handle('window:close', (_event) => {
+    BrowserWindow.fromWebContents(_event.sender)?.close();
+  });
 }
 
 export function setupIpc(

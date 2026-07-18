@@ -111,6 +111,10 @@ export interface PloverAPI {
     start: () => Promise<void>;
     complete: () => Promise<void>;
   };
+  platform: string;
+  minimizeWindow(): Promise<void>;
+  maximizeWindow(): Promise<void>;
+  closeWindow(): Promise<void>;
 }
 
 declare global {

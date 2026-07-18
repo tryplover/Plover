@@ -21,6 +21,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
     'Digital projects',
   ]);
   const [appName, setAppName] = useState('Finish the methods section of my thesis');
+  const isWindows = window.api?.platform === 'win32';
 
   const handleToggleUsecase = (label: string) => {
     setSelectedUsecases((prev) =>
@@ -115,11 +116,15 @@ export function Onboarding({ onComplete }: OnboardingProps) {
     <div className="plover-onboarding" data-testid="onboarding-wizard">
       {/* Custom Titlebar */}
       <header className="plover-onboarding__titlebar">
-        <div className="plover-onboarding__dots">
-          <span className="plover-onboarding__dot plover-onboarding__dot--red" />
-          <span className="plover-onboarding__dot plover-onboarding__dot--yellow" />
-          <span className="plover-onboarding__dot plover-onboarding__dot--green" />
-        </div>
+        {!isWindows ? (
+          <div className="plover-onboarding__dots">
+            <span className="plover-onboarding__dot plover-onboarding__dot--red" />
+            <span className="plover-onboarding__dot plover-onboarding__dot--yellow" />
+            <span className="plover-onboarding__dot plover-onboarding__dot--green" />
+          </div>
+        ) : (
+          <div className="plover-onboarding__left-spacer" />
+        )}
 
         {/* Stepper */}
         <nav className="plover-onboarding__stepper" aria-label="Onboarding Progress">
@@ -173,7 +178,14 @@ export function Onboarding({ onComplete }: OnboardingProps) {
           </div>
         </nav>
 
-        <div className="plover-onboarding__lang">English ⌄</div>
+        {!isWindows ? (
+          <div className="plover-onboarding__lang">English ⌄</div>
+        ) : (
+          <div className="plover-onboarding__right-container">
+            <div className="plover-onboarding__lang">English ⌄</div>
+            <div className="plover-onboarding__win-overlay-spacer" />
+          </div>
+        )}
       </header>
 
       {/* Main Body content based on step */}

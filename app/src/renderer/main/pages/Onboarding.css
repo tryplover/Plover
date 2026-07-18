@@ -23,6 +23,7 @@
 
 /* Titlebar */
 .plover-onboarding__titlebar {
+  -webkit-app-region: drag;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -34,10 +35,33 @@
   z-index: 10;
 }
 
+.plover-onboarding__dots,
+.plover-onboarding__stepper,
+.plover-onboarding__lang,
+.plover-onboarding__right-container {
+  -webkit-app-region: no-drag;
+}
+
 .plover-onboarding__dots {
   display: flex;
   gap: 8px;
   width: 80px;
+}
+
+.plover-onboarding__left-spacer {
+  width: 80px;
+}
+
+.plover-onboarding__right-container {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.plover-onboarding__win-overlay-spacer {
+  width: 138px;
+  height: 32px;
+  flex-shrink: 0;
 }
 
 .plover-onboarding__dot {

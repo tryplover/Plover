@@ -152,6 +152,12 @@ export interface PloverApi {
   // Companion API
   companion: CompanionApi;
 
+  // Window Controls (Windows)
+  platform: string;
+  minimizeWindow: () => Promise<void>;
+  maximizeWindow: () => Promise<void>;
+  closeWindow: () => Promise<void>;
+
   // Signup API
   signup: {
     start: () => Promise<void>;
@@ -210,6 +216,11 @@ const api: PloverApi = {
     start: () => ipcRenderer.invoke('signup:start'),
     complete: () => ipcRenderer.invoke('signup:complete'),
   },
+
+  platform: process.platform,
+  minimizeWindow: () => ipcRenderer.invoke('window:minimize'),
+  maximizeWindow: () => ipcRenderer.invoke('window:maximize'),
+  closeWindow: () => ipcRenderer.invoke('window:close'),
 
   // Events
   on: (channel, callback) => {
