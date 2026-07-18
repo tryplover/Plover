@@ -12,7 +12,6 @@ import { eventBus } from './bus.js';
 import { clearAllTimers, schedulePeriodic } from './lifecycle/periodic.js';
 import { initActivityMonitoring, stopActivityMonitoring } from './activity/index.js';
 import { completeSignup } from './auth/signup-flow.js';
-import { getPloverToken } from './auth/plover-token.js';
 
 if (!app.isPackaged) {
   app.commandLine.appendSwitch('enable-logging');
@@ -145,35 +144,6 @@ if (!gotTheLock) {
     return win;
   }
 
-  function createSignupWindow(): BrowserWindow {
-    const win = new BrowserWindow({
-      width: 480,
-      height: 600,
-      title: 'Plover',
-      frame: true,
-      resizable: false,
-      titleBarStyle: 'hiddenInset',
-      vibrancy: 'under-window',
-      transparent: true,
-      webPreferences: {
-        preload: join(import.meta.dirname, '../preload/index.js'),
-        sandbox: true,
-        contextIsolation: true,
-      },
-    });
-
-    const devUrl = process.env['ELECTRON_RENDERER_URL'];
-    if (devUrl) {
-      void win.loadURL(`${devUrl}?variant=signup`);
-    } else {
-      void win.loadFile(join(import.meta.dirname, '../renderer/index.html'), {
-        search: 'variant=signup',
-      });
-    }
-
-    return win;
-  }
-
   function toggleOverlayWindow(): void {
     if (!overlayWindow) {
       overlayWindow = createOverlayWindow('overlay');
@@ -254,12 +224,7 @@ if (!gotTheLock) {
       }
     });
 
-    const ploverToken = await getPloverToken();
-    if (ploverToken) {
-      createMainWindow();
-    } else {
-      createSignupWindow();
-    }
+    createMainWindow();
     overlayWindow = createOverlayWindow('overlay');
 
     // Option is mac-only; Alt+Shift+Space elsewhere to avoid Windows' Alt+Space system-menu conflict
