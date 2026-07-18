@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, CSSProperties } from 'react';
 import { Button } from '../../components/Button';
 import { Chip } from '../../components/Chip';
 
@@ -28,6 +28,144 @@ const defaultActivitySettings: ActivitySettings = {
   screenVisionInferenceEnabled: false,
   activityRetentionDays: 30,
   planner_useRecentActivityContext: true,
+};
+
+// Reusable CSS style objects to reduce technical debt and simplify JSX code blocks
+const styles: Record<string, CSSProperties> = {
+  container: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+    paddingTop: '40px',
+    paddingBottom: '40px',
+    paddingLeft: '40px',
+    paddingRight: '0px',
+    backgroundColor: 'var(--plover-bg)',
+  },
+  headerRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: '32px',
+    paddingRight: '40px',
+  },
+  title: {
+    fontFamily: 'var(--plover-font-serif)',
+    fontSize: '36px',
+    fontWeight: 400,
+    color: 'var(--plover-text)',
+  },
+  saveIndicator: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    fontSize: '13px',
+    color: 'var(--plover-text-muted)',
+  },
+  greenDot: {
+    width: '6px',
+    height: '6px',
+    borderRadius: '50%',
+    backgroundColor: 'var(--plover-mint)',
+  },
+  scrollContainer: {
+    flex: 1,
+    overflowY: 'auto',
+    paddingRight: '40px',
+    paddingBottom: '24px',
+  },
+  sectionList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '32px',
+  },
+  card: {
+    backgroundColor: 'var(--plover-surface)',
+    borderRadius: 'var(--plover-radius-lg)',
+    padding: '24px',
+  },
+  sectionTitle: {
+    fontSize: '18px',
+    fontWeight: 600,
+    marginBottom: '16px',
+    color: 'var(--plover-text)',
+  },
+  flexBetween: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  flexRowGap12: {
+    display: 'flex',
+    gap: '12px',
+    alignItems: 'center',
+  },
+  inputRaised: {
+    backgroundColor: 'var(--plover-surface-raised)',
+    border: '1px solid var(--plover-border)',
+    borderRadius: 'var(--plover-radius-sm)',
+    padding: '8px 12px',
+    color: 'var(--plover-text)',
+    fontSize: '14px',
+    outline: 'none',
+    fontFamily: 'inherit',
+  },
+  inputNum: {
+    width: '80px',
+    backgroundColor: 'var(--plover-surface-raised)',
+    border: '1px solid var(--plover-border)',
+    borderRadius: 'var(--plover-radius-sm)',
+    padding: '8px 12px',
+    color: 'var(--plover-text)',
+    fontSize: '14px',
+    outline: 'none',
+    fontFamily: 'inherit',
+  },
+  inputSmallNum: {
+    width: '72px',
+    backgroundColor: 'var(--plover-surface-raised)',
+    border: '1px solid var(--plover-border)',
+    borderRadius: 'var(--plover-radius-sm)',
+    padding: '6px 10px',
+    color: 'var(--plover-text)',
+    fontSize: '14px',
+    outline: 'none',
+    fontFamily: 'inherit',
+  },
+  textLgBold: {
+    fontSize: '14px',
+    fontWeight: 500,
+    color: 'var(--plover-text)',
+  },
+  textNormal: {
+    fontSize: '14px',
+    color: 'var(--plover-text)',
+  },
+  textMutedSm: {
+    fontSize: '13px',
+    color: 'var(--plover-text-muted)',
+    marginTop: '4px',
+  },
+  permissionErrorContainer: {
+    marginTop: '8px',
+  },
+  permissionErrorText: {
+    fontSize: '13px',
+    color: 'var(--plover-text-muted)',
+    margin: '0 0 6px 0',
+    lineHeight: '1.4',
+  },
+  permissionBtn: {
+    background: 'var(--plover-border)',
+    color: 'var(--plover-text)',
+    border: '1px solid var(--plover-border)',
+    padding: '4px 12px',
+    borderRadius: '4px',
+    fontSize: '12px',
+    cursor: 'pointer',
+    transition: 'background 0.2s',
+  },
 };
 
 export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
@@ -81,18 +219,27 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
     void window.api.getScreenRecordingStatus().then(setScreenPermission);
   }, []);
 
-  const triggerActivitySave = async (patch: Partial<ActivitySettings>): Promise<void> => {
-    const next = { ...activitySettings, ...patch };
-    setActivitySettings(next);
+  // Centralized unified save helper to reduce duplication and streamline state changes
+  const saveUpdatedSettings = async (patch: Partial<ActivitySettings> | Partial<{
+    googleConnected: boolean;
+    workingHours: { start: string; end: string };
+    horizonDays: number;
+    pauseScheduling: boolean;
+  }>): Promise<void> => {
     setSaveStatus('saving');
     try {
       await window.api.updateSettings(patch);
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 1500);
     } catch (err) {
-      console.error('Failed to update activity settings:', err);
+      console.error('Failed to update settings:', err);
       setSaveStatus('idle');
     }
+  };
+
+  const triggerActivitySave = async (patch: Partial<ActivitySettings>): Promise<void> => {
+    setActivitySettings((prev) => ({ ...prev, ...patch }));
+    await saveUpdatedSettings(patch);
   };
 
   const handleScreenCaptureToggle = async (enabled: boolean): Promise<void> => {
@@ -129,36 +276,17 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
     await triggerActivitySave({ windowTrackingEnabled: true });
   };
 
-  const triggerAutoSave = async (
-    updatedSettings: Partial<{
-      googleConnected: boolean;
-      workingHours: { start: string; end: string };
-      horizonDays: number;
-      pauseScheduling: boolean;
-    }>,
-  ) => {
-    setSaveStatus('saving');
-    try {
-      await window.api.updateSettings(updatedSettings);
-      setSaveStatus('saved');
-      setTimeout(() => setSaveStatus('idle'), 1500);
-    } catch (err) {
-      console.error('Failed to update settings:', err);
-      setSaveStatus('idle');
-    }
-  };
-
   const handleConnectCalendar = async () => {
     try {
       if (googleConnected) {
         await window.api.disconnectCalendar();
         setGoogleConnected(false);
-        await triggerAutoSave({ googleConnected: false });
+        await saveUpdatedSettings({ googleConnected: false });
       } else {
         const success = await window.api.connectCalendar();
         if (success) {
           setGoogleConnected(true);
-          await triggerAutoSave({ googleConnected: true });
+          await saveUpdatedSettings({ googleConnected: true });
         }
       }
     } catch (err) {
@@ -169,138 +297,54 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
   const handleWorkingHoursChange = (field: 'start' | 'end', value: string) => {
     const updatedHours = { ...workingHours, [field]: value };
     setWorkingHours(updatedHours);
-    void triggerAutoSave({ workingHours: updatedHours });
+    void saveUpdatedSettings({ workingHours: updatedHours });
   };
 
   const handleHorizonChange = (value: number) => {
     const val = Math.max(1, value);
     setHorizonDays(val);
-    void triggerAutoSave({ horizonDays: val });
+    void saveUpdatedSettings({ horizonDays: val });
   };
 
   const handlePauseSchedulingToggle = () => {
     const nextVal = !pauseScheduling;
     setPauseScheduling(nextVal);
-    void triggerAutoSave({ pauseScheduling: nextVal });
+    void saveUpdatedSettings({ pauseScheduling: nextVal });
   };
 
   return (
-    <div
-      data-testid={dataTestId}
-      style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-        paddingTop: '40px',
-        paddingBottom: '40px',
-        paddingLeft: '40px',
-        paddingRight: '0px',
-        backgroundColor: 'var(--plover-bg)',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          marginBottom: '32px',
-          paddingRight: '40px',
-        }}
-      >
-        <h1
-          style={{
-            fontFamily: 'var(--plover-font-serif)',
-            fontSize: '36px',
-            fontWeight: 400,
-            color: 'var(--plover-text)',
-          }}
-        >
-          Settings
-        </h1>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontSize: '13px',
-            color: 'var(--plover-text-muted)',
-          }}
-        >
+    <div data-testid={dataTestId} style={styles.container}>
+      <div style={styles.headerRow}>
+        <h1 style={styles.title}>Settings</h1>
+        <div style={styles.saveIndicator}>
           {saveStatus === 'saving' && (
             <div className="loading-spinner" style={{ width: '12px', height: '12px' }} />
           )}
           {saveStatus === 'saved' && (
             <>
-              <span
-                style={{
-                  width: '6px',
-                  height: '6px',
-                  borderRadius: '50%',
-                  backgroundColor: 'var(--plover-mint)',
-                }}
-              />
+              <span style={styles.greenDot} />
               <span>Saved</span>
             </>
           )}
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', paddingRight: '40px', paddingBottom: '24px' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-          <div
-            style={{
-              backgroundColor: 'var(--plover-surface)',
-              borderRadius: 'var(--plover-radius-lg)',
-              padding: '24px',
-            }}
-          >
-            <h2
-              style={{
-                fontSize: '18px',
-                fontWeight: 600,
-                marginBottom: '16px',
-                color: 'var(--plover-text)',
-              }}
-            >
-              Account
-            </h2>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={styles.scrollContainer}>
+        <div style={styles.sectionList}>
+          {/* Account Card */}
+          <div style={styles.card}>
+            <h2 style={styles.sectionTitle}>Account</h2>
+            <div style={styles.flexBetween}>
               <div>
-                <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--plover-text)' }}>
-                  Google Calendar
-                </p>
+                <p style={styles.textLgBold}>Google Calendar</p>
                 {googleConnected && (
-                  <p
-                    style={{
-                      fontSize: '13px',
-                      color: 'var(--plover-text-muted)',
-                      marginTop: '4px',
-                    }}
-                  >
-                    Connected as account
-                  </p>
+                  <p style={styles.textMutedSm}>Connected as account</p>
                 )}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={styles.flexRowGap12}>
                 {googleConnected && (
-                  <span
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      fontSize: '13px',
-                      color: 'var(--plover-text-muted)',
-                    }}
-                  >
-                    <span
-                      style={{
-                        width: '6px',
-                        height: '6px',
-                        borderRadius: '50%',
-                        backgroundColor: 'var(--plover-mint)',
-                      }}
-                    />
+                  <span style={styles.saveIndicator}>
+                    <span style={styles.greenDot} />
                     Connected
                   </span>
                 )}
@@ -314,82 +358,32 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
             </div>
           </div>
 
-          <div
-            style={{
-              backgroundColor: 'var(--plover-surface)',
-              borderRadius: 'var(--plover-radius-lg)',
-              padding: '24px',
-            }}
-          >
-            <h2
-              style={{
-                fontSize: '18px',
-                fontWeight: 600,
-                marginBottom: '16px',
-                color: 'var(--plover-text)',
-              }}
-            >
-              Working hours
-            </h2>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          {/* Working hours Card */}
+          <div style={styles.card}>
+            <h2 style={styles.sectionTitle}>Working hours</h2>
+            <div style={styles.flexRowGap12}>
               <input
                 type="time"
                 value={workingHours.start}
                 onChange={(e) => handleWorkingHoursChange('start', e.target.value)}
-                style={{
-                  backgroundColor: 'var(--plover-surface-raised)',
-                  border: '1px solid var(--plover-border)',
-                  borderRadius: 'var(--plover-radius-sm)',
-                  padding: '8px 12px',
-                  color: 'var(--plover-text)',
-                  fontSize: '14px',
-                  outline: 'none',
-                  fontFamily: 'inherit',
-                }}
+                style={styles.inputRaised}
               />
               <span style={{ color: 'var(--plover-text-muted)', fontSize: '14px' }}>to</span>
               <input
                 type="time"
                 value={workingHours.end}
                 onChange={(e) => handleWorkingHoursChange('end', e.target.value)}
-                style={{
-                  backgroundColor: 'var(--plover-surface-raised)',
-                  border: '1px solid var(--plover-border)',
-                  borderRadius: 'var(--plover-radius-sm)',
-                  padding: '8px 12px',
-                  color: 'var(--plover-text)',
-                  fontSize: '14px',
-                  outline: 'none',
-                  fontFamily: 'inherit',
-                }}
+                style={styles.inputRaised}
               />
             </div>
           </div>
 
-          <div
-            style={{
-              backgroundColor: 'var(--plover-surface)',
-              borderRadius: 'var(--plover-radius-lg)',
-              padding: '24px',
-            }}
-          >
-            <h2
-              style={{
-                fontSize: '18px',
-                fontWeight: 600,
-                marginBottom: '16px',
-                color: 'var(--plover-text)',
-              }}
-            >
-              Scheduling
-            </h2>
+          {/* Scheduling Card */}
+          <div style={styles.card}>
+            <h2 style={styles.sectionTitle}>Scheduling</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-              >
-                <label style={{ fontSize: '14px', fontWeight: 500, color: 'var(--plover-text)' }}>
-                  Horizon
-                </label>
+              <div style={styles.flexBetween}>
+                <label style={styles.textLgBold}>Horizon</label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <input
                     type="number"
@@ -397,28 +391,14 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
                     onChange={(e) => handleHorizonChange(Number(e.target.value))}
                     min="1"
                     max="90"
-                    style={{
-                      width: '80px',
-                      backgroundColor: 'var(--plover-surface-raised)',
-                      border: '1px solid var(--plover-border)',
-                      borderRadius: 'var(--plover-radius-sm)',
-                      padding: '8px 12px',
-                      color: 'var(--plover-text)',
-                      fontSize: '14px',
-                      outline: 'none',
-                      fontFamily: 'inherit',
-                    }}
+                    style={styles.inputNum}
                   />
                   <span style={{ fontSize: '14px', color: 'var(--plover-text-muted)' }}>days</span>
                 </div>
               </div>
 
-              <div
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-              >
-                <label style={{ fontSize: '14px', fontWeight: 500, color: 'var(--plover-text)' }}>
-                  Pause scheduling
-                </label>
+              <div style={styles.flexBetween}>
+                <label style={styles.textLgBold}>Pause scheduling</label>
                 <Chip selected={pauseScheduling} onClick={handlePauseSchedulingToggle}>
                   {pauseScheduling ? 'Paused' : 'Active'}
                 </Chip>
@@ -426,30 +406,12 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
             </div>
           </div>
 
-          <div
-            style={{
-              backgroundColor: 'var(--plover-surface)',
-              borderRadius: 'var(--plover-radius-lg)',
-              padding: '24px',
-            }}
-          >
-            <h2
-              style={{
-                fontSize: '18px',
-                fontWeight: 600,
-                marginBottom: '16px',
-                color: 'var(--plover-text)',
-              }}
-            >
-              Activity tracking
-            </h2>
+          {/* Activity tracking Card */}
+          <div style={styles.card}>
+            <h2 style={styles.sectionTitle}>Activity tracking</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-              >
-                <label style={{ fontSize: '14px', fontWeight: 500, color: 'var(--plover-text)' }}>
-                  Pause all tracking
-                </label>
+              <div style={styles.flexBetween}>
+                <label style={styles.textLgBold}>Pause all tracking</label>
                 <Chip
                   selected={activitySettings.pauseAllTracking}
                   onClick={() =>
@@ -462,10 +424,8 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
                 </Chip>
               </div>
 
-              <div
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-              >
-                <label style={{ fontSize: '14px', color: 'var(--plover-text)' }}>
+              <div style={styles.flexBetween}>
+                <label style={styles.textNormal}>
                   Window tracking
                   {activitySettings.windowTrackingEnabled && screenPermission !== 'granted' && (
                     <span
@@ -489,12 +449,8 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
                 </Chip>
               </div>
 
-              <div
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-              >
-                <label style={{ fontSize: '14px', color: 'var(--plover-text)' }}>
-                  Google Docs polling
-                </label>
+              <div style={styles.flexBetween}>
+                <label style={styles.textNormal}>Google Docs polling</label>
                 <Chip
                   selected={activitySettings.gdocsPollingEnabled}
                   onClick={() =>
@@ -507,12 +463,8 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
                 </Chip>
               </div>
 
-              <div
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-              >
-                <label style={{ fontSize: '14px', color: 'var(--plover-text)' }}>
-                  Watched-folder file events
-                </label>
+              <div style={styles.flexBetween}>
+                <label style={styles.textNormal}>Watched-folder file events</label>
                 <Chip
                   selected={activitySettings.fileWatchingEnabled}
                   onClick={() =>
@@ -525,10 +477,8 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
                 </Chip>
               </div>
 
-              <div
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-              >
-                <label style={{ fontSize: '14px', color: 'var(--plover-text)' }}>
+              <div style={styles.flexBetween}>
+                <label style={styles.textNormal}>
                   Capture periodic screenshots
                   {activitySettings.screenCaptureEnabled && screenPermission !== 'granted' && (
                     <span
@@ -551,44 +501,23 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
                   {activitySettings.screenCaptureEnabled ? 'On' : 'Off'}
                 </Chip>
               </div>
+
               {activityMessage && (
-                <div style={{ marginTop: '8px' }}>
-                  <p
-                    style={{
-                      fontSize: '13px',
-                      color: 'var(--plover-text-muted)',
-                      margin: '0 0 6px 0',
-                      lineHeight: '1.4',
-                    }}
-                  >
-                    {activityMessage}
-                  </p>
+                <div style={styles.permissionErrorContainer}>
+                  <p style={styles.permissionErrorText}>{activityMessage}</p>
                   <button
                     onClick={async () => {
                       void window.api.openScreenRecordingSettings();
                     }}
-                    style={{
-                      background: 'var(--plover-border)',
-                      color: 'var(--plover-text)',
-                      border: '1px solid var(--plover-border)',
-                      padding: '4px 12px',
-                      borderRadius: '4px',
-                      fontSize: '12px',
-                      cursor: 'pointer',
-                      transition: 'background 0.2s',
-                    }}
+                    style={styles.permissionBtn}
                   >
                     Open System Settings →
                   </button>
                 </div>
               )}
 
-              <div
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-              >
-                <label style={{ fontSize: '14px', color: 'var(--plover-text)' }}>
-                  Capture interval (minutes)
-                </label>
+              <div style={styles.flexBetween}>
+                <label style={styles.textNormal}>Capture interval (minutes)</label>
                 <input
                   type="number"
                   min={1}
@@ -601,26 +530,14 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
                     })
                   }
                   style={{
-                    width: '72px',
-                    backgroundColor: 'var(--plover-surface-raised)',
-                    border: '1px solid var(--plover-border)',
-                    borderRadius: 'var(--plover-radius-sm)',
-                    padding: '6px 10px',
-                    color: 'var(--plover-text)',
-                    fontSize: '14px',
-                    outline: 'none',
-                    fontFamily: 'inherit',
+                    ...styles.inputSmallNum,
                     opacity: activitySettings.screenCaptureEnabled ? 1 : 0.4,
                   }}
                 />
               </div>
 
-              <div
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-              >
-                <label style={{ fontSize: '14px', color: 'var(--plover-text)' }}>
-                  Send screenshots to Gemini Vision
-                </label>
+              <div style={styles.flexBetween}>
+                <label style={styles.textNormal}>Send screenshots to Gemini Vision</label>
                 <div
                   style={{
                     opacity: activitySettings.screenCaptureEnabled ? 1 : 0.4,
@@ -645,12 +562,8 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
                 </div>
               </div>
 
-              <div
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-              >
-                <label style={{ fontSize: '14px', color: 'var(--plover-text)' }}>
-                  Retention (days, 0 = keep forever)
-                </label>
+              <div style={styles.flexBetween}>
+                <label style={styles.textNormal}>Retention (days, 0 = keep forever)</label>
                 <input
                   type="number"
                   min={0}
@@ -658,26 +571,12 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
                   onChange={(e) =>
                     void triggerActivitySave({ activityRetentionDays: Number(e.target.value) })
                   }
-                  style={{
-                    width: '72px',
-                    backgroundColor: 'var(--plover-surface-raised)',
-                    border: '1px solid var(--plover-border)',
-                    borderRadius: 'var(--plover-radius-sm)',
-                    padding: '6px 10px',
-                    color: 'var(--plover-text)',
-                    fontSize: '14px',
-                    outline: 'none',
-                    fontFamily: 'inherit',
-                  }}
+                  style={styles.inputSmallNum}
                 />
               </div>
 
-              <div
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-              >
-                <label style={{ fontSize: '14px', color: 'var(--plover-text)' }}>
-                  Include recent activity when decomposing goals
-                </label>
+              <div style={styles.flexBetween}>
+                <label style={styles.textNormal}>Include recent activity when decomposing goals</label>
                 <Chip
                   selected={activitySettings.planner_useRecentActivityContext}
                   onClick={() =>

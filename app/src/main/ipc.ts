@@ -3,6 +3,7 @@ import { Goal, Task, CalendarEvent } from '../shared/types.js';
 import { goalsRepo, tasksRepo, settingsRepo, summariesRepo, activityRepo } from './store/index.js';
 import { decomposeGoal } from './planner/decompose.js';
 import { scheduleTasks } from './planner/schedule.js';
+import { proposeGoalPlan } from './planner/propose.js';
 import {
   saveGoalAndTasks,
   startEventForwarding,
@@ -239,58 +240,14 @@ export function setupIpcHandlers(
         .list({ since, limit: 50 })
         .map((r) => ({ kind: r.kind, payload: r.payload, ts: r.ts }));
     }
-    const result = await decomposeGoal({
+    return proposeGoalPlan({
       goalText,
-      now: new Date(),
-      workingHours: settings.workingHours,
-      ...(recentActivity ? { recentActivity } : {}),
-    });
-
-    const mockTasks: Task[] = result.subtasks.map((t, idx) => ({
-      id: `temp-${idx}`,
-      goal_id: 'temp-goal',
-      title: t.title,
-      estimate_minutes: t.estimate_minutes,
-      depends_on: t.depends_on,
-      status: 'todo',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }));
-
-    let calendarEvents: CalendarEvent[] = [];
-    if (settings.googleConnected) {
-      try {
-        const start = new Date();
-        const end = new Date();
-        end.setDate(start.getDate() + settings.horizonDays);
-        calendarEvents = await calendarSync.listEvents(start, end);
-      } catch (err) {
-        console.error('[IPC] Failed to list calendar events for overlay propose:', err);
-      }
-    }
-
-    const slots = await scheduleTasks({
-      tasks: mockTasks,
-      calendarEvents,
       workingHours: settings.workingHours,
       horizonDays: settings.horizonDays,
+      googleConnected: settings.googleConnected,
+      recentActivity,
+      listCalendarEvents: (start, end) => calendarSync.listEvents(start, end),
     });
-
-    const subtasksWithSlots = result.subtasks.map((t, idx) => {
-      const slot = slots.find((s) => s.taskId === `temp-${idx}`);
-      return {
-        title: t.title,
-        estimate_minutes: t.estimate_minutes,
-        depends_on: t.depends_on || [],
-        scheduled_start: slot?.start.toISOString(),
-        scheduled_end: slot?.end.toISOString(),
-      };
-    });
-
-    return {
-      goal: result.goal,
-      subtasks: subtasksWithSlots,
-    };
   });
 
   ipcMain.handle('goal:commit', async (_event, plan: ProposedPlan): Promise<{ goalId: string }> => {
