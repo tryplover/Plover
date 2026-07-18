@@ -34,6 +34,17 @@ export interface PloverApi {
     (SummaryRow & { task_title: string | null; goal_title: string | null })[]
   >;
   updateTaskStatus: (id: string, status: Task['status']) => Promise<Task>;
+  createTask: (input: {
+    goal_id: string;
+    title: string;
+    estimate_minutes: number;
+  }) => Promise<Task>;
+  updateTask: (
+    id: string,
+    patch: { title?: string; estimate_minutes?: number },
+  ) => Promise<Task>;
+  deleteTask: (id: string) => Promise<{ ok: true }>;
+  reorderTasks: (goal_id: string, orderedIds: string[]) => Promise<{ ok: true }>;
   decomposeGoal: (goalText: string) => Promise<{
     goal: Omit<Goal, 'id' | 'created_at' | 'updated_at' | 'status'>;
     subtasks: Omit<
@@ -191,6 +202,11 @@ const api: PloverApi = {
   getTasksByGoal: (goalId) => ipcRenderer.invoke('tasks:getByGoal', goalId),
   getSummaries: () => ipcRenderer.invoke('summaries:get'),
   updateTaskStatus: (id, status) => ipcRenderer.invoke('tasks:updateStatus', id, status),
+  createTask: (input) => ipcRenderer.invoke('tasks:create', input),
+  updateTask: (id, patch) => ipcRenderer.invoke('tasks:update', id, patch),
+  deleteTask: (id) => ipcRenderer.invoke('tasks:delete', id),
+  reorderTasks: (goal_id, orderedIds) =>
+    ipcRenderer.invoke('tasks:reorder', goal_id, orderedIds),
   decomposeGoal: (goalText) => ipcRenderer.invoke('goals:decompose', goalText),
   scheduleTasks: (tasks, workingHours, horizonDays) =>
     ipcRenderer.invoke('tasks:schedule', tasks, workingHours, horizonDays),

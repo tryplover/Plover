@@ -103,6 +103,39 @@ export function setupIpcHandlers(
     return task;
   });
 
+  ipcMain.handle(
+    'tasks:create',
+    async (_, input: { goal_id: string; title: string; estimate_minutes: number }) => {
+      const task = tasksRepo.create({
+        goal_id: input.goal_id,
+        title: input.title,
+        estimate_minutes: input.estimate_minutes,
+        status: 'todo',
+      });
+      eventBus.emit('task.created', { task });
+      return task;
+    },
+  );
+
+  ipcMain.handle(
+    'tasks:update',
+    async (_, id: string, patch: { title?: string; estimate_minutes?: number }) => {
+      const task = tasksRepo.update(id, patch);
+      eventBus.emit('task.updated', { task });
+      return task;
+    },
+  );
+
+  ipcMain.handle('tasks:delete', async (_, id: string) => {
+    tasksRepo.delete(id);
+    return { ok: true as const };
+  });
+
+  ipcMain.handle('tasks:reorder', async (_, goal_id: string, orderedIds: string[]) => {
+    tasksRepo.reorder(goal_id, orderedIds);
+    return { ok: true as const };
+  });
+
   ipcMain.handle('goals:decompose', async (_, goalText: string) => {
     const settings = settingsRepo.getAll();
     const recentActivity = getRecentActivityContext(settings);
