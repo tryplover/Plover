@@ -112,6 +112,14 @@ describe('supabase-auth', () => {
       await expect(signIn()).rejects.toThrow('provider not configured');
       expect(mockShell.openExternal).not.toHaveBeenCalled();
     });
+
+    it('rejects instead of crashing when getSupabaseClient throws (e.g. missing env vars)', async () => {
+      mockGetSupabaseClient.mockImplementation(() => {
+        throw new Error('supabaseUrl is required.');
+      });
+
+      await expect(signIn()).rejects.toThrow('supabaseUrl is required.');
+    });
   });
 
   describe('getCurrentUser', () => {
@@ -139,6 +147,20 @@ describe('supabase-auth', () => {
 
       await expect(getCurrentUser()).resolves.toEqual({ id: 'user-2', email: null });
     });
+
+    it('returns null when data is null', async () => {
+      mockSupabaseAuth.getUser.mockResolvedValue({ data: null });
+
+      await expect(getCurrentUser()).resolves.toBeNull();
+    });
+
+    it('returns null instead of throwing when the client cannot be created', async () => {
+      mockGetSupabaseClient.mockImplementation(() => {
+        throw new Error('supabaseUrl is required.');
+      });
+
+      await expect(getCurrentUser()).resolves.toBeNull();
+    });
   });
 
   describe('signOut', () => {
@@ -161,12 +183,31 @@ describe('supabase-auth', () => {
       mockSupabaseAuth.getSession.mockResolvedValue({ data: { session: null } });
       await expect(restoreSession()).resolves.toBe(false);
     });
+
+    it('returns false when data is null', async () => {
+      mockSupabaseAuth.getSession.mockResolvedValue({ data: null });
+      await expect(restoreSession()).resolves.toBe(false);
+    });
+
+    it('resolves false instead of rejecting when the client cannot be created', async () => {
+      mockGetSupabaseClient.mockImplementation(() => {
+        throw new Error('supabaseUrl is required.');
+      });
+      await expect(restoreSession()).resolves.toBe(false);
+    });
   });
 
   describe('startAutoRefresh', () => {
     it('delegates to auth.startAutoRefresh()', () => {
       startAutoRefresh();
       expect(mockSupabaseAuth.startAutoRefresh).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not throw when the client cannot be created', () => {
+      mockGetSupabaseClient.mockImplementation(() => {
+        throw new Error('supabaseUrl is required.');
+      });
+      expect(() => startAutoRefresh()).not.toThrow();
     });
   });
 });

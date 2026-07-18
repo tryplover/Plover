@@ -347,6 +347,17 @@ describe('IPC Handlers', () => {
       expect(settingsRepo.getAll().supabaseUserEmail).toBeNull();
     });
 
+    it('auth:signOut clears the local session even when the remote Supabase call fails', async () => {
+      settingsRepo.update({ supabaseUserId: 'user-1', supabaseUserEmail: 'jordan@example.com' });
+      mockSupabaseAuth.signOut.mockRejectedValue(new Error('network unreachable'));
+
+      const result = await getHandler('auth:signOut')({});
+
+      expect(result).toEqual({ signedIn: false, email: null });
+      expect(settingsRepo.getAll().supabaseUserId).toBeNull();
+      expect(settingsRepo.getAll().supabaseUserEmail).toBeNull();
+    });
+
     it('auth:getStatus reflects persisted settings', async () => {
       settingsRepo.update({ supabaseUserId: 'user-2', supabaseUserEmail: 'sam@example.com' });
 

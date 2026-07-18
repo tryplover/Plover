@@ -139,14 +139,16 @@ export function setupIpcHandlers(
   ipcMain.handle('auth:signOut', async () => {
     try {
       await supabaseAuth.signOut();
-      settingsRepo.update({ supabaseUserId: null, supabaseUserEmail: null });
-      const status = { signedIn: false, email: null };
-      broadcast('auth:status-changed', status);
-      return status;
     } catch (err) {
-      console.error('[Auth] Sign-out failed:', err);
-      throw err;
+      // Clearing the local session must not be blocked by a failed remote
+      // call (e.g. offline) — otherwise the user is stuck "signed in"
+      // locally with no way to sign out until connectivity returns.
+      console.error('[Auth] Remote Supabase sign-out failed, clearing local session anyway:', err);
     }
+    settingsRepo.update({ supabaseUserId: null, supabaseUserEmail: null });
+    const status = { signedIn: false, email: null };
+    broadcast('auth:status-changed', status);
+    return status;
   });
 
   ipcMain.handle('auth:getStatus', async () => {
