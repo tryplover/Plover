@@ -17,6 +17,8 @@ export interface EventPayloads {
   'goal.deleted': string;
   'task.scheduled': Task;
   'task.completed': Task;
+  'task.deleted': { id: string };
+  'tasks.reordered': { goal_id: string; orderedIds: string[] };
   'folder.file_changed': FolderEventPayload;
   'folder.file_added': FolderEventPayload;
   'gdocs.revision': GDocsRevisionPayload;

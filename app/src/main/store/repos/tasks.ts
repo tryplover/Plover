@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import Database from 'better-sqlite3';
 import { Task } from '@shared/types.js';
+import { eventBus } from '../../bus.js';
 
 export class TasksRepo {
   private db: Database.Database;
@@ -268,5 +269,37 @@ export class TasksRepo {
 
   deleteByGoal(goalId: string): void {
     this.deleteByGoalStmt.run(goalId);
+  }
+
+  delete(id: string): void {
+    const info = this.db.prepare(`DELETE FROM tasks WHERE id = ?`).run(id);
+    if (info.changes === 0) {
+      throw new Error(`Task with id ${id} not found`);
+    }
+    eventBus.emit('task.deleted', { id });
+  }
+
+  reorder(goal_id: string, orderedIds: string[]): void {
+    const existing = this.db
+      .prepare(`SELECT id FROM tasks WHERE goal_id = ?`)
+      .all(goal_id) as { id: string }[];
+    const existingSet = new Set(existing.map((r) => r.id));
+    const providedSet = new Set(orderedIds);
+    if (
+      orderedIds.length !== existing.length ||
+      existingSet.size !== providedSet.size ||
+      [...existingSet].some((id) => !providedSet.has(id))
+    ) {
+      throw new Error('reorder: id set mismatch');
+    }
+    const update = this.db.prepare(
+      `UPDATE tasks SET sort_index = ?, updated_at = ? WHERE id = ? AND goal_id = ?`,
+    );
+    const now = new Date().toISOString();
+    const tx = this.db.transaction((ids: string[]) => {
+      ids.forEach((id, i) => update.run(i, now, id, goal_id));
+    });
+    tx(orderedIds);
+    eventBus.emit('tasks.reordered', { goal_id, orderedIds });
   }
 }
