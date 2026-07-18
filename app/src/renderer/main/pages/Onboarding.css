@@ -35,17 +35,10 @@
   z-index: 10;
 }
 
-.plover-onboarding__dots,
 .plover-onboarding__stepper,
 .plover-onboarding__lang,
 .plover-onboarding__right-container {
   -webkit-app-region: no-drag;
-}
-
-.plover-onboarding__dots {
-  display: flex;
-  gap: 8px;
-  width: 80px;
 }
 
 .plover-onboarding__left-spacer {
@@ -62,22 +55,6 @@
   width: 138px;
   height: 32px;
   flex-shrink: 0;
-}
-
-.plover-onboarding__dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-}
-
-.plover-onboarding__dot--red {
-  background-color: #ff5f56;
-}
-.plover-onboarding__dot--yellow {
-  background-color: #ffbd2e;
-}
-.plover-onboarding__dot--green {
-  background-color: #27c93f;
 }
 
 .plover-onboarding__lang {
