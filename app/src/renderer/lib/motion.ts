@@ -1,5 +1,4 @@
-export { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-export type { Variants, Transition } from 'framer-motion';
+export { motion, AnimatePresence } from 'framer-motion';
 
 export const ploverEasing = {
   soft: [0.32, 0.72, 0.24, 1] as const,
