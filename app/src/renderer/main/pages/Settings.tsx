@@ -1,4 +1,4 @@
-import { useState, useEffect, CSSProperties } from 'react';
+import { useState, useEffect, useRef, CSSProperties } from 'react';
 import { Button } from '../../components/Button';
 import { Chip } from '../../components/Chip';
 
@@ -178,6 +178,7 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
   const [screenPermission, setScreenPermission] = useState<string>('not-determined');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [activityMessage, setActivityMessage] = useState<string>('');
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchSettings = async () => {
     try {
@@ -217,6 +218,12 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchSettings();
     void window.api.getScreenRecordingStatus().then(setScreenPermission);
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
   }, []);
 
   // Centralized unified save helper to reduce duplication and streamline state changes
@@ -226,11 +233,18 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
     horizonDays: number;
     pauseScheduling: boolean;
   }>): Promise<void> => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
     setSaveStatus('saving');
     try {
       await window.api.updateSettings(patch);
       setSaveStatus('saved');
-      setTimeout(() => setSaveStatus('idle'), 1500);
+      saveTimeoutRef.current = setTimeout(() => {
+        setSaveStatus('idle');
+        saveTimeoutRef.current = null;
+      }, 1500);
     } catch (err) {
       console.error('Failed to update settings:', err);
       setSaveStatus('idle');
