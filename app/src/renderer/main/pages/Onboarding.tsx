@@ -134,11 +134,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
     <div className="plover-onboarding" data-testid="onboarding-wizard">
       {/* Custom Titlebar */}
       <header className="plover-onboarding__titlebar">
-        <div className="plover-onboarding__dots">
-          <span className="plover-onboarding__dot plover-onboarding__dot--red" />
-          <span className="plover-onboarding__dot plover-onboarding__dot--yellow" />
-          <span className="plover-onboarding__dot plover-onboarding__dot--green" />
-        </div>
+        <div className="plover-onboarding__left-spacer" />
 
         {/* Stepper */}
         <nav className="plover-onboarding__stepper" aria-label="Onboarding Progress">
