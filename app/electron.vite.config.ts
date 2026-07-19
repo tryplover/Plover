@@ -21,9 +21,12 @@ export default defineConfig({
       },
     },
     define: {
-      'import.meta.env.PLOVER_BACKEND_URL': JSON.stringify(
-        process.env.PLOVER_BACKEND_URL ?? 'http://localhost:3000',
-      ),
+      // Bake an empty string when the env var is unset at build time so
+      // `if (fromVite)` in the main-process consumers falls through to
+      // `process.env.PLOVER_BACKEND_URL` at runtime (populated from
+      // `app/.env` via `load-env.ts`). Otherwise a build-time default here
+      // silently shadows whatever the user set in `app/.env`.
+      'import.meta.env.PLOVER_BACKEND_URL': JSON.stringify(process.env.PLOVER_BACKEND_URL ?? ''),
       'import.meta.env.SUPABASE_URL': JSON.stringify(process.env.SUPABASE_URL ?? ''),
       'import.meta.env.SUPABASE_ANON_KEY': JSON.stringify(process.env.SUPABASE_ANON_KEY ?? ''),
     },
