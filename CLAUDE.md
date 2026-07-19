@@ -413,6 +413,14 @@ Subagents that need to install deps will hit this same wall and report "network/
 
 **Fix:** Move polling logic to `Sync` module. Use the event bus (`gdocs.revision` event) to notify the `Activity` module of updates. Refactor Activity tracker into a subscriber that only writes to `ActivityRepo`.
 
+### 2026-07-19 — `PLOVER_BACKEND_URL` from `app/.env` was silently overridden by a Vite build-time default
+
+**Symptom:** Clicking "Continue with Google" on the signup screen in `pnpm dev` opened a browser tab to `http://localhost:3000/signup?state=…` (connection refused) instead of the Cloud Run URL set in `app/.env`.
+
+**Root cause:** `electron.vite.config.ts` had `'import.meta.env.PLOVER_BACKEND_URL': JSON.stringify(process.env.PLOVER_BACKEND_URL ?? 'http://localhost:3000')`. `process.env.PLOVER_BACKEND_URL` is unset at Vite build time (only `app/.env` sets it, and that's loaded by `load-env.ts` at runtime in the main process). So Vite baked the literal `'http://localhost:3000'` into every consumer. The consumers (`signup-flow.ts`, `authed-fetch.ts`) check `import.meta.env.PLOVER_BACKEND_URL` first and only fall through to `process.env.PLOVER_BACKEND_URL` if the Vite value is falsy — but the bake made it always-truthy, so the runtime `app/.env` value never won.
+
+**Fix:** Default the Vite define to an empty string (`JSON.stringify(process.env.PLOVER_BACKEND_URL ?? '')`). Now if the env var is unset at build time, `if (fromVite)` in the consumers is falsy and they correctly fall through to the runtime `process.env` value. Packaged builds still work because CI sets `PLOVER_BACKEND_URL` in the release workflow env before `pnpm package`, so Vite bakes the real value.
+
 ### 2026-07-18 — Calendar sync removed but `tasks.calendar_event_id` column intact
 
 **Symptom:** `store/db.ts` still defines `calendar_event_id TEXT` on the `tasks` table even though no application code reads or writes it after the Calendar-sync removal.
