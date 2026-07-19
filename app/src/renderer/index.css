@@ -1048,11 +1048,10 @@ input:checked + .slider:before {
   padding-left: 8px;
 }
 
-.plover-brand__dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: var(--plover-mint);
+.plover-brand__logo {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
   flex-shrink: 0;
 }
 

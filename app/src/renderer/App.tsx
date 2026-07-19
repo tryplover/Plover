@@ -4,6 +4,7 @@ import AIProgress from './main/pages/AIProgress';
 import Settings from './main/pages/Settings';
 import { Onboarding } from './main/pages/Onboarding';
 import { IconTarget, IconGear, IconActivity } from './main/icons';
+import ploverLogo from './plover-logo.png';
 
 type Tab = 'goals' | 'progress' | 'settings';
 
@@ -35,7 +36,7 @@ export function App() {
       <aside className="sidebar">
         <div>
           <div className="plover-brand">
-            <span className="plover-brand__dot" aria-hidden />
+            <img src={ploverLogo} className="plover-brand__logo" alt="Plover Logo" />
             <span className="plover-brand__word">Plover</span>
           </div>
 
