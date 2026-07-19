@@ -107,8 +107,6 @@
 
 .plover-onboarding__stepper-step--active .plover-onboarding__stepper-bullet {
   background-color: #2e7d32;
-  transform: scale(1.3);
-  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.15);
 }
 
 .plover-onboarding__stepper-step--completed .plover-onboarding__stepper-bullet {
@@ -172,11 +170,10 @@
   color: #2e7d32;
 }
 
-.plover-onboarding__brand-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background-color: #2e7d32;
+.plover-onboarding__brand-logo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
   flex-shrink: 0;
 }
 
@@ -799,21 +796,28 @@
 }
 
 /* Carousel dots at the bottom of O0 split layout */
-.plover-onboarding__carousel-dots {
+.plover-onboarding__mockup-window--video {
+  width: 100%;
+  max-width: 520px;
+  aspect-ratio: 16 / 10;
   display: flex;
-  gap: 6px;
-  margin-top: 32px;
+  flex-direction: column;
 }
 
-.plover-onboarding__carousel-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background-color: rgba(24, 25, 26, 0.1);
+.plover-onboarding__video-container {
+  width: 100%;
+  flex: 1;
+  overflow: hidden;
+  background-color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.plover-onboarding__carousel-dot--active {
-  background-color: rgba(24, 25, 26, 0.45);
+.plover-onboarding__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 /* Checked bullets for lists in O9 */
@@ -848,30 +852,6 @@
 .plover-onboarding__auth-container {
   margin-top: 16px;
   max-width: 440px;
-}
-
-.plover-onboarding__auth-card {
-  background: rgba(24, 25, 26, 0.03);
-  border: 1px solid rgba(24, 25, 26, 0.08);
-  border-radius: var(--plover-radius-lg);
-  padding: 28px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-bottom: 8px;
-}
-
-.plover-onboarding__auth-heading {
-  font-family: var(--plover-font-serif);
-  font-size: 24px;
-  font-weight: 400;
-  color: #18191a;
-}
-
-.plover-onboarding__auth-subhead {
-  font-size: 13px;
-  line-height: 1.5;
-  color: rgba(24, 25, 26, 0.6);
 }
 
 .plover-onboarding__btn-google {
@@ -913,17 +893,30 @@
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  padding: 8px 12px;
-  border-radius: var(--plover-radius-sm);
-  transition:
-    background-color var(--plover-duration-fast) var(--plover-easing-soft),
-    color var(--plover-duration-fast) var(--plover-easing-soft);
-  margin-left: -12px;
+  padding: 4px 0;
+  transition: color var(--plover-duration-fast) var(--plover-easing-soft);
 }
 
 .plover-onboarding__btn-secondary:hover {
-  background-color: rgba(24, 25, 26, 0.04);
   color: #18191a;
+  text-decoration: underline;
+}
+
+.plover-onboarding__btn-cancel {
+  background: none;
+  border: none;
+  color: #d32f2f;
+  font-family: var(--plover-font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 0;
+  transition: color var(--plover-duration-fast) var(--plover-easing-soft);
+}
+
+.plover-onboarding__btn-cancel:hover {
+  color: #c62828;
+  text-decoration: underline;
 }
 
 .plover-onboarding__auth-status-msg {

@@ -33,8 +33,8 @@ describe('Onboarding', () => {
     render(<Onboarding onComplete={mockOnComplete} />);
 
     expect(screen.getByTestId('step-welcome')).toBeTruthy();
-    const continueWithGoogleBtn = screen.getByRole('button', { name: 'Continue with Google' });
-    fireEvent.click(continueWithGoogleBtn);
+    const signInBtn = screen.getByRole('button', { name: 'Already have an account? Sign in' });
+    fireEvent.click(signInBtn);
 
     await waitFor(() => {
       expect(mockSignupStart).toHaveBeenCalled();
@@ -48,7 +48,7 @@ describe('Onboarding', () => {
 
     // Step 0: Welcome Screen
     expect(screen.getByTestId('step-welcome')).toBeTruthy();
-    expect(screen.getByText('See your progress as you actually work.')).toBeTruthy();
+    expect(screen.getByText('The Progress Bar That Works')).toBeTruthy();
 
     const getStartedBtn = screen.getByTestId('btn-get-started');
     fireEvent.click(getStartedBtn);
@@ -121,6 +121,8 @@ describe('Onboarding', () => {
     fireEvent.click(finishOnboardingBtn);
 
     await waitFor(() => {
+      expect(mockSignupStart).toHaveBeenCalled();
+      expect(mockSignupComplete).toHaveBeenCalled();
       expect(mockSaveGoalAndTasks).toHaveBeenCalled();
       expect(mockOnComplete).toHaveBeenCalled();
     });

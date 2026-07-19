@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ploverLogo from '../../plover-logo.png';
 import './Onboarding.css';
 
 interface OnboardingProps {
@@ -25,6 +26,10 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   const [authState, setAuthState] = useState<
     { kind: 'idle' } | { kind: 'opened-browser' } | { kind: 'error'; message: string }
   >({ kind: 'idle' });
+
+  const handleCancelSignIn = () => {
+    setAuthState({ kind: 'idle' });
+  };
 
   const handleSignIn = () => {
     setAuthState({ kind: 'opened-browser' });
@@ -63,6 +68,10 @@ export function Onboarding({ onComplete }: OnboardingProps) {
 
   const handleFinish = async () => {
     try {
+      setAuthState({ kind: 'opened-browser' });
+      await window.api.signup.start();
+      await window.api.signup.complete();
+
       // Save initial goal and tasks to database so user has immediate dashboard content
       const now = new Date();
       const year = now.getFullYear();
@@ -113,10 +122,12 @@ export function Onboarding({ onComplete }: OnboardingProps) {
       ];
 
       await window.api.saveGoalAndTasks(goal, tasks, scheduledSlots);
+      localStorage.setItem('plover_onboarding_completed', 'true');
+      onComplete();
     } catch (err) {
       console.error('Failed to save initial goal during onboarding:', err);
-    } finally {
-      onComplete();
+      const message = err instanceof Error ? err.message : String(err);
+      setAuthState({ kind: 'error', message });
     }
   };
 
@@ -204,36 +215,44 @@ export function Onboarding({ onComplete }: OnboardingProps) {
           <section className="plover-onboarding__slide" data-testid="step-welcome">
             <div className="plover-onboarding__split-left">
               <div className="plover-onboarding__brand">
-                <span className="plover-onboarding__brand-dot" aria-hidden="true" />
+                <img src={ploverLogo} className="plover-onboarding__brand-logo" alt="Plover Logo" />
                 <span>Plover</span>
               </div>
-              <h1 className="plover-onboarding__title">See your progress as you actually work.</h1>
-              <p className="plover-onboarding__desc">
-                Plover is a progress bar that quietly fills as your work gets done.
-              </p>
+              <h1 className="plover-onboarding__title">The Progress Bar That Works</h1>
 
               <div className="plover-onboarding__auth-container">
                 <button
                   type="button"
                   className="plover-onboarding__btn"
-                  onClick={handleSignIn}
-                  disabled={authState.kind === 'opened-browser'}
+                  onClick={handleNext}
+                  data-testid="btn-get-started"
                 >
-                  {authState.kind === 'error'
-                    ? 'Try again'
-                    : authState.kind === 'opened-browser'
-                      ? 'Waiting for browser…'
-                      : 'Continue with Google'}
+                  Get Started →
                 </button>
                 <div style={{ marginTop: '20px' }}>
                   <button
                     className="plover-onboarding__btn-secondary"
-                    onClick={handleNext}
-                    data-testid="btn-get-started"
+                    onClick={handleSignIn}
+                    disabled={authState.kind === 'opened-browser'}
                   >
-                    Or set up local-only tracking →
+                    {authState.kind === 'error'
+                      ? 'Sign-in failed. Try again?'
+                      : authState.kind === 'opened-browser'
+                        ? 'Waiting for browser…'
+                        : 'Already have an account? Sign in'}
                   </button>
                 </div>
+                {authState.kind === 'opened-browser' && (
+                  <div style={{ marginTop: '12px' }}>
+                    <button
+                      type="button"
+                      className="plover-onboarding__btn-cancel"
+                      onClick={handleCancelSignIn}
+                    >
+                      Cancel sign-in
+                    </button>
+                  </div>
+                )}
                 {authState.kind === 'opened-browser' && (
                   <p className="plover-onboarding__auth-status-msg">
                     Complete sign-in in your browser. This window will close automatically.
@@ -252,43 +271,30 @@ export function Onboarding({ onComplete }: OnboardingProps) {
             </div>
             <div className="plover-onboarding__split-right">
               <div className="plover-onboarding__right-glow" />
-              <h2 className="plover-onboarding__right-title">Just define it, and watch it fill.</h2>
-              <div className="plover-onboarding__mockup-window">
+              <div className="plover-onboarding__mockup-window plover-onboarding__mockup-window--video">
                 <div className="plover-onboarding__mockup-titlebar">
                   <div className="plover-onboarding__mockup-dots">
                     <span className="plover-onboarding__mockup-dot" />
                     <span className="plover-onboarding__mockup-dot" />
                     <span className="plover-onboarding__mockup-dot" />
                   </div>
-                  <div className="plover-onboarding__mockup-brand">PLOVER</div>
+                  <div className="plover-onboarding__mockup-brand">DEMO</div>
                   <div className="plover-onboarding__mockup-right-dots">
                     <span className="plover-onboarding__mockup-right-dot" />
                     <span className="plover-onboarding__mockup-right-dot" />
                     <span className="plover-onboarding__mockup-right-dot" />
                   </div>
                 </div>
-                <div className="plover-onboarding__mockup-content">
-                  <div className="plover-onboarding__skeleton" style={{ width: '45%' }} />
-                  <div className="plover-onboarding__skeleton" style={{ width: '70%' }} />
-                  <div className="plover-onboarding__skeleton" style={{ width: '55%' }} />
-                  <div className="plover-onboarding__skeleton" style={{ width: '35%' }} />
-
-                  <div className="plover-onboarding__pill-widget">
-                    <div className="plover-onboarding__pill-left">
-                      <span className="plover-onboarding__pill-pulse" />
-                      <span className="plover-onboarding__pill-status">observing</span>
-                      <span className="plover-onboarding__pill-sep">•</span>
-                      <span className="plover-onboarding__pill-title">Draft — methods</span>
-                    </div>
-                    <span className="plover-onboarding__pill-pct">65%</span>
-                  </div>
+                <div className="plover-onboarding__video-container">
+                  <video
+                    src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="plover-onboarding__video"
+                  />
                 </div>
-              </div>
-              <div className="plover-onboarding__carousel-dots">
-                <span className="plover-onboarding__carousel-dot" />
-                <span className="plover-onboarding__carousel-dot" />
-                <span className="plover-onboarding__carousel-dot plover-onboarding__carousel-dot--active" />
-                <span className="plover-onboarding__carousel-dot" />
               </div>
             </div>
           </section>
@@ -892,11 +898,43 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                   <button
                     className="plover-onboarding__btn"
                     onClick={handleFinish}
+                    disabled={authState.kind === 'opened-browser'}
                     data-testid="btn-finish-onboarding"
                   >
-                    Start tracking →
+                    {authState.kind === 'error'
+                      ? 'Try again'
+                      : authState.kind === 'opened-browser'
+                        ? 'Waiting for browser…'
+                        : 'Start tracking →'}
                   </button>
                 </div>
+                {authState.kind === 'opened-browser' && (
+                  <div style={{ marginTop: '12px', textAlign: 'center' }}>
+                    <button
+                      type="button"
+                      className="plover-onboarding__btn-cancel"
+                      onClick={handleCancelSignIn}
+                    >
+                      Cancel sign-up
+                    </button>
+                  </div>
+                )}
+                {authState.kind === 'opened-browser' && (
+                  <p
+                    className="plover-onboarding__auth-status-msg"
+                    style={{ textAlign: 'center', marginTop: '16px' }}
+                  >
+                    Complete sign-up in your browser. This window will close automatically.
+                  </p>
+                )}
+                {authState.kind === 'error' && (
+                  <p
+                    className="plover-onboarding__auth-status-msg plover-onboarding__auth-status-msg--error"
+                    style={{ textAlign: 'center', marginTop: '16px' }}
+                  >
+                    Sign-up failed: {authState.message}
+                  </p>
+                )}
                 <p className="plover-onboarding__disclaimer">
                   You can review your plan anytime in Settings.
                 </p>
