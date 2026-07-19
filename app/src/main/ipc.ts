@@ -3,6 +3,7 @@ import { Goal, Task } from '../shared/types.js';
 import { goalsRepo, tasksRepo, settingsRepo, summariesRepo, activityRepo } from './store/index.js';
 import { decomposeGoal } from './planner/decompose.js';
 import { scheduleTasks } from './planner/schedule.js';
+import { proposeGoalPlan } from './planner/propose.js';
 import {
   saveGoalAndTasks,
   startEventForwarding,
@@ -35,6 +36,17 @@ function broadcast(channel: string, payload?: unknown): void {
       }
     }
   }
+}
+
+function getRecentActivityContext(): { kind: string; payload: Record<string, unknown>; ts: string }[] | undefined {
+  const settings = settingsRepo.getAll();
+  if (!settings.planner_useRecentActivityContext) {
+    return undefined;
+  }
+  const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  return activityRepo
+    .list({ since, limit: 50 })
+    .map((r) => ({ kind: r.kind, payload: r.payload, ts: r.ts }));
 }
 
 export function setupIpcHandlers(
@@ -95,14 +107,7 @@ export function setupIpcHandlers(
 
   ipcMain.handle('goals:decompose', async (_, goalText: string) => {
     const settings = settingsRepo.getAll();
-    let recentActivity:
-      { kind: string; payload: Record<string, unknown>; ts: string }[] | undefined;
-    if (settings.planner_useRecentActivityContext) {
-      const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-      recentActivity = activityRepo
-        .list({ since, limit: 50 })
-        .map((r) => ({ kind: r.kind, payload: r.payload, ts: r.ts }));
-    }
+    const recentActivity = getRecentActivityContext();
     return withAuthRetry(() =>
       decomposeGoal({
         goalText,
@@ -267,53 +272,13 @@ export function setupIpcHandlers(
   // Overlay API
   ipcMain.handle('goal:propose', async (_event, goalText: string): Promise<ProposedPlan> => {
     const settings = settingsRepo.getAll();
-    let recentActivity:
-      { kind: string; payload: Record<string, unknown>; ts: string }[] | undefined;
-    if (settings.planner_useRecentActivityContext) {
-      const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-      recentActivity = activityRepo
-        .list({ since, limit: 50 })
-        .map((r) => ({ kind: r.kind, payload: r.payload, ts: r.ts }));
-    }
-    const result = await decomposeGoal({
+    const recentActivity = getRecentActivityContext();
+    return proposeGoalPlan({
       goalText,
-      now: new Date(),
-      workingHours: settings.workingHours,
-      ...(recentActivity ? { recentActivity } : {}),
-    });
-
-    const mockTasks: Task[] = result.subtasks.map((t, idx) => ({
-      id: `temp-${idx}`,
-      goal_id: 'temp-goal',
-      title: t.title,
-      estimate_minutes: t.estimate_minutes,
-      depends_on: t.depends_on,
-      status: 'todo',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }));
-
-    const slots = await scheduleTasks({
-      tasks: mockTasks,
       workingHours: settings.workingHours,
       horizonDays: settings.horizonDays,
+      recentActivity,
     });
-
-    const subtasksWithSlots = result.subtasks.map((t, idx) => {
-      const slot = slots.find((s) => s.taskId === `temp-${idx}`);
-      return {
-        title: t.title,
-        estimate_minutes: t.estimate_minutes,
-        depends_on: t.depends_on || [],
-        scheduled_start: slot?.start.toISOString(),
-        scheduled_end: slot?.end.toISOString(),
-      };
-    });
-
-    return {
-      goal: result.goal,
-      subtasks: subtasksWithSlots,
-    };
   });
 
   ipcMain.handle('goal:commit', async (_event, plan: ProposedPlan): Promise<{ goalId: string }> => {
