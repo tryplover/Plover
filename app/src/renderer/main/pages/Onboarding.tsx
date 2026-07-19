@@ -928,8 +928,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                   Your first two weeks are on us.
                 </h1>
                 <p className="plover-onboarding__desc--center" style={{ marginBottom: '32px' }}>
-                  Full Plover, free for 14 days. No credit card needed. After that, keep going for a
-                  small monthly plan — or stay on the free tier.
+                  Full Plover, free for 14 days. No credit card needed.
                 </p>
 
                 <div className="plover-onboarding__bullets">
