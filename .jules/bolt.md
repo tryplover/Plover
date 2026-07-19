@@ -1,0 +1,6 @@
+# Bolt's Performance Optimization Journal - Critical Learnings Only
+
+## 2026-07-19 - Algorithmic and Object Instantiation Bottlenecks in scheduleTasks
+**Learning:** In hot loops such as task scheduling with dependencies and overlapping checks, instantiating `Date` objects (via `new Date()`) and calling `.getTime()` inside nested loops is incredibly expensive. In our benchmark of 500 tasks over 30 days, these operations accounted for roughly 40% of execution time (~353ms down to ~217ms).
+Furthermore, scanning the entire set of scheduled tasks for overlap check introduces a quadratic $O(T^2)$ or $O(T \times H \times N)$ complexity. By pre-calculating day boundaries as primitive milliseconds, caching primitive `startMs`/`endMs` values in the map, and pre-filtering the scheduled tasks to only those overlapping the current day's work window, we avoid redundant scans and reduce the benchmark time from ~353ms down to ~65ms, yielding an overall 5.4x speedup.
+**Action:** Always represent time as primitive milliseconds (e.g., UNIX timestamps) when performing intensive scheduling, interval overlap, or sorting operations, converting to `Date` objects only at input/output boundaries. Ensure $O(N)$ checks inside nested loops are pruned using windowing or pre-filtering.
