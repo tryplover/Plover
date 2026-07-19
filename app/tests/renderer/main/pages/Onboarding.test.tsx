@@ -9,8 +9,17 @@ describe('Onboarding', () => {
   const mockRequestScreenRecording = vi.fn().mockResolvedValue('granted');
   const mockOpenScreenRecordingSettings = vi.fn().mockResolvedValue(undefined);
 
-  const mockSignupStart = vi.fn().mockResolvedValue(undefined);
-  const mockSignupComplete = vi.fn().mockResolvedValue(undefined);
+  const mockAuthSignIn = vi.fn().mockResolvedValue({ signedIn: true, email: 'jordan@example.com' });
+  const mockAuthSignInWithPassword = vi
+    .fn()
+    .mockResolvedValue({ signedIn: true, email: 'jordan@example.com' });
+  const mockAuthSignUp = vi
+    .fn()
+    .mockResolvedValue({
+      signedIn: true,
+      email: 'jordan@example.com',
+      needsEmailConfirmation: false,
+    });
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -19,9 +28,10 @@ describe('Onboarding', () => {
         saveGoalAndTasks: mockSaveGoalAndTasks,
         requestScreenRecording: mockRequestScreenRecording,
         openScreenRecordingSettings: mockOpenScreenRecordingSettings,
-        signup: {
-          start: mockSignupStart,
-          complete: mockSignupComplete,
+        auth: {
+          signIn: mockAuthSignIn,
+          signInWithPassword: mockAuthSignInWithPassword,
+          signUp: mockAuthSignUp,
         },
       },
       writable: true,
@@ -33,12 +43,33 @@ describe('Onboarding', () => {
     render(<Onboarding onComplete={mockOnComplete} />);
 
     expect(screen.getByTestId('step-welcome')).toBeTruthy();
-    const signInBtn = screen.getByRole('button', { name: 'Already have an account? Sign in' });
-    fireEvent.click(signInBtn);
+    const revealBtn = screen.getByRole('button', { name: 'Already have an account? Sign in' });
+    fireEvent.click(revealBtn);
+
+    const googleBtn = await screen.findByTestId('btn-auth-google');
+    fireEvent.click(googleBtn);
 
     await waitFor(() => {
-      expect(mockSignupStart).toHaveBeenCalled();
-      expect(mockSignupComplete).toHaveBeenCalled();
+      expect(mockAuthSignIn).toHaveBeenCalled();
+      expect(mockOnComplete).toHaveBeenCalled();
+    });
+  });
+
+  it('allows signing in with email/password', async () => {
+    render(<Onboarding onComplete={mockOnComplete} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Already have an account? Sign in' }));
+
+    fireEvent.change(await screen.findByTestId('input-auth-email'), {
+      target: { value: 'jordan@example.com' },
+    });
+    fireEvent.change(screen.getByTestId('input-auth-password'), {
+      target: { value: 'hunter2!' },
+    });
+    fireEvent.click(screen.getByTestId('btn-auth-submit'));
+
+    await waitFor(() => {
+      expect(mockAuthSignInWithPassword).toHaveBeenCalledWith('jordan@example.com', 'hunter2!');
       expect(mockOnComplete).toHaveBeenCalled();
     });
   });
@@ -117,12 +148,11 @@ describe('Onboarding', () => {
     expect(await screen.findByTestId('step-trial-close')).toBeTruthy();
     expect(screen.getByText('Your first two weeks are on us.')).toBeTruthy();
 
-    const finishOnboardingBtn = screen.getByTestId('btn-finish-onboarding');
-    fireEvent.click(finishOnboardingBtn);
+    const finishGoogleBtn = screen.getByTestId('btn-auth-google');
+    fireEvent.click(finishGoogleBtn);
 
     await waitFor(() => {
-      expect(mockSignupStart).toHaveBeenCalled();
-      expect(mockSignupComplete).toHaveBeenCalled();
+      expect(mockAuthSignIn).toHaveBeenCalled();
       expect(mockSaveGoalAndTasks).toHaveBeenCalled();
       expect(mockOnComplete).toHaveBeenCalled();
     });

@@ -136,6 +136,20 @@ export async function signIn(): Promise<void> {
   });
 }
 
+export async function signUp(
+  email: string,
+  password: string,
+): Promise<{ needsEmailConfirmation: boolean }> {
+  const { data, error } = await getSupabaseClient().auth.signUp({ email, password });
+  if (error) throw new SupabaseAuthenticationError(error.message);
+  return { needsEmailConfirmation: !data.session };
+}
+
+export async function signInWithPassword(email: string, password: string): Promise<void> {
+  const { error } = await getSupabaseClient().auth.signInWithPassword({ email, password });
+  if (error) throw new SupabaseAuthenticationError(error.message);
+}
+
 export async function signOut(): Promise<void> {
   await getSupabaseClient().auth.signOut();
 }
