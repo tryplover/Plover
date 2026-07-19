@@ -30,8 +30,14 @@ const defaultActivitySettings: ActivitySettings = {
   planner_useRecentActivityContext: true,
 };
 
+interface AuthStatus {
+  signedIn: boolean;
+  email: string | null;
+}
+
 export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
   const [googleConnected, setGoogleConnected] = useState(false);
+  const [authStatus, setAuthStatus] = useState<AuthStatus>({ signedIn: false, email: null });
   const [workingHours, setWorkingHours] = useState({ start: '09:00', end: '18:00' });
   const [horizonDays, setHorizonDays] = useState(14);
   const [pauseScheduling, setPauseScheduling] = useState(false);
@@ -75,10 +81,24 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
     }
   };
 
+  const fetchAuthStatus = async () => {
+    try {
+      const status = await window.api.auth.getStatus();
+      setAuthStatus(status);
+    } catch (err) {
+      console.error('Failed to fetch Plover Account status:', err);
+    }
+  };
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchSettings();
     void window.api.getScreenRecordingStatus().then(setScreenPermission);
+    void fetchAuthStatus();
+    const unsubscribe = window.api.on('auth:status-changed', (status: unknown) => {
+      setAuthStatus(status as AuthStatus);
+    });
+    return unsubscribe;
   }, []);
 
   const triggerActivitySave = async (patch: Partial<ActivitySettings>): Promise<void> => {
@@ -148,21 +168,32 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
     }
   };
 
-  const handleConnectCalendar = async () => {
+  const handleConnectGoogle = async () => {
     try {
       if (googleConnected) {
-        await window.api.disconnectCalendar();
+        await window.api.disconnectGoogle();
         setGoogleConnected(false);
         await triggerAutoSave({ googleConnected: false });
       } else {
-        const success = await window.api.connectCalendar();
+        const success = await window.api.connectGoogle();
         if (success) {
           setGoogleConnected(true);
           await triggerAutoSave({ googleConnected: true });
         }
       }
     } catch (err) {
-      console.error('Google Calendar toggle failed:', err);
+      console.error('Google connection toggle failed:', err);
+    }
+  };
+
+  const handlePloverAccountToggle = async () => {
+    try {
+      const status = authStatus.signedIn
+        ? await window.api.auth.signOut()
+        : await window.api.auth.signIn();
+      setAuthStatus(status);
+    } catch (err) {
+      console.error('Plover Account sign-in/out failed:', err);
     }
   };
 
@@ -265,10 +296,64 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
             >
               Account
             </h2>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '16px',
+              }}
+            >
+              <div>
+                <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--plover-text)' }}>
+                  Plover Account
+                </p>
+                {authStatus.signedIn && (
+                  <p
+                    style={{
+                      fontSize: '13px',
+                      color: 'var(--plover-text-muted)',
+                      marginTop: '4px',
+                    }}
+                  >
+                    Signed in as {authStatus.email}
+                  </p>
+                )}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {authStatus.signedIn && (
+                  <span
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      fontSize: '13px',
+                      color: 'var(--plover-text-muted)',
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        backgroundColor: 'var(--plover-mint)',
+                      }}
+                    />
+                    Connected
+                  </span>
+                )}
+                <Button
+                  variant={authStatus.signedIn ? 'secondary' : 'primary'}
+                  onClick={handlePloverAccountToggle}
+                >
+                  {authStatus.signedIn ? 'Sign out' : 'Sign in with Google'}
+                </Button>
+              </div>
+            </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--plover-text)' }}>
-                  Google Calendar
+                  Google
                 </p>
                 {googleConnected && (
                   <p
@@ -278,7 +363,7 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
                       marginTop: '4px',
                     }}
                   >
-                    Connected as account
+                    Connect Google to enable Docs progress tracking.
                   </p>
                 )}
               </div>
@@ -306,7 +391,7 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
                 )}
                 <Button
                   variant={googleConnected ? 'secondary' : 'primary'}
-                  onClick={handleConnectCalendar}
+                  onClick={handleConnectGoogle}
                 >
                   {googleConnected ? 'Disconnect' : 'Connect'}
                 </Button>

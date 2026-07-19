@@ -1,5 +1,7 @@
 # Plover — Phase 1 Core Architecture
 
+> **2026-07-18 — deprecation notice.** Google Calendar sync (OAuth, event writes, `calendar_event_id`, `calendar.synced` event, `deviation-detector`) has been removed. The Sync module still exists but only polls Google Docs. Everywhere this doc references "Calendar" as a Phase 1 feature or an inter-module contract, treat it as stale — subtasks are scheduled locally into working-hours windows only.
+
 Cross-cutting architecture, constraints, and conventions for **Phase 1** of Plover. Every feature spec under [features/](./features/) assumes this doc. Read this first; the feature docs only restate what's specific to themselves.
 
 The product motivation lives in the [product spec](../2026-05-24-task-tracker-agent-product-spec.md).

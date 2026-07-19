@@ -76,5 +76,3 @@ export function stopActivityMonitoring(): void {
     retentionIntervalId = null;
   }
 }
-
-export function getScreenCapturer(): ScreenCapturer | null { return screenCapturer; }

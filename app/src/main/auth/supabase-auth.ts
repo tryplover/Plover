@@ -1,0 +1,175 @@
+import http from 'http';
+import { AddressInfo } from 'net';
+import { shell } from 'electron';
+import { getSupabaseClient } from './supabase-client.js';
+
+const SIGN_IN_TIMEOUT_MS = 5 * 60 * 1000;
+
+export class SupabaseAuthenticationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'SupabaseAuthenticationError';
+  }
+}
+
+export async function signIn(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const server = http.createServer();
+    let settled = false;
+
+    const finish = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutHandle);
+      if (typeof server.closeAllConnections === 'function') {
+        server.closeAllConnections();
+      }
+      server.close(() => fn());
+    };
+
+    const timeoutHandle = setTimeout(() => {
+      finish(() => reject(new SupabaseAuthenticationError('Sign-in timed out')));
+    }, SIGN_IN_TIMEOUT_MS);
+
+    // Registered before `listen()` so it also catches synchronous/early
+    // startup failures (e.g. the port becoming unavailable between bind
+    // attempts), not just errors raised after the server is up.
+    server.on('error', (err) => {
+      finish(() => reject(err));
+    });
+
+    server.listen(0, '127.0.0.1', () => {
+      void (async () => {
+        try {
+          const address = server.address() as AddressInfo;
+          const port = address.port;
+          const redirectUri = `http://localhost:${port}`;
+
+          server.on('request', (req, res) => {
+            void (async () => {
+              try {
+                const reqUrl = req.url || '';
+                const parsedUrl = new URL(reqUrl, redirectUri);
+
+                if (parsedUrl.pathname === '/favicon.ico') {
+                  res.writeHead(404);
+                  res.end();
+                  return;
+                }
+
+                const code = parsedUrl.searchParams.get('code');
+                const error = parsedUrl.searchParams.get('error');
+
+                if (!code && !error) {
+                  res.writeHead(400, { 'Content-Type': 'text/plain' });
+                  res.end('Invalid request');
+                  return;
+                }
+
+                if (error) {
+                  res.writeHead(400, { 'Content-Type': 'text/html' });
+                  res.end(`<h1>Authentication failed</h1><p>Error: ${error}</p>`);
+                  finish(() => reject(new SupabaseAuthenticationError(`OAuth error: ${error}`)));
+                  return;
+                }
+
+                if (!code) {
+                  res.writeHead(400, { 'Content-Type': 'text/html' });
+                  res.end('<h1>Authentication failed</h1><p>Missing authorization code.</p>');
+                  finish(() =>
+                    reject(
+                      new SupabaseAuthenticationError('Missing authorization code in redirect'),
+                    ),
+                  );
+                  return;
+                }
+
+                const { error: exchangeError } =
+                  await getSupabaseClient().auth.exchangeCodeForSession(code);
+
+                if (exchangeError) {
+                  res.writeHead(400, { 'Content-Type': 'text/html' });
+                  res.end('<h1>Authentication failed</h1><p>Could not complete sign-in.</p>');
+                  finish(() => reject(new SupabaseAuthenticationError(exchangeError.message)));
+                  return;
+                }
+
+                res.writeHead(200, { 'Content-Type': 'text/html' });
+                res.end('<h1>Authentication successful!</h1><p>You can close this window now.</p>');
+                finish(resolve);
+              } catch (err) {
+                res.writeHead(500, { 'Content-Type': 'text/html' });
+                res.end('<h1>Authentication failed</h1><p>Internal error occurred.</p>');
+                finish(() => reject(err instanceof Error ? err : new Error(String(err))));
+              }
+            })();
+          });
+
+          // getSupabaseClient() throws if SUPABASE_URL/SUPABASE_ANON_KEY are
+          // missing; this try/catch (rather than leaving this as an
+          // unawaited async listen callback) is what turns that into a
+          // rejected signIn() promise instead of an unhandled rejection
+          // that crashes the Electron main process.
+          const { data, error } = await getSupabaseClient().auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+              redirectTo: redirectUri,
+              skipBrowserRedirect: true,
+            },
+          });
+
+          if (error || !data.url) {
+            finish(() =>
+              reject(
+                new SupabaseAuthenticationError(error?.message || 'Failed to start Supabase OAuth'),
+              ),
+            );
+            return;
+          }
+
+          await shell.openExternal(data.url);
+        } catch (err) {
+          finish(() => reject(err instanceof Error ? err : new Error(String(err))));
+        }
+      })();
+    });
+  });
+}
+
+export async function signOut(): Promise<void> {
+  await getSupabaseClient().auth.signOut();
+}
+
+// Called as a floating promise at app startup (before any window exists to
+// surface an error to), so this must never reject — a missing
+// SUPABASE_URL/SUPABASE_ANON_KEY (getSupabaseClient() throws) or an
+// unexpected null `data` would otherwise become an unhandled rejection that
+// can crash the Electron main process.
+export async function restoreSession(): Promise<boolean> {
+  try {
+    const { data } = await getSupabaseClient().auth.getSession();
+    return !!data?.session;
+  } catch (err) {
+    console.error('[Auth] Failed to restore Supabase session:', err);
+    return false;
+  }
+}
+
+export function startAutoRefresh(): void {
+  try {
+    void getSupabaseClient().auth.startAutoRefresh();
+  } catch (err) {
+    console.error('[Auth] Failed to start Supabase auto-refresh:', err);
+  }
+}
+
+export async function getCurrentUser(): Promise<{ id: string; email: string | null } | null> {
+  try {
+    const { data } = await getSupabaseClient().auth.getUser();
+    if (!data?.user) return null;
+    return { id: data.user.id, email: data.user.email ?? null };
+  } catch (err) {
+    console.error('[Auth] Failed to get current Supabase user:', err);
+    return null;
+  }
+}

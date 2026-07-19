@@ -60,9 +60,6 @@ describe('Event forwarding', () => {
     }
 
     expect(mockWindowInstance.webContents.send).toHaveBeenCalledWith('goal:created', mockGoal);
-
-    eventBus.emit('calendar.synced');
-    expect(mockWindowInstance.webContents.send).toHaveBeenCalledWith('calendar:synced');
   });
 
   it('does not forward events to destroyed windows', () => {

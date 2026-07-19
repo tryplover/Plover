@@ -41,7 +41,7 @@ Note: `docs/plans/` contains *generated implementation plans* used as input to s
 
 ## Project
 
-**Plover** is a local-first Electron desktop agent for productivity. It turns vague goals into a calendar and shepherds the user toward finishing them. Privacy-by-design: user data is strictly local, but outbound Gemini API calls are proxied securely through a backend server to protect the developer API key in production.
+**Plover** is a local-first Electron desktop agent for productivity. It turns vague goals into a structured plan of subtasks and shepherds the user toward finishing them. Privacy-by-design: user data is strictly local, but outbound Gemini API calls are proxied securely through a backend server to protect the developer API key in production.
 
 - **Product spec:** [docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md](docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md)
 - **Phase 1 core architecture:** [docs/superpowers/specs/phase-1/core-architecture.md](docs/superpowers/specs/phase-1/core-architecture.md)
@@ -142,7 +142,7 @@ These are not style preferences. The core architecture doc calls them
 - **Backend API Proxy.** Outbound Gemini API calls are proxied through a secure backend server to protect developer API keys in production.
 
 - **Outbound HTTP allowlist:** `generativelanguage.googleapis.com` (Gemini),
-  `www.googleapis.com` (Calendar/Docs), Google OAuth endpoints. Enforced at the
+  `www.googleapis.com` (Docs), Google OAuth endpoints. Enforced at the
   HTTP client.
 - **Never capture keystroke content.** Counts only.
 - **Never upload screenshots** anywhere except (later) Gemini Vision with
@@ -157,7 +157,7 @@ These are not style preferences. The core architecture doc calls them
 **In Phase 1:**
 - Typed goal capture (text)
 - Gemini-powered subtask decomposition
-- Google Calendar OAuth + auto-scheduling
+- Local subtask scheduling (working-hours aware, no external calendar)
 - Local Today / Goals / Settings views
 - Overlay quick-add (global hotkey)
 
@@ -413,6 +413,14 @@ Subagents that need to install deps will hit this same wall and report "network/
 
 **Fix:** Move polling logic to `Sync` module. Use the event bus (`gdocs.revision` event) to notify the `Activity` module of updates. Refactor Activity tracker into a subscriber that only writes to `ActivityRepo`.
 
+### 2026-07-18 — Calendar sync removed but `tasks.calendar_event_id` column intact
+
+**Symptom:** `store/db.ts` still defines `calendar_event_id TEXT` on the `tasks` table even though no application code reads or writes it after the Calendar-sync removal.
+
+**Root cause:** Dropping a column requires a new migration, and existing installs would fail if we altered v1 in place. We deliberately left the column so existing DBs stay usable.
+
+**Fix:** Do NOT re-add references. If you're touching the tasks schema for another reason, bundle a proper `ALTER TABLE tasks DROP COLUMN calendar_event_id` migration then (SQLite ≥3.35 supports it). Until then, treat the column as vestigial.
+
 ### 2026-06-24 — Clicking "Open setup overlay" opens duplicate main window instead of setup flow
 
 **Symptom:** In the "Today" page empty state, clicking "Open setup overlay" opens a new window, but the window renders a duplicate of the main application (with sidebar/main tabs) rather than the setup/overlay flow.
@@ -428,5 +436,13 @@ Subagents that need to install deps will hit this same wall and report "network/
 **Root cause:** The Bash/PowerShell tool's shell runs in a sandboxed subprocess context that has no attached interactive Windows desktop/session. Electron is a GUI app that needs a real window station to create a `BrowserWindow`; without one it exits immediately and silently (no console output at all, since it never gets far enough to log anything). This is a different execution context from the one the `computer-use` MCP tools see and control (the user's actual visible desktop) — processes launched via Bash/PowerShell here are invisible to `computer-use`, and vice versa there's no way to attach `computer-use` to a process spawned this way.
 
 **Fix:** Don't try to visually verify Electron GUI changes by launching `pnpm dev`/the Electron binary through the Bash/PowerShell tool and then screenshotting via `computer-use` — it will silently fail with no diagnostic signal. For UI changes in this repo, verify via `pnpm typecheck && pnpm lint && pnpm test`, a careful manual read of the diff, and (if genuinely needed) ask the user to run `pnpm dev` themselves and confirm visually on their own desktop session.
+
+### 2026-07-18 — concurrent sessions in the same working directory silently swap out HEAD mid-task
+
+**Symptom:** Ran `git checkout -b <new-branch> origin/main` in the primary working directory, then did unrelated work (writing a plan file), then `git commit`. The commit landed on local `main` instead of the new branch. `git reflog` showed a `checkout: moving from <new-branch> to main` event between the branch creation and the commit that this session never issued.
+
+**Root cause:** The user (or another Claude Code session/tool) was actively working in the same primary checkout (`C:\Users\hhl_c\Documents\GitHub\Plover`) at the same time — switching branches and committing on their own branch. A single working directory has exactly one HEAD; whichever actor checks out last wins, and neither actor gets a warning. This is invisible from inside a session — there's no signal that another process touched HEAD except retroactively via `git reflog`.
+
+**Fix:** When there's any chance the user or another session is concurrently using the primary repo directory (ask if unsure — don't assume), do multi-step git work (branch + commits) in an isolated `git worktree` instead: `git worktree add <sibling-path> <branch>`, then run all further `Bash`/`Edit` calls with that path, never the primary directory. If a stray commit already landed on the wrong branch before noticing, recover it non-destructively — `git cherry-pick <sha>` onto the correct branch from the worktree — rather than resetting the branch the other actor is using, which they might be actively building on top of.
 
 

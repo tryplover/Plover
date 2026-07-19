@@ -19,17 +19,9 @@ export interface Task {
   depends_on?: string[];
   scheduled_start?: string; // ISO8601 string
   scheduled_end?: string; // ISO8601 string
-  calendar_event_id?: string;
   status: 'todo' | 'scheduled' | 'in_progress' | 'done' | 'skipped';
   created_at: string;
   updated_at: string;
-}
-
-export interface CalendarEvent {
-  id: string;
-  summary: string;
-  start: string; // ISO8601 string
-  end: string; // ISO8601 string
 }
 
 export interface SummaryRow {

@@ -15,7 +15,6 @@ export interface PloverAPI {
       | 'updated_at'
       | 'scheduled_start'
       | 'scheduled_end'
-      | 'calendar_event_id'
     >[];
   }>;
   scheduleTasks(
@@ -30,7 +29,6 @@ export interface PloverAPI {
       | 'scheduled_end'
       | 'calendar_event_id'
     >[],
-    calendarEvents: { id: string; summary: string; start: string; end: string }[],
     workingHours: { start: string; end: string },
     horizonDays: number,
   ): Promise<{ taskId: string; start: string; end: string }[]>;
@@ -45,7 +43,6 @@ export interface PloverAPI {
       | 'updated_at'
       | 'scheduled_start'
       | 'scheduled_end'
-      | 'calendar_event_id'
     >[],
     scheduledSlots: { tempIndex: number; start: string; end: string }[],
   ): Promise<{ goal: Goal; tasks: Task[] }>;
@@ -95,8 +92,8 @@ export interface PloverAPI {
     activityRetentionDays: number;
     planner_useRecentActivityContext: boolean;
   }>;
-  connectCalendar(): Promise<boolean>;
-  disconnectCalendar(): Promise<void>;
+  connectGoogle(): Promise<boolean>;
+  disconnectGoogle(): Promise<void>;
   listActiveWindows(): Promise<{ app: string; title: string }[]>;
   setIgnoreMouseEvents(ignore: boolean): Promise<void>;
   setTrackingState(tracking: boolean): Promise<void>;
@@ -110,6 +107,11 @@ export interface PloverAPI {
   signup: {
     start: () => Promise<void>;
     complete: () => Promise<void>;
+  };
+  auth: {
+    signIn: () => Promise<{ signedIn: boolean; email: string | null }>;
+    signOut: () => Promise<{ signedIn: boolean; email: string | null }>;
+    getStatus: () => Promise<{ signedIn: boolean; email: string | null }>;
   };
   platform: string;
   minimizeWindow(): Promise<void>;

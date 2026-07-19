@@ -1,15 +1,14 @@
 import './load-env.js';
 import { app, BrowserWindow, globalShortcut, ipcMain, nativeImage } from 'electron';
 import { join } from 'node:path';
-import { setupIpc, calendarSync, googleAuth } from './ipc.js';
+import { setupIpc, googleAuth } from './ipc.js';
 import { activityRepo, settingsRepo, tasksRepo, summariesRepo } from './store/index.js';
 import { FolderWatcher } from './activity/folder-watcher.js';
 import { InferenceEngine } from './activity/inference.js';
 import { GitCommitTracker } from './activity/git-commit-tracker.js';
 import { GDocsPoller } from './sync/gdocs-poller.js';
-import { DeviationDetector } from './planner/deviation-detector.js';
 import { eventBus } from './bus.js';
-import { clearAllTimers, schedulePeriodic } from './lifecycle/periodic.js';
+import { clearAllTimers } from './lifecycle/periodic.js';
 import { initActivityMonitoring, stopActivityMonitoring } from './activity/index.js';
 import { completeSignup } from './auth/signup-flow.js';
 
@@ -188,16 +187,6 @@ if (!gotTheLock) {
 
     gdocsPoller = new GDocsPoller(googleAuth, settingsRepo, eventBus);
     gdocsPoller.start();
-
-    const deviationDetector = new DeviationDetector(
-      tasksRepo,
-      activityRepo,
-      settingsRepo,
-      calendarSync,
-    );
-    deviationLoopDispose = schedulePeriodic('deviation', 15 * 60_000, () =>
-      deviationDetector.runDeviationPass(),
-    );
 
     // Register all typed IPC handlers first
     setupIpc(

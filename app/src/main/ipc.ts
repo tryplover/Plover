@@ -1,5 +1,5 @@
 import { ipcMain, BrowserWindow } from 'electron';
-import { Goal, Task, CalendarEvent } from '../shared/types.js';
+import { Goal, Task } from '../shared/types.js';
 import { goalsRepo, tasksRepo, settingsRepo, summariesRepo, activityRepo } from './store/index.js';
 import { decomposeGoal } from './planner/decompose.js';
 import { scheduleTasks } from './planner/schedule.js';
@@ -9,7 +9,6 @@ import {
   deleteGoalAndTasks,
 } from './planner/goal-manager.js';
 import { GoogleAuth } from './sync/google-auth.js';
-import { GoogleCalendarSync } from './sync/calendar.js';
 import { eventBus } from './bus.js';
 import { ProposedPlan } from '../preload/index.js';
 import { createCompanionWindow } from './windows/companion.js';
@@ -22,9 +21,9 @@ import {
 import { SettingsData } from './store/repos/settings.js';
 import { startSignup } from './auth/signup-flow.js';
 import { withAuthRetry } from './auth/with-auth-retry.js';
+import * as supabaseAuth from './auth/supabase-auth.js';
 
 export const googleAuth = new GoogleAuth();
-export const calendarSync = new GoogleCalendarSync(googleAuth);
 
 function broadcast(channel: string, payload?: unknown): void {
   for (const win of BrowserWindow.getAllWindows()) {
@@ -44,6 +43,9 @@ export function setupIpcHandlers(
   createOverlayWindow?: (variant: 'overlay' | 'window') => BrowserWindow,
 ): void {
   void googleAuth.loadSavedCredentials();
+  void supabaseAuth.restoreSession().then((hasSession) => {
+    if (hasSession) supabaseAuth.startAutoRefresh();
+  });
 
   // Goals
   ipcMain.handle('goals:get', async () => {
@@ -66,7 +68,7 @@ export function setupIpcHandlers(
   });
 
   ipcMain.handle('goals:delete', async (_, id: string) => {
-    await deleteGoalAndTasks(id, calendarSync);
+    await deleteGoalAndTasks(id);
     return true;
   });
 
@@ -115,6 +117,43 @@ export function setupIpcHandlers(
     await startSignup();
   });
 
+  ipcMain.handle('auth:signIn', async () => {
+    try {
+      await supabaseAuth.signIn();
+      const user = await supabaseAuth.getCurrentUser();
+      if (!user) {
+        throw new Error('Supabase sign-in completed but no user was returned');
+      }
+      settingsRepo.update({ supabaseUserId: user.id, supabaseUserEmail: user.email });
+      const status = { signedIn: true, email: user.email };
+      broadcast('auth:status-changed', status);
+      return status;
+    } catch (err) {
+      console.error('[Auth] Sign-in failed:', err);
+      throw err;
+    }
+  });
+
+  ipcMain.handle('auth:signOut', async () => {
+    try {
+      await supabaseAuth.signOut();
+    } catch (err) {
+      // Clearing the local session must not be blocked by a failed remote
+      // call (e.g. offline) — otherwise the user is stuck "signed in"
+      // locally with no way to sign out until connectivity returns.
+      console.error('[Auth] Remote Supabase sign-out failed, clearing local session anyway:', err);
+    }
+    settingsRepo.update({ supabaseUserId: null, supabaseUserEmail: null });
+    const status = { signedIn: false, email: null };
+    broadcast('auth:status-changed', status);
+    return status;
+  });
+
+  ipcMain.handle('auth:getStatus', async () => {
+    const settings = settingsRepo.getAll();
+    return { signedIn: !!settings.supabaseUserId, email: settings.supabaseUserEmail };
+  });
+
   ipcMain.handle(
     'tasks:schedule',
     async (
@@ -130,7 +169,6 @@ export function setupIpcHandlers(
         | 'scheduled_end'
         | 'calendar_event_id'
       >[],
-      calendarEvents: CalendarEvent[],
       workingHours: { start: string; end: string },
       horizonDays: number,
     ) => {
@@ -147,7 +185,6 @@ export function setupIpcHandlers(
 
       const slots = await scheduleTasks({
         tasks: mockTasks,
-        calendarEvents,
         workingHours,
         horizonDays,
       });
@@ -178,7 +215,7 @@ export function setupIpcHandlers(
       >[],
       scheduledSlots: { tempIndex: number; start: string; end: string }[],
     ) => {
-      return saveGoalAndTasks(goalInput, subtaskInputs, scheduledSlots, calendarSync);
+      return saveGoalAndTasks(goalInput, subtaskInputs, scheduledSlots);
     },
   );
 
@@ -210,12 +247,11 @@ export function setupIpcHandlers(
     return summariesRepo.listAll();
   });
 
-  // Calendar
-  ipcMain.handle('calendar:connect', async () => {
+  // Google OAuth (for Docs tracking)
+  ipcMain.handle('google:connect', async () => {
     try {
       await googleAuth.authorize();
       settingsRepo.update({ googleConnected: true });
-      eventBus.emit('calendar.synced');
       return true;
     } catch (err) {
       console.error('[OAuth] Connection failed:', err);
@@ -223,7 +259,7 @@ export function setupIpcHandlers(
     }
   });
 
-  ipcMain.handle('calendar:disconnect', async () => {
+  ipcMain.handle('google:disconnect', async () => {
     await googleAuth.disconnect();
     settingsRepo.update({ googleConnected: false });
   });
@@ -257,21 +293,8 @@ export function setupIpcHandlers(
       updated_at: new Date().toISOString(),
     }));
 
-    let calendarEvents: CalendarEvent[] = [];
-    if (settings.googleConnected) {
-      try {
-        const start = new Date();
-        const end = new Date();
-        end.setDate(start.getDate() + settings.horizonDays);
-        calendarEvents = await calendarSync.listEvents(start, end);
-      } catch (err) {
-        console.error('[IPC] Failed to list calendar events for overlay propose:', err);
-      }
-    }
-
     const slots = await scheduleTasks({
       tasks: mockTasks,
-      calendarEvents,
       workingHours: settings.workingHours,
       horizonDays: settings.horizonDays,
     });
@@ -300,7 +323,7 @@ export function setupIpcHandlers(
       end: task.scheduled_end || '',
     }));
 
-    const result = await saveGoalAndTasks(plan.goal, plan.subtasks, slotsForSave, calendarSync);
+    const result = await saveGoalAndTasks(plan.goal, plan.subtasks, slotsForSave);
 
     const overlayWin = getOverlayWindow();
     if (overlayWin) {

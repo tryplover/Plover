@@ -4,11 +4,9 @@ import { AnimatePresence, motion, ploverDuration, ploverEasing } from '../lib/mo
 import { Stepper } from './steps/Stepper';
 import { StepName } from './steps/StepName';
 import { StepBreakdown } from './steps/StepBreakdown';
-import { StepConnect } from './steps/StepConnect';
-import type { ProposedPlan } from '../../preload';
 import './SetupFlow.css';
 
-type Step = 'name' | 'breakdown' | 'connect' | 'committed';
+type Step = 'name' | 'breakdown' | 'committed';
 
 export function SetupFlow({
   variant = 'overlay' as const,
@@ -22,7 +20,6 @@ export function SetupFlow({
     text: '',
     frequency: 'one-off',
   });
-  const [plan, setPlan] = useState<ProposedPlan | null>(null);
 
   const close = () => {
     if (onClose) {
@@ -53,22 +50,14 @@ export function SetupFlow({
               draft={draft}
               variant={variant}
               onBack={() => setStep('name')}
-              onNext={(p) => {
-                setPlan(p);
-                setStep('connect');
-              }}
-            />
-          </motion.div>
-        )}
-        {step === 'connect' && plan && (
-          <motion.div key="connect" {...slide()}>
-            <StepConnect
-              plan={plan}
-              variant={variant}
-              onBack={() => setStep('breakdown')}
-              onCommitted={() => {
-                setStep('committed');
-                setTimeout(close, 800);
+              onNext={async (p) => {
+                try {
+                  await window.api.commitGoal(p);
+                  setStep('committed');
+                  setTimeout(close, 800);
+                } catch (err) {
+                  console.error('Failed to commit goal:', err);
+                }
               }}
             />
           </motion.div>
@@ -79,7 +68,7 @@ export function SetupFlow({
           </motion.div>
         )}
       </AnimatePresence>
-      <Stepper current={step === 'name' ? 1 : step === 'breakdown' ? 2 : 3} />
+      <Stepper current={step === 'name' ? 1 : 2} />
     </div>
   );
 }
