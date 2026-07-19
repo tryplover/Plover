@@ -632,8 +632,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                           <button
                             type="button"
                             className="plover-onboarding__mockup-btn-primary"
-                            onClick={() => setGuidedSlideIndex(1)}
-                            data-testid="btn-break-steps"
+                            style={{ cursor: 'default' }}
                           >
                             Break into steps →
                           </button>
@@ -686,8 +685,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                           <button
                             type="button"
                             className="plover-onboarding__mockup-btn-primary"
-                            onClick={() => setGuidedSlideIndex(2)}
-                            data-testid="btn-looks-right"
+                            style={{ cursor: 'default' }}
                           >
                             Looks right →
                           </button>
@@ -795,8 +793,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                           <button
                             type="button"
                             className="plover-onboarding__mockup-btn-primary"
-                            onClick={() => setGuidedSlideIndex(3)}
-                            data-testid="btn-start-tracking-mock"
+                            style={{ cursor: 'default' }}
                           >
                             Start tracking →
                           </button>
@@ -857,8 +854,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                           <button
                             type="button"
                             className="plover-onboarding__mockup-btn-primary"
-                            onClick={handleNext}
-                            data-testid="btn-start-working"
+                            style={{ cursor: 'default' }}
                           >
                             Start working →
                           </button>
@@ -897,10 +893,22 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                   ))}
                 </div>
 
-                {/* Navigation Back button */}
-                <button className="plover-onboarding__btn-back" onClick={handleBack}>
-                  Back
-                </button>
+                {/* Navigation Back & Continue buttons */}
+                <div className="plover-onboarding__btn-row" style={{ justifyContent: 'center' }}>
+                  {guidedSlideIndex < 3 ? (
+                    <button className="plover-onboarding__btn-back" onClick={handleBack}>
+                      Back
+                    </button>
+                  ) : (
+                    <button
+                      className="plover-onboarding__btn"
+                      onClick={handleNext}
+                      data-testid="btn-carousel-continue"
+                    >
+                      Continue →
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </section>

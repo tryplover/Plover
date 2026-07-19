@@ -94,37 +94,40 @@ describe('Onboarding', () => {
     // Slide 0: What are you working on?
     expect(screen.getByTestId('guided-slide-0')).toBeTruthy();
     expect(screen.getByText('What are you working on?')).toBeTruthy();
-    const breakStepsBtn = screen.getByTestId('btn-break-steps');
-    fireEvent.click(breakStepsBtn);
+
+    // Navigate to Slide 1 using Right Arrow
+    const nextArrow = screen.getByTestId('carousel-arrow-right');
+    fireEvent.click(nextArrow);
 
     // Slide 1: Guided - Breakdown
     expect(screen.getByTestId('guided-slide-1')).toBeTruthy();
     expect(screen.getByText('Outline the section structure')).toBeTruthy();
 
-    // Test arrow navigation
+    // Test Left Arrow navigation (back to Slide 0)
     const prevArrow = screen.getByTestId('carousel-arrow-left');
     fireEvent.click(prevArrow);
     expect(screen.getByTestId('guided-slide-0')).toBeTruthy();
 
-    const nextArrow = screen.getByTestId('carousel-arrow-right');
+    // Go back to Slide 1
     fireEvent.click(nextArrow);
     expect(screen.getByTestId('guided-slide-1')).toBeTruthy();
 
-    // Test indicator navigation
+    // Test indicator dot navigation (jump to Slide 2)
     const indicator2 = screen.getByTestId('carousel-indicator-2');
     fireEvent.click(indicator2);
     expect(screen.getByTestId('guided-slide-2')).toBeTruthy();
     expect(screen.getByText('Which window should I watch?')).toBeTruthy();
 
-    const startTrackingMockBtn = screen.getByTestId('btn-start-tracking-mock');
-    fireEvent.click(startTrackingMockBtn);
+    // Navigate to Slide 3 using Right Arrow
+    fireEvent.click(nextArrow);
 
     // Slide 3: Guided - First progress
     expect(screen.getByTestId('guided-slide-3')).toBeTruthy();
     expect(screen.getByText("That's it. Plover's watching.")).toBeTruthy();
 
-    const startWorkingBtn = screen.getByTestId('btn-start-working');
-    fireEvent.click(startWorkingBtn);
+    // Proceed using the bottom Continue button
+    const continueBtn = screen.getByTestId('btn-carousel-continue');
+    fireEvent.click(continueBtn);
 
     // Step 9: Trial Close
     expect(await screen.findByTestId('step-trial-close')).toBeTruthy();
