@@ -775,14 +775,6 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
                   {activitySettings.planner_useRecentActivityContext ? 'On' : 'Off'}
                 </Chip>
               </div>
-
-              {activityMessage && (
-                <div style={{ marginTop: '8px' }}>
-                  <span style={{ fontSize: '13px', color: 'var(--plover-text-muted)' }}>
-                    {activityMessage}
-                  </span>
-                </div>
-              )}
             </div>
           </div>
         </div>
