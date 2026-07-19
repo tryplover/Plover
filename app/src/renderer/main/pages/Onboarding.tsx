@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import ploverLogo from '../../plover-logo.png';
+import ploverDemoVideo from '../../Plover-Demo.mp4';
 import './Onboarding.css';
 
 interface OnboardingProps {
@@ -17,10 +18,7 @@ const usecases = [
 
 export function Onboarding({ onComplete }: OnboardingProps) {
   const [step, setStep] = useState(0);
-  const [selectedUsecases, setSelectedUsecases] = useState<string[]>([
-    'Essays & papers',
-    'Digital projects',
-  ]);
+  const [selectedUsecases, setSelectedUsecases] = useState<string[]>([]);
   const [appName, setAppName] = useState('Finish the methods section of my thesis');
   const isWindows = window.api?.platform === 'win32';
   const [authState, setAuthState] = useState<
@@ -271,30 +269,15 @@ export function Onboarding({ onComplete }: OnboardingProps) {
             </div>
             <div className="plover-onboarding__split-right">
               <div className="plover-onboarding__right-glow" />
-              <div className="plover-onboarding__mockup-window plover-onboarding__mockup-window--video">
-                <div className="plover-onboarding__mockup-titlebar">
-                  <div className="plover-onboarding__mockup-dots">
-                    <span className="plover-onboarding__mockup-dot" />
-                    <span className="plover-onboarding__mockup-dot" />
-                    <span className="plover-onboarding__mockup-dot" />
-                  </div>
-                  <div className="plover-onboarding__mockup-brand">DEMO</div>
-                  <div className="plover-onboarding__mockup-right-dots">
-                    <span className="plover-onboarding__mockup-right-dot" />
-                    <span className="plover-onboarding__mockup-right-dot" />
-                    <span className="plover-onboarding__mockup-right-dot" />
-                  </div>
-                </div>
-                <div className="plover-onboarding__video-container">
-                  <video
-                    src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="plover-onboarding__video"
-                  />
-                </div>
+              <div className="plover-onboarding__video-frame">
+                <video
+                  src={ploverDemoVideo}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="plover-onboarding__video"
+                />
               </div>
             </div>
           </section>
