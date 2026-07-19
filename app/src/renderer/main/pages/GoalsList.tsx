@@ -230,44 +230,66 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
                     <div
                       style={{
                         display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        width: '100%',
+                        flexDirection: 'column',
+                        gap: '14px',
                         padding: '20px',
                       }}
                     >
                       <div
-                        onClick={() => toggleExpandGoal(goal.id)}
-                        style={{ cursor: 'pointer', flex: 1 }}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          width: '100%',
+                          gap: '16px',
+                        }}
                       >
-                        <h3
-                          style={{ fontSize: '16px', fontWeight: 650, color: 'var(--plover-text)' }}
+                        <div
+                          onClick={() => toggleExpandGoal(goal.id)}
+                          style={{ cursor: 'pointer', flex: 1, minWidth: 0 }}
                         >
-                          {goal.title}
-                        </h3>
-                        {goal.description && (
-                          <p
-                            style={{
-                              fontSize: '13px',
-                              color: 'var(--plover-text-muted)',
-                              marginTop: '4px',
-                            }}
+                          <h3
+                            style={{ fontSize: '16px', fontWeight: 650, color: 'var(--plover-text)' }}
                           >
-                            {goal.description}
-                          </p>
-                        )}
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                            {goal.title}
+                          </h3>
+                          {goal.description && (
+                            <p
+                              style={{
+                                fontSize: '13px',
+                                color: 'var(--plover-text-muted)',
+                                marginTop: '4px',
+                              }}
+                            >
+                              {goal.description}
+                            </p>
+                          )}
+                        </div>
                         <div
                           onClick={() => toggleExpandGoal(goal.id)}
                           style={{
                             display: 'flex',
-                            alignItems: 'center',
-                            gap: '16px',
+                            alignItems: 'baseline',
+                            gap: '10px',
                             cursor: 'pointer',
+                            flexShrink: 0,
                           }}
                         >
-                          <ProgressLine value={progressValue} />
+                          <span
+                            style={{
+                              fontFamily: 'var(--plover-font-serif)',
+                              fontSize: '28px',
+                              fontWeight: 400,
+                              color:
+                                progressValue > 0
+                                  ? 'var(--plover-text)'
+                                  : 'var(--plover-text-dim)',
+                              fontVariantNumeric: 'tabular-nums',
+                              lineHeight: 1,
+                            }}
+                          >
+                            {Math.round(progressValue * 100)}%
+                          </span>
                           <span
                             style={{
                               transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
@@ -297,6 +319,7 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
                             justifyContent: 'center',
                             borderRadius: '4px',
                             transition: 'all 0.2s',
+                            flexShrink: 0,
                           }}
                           onMouseEnter={(e) => {
                             e.currentTarget.style.color = 'var(--plover-error, #ff453a)';
@@ -311,6 +334,7 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
                           🗑️
                         </button>
                       </div>
+                      <ProgressLine value={progressValue} tone="mint" />
                     </div>
 
                     {isOpen && (
