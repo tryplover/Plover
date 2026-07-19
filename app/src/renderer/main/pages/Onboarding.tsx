@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import ploverLogo from '../../plover-logo.png';
 import './Onboarding.css';
 
@@ -31,17 +31,28 @@ function AuthPanel({ mode, onSuccess }: AuthPanelProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [status, setStatus] = useState<AuthPanelStatus>({ kind: 'idle' });
+  const googleRequestIdRef = useRef(0);
 
   const busy = status.kind === 'submitting' || status.kind === 'opened-browser';
 
   const handleGoogle = () => {
+    const requestId = ++googleRequestIdRef.current;
     setStatus({ kind: 'opened-browser' });
     window.api.auth
       .signIn()
-      .then(onSuccess)
+      .then(() => {
+        if (googleRequestIdRef.current !== requestId) return;
+        onSuccess();
+      })
       .catch((err: unknown) => {
+        if (googleRequestIdRef.current !== requestId) return;
         setStatus({ kind: 'error', message: err instanceof Error ? err.message : String(err) });
       });
+  };
+
+  const handleCancelGoogle = () => {
+    googleRequestIdRef.current += 1;
+    setStatus({ kind: 'idle' });
   };
 
   const handlePasswordSubmit = (event: React.FormEvent) => {
@@ -83,6 +94,17 @@ function AuthPanel({ mode, onSuccess }: AuthPanelProps) {
       >
         {status.kind === 'opened-browser' ? 'Waiting for browser…' : 'Continue with Google'}
       </button>
+
+      {status.kind === 'opened-browser' && (
+        <button
+          type="button"
+          className="plover-onboarding__btn-cancel"
+          onClick={handleCancelGoogle}
+          data-testid="btn-auth-google-cancel"
+        >
+          Cancel sign-in
+        </button>
+      )}
 
       <div className="plover-onboarding__auth-divider">
         <span>or</span>
@@ -145,6 +167,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   const isWindows = window.api?.platform === 'win32';
   const [showSignInPanel, setShowSignInPanel] = useState(false);
   const [finishError, setFinishError] = useState<string | null>(null);
+  const [trialCloseMode, setTrialCloseMode] = useState<'signup' | 'signin'>('signup');
 
   const handleSignInSuccess = () => {
     localStorage.setItem('plover_onboarding_completed', 'true');
@@ -985,7 +1008,28 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                     marginRight: 'auto',
                   }}
                 >
-                  <AuthPanel mode="signup" onSuccess={() => void completeOnboardingWithGoal()} />
+                  <AuthPanel
+                    mode={trialCloseMode}
+                    onSuccess={() => void completeOnboardingWithGoal()}
+                  />
+                  <button
+                    type="button"
+                    className="plover-onboarding__btn-secondary"
+                    onClick={() =>
+                      setTrialCloseMode((prev) => (prev === 'signup' ? 'signin' : 'signup'))
+                    }
+                    style={{
+                      display: 'block',
+                      marginTop: '12px',
+                      textAlign: 'center',
+                      width: '100%',
+                    }}
+                    data-testid="btn-trial-close-toggle-mode"
+                  >
+                    {trialCloseMode === 'signup'
+                      ? 'Already have an account? Sign in'
+                      : 'Need an account? Sign up'}
+                  </button>
                 </div>
                 {finishError && (
                   <p
