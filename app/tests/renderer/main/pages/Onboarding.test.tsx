@@ -11,6 +11,7 @@ describe('Onboarding', () => {
 
   const mockSignupStart = vi.fn().mockResolvedValue(undefined);
   const mockSignupComplete = vi.fn().mockResolvedValue(undefined);
+  const mockAuthSignIn = vi.fn().mockResolvedValue(undefined);
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -22,6 +23,9 @@ describe('Onboarding', () => {
         signup: {
           start: mockSignupStart,
           complete: mockSignupComplete,
+        },
+        auth: {
+          signIn: mockAuthSignIn,
         },
       },
       writable: true,
@@ -37,8 +41,7 @@ describe('Onboarding', () => {
     fireEvent.click(signInBtn);
 
     await waitFor(() => {
-      expect(mockSignupStart).toHaveBeenCalled();
-      expect(mockSignupComplete).toHaveBeenCalled();
+      expect(mockAuthSignIn).toHaveBeenCalled();
       expect(mockOnComplete).toHaveBeenCalled();
     });
   });
@@ -85,30 +88,40 @@ describe('Onboarding', () => {
     const letsGoBtn = screen.getByTestId('btn-lets-go');
     fireEvent.click(letsGoBtn);
 
-    // Step 5: Guided - Name
-    expect(await screen.findByTestId('step-guided-name')).toBeTruthy();
-    expect(screen.getByText('What are you working on?')).toBeTruthy();
+    // Step 5: Guided Task Walkthrough Carousel
+    expect(await screen.findByTestId('step-guided-carousel')).toBeTruthy();
 
+    // Slide 0: What are you working on?
+    expect(screen.getByTestId('guided-slide-0')).toBeTruthy();
+    expect(screen.getByText('What are you working on?')).toBeTruthy();
     const breakStepsBtn = screen.getByTestId('btn-break-steps');
     fireEvent.click(breakStepsBtn);
 
-    // Step 6: Guided - Breakdown
-    expect(await screen.findByTestId('step-guided-breakdown')).toBeTruthy();
+    // Slide 1: Guided - Breakdown
+    expect(screen.getByTestId('guided-slide-1')).toBeTruthy();
     expect(screen.getByText('Outline the section structure')).toBeTruthy();
 
-    const looksRightBtn = screen.getByTestId('btn-looks-right');
-    fireEvent.click(looksRightBtn);
+    // Test arrow navigation
+    const prevArrow = screen.getByTestId('carousel-arrow-left');
+    fireEvent.click(prevArrow);
+    expect(screen.getByTestId('guided-slide-0')).toBeTruthy();
 
-    // Step 7: Guided - Connect
-    expect(await screen.findByTestId('step-guided-connect')).toBeTruthy();
+    const nextArrow = screen.getByTestId('carousel-arrow-right');
+    fireEvent.click(nextArrow);
+    expect(screen.getByTestId('guided-slide-1')).toBeTruthy();
+
+    // Test indicator navigation
+    const indicator2 = screen.getByTestId('carousel-indicator-2');
+    fireEvent.click(indicator2);
+    expect(screen.getByTestId('guided-slide-2')).toBeTruthy();
     expect(screen.getByText('Which window should I watch?')).toBeTruthy();
 
     const startTrackingMockBtn = screen.getByTestId('btn-start-tracking-mock');
     fireEvent.click(startTrackingMockBtn);
 
-    // Step 8: Guided - First progress
-    expect(await screen.findByTestId('step-guided-progress')).toBeTruthy();
-    expect(screen.getByText("That's it. Plover's watching now.")).toBeTruthy();
+    // Slide 3: Guided - First progress
+    expect(screen.getByTestId('guided-slide-3')).toBeTruthy();
+    expect(screen.getByText("That's it. Plover's watching.")).toBeTruthy();
 
     const startWorkingBtn = screen.getByTestId('btn-start-working');
     fireEvent.click(startWorkingBtn);
@@ -121,8 +134,7 @@ describe('Onboarding', () => {
     fireEvent.click(finishOnboardingBtn);
 
     await waitFor(() => {
-      expect(mockSignupStart).toHaveBeenCalled();
-      expect(mockSignupComplete).toHaveBeenCalled();
+      expect(mockAuthSignIn).toHaveBeenCalled();
       expect(mockSaveGoalAndTasks).toHaveBeenCalled();
       expect(mockOnComplete).toHaveBeenCalled();
     });

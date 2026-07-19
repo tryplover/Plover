@@ -818,6 +818,70 @@
   display: block;
 }
 
+.plover-onboarding__carousel-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  max-width: 580px;
+  position: relative;
+}
+
+.plover-onboarding__carousel-arrow {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(24, 25, 26, 0.08);
+  background-color: #fff;
+  color: #18191a;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all var(--plover-duration-normal);
+  user-select: none;
+  flex-shrink: 0;
+  outline: none;
+}
+
+.plover-onboarding__carousel-arrow:hover:not(:disabled) {
+  background-color: #f5f5f6;
+  border-color: rgba(24, 25, 26, 0.15);
+  transform: scale(1.05);
+}
+
+.plover-onboarding__carousel-arrow:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+.plover-onboarding__carousel-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.plover-onboarding__carousel-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: rgba(24, 25, 26, 0.1);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  outline: none;
+  transition: background-color var(--plover-duration-normal);
+}
+
+.plover-onboarding__carousel-dot:hover {
+  background-color: rgba(24, 25, 26, 0.25);
+}
+
+.plover-onboarding__carousel-dot--active {
+  background-color: rgba(24, 25, 26, 0.45);
+}
+
 /* Checked bullets for lists in O9 */
 .plover-onboarding__bullets {
   display: flex;
