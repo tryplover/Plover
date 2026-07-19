@@ -532,7 +532,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                       marginBottom: '32px',
                     }}
                   >
-                    • Type whatever you're actually working on right now.
+                    • Name the main goal you want to accomplish.
                   </span>
                 )}
                 {guidedSlideIndex === 1 && (
@@ -544,7 +544,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                       marginBottom: '32px',
                     }}
                   >
-                    • Plover broke it down, but these are your steps. Edit them however you like.
+                    • Plover automatically breaks down your goal into clear, trackable steps.
                   </span>
                 )}
                 {guidedSlideIndex === 2 && (
@@ -556,7 +556,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                       marginBottom: '32px',
                     }}
                   >
-                    • Pick the windows Plover should watch.
+                    • Connect the documents and applications you want Plover to watch.
                   </span>
                 )}
                 {guidedSlideIndex === 3 && (
@@ -568,7 +568,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                       marginBottom: '32px',
                     }}
                   >
-                    ✓ You're all set
+                    ✓ You're all set — Plover automatically fills the progress bar as you work.
                   </span>
                 )}
 
