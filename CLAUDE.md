@@ -189,9 +189,12 @@ These are not style preferences. The core architecture doc calls them
 ## CI / dev tooling
 
 - **CI** ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs on every
-  PR + push to `main`: install → typecheck → lint → test+coverage → upload
-  coverage artifact. Ubuntu-only for now (add macOS/Windows when packaging
-  matters).
+  PR + push to `main`: install → typecheck → lint → test. Coverage
+  instrumentation + the coverage artifact upload only run on the `pull_request`
+  trigger (that's the only place the 60% gate can still block a merge); the
+  `push: main` run does a plain `pnpm --filter ./app test` to avoid paying for
+  coverage overhead on a run with no PR left to gate. Ubuntu-only for now (add
+  macOS/Windows when packaging matters).
 - **Pre-commit** runs `lint-staged` via husky → eslint --fix + prettier --write
   on staged `app/**/*.{ts,tsx,json,md,yml,yaml,css,html}`.
 - **Coverage gate:** soft 60% (lines/branches/functions/statements) **only on**
