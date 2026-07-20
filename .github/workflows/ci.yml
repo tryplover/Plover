@@ -41,10 +41,15 @@ jobs:
         run: pnpm --filter ./app lint
 
       - name: Test (with coverage)
+        if: github.event_name == 'pull_request'
         run: pnpm --filter ./app run test:coverage
 
+      - name: Test
+        if: github.event_name != 'pull_request'
+        run: pnpm --filter ./app test
+
       - name: Upload coverage
-        if: always()
+        if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v7
         with:
           name: coverage
