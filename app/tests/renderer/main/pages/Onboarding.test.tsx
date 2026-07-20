@@ -109,10 +109,13 @@ describe('Onboarding', () => {
     fireEvent.click(await screen.findByTestId('btn-promise-continue'));
     fireEvent.click(await screen.findByTestId('btn-grant-settings'));
     fireEvent.click(await screen.findByTestId('btn-lets-go'));
-    fireEvent.click(await screen.findByTestId('btn-break-steps'));
-    fireEvent.click(await screen.findByTestId('btn-looks-right'));
-    fireEvent.click(await screen.findByTestId('btn-start-tracking-mock'));
-    fireEvent.click(await screen.findByTestId('btn-start-working'));
+
+    expect(await screen.findByTestId('step-guided-carousel')).toBeTruthy();
+    const nextArrow = screen.getByTestId('carousel-arrow-right');
+    fireEvent.click(nextArrow);
+    fireEvent.click(nextArrow);
+    fireEvent.click(nextArrow);
+    fireEvent.click(screen.getByTestId('btn-carousel-continue'));
 
     expect(await screen.findByTestId('step-trial-close')).toBeTruthy();
     expect(screen.getByTestId('btn-auth-submit').textContent).toBe('Create account');
@@ -177,33 +180,46 @@ describe('Onboarding', () => {
     const letsGoBtn = screen.getByTestId('btn-lets-go');
     fireEvent.click(letsGoBtn);
 
-    // Step 5: Guided - Name
-    expect(await screen.findByTestId('step-guided-name')).toBeTruthy();
+    // Step 5: Guided Task Walkthrough Carousel
+    expect(await screen.findByTestId('step-guided-carousel')).toBeTruthy();
+
+    // Slide 0: What are you working on?
+    expect(screen.getByTestId('guided-slide-0')).toBeTruthy();
     expect(screen.getByText('What are you working on?')).toBeTruthy();
 
-    const breakStepsBtn = screen.getByTestId('btn-break-steps');
-    fireEvent.click(breakStepsBtn);
+    // Navigate to Slide 1 using Right Arrow
+    const nextArrow = screen.getByTestId('carousel-arrow-right');
+    fireEvent.click(nextArrow);
 
-    // Step 6: Guided - Breakdown
-    expect(await screen.findByTestId('step-guided-breakdown')).toBeTruthy();
+    // Slide 1: Guided - Breakdown
+    expect(screen.getByTestId('guided-slide-1')).toBeTruthy();
     expect(screen.getByText('Outline the section structure')).toBeTruthy();
 
-    const looksRightBtn = screen.getByTestId('btn-looks-right');
-    fireEvent.click(looksRightBtn);
+    // Test Left Arrow navigation (back to Slide 0)
+    const prevArrow = screen.getByTestId('carousel-arrow-left');
+    fireEvent.click(prevArrow);
+    expect(screen.getByTestId('guided-slide-0')).toBeTruthy();
 
-    // Step 7: Guided - Connect
-    expect(await screen.findByTestId('step-guided-connect')).toBeTruthy();
+    // Go back to Slide 1
+    fireEvent.click(nextArrow);
+    expect(screen.getByTestId('guided-slide-1')).toBeTruthy();
+
+    // Test indicator dot navigation (jump to Slide 2)
+    const indicator2 = screen.getByTestId('carousel-indicator-2');
+    fireEvent.click(indicator2);
+    expect(screen.getByTestId('guided-slide-2')).toBeTruthy();
     expect(screen.getByText('Which window should I watch?')).toBeTruthy();
 
-    const startTrackingMockBtn = screen.getByTestId('btn-start-tracking-mock');
-    fireEvent.click(startTrackingMockBtn);
+    // Navigate to Slide 3 using Right Arrow
+    fireEvent.click(nextArrow);
 
-    // Step 8: Guided - First progress
-    expect(await screen.findByTestId('step-guided-progress')).toBeTruthy();
-    expect(screen.getByText("That's it. Plover's watching now.")).toBeTruthy();
+    // Slide 3: Guided - First progress
+    expect(screen.getByTestId('guided-slide-3')).toBeTruthy();
+    expect(screen.getByText("That's it. Plover's watching.")).toBeTruthy();
 
-    const startWorkingBtn = screen.getByTestId('btn-start-working');
-    fireEvent.click(startWorkingBtn);
+    // Proceed using the bottom Continue button
+    const continueBtn = screen.getByTestId('btn-carousel-continue');
+    fireEvent.click(continueBtn);
 
     // Step 9: Trial Close
     expect(await screen.findByTestId('step-trial-close')).toBeTruthy();

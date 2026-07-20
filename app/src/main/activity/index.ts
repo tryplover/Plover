@@ -14,8 +14,8 @@ let retentionIntervalId: NodeJS.Timeout | null = null;
 export function initActivityMonitoring(): void {
   console.log('[Activity] Initializing active monitoring subsystems...');
 
-  // Initialize and start Window Tracker (ticks every 10 seconds, macOS only)
-  if (process.platform === 'darwin') {
+  // Initialize and start Window Tracker (ticks every 10 seconds, macOS + Windows)
+  if (process.platform === 'darwin' || process.platform === 'win32') {
     if (!windowTracker) {
       console.log('[Activity] Initializing active window tracker...');
       windowTracker = new WindowTracker(activityRepo, settingsRepo);
@@ -24,7 +24,7 @@ export function initActivityMonitoring(): void {
       console.log('[Activity] Window tracker already initialized.');
     }
   } else {
-    console.log('[Activity] Window tracking is only supported on macOS (darwin). Skipping.');
+    console.log('[Activity] Window tracking is only supported on macOS and Windows. Skipping.');
   }
 
   // Initialize and start Google Docs Activity Subscriber
@@ -36,7 +36,7 @@ export function initActivityMonitoring(): void {
     console.log('[Activity] Google Docs subscriber already initialized.');
   }
 
-  if (process.platform === 'darwin' && !screenCapturer) {
+  if ((process.platform === 'darwin' || process.platform === 'win32') && !screenCapturer) {
     screenCapturer = new ScreenCapturer({
       activityRepo,
       settingsRepo,
@@ -47,13 +47,18 @@ export function initActivityMonitoring(): void {
     screenCapturer.start();
   }
 
-  void runRetention({ activityRepo, settingsRepo, now: new Date() })
-    .catch((err) => console.error('[Activity] retention failed:', err));
+  void runRetention({ activityRepo, settingsRepo, now: new Date() }).catch((err) =>
+    console.error('[Activity] retention failed:', err),
+  );
   if (!retentionIntervalId) {
-    retentionIntervalId = setInterval(() => {
-      void runRetention({ activityRepo, settingsRepo, now: new Date() })
-        .catch((err) => console.error('[Activity] retention failed:', err));
-    }, 6 * 60 * 60 * 1000);
+    retentionIntervalId = setInterval(
+      () => {
+        void runRetention({ activityRepo, settingsRepo, now: new Date() }).catch((err) =>
+          console.error('[Activity] retention failed:', err),
+        );
+      },
+      6 * 60 * 60 * 1000,
+    );
   }
 }
 

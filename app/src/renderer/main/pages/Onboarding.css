@@ -209,7 +209,7 @@
   align-items: center;
   justify-content: center;
   position: relative;
-  padding: 48px;
+  padding: 32px;
 }
 
 .plover-onboarding__right-glow {
@@ -340,6 +340,9 @@
   justify-content: center;
   width: 18px;
   height: 18px;
+  min-width: 18px;
+  min-height: 18px;
+  flex-shrink: 0;
   border-radius: 50%;
   background-color: #2e7d32;
   color: white;
@@ -796,28 +799,87 @@
 }
 
 /* Carousel dots at the bottom of O0 split layout */
-.plover-onboarding__mockup-window--video {
+.plover-onboarding__video-frame {
   width: 100%;
-  max-width: 520px;
-  aspect-ratio: 16 / 10;
-  display: flex;
-  flex-direction: column;
-}
-
-.plover-onboarding__video-container {
-  width: 100%;
-  flex: 1;
+  max-width: 720px;
+  border-radius: var(--plover-radius-md);
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.05),
+    0 1px 2px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(24, 25, 26, 0.06);
   overflow: hidden;
-  background-color: #000;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  background-color: #fff;
 }
 
 .plover-onboarding__video {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  display: block;
+}
+
+.plover-onboarding__carousel-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  max-width: 580px;
+  position: relative;
+}
+
+.plover-onboarding__carousel-arrow {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(24, 25, 26, 0.08);
+  background-color: #fff;
+  color: #18191a;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all var(--plover-duration-normal);
+  user-select: none;
+  flex-shrink: 0;
+  outline: none;
+}
+
+.plover-onboarding__carousel-arrow:hover:not(:disabled) {
+  background-color: #f5f5f6;
+  border-color: rgba(24, 25, 26, 0.15);
+  transform: scale(1.05);
+}
+
+.plover-onboarding__carousel-arrow:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+.plover-onboarding__carousel-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.plover-onboarding__carousel-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: rgba(24, 25, 26, 0.1);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  outline: none;
+  transition: background-color var(--plover-duration-normal);
+}
+
+.plover-onboarding__carousel-dot:hover {
+  background-color: rgba(24, 25, 26, 0.25);
+}
+
+.plover-onboarding__carousel-dot--active {
+  background-color: rgba(24, 25, 26, 0.45);
 }
 
 /* Checked bullets for lists in O9 */

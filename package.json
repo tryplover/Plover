@@ -30,14 +30,5 @@
     "app/**/*.{json,md,yml,yaml,css,html}": [
       "pnpm --filter ./app exec prettier --write"
     ]
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "better-sqlite3",
-      "electron",
-      "esbuild",
-      "get-windows",
-      "keytar"
-    ]
   }
 }

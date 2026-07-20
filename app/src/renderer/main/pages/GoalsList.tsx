@@ -249,7 +249,11 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
                           style={{ cursor: 'pointer', flex: 1, minWidth: 0 }}
                         >
                           <h3
-                            style={{ fontSize: '16px', fontWeight: 650, color: 'var(--plover-text)' }}
+                            style={{
+                              fontSize: '16px',
+                              fontWeight: 650,
+                              color: 'var(--plover-text)',
+                            }}
                           >
                             {goal.title}
                           </h3>
@@ -281,9 +285,7 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
                               fontSize: '28px',
                               fontWeight: 400,
                               color:
-                                progressValue > 0
-                                  ? 'var(--plover-text)'
-                                  : 'var(--plover-text-dim)',
+                                progressValue > 0 ? 'var(--plover-text)' : 'var(--plover-text-dim)',
                               fontVariantNumeric: 'tabular-nums',
                               lineHeight: 1,
                             }}
