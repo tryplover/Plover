@@ -10,6 +10,8 @@ const { mockSupabaseAuth } = vi.hoisted(() => {
   return {
     mockSupabaseAuth: {
       signIn: vi.fn(),
+      signInWithPassword: vi.fn(),
+      signUp: vi.fn(),
       signOut: vi.fn(),
       restoreSession: vi.fn(),
       startAutoRefresh: vi.fn(),
@@ -285,6 +287,76 @@ describe('IPC Handlers', () => {
       mockSupabaseAuth.getCurrentUser.mockResolvedValue(null);
 
       await expect(getHandler('auth:signIn')({})).rejects.toThrow();
+    });
+
+    it('auth:signInWithPassword signs in, persists the user, and returns signed-in status', async () => {
+      mockSupabaseAuth.signInWithPassword.mockResolvedValue(undefined);
+      mockSupabaseAuth.getCurrentUser.mockResolvedValue({
+        id: 'user-1',
+        email: 'jordan@example.com',
+      });
+
+      const result = await getHandler('auth:signInWithPassword')(
+        {},
+        'jordan@example.com',
+        'hunter2!',
+      );
+
+      expect(mockSupabaseAuth.signInWithPassword).toHaveBeenCalledWith(
+        'jordan@example.com',
+        'hunter2!',
+      );
+      expect(result).toEqual({ signedIn: true, email: 'jordan@example.com' });
+      expect(settingsRepo.getAll().supabaseUserId).toBe('user-1');
+      expect(settingsRepo.getAll().supabaseUserEmail).toBe('jordan@example.com');
+    });
+
+    it('auth:signInWithPassword throws when no user is returned', async () => {
+      mockSupabaseAuth.signInWithPassword.mockResolvedValue(undefined);
+      mockSupabaseAuth.getCurrentUser.mockResolvedValue(null);
+
+      await expect(
+        getHandler('auth:signInWithPassword')({}, 'jordan@example.com', 'hunter2!'),
+      ).rejects.toThrow();
+    });
+
+    it('auth:signUp signs up, persists the user, and returns signed-in status when no confirmation is needed', async () => {
+      mockSupabaseAuth.signUp.mockResolvedValue({ needsEmailConfirmation: false });
+      mockSupabaseAuth.getCurrentUser.mockResolvedValue({
+        id: 'user-3',
+        email: 'sam@example.com',
+      });
+
+      const result = await getHandler('auth:signUp')({}, 'sam@example.com', 'hunter2!');
+
+      expect(result).toEqual({
+        signedIn: true,
+        email: 'sam@example.com',
+        needsEmailConfirmation: false,
+      });
+      expect(settingsRepo.getAll().supabaseUserId).toBe('user-3');
+      expect(settingsRepo.getAll().supabaseUserEmail).toBe('sam@example.com');
+    });
+
+    it('auth:signUp returns needsEmailConfirmation without persisting a user when confirmation is required', async () => {
+      mockSupabaseAuth.signUp.mockResolvedValue({ needsEmailConfirmation: true });
+
+      const result = await getHandler('auth:signUp')({}, 'sam@example.com', 'hunter2!');
+
+      expect(result).toEqual({
+        signedIn: false,
+        email: 'sam@example.com',
+        needsEmailConfirmation: true,
+      });
+      expect(mockSupabaseAuth.getCurrentUser).not.toHaveBeenCalled();
+      expect(settingsRepo.getAll().supabaseUserId).toBeNull();
+    });
+
+    it('auth:signUp throws when no user is returned and confirmation was not required', async () => {
+      mockSupabaseAuth.signUp.mockResolvedValue({ needsEmailConfirmation: false });
+      mockSupabaseAuth.getCurrentUser.mockResolvedValue(null);
+
+      await expect(getHandler('auth:signUp')({}, 'sam@example.com', 'hunter2!')).rejects.toThrow();
     });
 
     it('auth:signOut clears the persisted user and returns signed-out status', async () => {
