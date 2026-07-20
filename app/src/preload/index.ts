@@ -164,6 +164,14 @@ export interface PloverApi {
   // Plover Account (Supabase) API
   auth: {
     signIn: () => Promise<{ signedIn: boolean; email: string | null }>;
+    signInWithPassword: (
+      email: string,
+      password: string,
+    ) => Promise<{ signedIn: boolean; email: string | null }>;
+    signUp: (
+      email: string,
+      password: string,
+    ) => Promise<{ signedIn: boolean; email: string | null; needsEmailConfirmation: boolean }>;
     signOut: () => Promise<{ signedIn: boolean; email: string | null }>;
     getStatus: () => Promise<{ signedIn: boolean; email: string | null }>;
   };
@@ -224,6 +232,9 @@ const api: PloverApi = {
   // Plover Account (Supabase)
   auth: {
     signIn: () => ipcRenderer.invoke('auth:signIn'),
+    signInWithPassword: (email: string, password: string) =>
+      ipcRenderer.invoke('auth:signInWithPassword', email, password),
+    signUp: (email: string, password: string) => ipcRenderer.invoke('auth:signUp', email, password),
     signOut: () => ipcRenderer.invoke('auth:signOut'),
     getStatus: () => ipcRenderer.invoke('auth:getStatus'),
   },

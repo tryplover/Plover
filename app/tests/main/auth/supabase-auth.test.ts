@@ -12,6 +12,8 @@ const { mockShell, mockSupabaseAuth, mockGetSupabaseClient } = vi.hoisted(() => 
       getSession: vi.fn(),
       getUser: vi.fn(),
       startAutoRefresh: vi.fn(),
+      signUp: vi.fn(),
+      signInWithPassword: vi.fn(),
     },
     mockGetSupabaseClient: vi.fn(),
   };
@@ -29,7 +31,9 @@ import {
   getCurrentUser,
   restoreSession,
   signIn,
+  signInWithPassword,
   signOut,
+  signUp,
   startAutoRefresh,
   SupabaseAuthenticationError,
 } from '../../../src/main/auth/supabase-auth';
@@ -160,6 +164,67 @@ describe('supabase-auth', () => {
       });
 
       await expect(getCurrentUser()).resolves.toBeNull();
+    });
+  });
+
+  describe('signUp', () => {
+    it('resolves with needsEmailConfirmation: false when a session is returned immediately', async () => {
+      mockSupabaseAuth.signUp.mockResolvedValue({
+        data: { session: { access_token: 'x' } },
+        error: null,
+      });
+
+      await expect(signUp('jordan@example.com', 'hunter2!')).resolves.toEqual({
+        needsEmailConfirmation: false,
+      });
+      expect(mockSupabaseAuth.signUp).toHaveBeenCalledWith({
+        email: 'jordan@example.com',
+        password: 'hunter2!',
+      });
+    });
+
+    it('resolves with needsEmailConfirmation: true when no session is returned', async () => {
+      mockSupabaseAuth.signUp.mockResolvedValue({ data: { session: null }, error: null });
+
+      await expect(signUp('jordan@example.com', 'hunter2!')).resolves.toEqual({
+        needsEmailConfirmation: true,
+      });
+    });
+
+    it('rejects with SupabaseAuthenticationError on a Supabase error', async () => {
+      mockSupabaseAuth.signUp.mockResolvedValue({
+        data: { session: null },
+        error: { message: 'User already registered' },
+      });
+
+      await expect(signUp('jordan@example.com', 'hunter2!')).rejects.toThrow(
+        SupabaseAuthenticationError,
+      );
+      await expect(signUp('jordan@example.com', 'hunter2!')).rejects.toThrow(
+        'User already registered',
+      );
+    });
+  });
+
+  describe('signInWithPassword', () => {
+    it('resolves when Supabase accepts the credentials', async () => {
+      mockSupabaseAuth.signInWithPassword.mockResolvedValue({ error: null });
+
+      await expect(signInWithPassword('jordan@example.com', 'hunter2!')).resolves.toBeUndefined();
+      expect(mockSupabaseAuth.signInWithPassword).toHaveBeenCalledWith({
+        email: 'jordan@example.com',
+        password: 'hunter2!',
+      });
+    });
+
+    it('rejects with SupabaseAuthenticationError on invalid credentials', async () => {
+      mockSupabaseAuth.signInWithPassword.mockResolvedValue({
+        error: { message: 'Invalid login credentials' },
+      });
+
+      await expect(signInWithPassword('jordan@example.com', 'wrong')).rejects.toThrow(
+        SupabaseAuthenticationError,
+      );
     });
   });
 

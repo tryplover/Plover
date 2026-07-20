@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import ploverLogo from '../../plover-logo.png';
 import ploverDemoVideo from '../../Plover-Demo.mp4';
 import './Onboarding.css';
@@ -16,32 +16,161 @@ const usecases = [
   { label: 'Something else', icon: '✦' },
 ];
 
+type AuthPanelStatus =
+  | { kind: 'idle' }
+  | { kind: 'submitting' }
+  | { kind: 'opened-browser' }
+  | { kind: 'check-email' }
+  | { kind: 'error'; message: string };
+
+interface AuthPanelProps {
+  mode: 'signin' | 'signup';
+  onSuccess: () => void;
+}
+
+function AuthPanel({ mode, onSuccess }: AuthPanelProps) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [status, setStatus] = useState<AuthPanelStatus>({ kind: 'idle' });
+  const googleRequestIdRef = useRef(0);
+
+  const busy = status.kind === 'submitting' || status.kind === 'opened-browser';
+
+  const handleGoogle = () => {
+    const requestId = ++googleRequestIdRef.current;
+    setStatus({ kind: 'opened-browser' });
+    window.api.auth
+      .signIn()
+      .then(() => {
+        if (googleRequestIdRef.current !== requestId) return;
+        onSuccess();
+      })
+      .catch((err: unknown) => {
+        if (googleRequestIdRef.current !== requestId) return;
+        setStatus({ kind: 'error', message: err instanceof Error ? err.message : String(err) });
+      });
+  };
+
+  const handleCancelGoogle = () => {
+    googleRequestIdRef.current += 1;
+    setStatus({ kind: 'idle' });
+  };
+
+  const handlePasswordSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    setStatus({ kind: 'submitting' });
+    const request =
+      mode === 'signup'
+        ? window.api.auth.signUp(email, password)
+        : window.api.auth.signInWithPassword(email, password);
+    request
+      .then((result) => {
+        if ('needsEmailConfirmation' in result && result.needsEmailConfirmation) {
+          setStatus({ kind: 'check-email' });
+          return;
+        }
+        onSuccess();
+      })
+      .catch((err: unknown) => {
+        setStatus({ kind: 'error', message: err instanceof Error ? err.message : String(err) });
+      });
+  };
+
+  if (status.kind === 'check-email') {
+    return (
+      <p className="plover-onboarding__auth-status-msg" data-testid="auth-check-email">
+        Check your email to confirm your account, then sign in.
+      </p>
+    );
+  }
+
+  return (
+    <div className="plover-onboarding__auth-panel">
+      <button
+        type="button"
+        className="plover-onboarding__btn-google"
+        onClick={handleGoogle}
+        disabled={busy}
+        data-testid="btn-auth-google"
+      >
+        {status.kind === 'opened-browser' ? 'Waiting for browser…' : 'Continue with Google'}
+      </button>
+
+      {status.kind === 'opened-browser' && (
+        <button
+          type="button"
+          className="plover-onboarding__btn-cancel"
+          onClick={handleCancelGoogle}
+          data-testid="btn-auth-google-cancel"
+        >
+          Cancel sign-in
+        </button>
+      )}
+
+      <div className="plover-onboarding__auth-divider">
+        <span>or</span>
+      </div>
+
+      <form onSubmit={handlePasswordSubmit} className="plover-onboarding__auth-form">
+        <input
+          type="email"
+          required
+          placeholder="Email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          disabled={busy}
+          className="plover-onboarding__auth-input"
+          data-testid="input-auth-email"
+        />
+        <input
+          type="password"
+          required
+          minLength={6}
+          placeholder="Password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          disabled={busy}
+          className="plover-onboarding__auth-input"
+          data-testid="input-auth-password"
+        />
+        <button
+          type="submit"
+          className="plover-onboarding__auth-submit"
+          disabled={busy}
+          data-testid="btn-auth-submit"
+        >
+          {status.kind === 'submitting'
+            ? mode === 'signup'
+              ? 'Creating account…'
+              : 'Signing in…'
+            : mode === 'signup'
+              ? 'Create account'
+              : 'Sign in'}
+        </button>
+      </form>
+
+      {status.kind === 'error' && (
+        <p className="plover-onboarding__auth-status-msg plover-onboarding__auth-status-msg--error">
+          {status.message}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function Onboarding({ onComplete }: OnboardingProps) {
   const [step, setStep] = useState(0);
   const [selectedUsecases, setSelectedUsecases] = useState<string[]>([]);
   const appName = 'Finish the methods section of my thesis';
   const isWindows = window.api?.platform === 'win32';
-  const [authState, setAuthState] = useState<
-    { kind: 'idle' } | { kind: 'opened-browser' } | { kind: 'error'; message: string }
-  >({ kind: 'idle' });
+  const [showSignInPanel, setShowSignInPanel] = useState(false);
+  const [finishError, setFinishError] = useState<string | null>(null);
+  const [trialCloseMode, setTrialCloseMode] = useState<'signup' | 'signin'>('signup');
   const [guidedSlideIndex, setGuidedSlideIndex] = useState(0);
 
-  const handleCancelSignIn = () => {
-    setAuthState({ kind: 'idle' });
-  };
-
-  const handleSignIn = () => {
-    setAuthState({ kind: 'opened-browser' });
-    window.api.auth
-      .signIn()
-      .then(() => {
-        localStorage.setItem('plover_onboarding_completed', 'true');
-        onComplete();
-      })
-      .catch((err: unknown) => {
-        const message = err instanceof Error ? err.message : String(err);
-        setAuthState({ kind: 'error', message });
-      });
+  const handleSignInSuccess = () => {
+    localStorage.setItem('plover_onboarding_completed', 'true');
+    onComplete();
   };
 
   const handleToggleUsecase = (label: string) => {
@@ -70,10 +199,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
     });
   };
 
-  const handleFinish = async () => {
+  const completeOnboardingWithGoal = async () => {
     try {
-      setAuthState({ kind: 'opened-browser' });
-      await window.api.auth.signIn();
+      setFinishError(null);
 
       // Save initial goal and tasks to database so user has immediate dashboard content
       const now = new Date();
@@ -129,8 +257,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
       onComplete();
     } catch (err) {
       console.error('Failed to save initial goal during onboarding:', err);
-      const message = err instanceof Error ? err.message : String(err);
-      setAuthState({ kind: 'error', message });
+      setFinishError(err instanceof Error ? err.message : String(err));
     }
   };
 
@@ -233,39 +360,18 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                   Get Started →
                 </button>
                 <div style={{ marginTop: '20px' }}>
-                  <button
-                    className="plover-onboarding__btn-secondary"
-                    onClick={handleSignIn}
-                    disabled={authState.kind === 'opened-browser'}
-                  >
-                    {authState.kind === 'error'
-                      ? 'Sign-in failed. Try again?'
-                      : authState.kind === 'opened-browser'
-                        ? 'Waiting for browser…'
-                        : 'Already have an account? Sign in'}
-                  </button>
-                </div>
-                {authState.kind === 'opened-browser' && (
-                  <div style={{ marginTop: '12px' }}>
+                  {showSignInPanel ? (
+                    <AuthPanel mode="signin" onSuccess={handleSignInSuccess} />
+                  ) : (
                     <button
                       type="button"
-                      className="plover-onboarding__btn-cancel"
-                      onClick={handleCancelSignIn}
+                      className="plover-onboarding__btn-secondary"
+                      onClick={() => setShowSignInPanel(true)}
                     >
-                      Cancel sign-in
+                      Already have an account? Sign in
                     </button>
-                  </div>
-                )}
-                {authState.kind === 'opened-browser' && (
-                  <p className="plover-onboarding__auth-status-msg">
-                    Complete sign-in in your browser. This window will close automatically.
-                  </p>
-                )}
-                {authState.kind === 'error' && (
-                  <p className="plover-onboarding__auth-status-msg plover-onboarding__auth-status-msg--error">
-                    Sign-in failed: {authState.message}
-                  </p>
-                )}
+                  )}
+                </div>
               </div>
 
               <p className="plover-onboarding__disclaimer">
@@ -950,44 +1056,44 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                   <button className="plover-onboarding__btn-back" onClick={handleBack}>
                     Back
                   </button>
+                </div>
+                <div
+                  style={{
+                    marginTop: '20px',
+                    maxWidth: '360px',
+                    marginLeft: 'auto',
+                    marginRight: 'auto',
+                  }}
+                >
+                  <AuthPanel
+                    mode={trialCloseMode}
+                    onSuccess={() => void completeOnboardingWithGoal()}
+                  />
                   <button
-                    className="plover-onboarding__btn"
-                    onClick={handleFinish}
-                    disabled={authState.kind === 'opened-browser'}
-                    data-testid="btn-finish-onboarding"
+                    type="button"
+                    className="plover-onboarding__btn-secondary"
+                    onClick={() =>
+                      setTrialCloseMode((prev) => (prev === 'signup' ? 'signin' : 'signup'))
+                    }
+                    style={{
+                      display: 'block',
+                      marginTop: '12px',
+                      textAlign: 'center',
+                      width: '100%',
+                    }}
+                    data-testid="btn-trial-close-toggle-mode"
                   >
-                    {authState.kind === 'error'
-                      ? 'Try again'
-                      : authState.kind === 'opened-browser'
-                        ? 'Waiting for browser…'
-                        : 'Start tracking →'}
+                    {trialCloseMode === 'signup'
+                      ? 'Already have an account? Sign in'
+                      : 'Need an account? Sign up'}
                   </button>
                 </div>
-                {authState.kind === 'opened-browser' && (
-                  <div style={{ marginTop: '12px', textAlign: 'center' }}>
-                    <button
-                      type="button"
-                      className="plover-onboarding__btn-cancel"
-                      onClick={handleCancelSignIn}
-                    >
-                      Cancel sign-up
-                    </button>
-                  </div>
-                )}
-                {authState.kind === 'opened-browser' && (
-                  <p
-                    className="plover-onboarding__auth-status-msg"
-                    style={{ textAlign: 'center', marginTop: '16px' }}
-                  >
-                    Complete sign-up in your browser. This window will close automatically.
-                  </p>
-                )}
-                {authState.kind === 'error' && (
+                {finishError && (
                   <p
                     className="plover-onboarding__auth-status-msg plover-onboarding__auth-status-msg--error"
                     style={{ textAlign: 'center', marginTop: '16px' }}
                   >
-                    Sign-up failed: {authState.message}
+                    {finishError}
                   </p>
                 )}
                 <p className="plover-onboarding__disclaimer">
