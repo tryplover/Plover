@@ -36,10 +36,10 @@
 
 .plover-status__pulse {
   position: absolute;
-  inset: 50%;
-  transform: translate(-50%, -50%);
-  width: 8px;
-  height: 8px;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   background: var(--plover-mint);
   pointer-events: none;

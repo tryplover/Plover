@@ -47,30 +47,28 @@
   gap: 8px;
 }
 
-.plover-step-breakdown__list li {
+.plover-step-breakdown__item {
   list-style: none;
-}
-
-.plover-drag-handle {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.3);
-  cursor: grab;
-  user-select: none;
+  position: relative;
 }
 
 .plover-step-breakdown__add {
-  padding: 8px 12px;
+  padding: 10px 14px;
   font-size: 13px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
+  font-weight: 500;
+  border: 1px dashed rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
   background-color: transparent;
   color: var(--plover-text, #f5f5f7);
   cursor: pointer;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .plover-step-breakdown__add:hover {
-  border-color: rgba(255, 255, 255, 0.4);
+  border-color: rgba(255, 255, 255, 0.5);
   background-color: rgba(255, 255, 255, 0.08);
 }
 
