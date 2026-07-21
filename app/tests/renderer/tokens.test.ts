@@ -5,10 +5,10 @@ import { resolve } from 'node:path';
 const CSS = readFileSync(resolve(__dirname, '../../src/renderer/index.css'), 'utf8');
 
 const expected: Record<string, string> = {
-  '--plover-bg': 'transparent',
-  '--plover-surface': 'rgba\\(20, 20, 22, 0.4\\)',
-  '--plover-text': '#f1ecdf',
-  '--plover-mint': '#b7e4c7',
+  '--plover-bg': '#141517',
+  '--plover-surface': '#1e2024',
+  '--plover-text': '#f4f4f6',
+  '--plover-mint': '#8ce0af',
   '--plover-radius-xl': '28px',
   '--plover-duration-normal': '220ms',
 };

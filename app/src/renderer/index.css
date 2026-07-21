@@ -1,23 +1,24 @@
 :root {
   /* Surface */
-  --plover-bg: transparent;
-  --plover-surface: rgba(20, 20, 22, 0.4);
-  --plover-surface-raised: rgba(28, 30, 31, 0.55);
-  --plover-border: rgba(255, 255, 255, 0.07);
+  --plover-bg: #141517;
+  --plover-sidebar-bg: #191a1d;
+  --plover-surface: #1e2024;
+  --plover-surface-raised: #25272c;
+  --plover-border: rgba(255, 255, 255, 0.09);
 
   /* Text */
-  --plover-text: #f1ecdf;
-  --plover-text-muted: rgba(241, 236, 223, 0.6);
-  --plover-text-dim: rgba(241, 236, 223, 0.4);
+  --plover-text: #f4f4f6;
+  --plover-text-muted: #9ea3b0;
+  --plover-text-dim: #6e7382;
 
   /* Accent */
-  --plover-mint: #b7e4c7;
-  --plover-mint-soft: rgba(183, 228, 199, 0.18);
+  --plover-mint: #8ce0af;
+  --plover-mint-soft: rgba(140, 224, 175, 0.14);
 
   /* Buttons */
-  --plover-button-primary: #f1ecdf;
+  --plover-button-primary: #f4f4f6;
   --plover-button-primary-fg: #0a0b0b;
-  --plover-button-secondary: #1f2122;
+  --plover-button-secondary: #222428;
 
   /* Radius */
   --plover-radius-sm: 8px;
@@ -69,9 +70,7 @@ body {
   display: flex;
   height: 100vh;
   width: 100vw;
-  background-color: rgba(20, 20, 22, 0.45);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  background-color: var(--plover-bg);
   position: relative;
 }
 
@@ -98,7 +97,7 @@ a,
 .sidebar {
   -webkit-app-region: drag;
   width: 240px;
-  background-color: rgba(255, 255, 255, 0.02);
+  background-color: var(--plover-sidebar-bg);
   border-right: 1px solid var(--plover-border);
   display: flex;
   flex-direction: column;

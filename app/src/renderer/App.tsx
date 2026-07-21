@@ -15,11 +15,7 @@ export function App() {
   });
 
   useEffect(() => {
-    const originalBg = document.body.style.background;
-    document.body.style.background = 'transparent';
-    return () => {
-      document.body.style.background = originalBg;
-    };
+    document.body.style.background = 'var(--plover-bg, #141517)';
   }, []);
 
   const handleOnboardingComplete = () => {

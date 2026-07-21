@@ -70,9 +70,13 @@ if (!gotTheLock) {
       height: 720,
       title: 'Plover',
       frame: process.platform !== 'win32',
-      transparent: process.platform !== 'win32',
+      transparent: false,
+      backgroundColor: '#141517',
       titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
-      titleBarOverlay: process.platform === 'win32' ? { height: 32 } : false,
+      titleBarOverlay:
+        process.platform === 'win32'
+          ? { height: 32, color: '#191a1d', symbolColor: '#f4f4f6' }
+          : false,
       vibrancy: process.platform === 'darwin' ? 'under-window' : undefined,
       webPreferences: {
         preload: join(import.meta.dirname, '../preload/index.js'),

@@ -133,7 +133,7 @@ describe('Onboarding', () => {
 
     await waitFor(() => {
       expect(mockAuthSignInWithPassword).toHaveBeenCalledWith('jordan@example.com', 'hunter2!');
-      expect(mockSaveGoalAndTasks).toHaveBeenCalled();
+      expect(mockSaveGoalAndTasks).not.toHaveBeenCalled();
       expect(mockOnComplete).toHaveBeenCalled();
     });
   });
@@ -230,7 +230,7 @@ describe('Onboarding', () => {
 
     await waitFor(() => {
       expect(mockAuthSignIn).toHaveBeenCalled();
-      expect(mockSaveGoalAndTasks).toHaveBeenCalled();
+      expect(mockSaveGoalAndTasks).not.toHaveBeenCalled();
       expect(mockOnComplete).toHaveBeenCalled();
     });
   });
