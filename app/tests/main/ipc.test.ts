@@ -36,6 +36,7 @@ vi.mock('electron', () => {
     BrowserWindow: Object.assign(vi.fn(), {
       getAllWindows: vi.fn().mockReturnValue([]),
     }),
+    app: { isPackaged: false },
   };
 });
 

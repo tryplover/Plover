@@ -33,6 +33,7 @@ vi.mock('electron', () => ({
   shell: {
     openExternal: vi.fn().mockResolvedValue(true),
   },
+  app: { isPackaged: false },
 }));
 
 describe('GDocsPoller', () => {

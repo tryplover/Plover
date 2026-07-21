@@ -5,9 +5,12 @@ import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
 import keytar from 'keytar';
 import { shell } from 'electron';
+import { resolveRequiredEnv } from '../config/env.js';
 
-const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'mock-client-id';
-const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || 'mock-client-secret';
+const CLIENT_ID = resolveRequiredEnv('GOOGLE_CLIENT_ID', { devFallback: 'mock-client-id' });
+const CLIENT_SECRET = resolveRequiredEnv('GOOGLE_CLIENT_SECRET', {
+  devFallback: 'mock-client-secret',
+});
 const KEYCHAIN_SERVICE = 'plover';
 const KEYCHAIN_ACCOUNT = 'google-refresh-token';
 const AUTHORIZE_TIMEOUT_MS = 5 * 60 * 1000;

@@ -1,6 +1,19 @@
 import { Goal, Task } from '../shared/types';
 
+export interface ProposedPlan {
+  goal: Omit<Goal, 'id' | 'created_at' | 'updated_at' | 'status'>;
+  subtasks: {
+    title: string;
+    estimate_minutes: number;
+    depends_on?: string[];
+    scheduled_start?: string;
+    scheduled_end?: string;
+  }[];
+}
+
 export interface PloverAPI {
+  proposeGoal(goalText: string): Promise<ProposedPlan>;
+  commitGoal(plan: ProposedPlan): Promise<{ goalId: string }>;
   getGoals(): Promise<Goal[]>;
   getTasks(): Promise<Task[]>;
   updateTaskStatus(id: string, status: Task['status']): Promise<Task>;
@@ -125,6 +138,14 @@ export interface PloverAPI {
   minimizeWindow(): Promise<void>;
   maximizeWindow(): Promise<void>;
   closeWindow(): Promise<void>;
+}
+
+interface ImportMetaEnv {
+  readonly PLOVER_VERSION: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
 }
 
 declare global {

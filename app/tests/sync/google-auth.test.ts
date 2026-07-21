@@ -29,6 +29,7 @@ vi.mock('electron', () => ({
   shell: {
     openExternal: mockOpenExternal,
   },
+  app: { isPackaged: false },
 }));
 
 describe('GoogleAuth', () => {

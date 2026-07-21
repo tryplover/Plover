@@ -1,6 +1,11 @@
 import { resolve } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { defineConfig } from 'electron-vite';
 import react from '@vitejs/plugin-react';
+
+const pkgVersion = (
+  JSON.parse(readFileSync(resolve('package.json'), 'utf-8')) as { version: string }
+).version;
 
 export default defineConfig({
   main: {
@@ -58,6 +63,9 @@ export default defineConfig({
           companion: resolve('src/renderer/companion/index.html'),
         },
       },
+    },
+    define: {
+      'import.meta.env.PLOVER_VERSION': JSON.stringify(pkgVersion),
     },
     resolve: {
       alias: {

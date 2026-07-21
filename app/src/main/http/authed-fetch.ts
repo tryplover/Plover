@@ -1,4 +1,5 @@
 import { getPloverToken, clearPloverToken } from '../auth/plover-token.js';
+import { resolveRequiredEnv } from '../config/env.js';
 
 function resolveBackendUrl(): string {
   try {
@@ -8,7 +9,9 @@ function resolveBackendUrl(): string {
   } catch {
     // ignore — import.meta.env not defined in this runtime
   }
-  return (process.env.PLOVER_BACKEND_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+  return resolveRequiredEnv('PLOVER_BACKEND_URL', {
+    devFallback: 'http://localhost:3000',
+  }).replace(/\/$/, '');
 }
 
 export class UnauthorizedError extends Error {

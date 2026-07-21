@@ -67,7 +67,7 @@ export function App() {
           </nav>
         </div>
 
-        <div className="sidebar-version">Plover v1.0.0</div>
+        <div className="sidebar-version">Plover v{import.meta.env.PLOVER_VERSION}</div>
       </aside>
 
       <main className="main-content">

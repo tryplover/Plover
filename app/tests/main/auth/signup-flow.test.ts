@@ -11,6 +11,7 @@ const { mockShell, mockSetPloverToken } = vi.hoisted(() => {
 
 vi.mock('electron', () => ({
   shell: mockShell,
+  app: { isPackaged: false },
 }));
 
 vi.mock('../../../src/main/auth/plover-token.js', () => ({

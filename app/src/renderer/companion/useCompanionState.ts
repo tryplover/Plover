@@ -15,7 +15,7 @@ export function useCompanionState(): CompanionView {
   const [view, setView] = useState<CompanionView>({
     kind: 'observing',
     task: null,
-    progress: 0.65,
+    progress: 0,
     steps: [],
     watching: null,
   });
