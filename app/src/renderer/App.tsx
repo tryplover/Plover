@@ -33,6 +33,7 @@ export function App() {
 
   return (
     <div className="app-container">
+      <div className="app-drag-region" />
       <aside className="sidebar">
         <div>
           <div className="plover-brand">
