@@ -1,83 +1,114 @@
+// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { ProposedPlan } from '../../../../src/preload';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import '@testing-library/jest-dom';
+import { StepBreakdown } from '../../../../src/renderer/overlay/steps/StepBreakdown';
 
 describe('StepBreakdown', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  it('accepts draft prop', () => {
-    const draft = { text: 'Complete project', frequency: 'one-off' as const };
-    expect(draft.text).toBe('Complete project');
-    expect(draft.frequency).toBe('one-off');
-  });
-
-  it('accepts onBack handler', () => {
-    const onBack = vi.fn();
-    expect(onBack).toBeDefined();
-  });
-
-  it('accepts onNext handler with plan', () => {
-    const onNext = vi.fn();
-    expect(onNext).toBeDefined();
-  });
-
-  it('accepts variant prop', () => {
-    const variant = 'overlay' as const;
-    expect(['overlay', 'window']).toContain(variant);
-  });
-
-  it('plan has goal with title', () => {
-    const plan: ProposedPlan = {
-      goal: { title: 'Learn TypeScript' },
-      subtasks: [],
+    // @ts-expect-error mock window.api
+    window.api = {
+      proposeGoal: vi.fn().mockResolvedValue({
+        goal: { title: 'Learn TypeScript' },
+        subtasks: [
+          { title: 'Read handbook', estimate_minutes: 120 },
+          { title: 'Complete exercises', estimate_minutes: 60 },
+        ],
+      }),
     };
-    expect(plan.goal.title).toBe('Learn TypeScript');
   });
 
-  it('plan has subtasks array', () => {
-    const plan: ProposedPlan = {
+  it('accepts draft prop and renders decomposed plan', async () => {
+    const draft = { text: 'Learn TypeScript', frequency: 'one-off' as const };
+    render(<StepBreakdown draft={draft} onBack={vi.fn()} onNext={vi.fn()} variant="overlay" />);
+
+    expect(screen.getByText('Asking Gemini…')).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.getByText('Learn TypeScript')).toBeInTheDocument();
+    });
+
+    const inputs = screen.getAllByRole('textbox');
+    expect(inputs).toHaveLength(2);
+    const [i0, i1] = inputs;
+    expect(i0).toHaveValue('Read handbook');
+    expect(i1).toHaveValue('Complete exercises');
+  });
+
+  it('allows editing step titles', async () => {
+    const draft = { text: 'Learn TypeScript', frequency: 'one-off' as const };
+    render(<StepBreakdown draft={draft} onBack={vi.fn()} onNext={vi.fn()} variant="overlay" />);
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('Read handbook')).toBeInTheDocument();
+    });
+
+    const input = screen.getByDisplayValue('Read handbook');
+    fireEvent.change(input, { target: { value: 'Read TS Handbook 2026' } });
+
+    expect(screen.getByDisplayValue('Read TS Handbook 2026')).toBeInTheDocument();
+  });
+
+  it('allows adding a new step', async () => {
+    const draft = { text: 'Learn TypeScript', frequency: 'one-off' as const };
+    render(<StepBreakdown draft={draft} onBack={vi.fn()} onNext={vi.fn()} variant="overlay" />);
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('Read handbook')).toBeInTheDocument();
+    });
+
+    const addBtn = screen.getByRole('button', { name: /\+ Add a step/i });
+    fireEvent.click(addBtn);
+
+    const inputs = screen.getAllByRole('textbox');
+    expect(inputs).toHaveLength(3);
+  });
+
+  it('allows deleting a step', async () => {
+    const draft = { text: 'Learn TypeScript', frequency: 'one-off' as const };
+    render(<StepBreakdown draft={draft} onBack={vi.fn()} onNext={vi.fn()} variant="overlay" />);
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('Read handbook')).toBeInTheDocument();
+    });
+
+    const deleteBtns = screen.getAllByRole('button', { name: /delete step/i });
+    expect(deleteBtns).toHaveLength(2);
+
+    const [btn0] = deleteBtns;
+    expect(btn0).toBeDefined();
+    if (btn0) {
+      fireEvent.click(btn0);
+    }
+
+    const inputs = screen.getAllByRole('textbox');
+    expect(inputs).toHaveLength(1);
+    const [rem0] = inputs;
+    expect(rem0).toHaveValue('Complete exercises');
+  });
+
+  it('submits updated plan onNext', async () => {
+    const onNext = vi.fn();
+    const draft = { text: 'Learn TypeScript', frequency: 'one-off' as const };
+    render(<StepBreakdown draft={draft} onBack={vi.fn()} onNext={onNext} variant="overlay" />);
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('Read handbook')).toBeInTheDocument();
+    });
+
+    const input = screen.getByDisplayValue('Read handbook');
+    fireEvent.change(input, { target: { value: 'Read TS Handbook 2026' } });
+
+    const nextBtn = screen.getByRole('button', { name: /looks right/i });
+    fireEvent.click(nextBtn);
+
+    expect(onNext).toHaveBeenCalledWith({
       goal: { title: 'Learn TypeScript' },
       subtasks: [
-        { title: 'Read handbook', estimate_minutes: 120 },
+        { title: 'Read TS Handbook 2026', estimate_minutes: 120 },
         { title: 'Complete exercises', estimate_minutes: 60 },
       ],
-    };
-    expect(plan.subtasks).toHaveLength(2);
-    const [t0, t1] = plan.subtasks;
-    expect(t0?.title).toBe('Read handbook');
-    expect(t1?.title).toBe('Complete exercises');
-  });
-
-  it('subtask has title and estimate', () => {
-    const subtask = { title: 'Write tests', estimate_minutes: 45 };
-    expect(subtask.title).toBe('Write tests');
-    expect(subtask.estimate_minutes).toBe(45);
-  });
-
-  it('can add new step to plan', () => {
-    const plan: ProposedPlan = {
-      goal: { title: 'Goal' },
-      subtasks: [{ title: 'Step 1', estimate_minutes: 30 }],
-    };
-    const newPlan = {
-      ...plan,
-      subtasks: [...plan.subtasks, { title: 'New step', estimate_minutes: 30 }],
-    };
-    expect(newPlan.subtasks).toHaveLength(2);
-    const [s0, s1] = newPlan.subtasks;
-    expect(s0?.title).toBe('Step 1');
-    expect(s1?.title).toBe('New step');
-  });
-
-  it('handles loading state', () => {
-    const loading = true;
-    expect(loading).toBe(true);
-  });
-
-  it('handles error state', () => {
-    const error = 'Failed to decompose goal';
-    expect(error).toBeDefined();
-    expect(error.length).toBeGreaterThan(0);
+    });
   });
 });

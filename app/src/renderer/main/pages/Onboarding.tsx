@@ -202,61 +202,10 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   const completeOnboardingWithGoal = async () => {
     try {
       setFinishError(null);
-
-      // Save initial goal and tasks to database so user has immediate dashboard content
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = now.getMonth();
-      const date = now.getDate();
-
-      const goal = {
-        title: appName,
-        description: 'Write the methodology section for the university thesis draft.',
-        deadline: new Date(year, month, date + 14).toISOString(),
-      };
-
-      const tasks = [
-        { title: 'Outline the section structure', estimate_minutes: 30, depends_on: [] },
-        { title: 'Gather source citations', estimate_minutes: 45, depends_on: [] },
-        { title: 'Write the procedure paragraph', estimate_minutes: 60, depends_on: ['0'] },
-        { title: 'Write the analysis paragraph', estimate_minutes: 60, depends_on: ['1', '2'] },
-        { title: 'Proofread & finalize', estimate_minutes: 30, depends_on: ['3'] },
-      ];
-
-      // Schedule slots for today starting from 9:00 AM
-      const scheduledSlots = [
-        {
-          tempIndex: 0,
-          start: new Date(year, month, date, 9, 0).toISOString(),
-          end: new Date(year, month, date, 9, 30).toISOString(),
-        },
-        {
-          tempIndex: 1,
-          start: new Date(year, month, date, 9, 30).toISOString(),
-          end: new Date(year, month, date, 10, 15).toISOString(),
-        },
-        {
-          tempIndex: 2,
-          start: new Date(year, month, date, 10, 15).toISOString(),
-          end: new Date(year, month, date, 11, 15).toISOString(),
-        },
-        {
-          tempIndex: 3,
-          start: new Date(year, month, date, 11, 15).toISOString(),
-          end: new Date(year, month, date, 12, 15).toISOString(),
-        },
-        {
-          tempIndex: 4,
-          start: new Date(year, month, date, 13, 0).toISOString(),
-          end: new Date(year, month, date, 13, 30).toISOString(),
-        },
-      ];
-
-      await window.api.saveGoalAndTasks(goal, tasks, scheduledSlots);
       localStorage.setItem('plover_onboarding_completed', 'true');
       onComplete();
     } catch (err) {
-      console.error('Failed to save initial goal during onboarding:', err);
+      console.error('Failed to complete onboarding:', err);
       setFinishError(err instanceof Error ? err.message : String(err));
     }
   };
