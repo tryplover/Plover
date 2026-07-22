@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { shell } from 'electron';
 import { setPloverToken } from './plover-token.js';
-import { resolveRequiredEnv } from '../config/env.js';
+import { getBackendUrl } from '../http/backend-url.js';
 
 const NONCE_TTL_MS = 10 * 60 * 1000;
 
@@ -13,17 +13,6 @@ interface Pending {
 }
 
 const pendingSignups = new Map<string, Pending>();
-
-function getBackendUrl(): string {
-  try {
-    const fromVite = (import.meta as unknown as { env?: Record<string, string | undefined> }).env
-      ?.PLOVER_BACKEND_URL;
-    if (fromVite) return fromVite;
-  } catch {
-    // ignore — import.meta.env not defined in this runtime
-  }
-  return resolveRequiredEnv('PLOVER_BACKEND_URL', { devFallback: 'http://localhost:3000' });
-}
 
 function generateState(): string {
   return randomBytes(32).toString('base64url');

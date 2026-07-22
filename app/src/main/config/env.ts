@@ -14,3 +14,18 @@ export function resolveRequiredEnv(
   }
   return devFallback;
 }
+
+export function resolveViteOrEnv(
+  name: string,
+  { devFallback }: { devFallback: string },
+): string {
+  try {
+    const fromVite = (import.meta as unknown as {
+      env?: Record<string, string | undefined>;
+    }).env?.[name];
+    if (fromVite) return fromVite;
+  } catch {
+    // import.meta.env undefined outside Vite-built bundle
+  }
+  return resolveRequiredEnv(name, { devFallback });
+}
