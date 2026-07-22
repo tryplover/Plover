@@ -5,7 +5,7 @@ import { writeFileSync, mkdirSync } from 'node:fs';
 import { FolderWatcher } from '@main/activity/folder-watcher.js';
 import { ActivityRepo } from '@main/store/repos/activity.js';
 import { SettingsRepo } from '@main/store/repos/settings.js';
-import { TypedEventBus } from '@main/bus.js';
+import { TypedEventBus } from '@main/events/bus.js';
 import Database from 'better-sqlite3';
 import { runMigrations } from '@main/store/db.js';
 

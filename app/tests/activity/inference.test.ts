@@ -17,7 +17,7 @@ import { SettingsRepo } from '@main/store/repos/settings.js';
 import { InferenceEngine } from '@main/activity/inference.js';
 import { Task } from '@shared/types.js';
 
-import { TypedEventBus } from '@main/bus.js';
+import { TypedEventBus } from '@main/events/bus.js';
 
 function freshHarness(): {
   db: Database.Database;

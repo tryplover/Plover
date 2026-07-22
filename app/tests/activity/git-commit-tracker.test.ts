@@ -10,7 +10,7 @@ import { runMigrations } from '@main/store/db.js';
 import { TasksRepo } from '@main/store/repos/tasks.js';
 import { GoalsRepo } from '@main/store/repos/goals.js';
 import { ActivityRepo } from '@main/store/repos/activity.js';
-import { TypedEventBus } from '@main/bus.js';
+import { TypedEventBus } from '@main/events/bus.js';
 import {
   GitCommitTracker,
   extractRepoPath,

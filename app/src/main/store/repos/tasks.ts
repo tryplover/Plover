@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import Database from 'better-sqlite3';
 import { Task } from '@shared/types.js';
-import { eventBus } from '../../bus.js';
+import { eventBus } from '../../events/bus.js';
 
 export class TasksRepo {
   private db: Database.Database;

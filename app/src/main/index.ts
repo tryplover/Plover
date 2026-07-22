@@ -7,7 +7,7 @@ import { FolderWatcher } from './activity/folder-watcher.js';
 import { InferenceEngine } from './activity/inference.js';
 import { GitCommitTracker } from './activity/git-commit-tracker.js';
 import { GDocsPoller } from './sync/gdocs-poller.js';
-import { eventBus } from './bus.js';
+import { eventBus } from './events/bus.js';
 import { clearAllTimers } from './lifecycle/periodic.js';
 import { initActivityMonitoring, stopActivityMonitoring } from './activity/index.js';
 import { completeSignup } from './auth/signup-flow.js';

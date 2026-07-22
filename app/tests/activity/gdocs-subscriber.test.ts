@@ -3,7 +3,7 @@ import Database from 'better-sqlite3';
 import { runMigrations } from '../../src/main/store/db';
 import { ActivityRepo } from '../../src/main/store/repos/activity';
 import { SettingsRepo } from '../../src/main/store/repos/settings';
-import { TypedEventBus } from '../../src/main/bus';
+import { TypedEventBus } from '../../src/main/events/bus';
 import { GDocsActivitySubscriber } from '../../src/main/activity/gdocs-subscriber';
 
 describe('GDocsActivitySubscriber', () => {
