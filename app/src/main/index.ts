@@ -1,7 +1,7 @@
 import './load-env.js';
 import { app, BrowserWindow, globalShortcut, ipcMain, nativeImage } from 'electron';
 import { join } from 'node:path';
-import { setupIpc, googleAuth } from './ipc.js';
+import { setupIpc, googleAuth } from './ipc/index.js';
 import { activityRepo, settingsRepo, tasksRepo, summariesRepo } from './store/index.js';
 import { FolderWatcher } from './activity/folder-watcher.js';
 import { InferenceEngine } from './activity/inference.js';
