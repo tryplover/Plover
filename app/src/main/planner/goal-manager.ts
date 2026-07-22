@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Goal, Task, SummaryRow } from '../../shared/types.js';
 import { goalsRepo, tasksRepo } from '../store/index.js';
-import { eventBus } from '../bus.js';
+import { eventBus } from '../events/bus.js';
 
 export async function saveGoalAndTasks(
   goalInput: Omit<Goal, 'id' | 'created_at' | 'updated_at' | 'status'>,

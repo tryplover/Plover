@@ -1,6 +1,6 @@
 import { ActivityRepo } from '../store/repos/activity.js';
 import { SettingsRepo } from '../store/repos/settings.js';
-import { TypedEventBus } from '../bus.js';
+import { TypedEventBus } from '../events/bus.js';
 import { GDocsRevisionPayload } from '../../shared/events.js';
 
 export class GDocsActivitySubscriber {
