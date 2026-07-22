@@ -295,4 +295,9 @@ export class TasksRepo {
       updated_at: row.updated_at,
     }));
   }
+
+  deleteByGoal(goalId: string): void {
+    const stmt = this.db.prepare('DELETE FROM tasks WHERE goal_id = ?');
+    stmt.run(goalId);
+  }
 }

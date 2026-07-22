@@ -110,6 +110,22 @@ describe('Store Layer', () => {
       const repo = new GoalsRepo(db);
       expect(() => repo.update('non-existent', { title: 'New' })).toThrow(/not found/);
     });
+
+    it('handles delete goal', () => {
+      const db = new Database(':memory:');
+      runMigrations(db);
+      const repo = new GoalsRepo(db);
+
+      const created = repo.create({
+        title: 'Learn Rust',
+        description: 'Read the book',
+        status: 'active',
+      });
+
+      expect(repo.get(created.id)).not.toBeNull();
+      repo.delete(created.id);
+      expect(repo.get(created.id)).toBeNull();
+    });
   });
 
   describe('TasksRepo', () => {
@@ -271,6 +287,36 @@ describe('Store Layer', () => {
       runMigrations(db);
       const repo = new TasksRepo(db);
       expect(() => repo.update('non-existent', { title: 'New' })).toThrow(/not found/);
+    });
+
+    it('handles deleteByGoal', () => {
+      const db = new Database(':memory:');
+      runMigrations(db);
+      const goalsRepo = new GoalsRepo(db);
+      const tasksRepo = new TasksRepo(db);
+
+      const goal = goalsRepo.create({
+        title: 'Goal A',
+        status: 'active',
+      });
+
+      tasksRepo.create({
+        goal_id: goal.id,
+        title: 'Task 1',
+        estimate_minutes: 30,
+        status: 'todo',
+      });
+
+      tasksRepo.create({
+        goal_id: goal.id,
+        title: 'Task 2',
+        estimate_minutes: 30,
+        status: 'todo',
+      });
+
+      expect(tasksRepo.listByGoal(goal.id)).toHaveLength(2);
+      tasksRepo.deleteByGoal(goal.id);
+      expect(tasksRepo.listByGoal(goal.id)).toHaveLength(0);
     });
   });
 

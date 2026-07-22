@@ -136,4 +136,9 @@ export class GoalsRepo {
 
     return updated;
   }
+
+  delete(id: string): void {
+    const stmt = this.db.prepare('DELETE FROM goals WHERE id = ?');
+    stmt.run(id);
+  }
 }

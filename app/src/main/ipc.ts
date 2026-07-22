@@ -3,7 +3,11 @@ import { Goal, Task, CalendarEvent } from '../shared/types.js';
 import { goalsRepo, tasksRepo, settingsRepo, summariesRepo, activityRepo } from './store/index.js';
 import { decomposeGoal } from './planner/decompose.js';
 import { scheduleTasks } from './planner/schedule.js';
-import { saveGoalAndTasks, startEventForwarding } from './planner/goal-manager.js';
+import {
+  saveGoalAndTasks,
+  deleteGoalAndTasks,
+  startEventForwarding,
+} from './planner/goal-manager.js';
 import { GoogleAuth } from './sync/google-auth.js';
 import { GoogleCalendarSync } from './sync/calendar.js';
 import { eventBus } from './bus.js';
@@ -58,6 +62,10 @@ export function setupIpcHandlers(
     const goal = goalsRepo.update(id, patch);
     eventBus.emit('goal.updated', goal);
     return goal;
+  });
+
+  ipcMain.handle('goals:delete', async (_, id: string) => {
+    return deleteGoalAndTasks(id, calendarSync);
   });
 
   // Tasks
