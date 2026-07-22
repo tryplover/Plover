@@ -54,7 +54,7 @@ export function StepBreakdown({ draft, onBack, onNext, variant }: Props) {
     };
   }, [draft.text]);
 
-  if (loading) return <p className="plover-step-breakdown__loading">Asking Gemini…</p>;
+  if (loading) return <p className="plover-step-breakdown__loading">Plover is planning…</p>;
   if (error) return <p className="plover-step-breakdown__error">{error}</p>;
 
   const addStep = () => {
@@ -99,7 +99,7 @@ export function StepBreakdown({ draft, onBack, onNext, variant }: Props) {
     <section className={`plover-step-breakdown plover-step-breakdown--${variant}`}>
       <StatusIndicator
         kind="observing"
-        label={`Gemini suggested ${subtasks.length} step${subtasks.length === 1 ? '' : 's'}`}
+        label={`Plover suggested ${subtasks.length} step${subtasks.length === 1 ? '' : 's'}`}
       />
       <h2>{goalTitle || draft.text}</h2>
 
