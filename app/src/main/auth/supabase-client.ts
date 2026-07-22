@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient, SupportedStorage } from '@supabase/supabase-js';
 import keytar from 'keytar';
+import { resolveViteOrEnv } from '../config/env.js';
 
 const KEYCHAIN_SERVICE = 'plover';
 const KEYCHAIN_ACCOUNT = 'supabase-session';
@@ -19,31 +20,23 @@ class KeytarStorage implements SupportedStorage {
   }
 }
 
-function resolveEnv(key: 'SUPABASE_URL' | 'SUPABASE_ANON_KEY'): string {
-  try {
-    const fromVite = (import.meta as unknown as { env?: Record<string, string | undefined> }).env?.[
-      key
-    ];
-    if (fromVite) return fromVite;
-  } catch {
-    // import.meta.env not defined outside the Vite-built bundle (tests, etc.)
-  }
-  return process.env[key] ?? '';
-}
-
 let client: SupabaseClient | null = null;
 
 export function getSupabaseClient(): SupabaseClient {
   if (!client) {
-    client = createClient(resolveEnv('SUPABASE_URL'), resolveEnv('SUPABASE_ANON_KEY'), {
-      auth: {
-        storage: new KeytarStorage(),
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: false,
-        flowType: 'pkce',
+    client = createClient(
+      resolveViteOrEnv('SUPABASE_URL', { devFallback: '' }),
+      resolveViteOrEnv('SUPABASE_ANON_KEY', { devFallback: '' }),
+      {
+        auth: {
+          storage: new KeytarStorage(),
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: false,
+          flowType: 'pkce',
+        },
       },
-    });
+    );
   }
   return client;
 }

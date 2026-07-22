@@ -1,18 +1,5 @@
 import { getPloverToken, clearPloverToken } from '../auth/plover-token.js';
-import { resolveRequiredEnv } from '../config/env.js';
-
-function resolveBackendUrl(): string {
-  try {
-    const fromVite = (import.meta as unknown as { env?: Record<string, string | undefined> }).env
-      ?.PLOVER_BACKEND_URL;
-    if (fromVite) return fromVite.replace(/\/$/, '');
-  } catch {
-    // ignore — import.meta.env not defined in this runtime
-  }
-  return resolveRequiredEnv('PLOVER_BACKEND_URL', {
-    devFallback: 'http://localhost:3000',
-  }).replace(/\/$/, '');
-}
+import { getBackendUrl } from './backend-url.js';
 
 export class UnauthorizedError extends Error {
   constructor(message: string) {
@@ -28,7 +15,7 @@ export async function authedFetch(path: string, init: RequestInit = {}): Promise
   }
   const headers = new Headers(init.headers);
   headers.set('X-Plover-Auth-Token', token);
-  const backendUrl = resolveBackendUrl();
+  const backendUrl = getBackendUrl();
   const url = path.startsWith('http')
     ? path
     : `${backendUrl}${path.startsWith('/') ? '' : '/'}${path}`;
