@@ -212,9 +212,11 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
             ) : (
               goals.map((goal) => {
                 const goalTasks = tasksByGoal[goal.id] || [];
-                const doneTasks = goalTasks.filter((t) => t.status === 'done');
                 const progressValue =
-                  goalTasks.length > 0 ? doneTasks.length / goalTasks.length : 0;
+                  goalTasks.length > 0
+                    ? goalTasks.reduce((sum, t) => sum + (t.progress ?? 0), 0) /
+                      (goalTasks.length * 100)
+                    : 0;
                 const isOpen = !!expandedGoals[goal.id];
 
                 return (

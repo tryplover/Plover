@@ -97,14 +97,20 @@ export class InferenceEngine {
     const validIds = new Set(activeTasks.map((t) => t.id));
     for (const entry of payload.task_progress) {
       if (!validIds.has(entry.taskId)) continue;
-      if (entry.completed) {
-        const updated = this.tasksRepo.update(entry.taskId, { status: 'done' });
-        this.bus.emit('task.completed', updated);
+
+      const increment = entry.progress_increment ?? 0;
+      const updated = this.tasksRepo.incrementProgress(entry.taskId, increment);
+
+      const shouldComplete = entry.completed || updated.progress >= 100;
+      if (shouldComplete && updated.status !== 'done') {
+        const done = this.tasksRepo.update(entry.taskId, { status: 'done' });
+        this.bus.emit('task.completed', done);
       }
+
       const inserted = this.summariesRepo.insert({
         taskId: entry.taskId,
         summary: entry.reasoning,
-        signal: Math.min(1, Math.max(0, (entry.progress_increment ?? 0) / 100)),
+        signal: Math.min(1, Math.max(0, increment / 100)),
         ts: nowTs,
       });
       this.bus.emit('summary.created', inserted);

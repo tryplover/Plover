@@ -15,6 +15,7 @@ export async function saveGoalAndTasks(
     | 'scheduled_start'
     | 'scheduled_end'
     | 'sort_index'
+    | 'progress'
   >[],
   scheduledSlots: { tempIndex: number; start: string; end: string }[],
 ) {
