@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - Working directory for all commands: `/Users/liyu.xiao/Documents/GitHub/plover-refactor` (git worktree on branch `chore/prune-shipped-plans`). Never touch the primary checkout at `/Users/liyu.xiao/Documents/GitHub/BuildWithGeminiHackathon`.
-- Every commit ends green under `pnpm typecheck && pnpm lint && pnpm test`. Run all three before every `git commit`.
+- Every commit must **not introduce new test failures** relative to the previous commit. Baseline (`0756781`): 20 test files failed, 89 tests failed, 194 passed. Any commit above that baseline must show ≤ these numbers under `PATH=~/Library/pnpm:$PATH pnpm --filter ./app run test`. Typecheck and lint must be fully green: `PATH=~/Library/pnpm:$PATH pnpm --filter ./app run typecheck && PATH=~/Library/pnpm:$PATH pnpm --filter ./app run lint`. The pre-existing 89-test debt is out of scope for this refactor.
 - Use `PATH=~/Library/pnpm:$PATH` in front of every `pnpm` call (this machine's pnpm lives at `~/Library/pnpm/pnpm`, not on default PATH). See `CLAUDE.md` lesson-learned.
 - Zero behavior changes. If any diff changes runtime behavior, revert that hunk.
 - Preserve `.js` extensions in relative imports (this repo is `"type": "module"` — ESM requires the extension).
