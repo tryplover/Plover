@@ -226,7 +226,7 @@ Each commit becomes its own PR in a Graphite stack.
 | Circular imports when splitting ipc.ts | Each `ipc/<domain>.ts` imports only from its domain module + shared types. `ipc/index.ts` is the only file importing all domains. |
 | Concurrent Claude sessions in primary checkout | All work happens in the `../plover-refactor` worktree. |
 | Vitest fails to discover colocated `.test.tsx` | Already covered by `src/**/*.test.tsx` in vitest.config.ts. No change needed. |
-| Path-alias drift after moves (e.g. `@/components/Button`) | This repo doesn't use path aliases (verified via `tsconfig.json` `paths`), so imports remain relative. |
+| Path-alias drift after moves | `@main/*` and `@renderer/*` aliases exist (`tsconfig.json`, `vitest.config.ts`). Each move updates both `../foo` relative and `@main/foo` alias imports across `src/` and `tests/`. |
 
 ## Verification
 
