@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import GoalsList from '../../../../src/renderer/main/pages/GoalsList';
+import GoalsList from './GoalsList.js';
 
 const mockUnsubscribe = vi.fn();
 

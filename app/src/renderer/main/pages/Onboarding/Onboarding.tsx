@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
-import ploverLogo from '../../plover-logo.png';
-import ploverDemoVideo from '../../Plover-Demo.mp4';
+import ploverLogo from '../../../plover-logo.png';
+import ploverDemoVideo from '../../../Plover-Demo.mp4';
 import './Onboarding.css';
 
 interface OnboardingProps {

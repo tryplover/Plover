@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import GoalsList from './main/pages/GoalsList';
-import AIProgress from './main/pages/AIProgress';
-import Settings from './main/pages/Settings';
-import { Onboarding } from './main/pages/Onboarding';
+import GoalsList from './main/pages/GoalsList/GoalsList.js';
+import AIProgress from './main/pages/AIProgress/AIProgress.js';
+import Settings from './main/pages/Settings/Settings.js';
+import { Onboarding } from './main/pages/Onboarding/Onboarding.js';
 import { IconTarget, IconGear, IconActivity } from './main/icons';
 import ploverLogo from './plover-logo.png';
 

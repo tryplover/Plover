@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Goal, Task } from '../../../shared/types';
-import { StepRow } from '../../components/StepRow/StepRow';
-import { ProgressLine } from '../../components/ProgressLine/ProgressLine';
-import { Button } from '../../components/Button/Button';
-import { SetupFlow } from '../../overlay/SetupFlow';
-import { useAppEvents } from '../../hooks/useAppEvents';
+import { Goal, Task } from '../../../../shared/types';
+import { StepRow } from '../../../components/StepRow/StepRow.js';
+import { ProgressLine } from '../../../components/ProgressLine/ProgressLine.js';
+import { Button } from '../../../components/Button/Button.js';
+import { SetupFlow } from '../../../overlay/SetupFlow.js';
+import { useAppEvents } from '../../../hooks/useAppEvents.js';
 
 interface GoalsListProps {
   'data-testid'?: string;

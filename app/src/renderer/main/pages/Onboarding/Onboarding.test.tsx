@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { Onboarding } from '../../../../src/renderer/main/pages/Onboarding';
+import { Onboarding } from './Onboarding.js';
 
 describe('Onboarding', () => {
   const mockOnComplete = vi.fn();
