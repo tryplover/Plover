@@ -103,6 +103,39 @@ export function setupIpcHandlers(
     return task;
   });
 
+  ipcMain.handle(
+    'tasks:create',
+    async (_, input: { goal_id: string; title: string; estimate_minutes: number }) => {
+      const task = tasksRepo.create({
+        goal_id: input.goal_id,
+        title: input.title,
+        estimate_minutes: input.estimate_minutes,
+        status: 'todo',
+      });
+      eventBus.emit('task.created', { task });
+      return task;
+    },
+  );
+
+  ipcMain.handle(
+    'tasks:update',
+    async (_, id: string, patch: { title?: string; estimate_minutes?: number }) => {
+      const task = tasksRepo.update(id, patch);
+      eventBus.emit('task.updated', { task });
+      return task;
+    },
+  );
+
+  ipcMain.handle('tasks:delete', async (_, id: string) => {
+    tasksRepo.delete(id);
+    return { ok: true as const };
+  });
+
+  ipcMain.handle('tasks:reorder', async (_, goal_id: string, orderedIds: string[]) => {
+    tasksRepo.reorder(goal_id, orderedIds);
+    return { ok: true as const };
+  });
+
   ipcMain.handle('goals:decompose', async (_, goalText: string) => {
     const settings = settingsRepo.getAll();
     const recentActivity = getRecentActivityContext(settings);
@@ -208,6 +241,7 @@ export function setupIpcHandlers(
         | 'scheduled_start'
         | 'scheduled_end'
         | 'calendar_event_id'
+        | 'sort_index'
       >[],
       workingHours: { start: string; end: string },
       horizonDays: number,
@@ -219,6 +253,7 @@ export function setupIpcHandlers(
         estimate_minutes: t.estimate_minutes,
         depends_on: t.depends_on,
         status: 'todo',
+        sort_index: 0,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }));
@@ -322,6 +357,7 @@ export function setupIpcHandlers(
       estimate_minutes: t.estimate_minutes,
       depends_on: t.depends_on,
       status: 'todo',
+      sort_index: 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }));

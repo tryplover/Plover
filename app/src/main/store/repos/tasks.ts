@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import Database from 'better-sqlite3';
 import { Task } from '@shared/types.js';
+import { eventBus } from '../../bus.js';
 
 export class TasksRepo {
   private db: Database.Database;
@@ -18,22 +19,23 @@ export class TasksRepo {
       INSERT INTO tasks (
         id, goal_id, title, estimate_minutes, depends_on,
         scheduled_start, scheduled_end, status,
-        created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        sort_index, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     this.getStmt = this.db.prepare(`
       SELECT id, goal_id, title, estimate_minutes, depends_on,
              scheduled_start, scheduled_end, status,
-             created_at, updated_at
+             sort_index, created_at, updated_at
       FROM tasks
       WHERE id = ?
     `);
     this.listByGoalStmt = this.db.prepare(`
       SELECT id, goal_id, title, estimate_minutes, depends_on,
              scheduled_start, scheduled_end, status,
-             created_at, updated_at
+             sort_index, created_at, updated_at
       FROM tasks
       WHERE goal_id = ?
+      ORDER BY sort_index, created_at
     `);
     this.updateStmt = this.db.prepare(`
       UPDATE tasks
@@ -45,13 +47,13 @@ export class TasksRepo {
     this.listStmt = this.db.prepare(`
       SELECT id, goal_id, title, estimate_minutes, depends_on,
              scheduled_start, scheduled_end, status,
-             created_at, updated_at
+             sort_index, created_at, updated_at
       FROM tasks
     `);
     this.listActiveScheduledBeforeStmt = this.db.prepare(`
       SELECT id, goal_id, title, estimate_minutes, depends_on,
              scheduled_start, scheduled_end, status,
-             created_at, updated_at
+             sort_index, created_at, updated_at
       FROM tasks
       WHERE status NOT IN ('done', 'skipped')
         AND scheduled_start IS NOT NULL
@@ -64,9 +66,20 @@ export class TasksRepo {
     `);
   }
 
-  create(input: Omit<Task, 'id' | 'created_at' | 'updated_at'> & { id?: string }): Task {
+  create(
+    input: Omit<Task, 'id' | 'created_at' | 'updated_at' | 'sort_index'> & {
+      id?: string;
+      sort_index?: number;
+    },
+  ): Task {
     const id = input.id || randomUUID();
     const now = new Date().toISOString();
+
+    const maxRow = this.db
+      .prepare(`SELECT COALESCE(MAX(sort_index) + 1, 0) AS next FROM tasks WHERE goal_id = ?`)
+      .get(input.goal_id) as { next: number };
+    const sortIndex = input.sort_index ?? maxRow.next;
+
     const task: Task = {
       id,
       goal_id: input.goal_id,
@@ -76,6 +89,7 @@ export class TasksRepo {
       scheduled_start: input.scheduled_start,
       scheduled_end: input.scheduled_end,
       status: input.status,
+      sort_index: sortIndex,
       created_at: now,
       updated_at: now,
     };
@@ -89,6 +103,7 @@ export class TasksRepo {
       task.scheduled_start ?? null,
       task.scheduled_end ?? null,
       task.status,
+      task.sort_index,
       task.created_at,
       task.updated_at,
     );
@@ -107,6 +122,7 @@ export class TasksRepo {
           scheduled_start: string | null;
           scheduled_end: string | null;
           status: string;
+          sort_index: number;
           created_at: string;
           updated_at: string;
         }
@@ -125,6 +141,7 @@ export class TasksRepo {
       scheduled_start: row.scheduled_start ?? undefined,
       scheduled_end: row.scheduled_end ?? undefined,
       status: row.status as Task['status'],
+      sort_index: row.sort_index,
       created_at: row.created_at,
       updated_at: row.updated_at,
     };
@@ -140,6 +157,7 @@ export class TasksRepo {
       scheduled_start: string | null;
       scheduled_end: string | null;
       status: string;
+      sort_index: number;
       created_at: string;
       updated_at: string;
     }[];
@@ -153,6 +171,7 @@ export class TasksRepo {
       scheduled_start: row.scheduled_start ?? undefined,
       scheduled_end: row.scheduled_end ?? undefined,
       status: row.status as Task['status'],
+      sort_index: row.sort_index,
       created_at: row.created_at,
       updated_at: row.updated_at,
     }));
@@ -198,6 +217,7 @@ export class TasksRepo {
       scheduled_start: string | null;
       scheduled_end: string | null;
       status: string;
+      sort_index: number;
       created_at: string;
       updated_at: string;
     }[];
@@ -211,6 +231,7 @@ export class TasksRepo {
       scheduled_start: row.scheduled_start ?? undefined,
       scheduled_end: row.scheduled_end ?? undefined,
       status: row.status as Task['status'],
+      sort_index: row.sort_index,
       created_at: row.created_at,
       updated_at: row.updated_at,
     }));
@@ -226,6 +247,7 @@ export class TasksRepo {
       scheduled_start: string | null;
       scheduled_end: string | null;
       status: string;
+      sort_index: number;
       created_at: string;
       updated_at: string;
     }[];
@@ -239,6 +261,7 @@ export class TasksRepo {
       scheduled_start: row.scheduled_start ?? undefined,
       scheduled_end: row.scheduled_end ?? undefined,
       status: row.status as Task['status'],
+      sort_index: row.sort_index,
       created_at: row.created_at,
       updated_at: row.updated_at,
     }));
@@ -246,5 +269,37 @@ export class TasksRepo {
 
   deleteByGoal(goalId: string): void {
     this.deleteByGoalStmt.run(goalId);
+  }
+
+  delete(id: string): void {
+    const info = this.db.prepare(`DELETE FROM tasks WHERE id = ?`).run(id);
+    if (info.changes === 0) {
+      throw new Error(`Task with id ${id} not found`);
+    }
+    eventBus.emit('task.deleted', { id });
+  }
+
+  reorder(goal_id: string, orderedIds: string[]): void {
+    const existing = this.db
+      .prepare(`SELECT id FROM tasks WHERE goal_id = ?`)
+      .all(goal_id) as { id: string }[];
+    const existingSet = new Set(existing.map((r) => r.id));
+    const providedSet = new Set(orderedIds);
+    if (
+      orderedIds.length !== existing.length ||
+      existingSet.size !== providedSet.size ||
+      [...existingSet].some((id) => !providedSet.has(id))
+    ) {
+      throw new Error('reorder: id set mismatch');
+    }
+    const update = this.db.prepare(
+      `UPDATE tasks SET sort_index = ?, updated_at = ? WHERE id = ? AND goal_id = ?`,
+    );
+    const now = new Date().toISOString();
+    const tx = this.db.transaction((ids: string[]) => {
+      ids.forEach((id, i) => update.run(i, now, id, goal_id));
+    });
+    tx(orderedIds);
+    eventBus.emit('tasks.reordered', { goal_id, orderedIds });
   }
 }
