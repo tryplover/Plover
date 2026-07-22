@@ -21,7 +21,7 @@ vi.mock('electron', () => {
 });
 
 import { startEventForwarding } from '../src/main/planner/goal-manager.js';
-import { eventBus } from '../src/main/bus.js';
+import { eventBus } from '../src/main/events/bus.js';
 
 describe('Event forwarding', () => {
   beforeEach(() => {

@@ -3,7 +3,7 @@ import { promisify } from 'node:util';
 import { Notification } from 'electron';
 import { TasksRepo } from '../store/repos/tasks.js';
 import { ActivityRepo } from '../store/repos/activity.js';
-import { TypedEventBus } from '../bus.js';
+import { TypedEventBus } from '../events/bus.js';
 import { FolderEventPayload } from '@shared/events.js';
 import { authedFetch } from '../http/authed-fetch.js';
 

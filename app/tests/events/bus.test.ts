@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { TypedEventBus } from '../src/main/bus.js';
-import { Goal } from '../src/shared/types.js';
+import { TypedEventBus } from '../../src/main/events/bus.js';
+import { Goal } from '../../src/shared/types.js';
 
 describe('TypedEventBus', () => {
   it('should emit and receive events with payloads', () => {

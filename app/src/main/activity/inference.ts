@@ -3,7 +3,7 @@ import { ActivityRepo } from '../store/repos/activity.js';
 import { SummariesRepo } from '../store/repos/summaries.js';
 import { SettingsRepo } from '../store/repos/settings.js';
 import { schedulePeriodic } from '../lifecycle/periodic.js';
-import { TypedEventBus } from '../bus.js';
+import { TypedEventBus } from '../events/bus.js';
 import { authedFetch, UnauthorizedError } from '../http/authed-fetch.js';
 
 const INFERENCE_INTERVAL_MS = 30 * 60_000;

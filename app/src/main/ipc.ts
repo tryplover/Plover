@@ -9,7 +9,7 @@ import {
   deleteGoalAndTasks,
 } from './planner/goal-manager.js';
 import { GoogleAuth } from './sync/google-auth.js';
-import { eventBus } from './bus.js';
+import { eventBus } from './events/bus.js';
 import { ProposedPlan } from '../preload/index.js';
 import { createCompanionWindow } from './windows/companion.js';
 import { listActiveWindows } from './activity/window-tracker.js';
