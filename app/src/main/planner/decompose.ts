@@ -21,6 +21,7 @@ export async function decomposeGoal(input: {
     | 'scheduled_start'
     | 'scheduled_end'
     | 'sort_index'
+    | 'progress'
   >[];
 }> {
   const body: Record<string, unknown> = {
