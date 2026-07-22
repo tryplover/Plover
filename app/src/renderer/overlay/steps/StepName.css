@@ -47,15 +47,18 @@
 .plover-step-name--window input {
   padding: 12px 16px;
   font-size: 16px;
+  border: 1.5px solid var(--plover-home-active-border) !important;
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  color: var(--plover-text) !important;
+  caret-color: var(--plover-mint) !important;
 }
 
 .plover-step-name input:focus {
-  border-color: rgba(255, 255, 255, 0.4);
-  background-color: rgba(255, 255, 255, 0.12);
+  border-color: var(--plover-mint, #9fe1cb);
 }
 
 .plover-step-name input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--plover-text-dim);
 }
 
 .plover-step-name__how {
@@ -64,10 +67,22 @@
   color: var(--plover-text-muted, rgba(255, 255, 255, 0.6));
 }
 
+.plover-step-name--window .plover-step-name__how {
+  font-size: 12px;
+  color: var(--plover-text-muted) !important;
+}
+
 .plover-step-name__chips {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+/* Selected chip override for dark mode only to match Figma dark theme values */
+.plover-shell--dark .plover-step-name--window .plover-chip[data-selected='true'] {
+  border: 1px solid rgba(159, 225, 203, 0.4) !important;
+  background-color: rgba(243, 238, 228, 0.14) !important;
+  color: rgba(246, 242, 235, 0.9) !important;
 }
 
 .plover-step-name__cta {
@@ -79,6 +94,38 @@
 }
 
 .plover-step-name--window .plover-step-name__cta {
-  margin-top: 16px;
-  margin-bottom: 32px;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+  margin-bottom: 0px;
+}
+
+.plover-step-name .plover-status {
+  align-self: flex-start;
+}
+
+.plover-step-name .plover-status[data-kind='observing'] .plover-status__label {
+  color: var(--plover-mint) !important;
+  font-size: 12px;
+}
+
+/* Light theme overrides */
+.plover-shell--light .plover-step-name input {
+  border-color: var(--plover-border, rgba(36, 33, 28, 0.15));
+  background-color: var(--plover-surface-raised, rgba(36, 33, 28, 0.04));
+  color: var(--plover-text, #24211c);
+  caret-color: var(--plover-text, #24211c);
+}
+
+.plover-shell--light .plover-step-name input:focus {
+  border-color: var(--plover-mint, #1d9e75);
+  background-color: var(--plover-surface, rgba(36, 33, 28, 0.02));
+}
+
+.plover-shell--light .plover-step-name input::placeholder {
+  color: var(--plover-text-dim, rgba(36, 33, 28, 0.45));
+}
+
+.plover-shell--light .plover-step-name__how {
+  color: var(--plover-text-muted, rgba(36, 33, 28, 0.6));
 }

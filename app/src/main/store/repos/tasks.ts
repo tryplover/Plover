@@ -280,9 +280,9 @@ export class TasksRepo {
   }
 
   reorder(goal_id: string, orderedIds: string[]): void {
-    const existing = this.db
-      .prepare(`SELECT id FROM tasks WHERE goal_id = ?`)
-      .all(goal_id) as { id: string }[];
+    const existing = this.db.prepare(`SELECT id FROM tasks WHERE goal_id = ?`).all(goal_id) as {
+      id: string;
+    }[];
     const existingSet = new Set(existing.map((r) => r.id));
     const providedSet = new Set(orderedIds);
     if (

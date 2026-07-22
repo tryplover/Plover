@@ -1,0 +1,280 @@
+.plover-home {
+  flex: 1;
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 40px 44px;
+  background: var(--plover-bg);
+}
+
+.plover-home__greeting {
+  font-family: var(--plover-font-serif);
+  font-size: 34px;
+  font-weight: 400;
+  color: var(--plover-text);
+  letter-spacing: -0.02em;
+}
+
+.plover-home__subtitle {
+  margin-top: 6px;
+  font-size: 14.5px;
+  color: var(--plover-text-muted);
+}
+
+.plover-home__cta.plover-btn--primary {
+  margin-top: 24px;
+  align-self: flex-start;
+  border-radius: 11px;
+  padding: 12px 20px 12px 18px;
+  font-size: 13.5px;
+}
+
+.plover-home__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 34px;
+  padding-bottom: 24px;
+}
+
+.plover-home-task-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  background: var(--plover-surface);
+  border: 1px solid var(--plover-border);
+  border-radius: 13px;
+  padding: 16px 20px 16px 18px;
+  text-align: left;
+  transition: border-color var(--plover-duration-fast);
+}
+
+.plover-home-task-row--active {
+  cursor: pointer;
+  border: 1.5px solid var(--plover-home-active-border);
+  box-shadow: var(--plover-home-active-shadow);
+}
+
+.plover-home-task-row__info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 280px;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+.plover-home-task-row__title-line {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.plover-home-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--plover-mint);
+  flex-shrink: 0;
+}
+
+.plover-home-task-row__title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--plover-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plover-home-task-row--active .plover-home-task-row__title {
+  color: var(--plover-mint);
+}
+
+.plover-home-task-row__watching {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.6px;
+  color: var(--plover-mint);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.plover-home-task-row__subtitle {
+  font-size: 11.5px;
+  color: var(--plover-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plover-home-task-row__progress {
+  flex: 1;
+  min-width: 0;
+}
+
+.plover-home-task-row__pct {
+  font-family: var(--plover-font-serif);
+  font-size: 22px;
+  color: var(--plover-text);
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+  min-width: 44px;
+  text-align: right;
+}
+
+.plover-home-steps-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--plover-surface);
+  border: 1px solid var(--plover-border);
+  border-radius: 13px;
+  padding: 4px 20px 10px 18px;
+}
+
+.plover-home-steps-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.plover-home-steps-list > .plover-step:not(:first-child) {
+  border-top: 1px solid var(--plover-border);
+}
+
+.plover-home-steps-empty {
+  padding: 12px 0;
+  font-size: 13px;
+  color: var(--plover-text-dim);
+  font-style: italic;
+}
+
+.plover-home-steps-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 0;
+  margin-top: 4px;
+  border: none;
+  border-top: 1px solid var(--plover-border);
+  background: transparent;
+  color: var(--plover-text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.plover-home-steps-caption {
+  text-align: center;
+  font-size: 10.5px;
+  color: var(--plover-text-dim);
+  padding-top: 8px;
+}
+
+.plover-home-empty {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px;
+  background: var(--plover-bg);
+}
+
+.plover-home-empty__decoy {
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 15px 18px;
+  border: 1px dashed var(--plover-border);
+  border-radius: 13px;
+  background: rgba(246, 242, 235, 0.6);
+  margin-bottom: 30px;
+}
+
+.plover-home-empty__decoy-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.plover-home-empty__decoy-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--plover-home-track-bg);
+  flex-shrink: 0;
+}
+
+.plover-home-empty__decoy-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--plover-home-track-bg);
+}
+
+.plover-home-empty__decoy-bar--title {
+  width: 120px;
+}
+
+.plover-home-empty__decoy-bar--pct {
+  width: 34px;
+  height: 14px;
+  margin-left: auto;
+}
+
+.plover-home-empty__decoy-track {
+  height: 7px;
+  border-radius: 3.5px;
+  background: var(--plover-home-track-bg);
+  opacity: 0.6;
+}
+
+.plover-home-empty__title {
+  font-family: var(--plover-font-serif);
+  font-size: 34px;
+  font-weight: 400;
+  color: var(--plover-text);
+  letter-spacing: -0.02em;
+}
+
+.plover-home-empty__body {
+  margin-top: 12px;
+  font-size: 14.5px;
+  line-height: 1.48;
+  color: var(--plover-text-muted);
+  max-width: 420px;
+}
+
+.plover-home-empty__cta.plover-btn--primary {
+  margin-top: 30px;
+  border-radius: 11px;
+  padding: 14px 24px 14px 22px;
+  font-size: 14px;
+}
+
+.plover-home-loading {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--plover-bg);
+}
+
+/* Fade inactive task rows when there's an active task row to match Figma H6 */
+.plover-home__list:has(.plover-home-task-row--active)
+  .plover-home-task-row:not(.plover-home-task-row--active) {
+  opacity: 0.42;
+  filter: blur(0.8px);
+  transition:
+    opacity 0.25s ease,
+    filter 0.25s ease;
+}

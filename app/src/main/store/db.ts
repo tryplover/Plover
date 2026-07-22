@@ -104,8 +104,7 @@ export function runMigrations(db: Database.Database): void {
   ).run();
 
   const row = db.prepare('SELECT MAX(version) as current_version FROM _migrations').get() as
-    | { current_version: number | null }
-    | undefined;
+    { current_version: number | null } | undefined;
   const currentVersion = row?.current_version ?? 0;
 
   const maxAvailableVersion =

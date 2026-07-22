@@ -53,3 +53,8 @@
 .plover-approw[data-selected='false'] {
   border: 1px solid transparent;
 }
+
+/* Light theme overrides */
+.plover-shell--light .plover-approw[data-selected='true'] {
+  background: var(--plover-mint-soft, rgba(29, 158, 117, 0.08));
+}

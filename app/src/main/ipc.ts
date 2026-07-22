@@ -21,7 +21,9 @@ import * as supabaseAuth from './auth/supabase-auth.js';
 
 export const googleAuth = new GoogleAuth();
 
-function getRecentActivityContext(settings: SettingsData): { kind: string; payload: Record<string, unknown>; ts: string }[] | undefined {
+function getRecentActivityContext(
+  settings: SettingsData,
+): { kind: string; payload: Record<string, unknown>; ts: string }[] | undefined {
   if (settings.planner_useRecentActivityContext) {
     const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     return activityRepo

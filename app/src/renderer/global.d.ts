@@ -22,6 +22,8 @@ export interface PloverAPI {
     workingHours: { start: string; end: string };
     horizonDays: number;
     pauseScheduling: boolean;
+    theme: 'light' | 'dark';
+    companionMode: 'full' | 'compact';
     pauseAllTracking: boolean;
     windowTrackingEnabled: boolean;
     gdocsPollingEnabled: boolean;
@@ -38,6 +40,8 @@ export interface PloverAPI {
       workingHours: { start: string; end: string };
       horizonDays: number;
       pauseScheduling: boolean;
+      theme: 'light' | 'dark';
+      companionMode: 'full' | 'compact';
       pauseAllTracking: boolean;
       windowTrackingEnabled: boolean;
       gdocsPollingEnabled: boolean;
@@ -53,6 +57,8 @@ export interface PloverAPI {
     workingHours: { start: string; end: string };
     horizonDays: number;
     pauseScheduling: boolean;
+    theme: 'light' | 'dark';
+    companionMode: 'full' | 'compact';
     pauseAllTracking: boolean;
     windowTrackingEnabled: boolean;
     gdocsPollingEnabled: boolean;
@@ -89,6 +95,7 @@ export interface PloverAPI {
     signOut: () => Promise<{ signedIn: boolean; email: string | null }>;
     getStatus: () => Promise<{ signedIn: boolean; email: string | null }>;
   };
+  listActiveWindows(): Promise<{ app: string; title: string }[]>;
   platform: string;
 }
 

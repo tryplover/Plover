@@ -8,6 +8,7 @@ import './StepBreakdown.css';
 
 interface Props {
   draft: { text: string; frequency: 'one-off' | 'daily' | 'weekly' };
+  plan?: ProposedPlan | null;
   onBack: () => void;
   onNext: (plan: ProposedPlan) => void;
   variant: 'overlay' | 'window';
@@ -22,14 +23,24 @@ interface EditableSubtask {
   scheduled_end?: string;
 }
 
-export function StepBreakdown({ draft, onBack, onNext, variant }: Props) {
-  const [goalTitle, setGoalTitle] = useState<string>('');
-  const [subtasks, setSubtasks] = useState<EditableSubtask[]>([]);
+export function StepBreakdown({ draft, plan, onBack, onNext, variant }: Props) {
+  const [goalTitle, setGoalTitle] = useState<string>(() => plan?.goal.title || '');
+  const [subtasks, setSubtasks] = useState<EditableSubtask[]>(() => {
+    if (plan) {
+      return plan.subtasks.map((st, idx) => ({
+        ...st,
+        id: (st as { id?: string }).id || `step-${idx}-${Date.now()}`,
+      }));
+    }
+    return [];
+  });
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !plan);
   const [newlyAddedId, setNewlyAddedId] = useState<string | null>(null);
 
   useEffect(() => {
+    if (plan) return;
+
     let cancelled = false;
     (async () => {
       try {
@@ -52,9 +63,9 @@ export function StepBreakdown({ draft, onBack, onNext, variant }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [draft.text]);
+  }, [draft.text, plan]);
 
-  if (loading) return <p className="plover-step-breakdown__loading">Asking Gemini…</p>;
+  if (loading) return <p className="plover-step-breakdown__loading">Plover is planning…</p>;
   if (error) return <p className="plover-step-breakdown__error">{error}</p>;
 
   const addStep = () => {
@@ -99,7 +110,7 @@ export function StepBreakdown({ draft, onBack, onNext, variant }: Props) {
     <section className={`plover-step-breakdown plover-step-breakdown--${variant}`}>
       <StatusIndicator
         kind="observing"
-        label={`Gemini suggested ${subtasks.length} step${subtasks.length === 1 ? '' : 's'}`}
+        label={`Plover suggested ${subtasks.length} step${subtasks.length === 1 ? '' : 's'}`}
       />
       <h2>{goalTitle || draft.text}</h2>
 

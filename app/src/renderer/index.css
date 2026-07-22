@@ -42,6 +42,35 @@
   --plover-font-serif: 'Instrument Serif', 'New York', Georgia, serif;
 }
 
+.plover-shell--dark {
+  /* Surface */
+  --plover-bg: #17181c;
+  --plover-sidebar-bg: #131418;
+  --plover-surface: #1f2126;
+  --plover-surface-raised: #2b2d35;
+  --plover-border: rgba(255, 255, 255, 0.09);
+
+  /* Text */
+  --plover-text: #f6f2eb;
+  --plover-text-muted: #465052;
+  --plover-text-dim: rgba(246, 242, 235, 0.6);
+
+  /* Accent */
+  --plover-mint: #9fe1cb;
+  --plover-mint-soft: rgba(159, 225, 203, 0.16);
+
+  /* Buttons */
+  --plover-button-primary: #f6f2eb;
+  --plover-button-primary-fg: #17181c;
+  --plover-button-secondary: #25272e;
+
+  /* Supplemental Home Dashboard tokens for Dark Mode */
+  --plover-home-track-bg: rgba(255, 255, 255, 0.14);
+  --plover-home-active-border: rgba(159, 225, 203, 0.55);
+  --plover-home-active-shadow: 0 6px 24px 0 rgba(29, 158, 117, 0.16);
+  --plover-home-nav-active-bg: rgba(246, 242, 235, 0.06);
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -1124,11 +1153,45 @@ input:checked + .slider:before {
   animation: fadeIn 0.25s ease-out;
 }
 
+.plover-modal-backdrop-close {
+  position: absolute;
+  top: 32px;
+  right: 32px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-size: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--plover-duration-fast);
+  z-index: 1001;
+}
+
+.plover-modal-backdrop-close:hover {
+  background: rgba(255, 255, 255, 0.16);
+  transform: scale(1.05);
+}
+
+.plover-shell--light .plover-modal-backdrop-close {
+  background: rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: #24211c;
+}
+
+.plover-shell--light .plover-modal-backdrop-close:hover {
+  background: rgba(0, 0, 0, 0.16);
+}
+
 .plover-modal-content {
   background-color: var(--plover-surface);
   border: 1px solid var(--plover-border);
-  border-radius: var(--plover-radius-lg);
-  width: 680px;
+  border-radius: 18px;
+  width: 440px;
   max-width: 90%;
   max-height: 90vh;
   overflow-y: auto;
@@ -1332,4 +1395,113 @@ input:checked + .slider:before {
   font-size: 13px;
   color: var(--plover-text-dim);
   margin: 0;
+}
+
+/* ---- Home Dashboard: light/cream theme scope (Figma H / H2 / H5) --------
+   Scoped to `.plover-shell--light` (applied to `.app-container` only) so the
+   overlay/companion windows — which share this same stylesheet — keep the
+   dark `:root` defaults untouched above. Redefines the existing --plover-*
+   token names so Button/ProgressLine/StepRow/StatusIndicator/Chip re-theme
+   without per-component edits, plus a few supplemental --plover-home-*
+   tokens for visuals (progress track, active-card border/shadow) that don't
+   have an existing dark-theme equivalent. */
+.plover-shell--light {
+  --plover-bg: #f3eee4;
+  --plover-sidebar-bg: #efe9dc;
+  --plover-surface: #f6f2eb;
+  --plover-surface-raised: #efe6d6;
+  --plover-border: rgba(168, 181, 176, 0.35);
+
+  --plover-text: #24211c;
+  --plover-text-muted: #5e6b6e;
+  --plover-text-dim: rgba(94, 107, 110, 0.6);
+
+  /* Not in the plan's enumerated var list, but ProgressLine/StepRow "done"/
+     "current" states and the Home active-card treatment all key off
+     --plover-mint; Figma's light theme uses a distinctly different accent
+     green (#1d9e75) than the dark theme's mint (#8ce0af), so leaving it
+     un-overridden would mismatch the fetched design context. */
+  --plover-mint: #1d9e75;
+  --plover-mint-soft: rgba(29, 158, 117, 0.16);
+
+  --plover-button-primary: #24211c;
+  --plover-button-primary-fg: #f3eee4;
+  --plover-button-secondary: rgba(36, 33, 28, 0.07);
+
+  --plover-home-track-bg: #d9cbb3;
+  --plover-home-active-border: rgba(29, 158, 117, 0.55);
+  --plover-home-active-shadow: 0 6px 24px 0 rgba(29, 158, 117, 0.16);
+  --plover-home-nav-active-bg: rgba(36, 33, 28, 0.06);
+}
+
+/* ProgressLine's track/fill colors are hardcoded (not var-driven) in
+   ProgressLine.css, which is a shared component this pass doesn't own —
+   these additive overrides correct the two values that would otherwise
+   render as a near-invisible white-on-cream track. */
+.plover-shell--light .plover-progress {
+  background: var(--plover-home-track-bg);
+}
+
+.plover-shell--light .plover-progress:not([data-tone='mint']) .plover-progress__fill {
+  opacity: 1;
+}
+
+/* StepRow's default bullet background is a hardcoded white-based overlay;
+   swap it for a dark-based one so pending steps stay legible on cream. */
+.plover-shell--light .plover-step__bullet {
+  background: rgba(36, 33, 28, 0.06);
+}
+
+/* Figma's active sidebar nav item uses a neutral dark tint with unchanged
+   (still-dark) text, not the mint tint/mint text .nav-item.active uses by
+   default — same rationale as above, additive correction only. */
+.plover-shell--light .nav-item:hover {
+  background-color: rgba(36, 33, 28, 0.05);
+  color: var(--plover-text);
+}
+
+.plover-shell--light .nav-item.active {
+  background-color: var(--plover-home-nav-active-bg);
+  color: var(--plover-text);
+}
+
+/* .loading-spinner is hardcoded white-on-transparent; correct for cream. */
+.plover-shell--light .loading-spinner {
+  border-color: rgba(36, 33, 28, 0.15);
+  border-top-color: var(--plover-text);
+}
+
+/* Sidebar user-profile row (Figma H/H2/H5 bottom-of-sidebar block). Shows
+   the real signed-in account email (window.api.auth.getStatus()) rather
+   than a fabricated display name/trial-status string — neither exists in
+   this app today. */
+.plover-profile-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 8px 0 8px;
+  margin-top: 10px;
+}
+
+.plover-profile-row__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 14px;
+  background: var(--plover-mint-soft);
+  color: var(--plover-mint);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.plover-profile-row__label {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--plover-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

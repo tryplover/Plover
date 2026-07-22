@@ -4,9 +4,11 @@ import { AnimatePresence, motion, ploverDuration, ploverEasing } from '../lib/mo
 import { Stepper } from './steps/Stepper';
 import { StepName } from './steps/StepName';
 import { StepBreakdown } from './steps/StepBreakdown';
+import { StepConnect } from './steps/StepConnect';
+import type { ProposedPlan } from '../../preload';
 import './SetupFlow.css';
 
-type Step = 'name' | 'breakdown' | 'committed';
+type Step = 'name' | 'breakdown' | 'connect' | 'committed';
 
 export function SetupFlow({
   variant = 'overlay' as const,
@@ -20,6 +22,7 @@ export function SetupFlow({
     text: '',
     frequency: 'one-off',
   });
+  const [plan, setPlan] = useState<ProposedPlan | null>(null);
 
   const close = () => {
     if (onClose) {
@@ -30,15 +33,40 @@ export function SetupFlow({
     }
   };
 
+  const handleDraftChange = (nextDraft: typeof draft) => {
+    setDraft(nextDraft);
+    setPlan(null);
+  };
+
   return (
     <div className={`plover-setup plover-setup--${variant}`}>
-      {variant === 'window' && <div className="plover-setup__chrome">Plover</div>}
+      {variant === 'window' && (
+        <div className="plover-setup__chrome">
+          <div className="plover-setup__chrome-left">
+            <svg
+              className="plover-setup__chrome-logo"
+              width="13"
+              height="13"
+              viewBox="0 0 13 13"
+              fill="currentColor"
+            >
+              <rect x="1.5" y="4.5" width="2" height="6.5" rx="0.75" />
+              <rect x="5.5" y="1.5" width="2" height="9.5" rx="0.75" />
+              <rect x="9.5" y="4.5" width="2" height="6.5" rx="0.75" />
+            </svg>
+            <span className="plover-setup__chrome-title">Plover</span>
+          </div>
+          <button className="plover-setup__chrome-close" onClick={close} aria-label="Close modal">
+            ✕
+          </button>
+        </div>
+      )}
       <AnimatePresence mode="wait">
         {step === 'name' && (
           <motion.div key="name" {...slide()}>
             <StepName
               value={draft}
-              onChange={setDraft}
+              onChange={handleDraftChange}
               onNext={() => setStep('breakdown')}
               variant={variant}
             />
@@ -48,16 +76,25 @@ export function SetupFlow({
           <motion.div key="breakdown" {...slide()}>
             <StepBreakdown
               draft={draft}
+              plan={plan}
               variant={variant}
               onBack={() => setStep('name')}
-              onNext={async (p) => {
-                try {
-                  await window.api.commitGoal(p);
-                  setStep('committed');
-                  setTimeout(close, 800);
-                } catch (err) {
-                  console.error('Failed to commit goal:', err);
-                }
+              onNext={(p) => {
+                setPlan(p);
+                setStep('connect');
+              }}
+            />
+          </motion.div>
+        )}
+        {step === 'connect' && plan && (
+          <motion.div key="connect" {...slide()}>
+            <StepConnect
+              plan={plan}
+              variant={variant}
+              onBack={() => setStep('breakdown')}
+              onNext={() => {
+                setStep('committed');
+                setTimeout(close, 800);
               }}
             />
           </motion.div>
@@ -68,7 +105,7 @@ export function SetupFlow({
           </motion.div>
         )}
       </AnimatePresence>
-      <Stepper current={step === 'name' ? 1 : 2} />
+      <Stepper current={step === 'name' ? 1 : step === 'breakdown' ? 2 : 3} />
     </div>
   );
 }

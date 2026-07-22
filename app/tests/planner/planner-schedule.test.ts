@@ -141,7 +141,7 @@ describe('Deterministic Auto-Scheduling', () => {
     expect(() =>
       scheduleTasks({
         tasks,
-          workingHours,
+        workingHours,
         horizonDays,
         now: baseDate,
       }),
@@ -154,7 +154,7 @@ describe('Deterministic Auto-Scheduling', () => {
     expect(() =>
       scheduleTasks({
         tasks,
-          workingHours: { start: 'oops', end: '17:00' },
+        workingHours: { start: 'oops', end: '17:00' },
         horizonDays,
         now: baseDate,
       }),
@@ -163,7 +163,7 @@ describe('Deterministic Auto-Scheduling', () => {
     expect(() =>
       scheduleTasks({
         tasks,
-          workingHours: { start: '09:00', end: '25:99' },
+        workingHours: { start: '09:00', end: '25:99' },
         horizonDays,
         now: baseDate,
       }),

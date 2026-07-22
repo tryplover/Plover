@@ -15,6 +15,8 @@ describe('SettingsRepo — Phase 2 activity tracking keys', () => {
 
   it('returns the documented defaults when nothing is stored', () => {
     const s = repo.getAll();
+    expect(s.theme).toBe('light');
+    expect(s.companionMode).toBe('compact');
     expect(s.pauseAllTracking).toBe(false);
     expect(s.windowTrackingEnabled).toBe(true);
     expect(s.gdocsPollingEnabled).toBe(true);
@@ -24,6 +26,20 @@ describe('SettingsRepo — Phase 2 activity tracking keys', () => {
     expect(s.screenVisionInferenceEnabled).toBe(false);
     expect(s.activityRetentionDays).toBe(30);
     expect(s.planner_useRecentActivityContext).toBe(true);
+  });
+
+  it('roundtrips theme setting', () => {
+    repo.update({ theme: 'dark' });
+    expect(repo.getAll().theme).toBe('dark');
+    repo.update({ theme: 'light' });
+    expect(repo.getAll().theme).toBe('light');
+  });
+
+  it('roundtrips companionMode setting', () => {
+    repo.update({ companionMode: 'compact' });
+    expect(repo.getAll().companionMode).toBe('compact');
+    repo.update({ companionMode: 'full' });
+    expect(repo.getAll().companionMode).toBe('full');
   });
 
   it('roundtrips updated activity keys', () => {

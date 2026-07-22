@@ -30,7 +30,5 @@ if (showGallery) {
     );
   });
 } else {
-  createRoot(container).render(
-    <StrictMode>{isOverlay ? <Overlay /> : <App />}</StrictMode>,
-  );
+  createRoot(container).render(<StrictMode>{isOverlay ? <Overlay /> : <App />}</StrictMode>);
 }

@@ -1,9 +1,6 @@
 import { app } from 'electron';
 
-export function resolveRequiredEnv(
-  name: string,
-  { devFallback }: { devFallback: string },
-): string {
+export function resolveRequiredEnv(name: string, { devFallback }: { devFallback: string }): string {
   const value = process.env[name];
   if (value && value.length > 0) return value;
   if (app?.isPackaged) {
