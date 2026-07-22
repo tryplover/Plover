@@ -37,6 +37,10 @@ interface AuthStatus {
 
 export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
   const [googleConnected, setGoogleConnected] = useState(false);
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  // Matches SettingsRepo.getAll()'s default (compact) so the toggle doesn't
+  // flash "Full" selected before the async getSettings() call resolves.
+  const [companionMode, setCompanionMode] = useState<'full' | 'compact'>('compact');
   const [authStatus, setAuthStatus] = useState<AuthStatus>({ signedIn: false, email: null });
   const [workingHours, setWorkingHours] = useState({ start: '09:00', end: '18:00' });
   const [horizonDays, setHorizonDays] = useState(14);
@@ -50,6 +54,8 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
   const fetchSettings = async () => {
     try {
       const settings = await window.api.getSettings();
+      setTheme(settings.theme || 'light');
+      setCompanionMode(settings.companionMode || 'compact');
       setGoogleConnected(settings.googleConnected);
       setWorkingHours(settings.workingHours || { start: '09:00', end: '18:00' });
       setHorizonDays(settings.horizonDays || 14);
@@ -155,6 +161,8 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
       workingHours: { start: string; end: string };
       horizonDays: number;
       pauseScheduling: boolean;
+      theme: 'light' | 'dark';
+      companionMode: 'full' | 'compact';
     }>,
   ) => {
     setSaveStatus('saving');
@@ -166,6 +174,16 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
       console.error('Failed to update settings:', err);
       setSaveStatus('idle');
     }
+  };
+
+  const handleThemeChange = (newTheme: 'light' | 'dark') => {
+    setTheme(newTheme);
+    void triggerAutoSave({ theme: newTheme });
+  };
+
+  const handleCompanionModeChange = (newMode: 'full' | 'compact') => {
+    setCompanionMode(newMode);
+    void triggerAutoSave({ companionMode: newMode });
   };
 
   const handleConnectGoogle = async () => {
@@ -279,6 +297,90 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
 
       <div style={{ flex: 1, overflowY: 'auto', paddingRight: '40px', paddingBottom: '24px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          <div
+            style={{
+              backgroundColor: 'var(--plover-surface)',
+              borderRadius: 'var(--plover-radius-lg)',
+              padding: '24px',
+            }}
+          >
+            <h2
+              style={{
+                fontSize: '18px',
+                fontWeight: 600,
+                marginBottom: '16px',
+                color: 'var(--plover-text)',
+              }}
+            >
+              Appearance
+            </h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--plover-text)' }}>
+                  Theme
+                </p>
+                <p
+                  style={{
+                    fontSize: '13px',
+                    color: 'var(--plover-text-muted)',
+                    marginTop: '4px',
+                  }}
+                >
+                  Choose between light cream mode and dark mode.
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <Chip selected={theme === 'light'} onClick={() => handleThemeChange('light')}>
+                  Light
+                </Chip>
+                <Chip selected={theme === 'dark'} onClick={() => handleThemeChange('dark')}>
+                  Dark
+                </Chip>
+              </div>
+            </div>
+
+            <div
+              style={{
+                height: '1px',
+                backgroundColor: 'var(--plover-border)',
+                marginTop: '20px',
+                marginBottom: '20px',
+                opacity: 0.5,
+              }}
+            />
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--plover-text)' }}>
+                  Companion Bar Style
+                </p>
+                <p
+                  style={{
+                    fontSize: '13px',
+                    color: 'var(--plover-text-muted)',
+                    marginTop: '4px',
+                  }}
+                >
+                  Choose between a full detail bar or a compact progress pill.
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <Chip
+                  selected={companionMode === 'full'}
+                  onClick={() => handleCompanionModeChange('full')}
+                >
+                  Full
+                </Chip>
+                <Chip
+                  selected={companionMode === 'compact'}
+                  onClick={() => handleCompanionModeChange('compact')}
+                >
+                  Compact
+                </Chip>
+              </div>
+            </div>
+          </div>
+
           <div
             style={{
               backgroundColor: 'var(--plover-surface)',
@@ -704,7 +806,7 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
                 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
               >
                 <label style={{ fontSize: '14px', color: 'var(--plover-text)' }}>
-                  Send screenshots to Gemini Vision
+                  Send screenshots to Plover Vision
                 </label>
                 <div
                   style={{

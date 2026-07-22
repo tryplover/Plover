@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow } from 'electron';
+import { ipcMain, BrowserWindow, screen } from 'electron';
 import { Goal, Task } from '../shared/types.js';
 import { goalsRepo, tasksRepo, settingsRepo, summariesRepo, activityRepo } from './store/index.js';
 import { decomposeGoal } from './planner/decompose.js';
@@ -41,7 +41,7 @@ export function setupIpcHandlers(
   getOverlayWindow: () => BrowserWindow | null,
   onWatchedFoldersChange?: (folders: string[]) => Promise<void> | void,
   createOverlayWindow?: (variant: 'overlay' | 'window') => BrowserWindow,
-): void {
+): () => BrowserWindow {
   void googleAuth.loadSavedCredentials();
   void supabaseAuth.restoreSession().then((hasSession) => {
     if (hasSession) supabaseAuth.startAutoRefresh();
@@ -432,11 +432,29 @@ export function setupIpcHandlers(
   ipcMain.handle('companion:hide', () => {
     companion?.hide();
   });
-  ipcMain.handle('companion:resize', (_e, height: number) => {
+  ipcMain.handle('companion:resize', (_e, height: number, width?: number) => {
     const w = ensureCompanion();
-    const [width] = w.getSize();
-    if (width !== undefined) {
-      w.setSize(width, Math.max(56, Math.min(640, Math.round(height))));
+    const bounds = w.getBounds();
+    const nextHeight = Math.max(20, Math.min(640, Math.round(height)));
+    const nextWidth =
+      width !== undefined ? Math.max(100, Math.min(600, Math.round(width))) : bounds.width;
+
+    if (width !== undefined && nextWidth !== bounds.width) {
+      const { workArea } = screen.getPrimaryDisplay();
+      const nextX = workArea.x + Math.round((workArea.width - nextWidth) / 2);
+      w.setBounds({
+        x: nextX,
+        y: bounds.y,
+        width: nextWidth,
+        height: nextHeight,
+      });
+    } else {
+      w.setBounds({
+        x: bounds.x,
+        y: bounds.y,
+        width: bounds.width,
+        height: nextHeight,
+      });
     }
   });
   ipcMain.handle('companion:setActiveTask', (_e, taskId: string | null) => {
@@ -495,13 +513,20 @@ export function setupIpcHandlers(
   ipcMain.handle('window:close', (_event) => {
     BrowserWindow.fromWebContents(_event.sender)?.close();
   });
+
+  return ensureCompanion;
 }
 
 export function setupIpc(
   getOverlayWindow: () => BrowserWindow | null,
   onWatchedFoldersChange?: (folders: string[]) => Promise<void> | void,
   createOverlayWindow?: (variant: 'overlay' | 'window') => BrowserWindow,
-): void {
-  setupIpcHandlers(getOverlayWindow, onWatchedFoldersChange, createOverlayWindow);
+): () => BrowserWindow {
+  const ensureCompanion = setupIpcHandlers(
+    getOverlayWindow,
+    onWatchedFoldersChange,
+    createOverlayWindow,
+  );
   startEventForwarding(broadcast);
+  return ensureCompanion;
 }

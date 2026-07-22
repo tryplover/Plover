@@ -1,21 +1,52 @@
 import { useState, useEffect } from 'react';
+import Home from './main/pages/Home';
 import GoalsList from './main/pages/GoalsList';
 import AIProgress from './main/pages/AIProgress';
 import Settings from './main/pages/Settings';
 import { Onboarding } from './main/pages/Onboarding';
-import { IconTarget, IconGear, IconActivity } from './main/icons';
+import { IconHome, IconTarget, IconGear, IconActivity } from './main/icons';
 import ploverLogo from './plover-logo.png';
 
-type Tab = 'goals' | 'progress' | 'settings';
+type Tab = 'home' | 'goals' | 'progress' | 'settings';
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<Tab>('goals');
+  const [activeTab, setActiveTab] = useState<Tab>('home');
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean>(() => {
     return localStorage.getItem('plover_onboarding_completed') === 'true';
   });
+  const [accountEmail, setAccountEmail] = useState<string | null>(null);
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
-    document.body.style.background = 'var(--plover-bg, #141517)';
+    let active = true;
+    window.api
+      .getSettings()
+      .then((settings) => {
+        if (active && settings.theme) {
+          setTheme(settings.theme);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [activeTab]);
+
+  useEffect(() => {
+    document.body.style.background = theme === 'light' ? '#f3eee4' : '#141517';
+  }, [theme]);
+
+  useEffect(() => {
+    let active = true;
+    window.api.auth
+      .getStatus()
+      .then(({ email }) => {
+        if (active) setAccountEmail(email);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
   }, []);
 
   const handleOnboardingComplete = () => {
@@ -28,7 +59,9 @@ export function App() {
   }
 
   return (
-    <div className="app-container">
+    <div
+      className={`app-container ${theme === 'light' ? 'plover-shell--light' : 'plover-shell--dark'}`}
+    >
       <div className="app-drag-region" />
       <aside className="sidebar">
         <div>
@@ -39,12 +72,21 @@ export function App() {
 
           <nav className="nav-links">
             <button
+              className={`nav-item ${activeTab === 'home' ? 'active' : ''}`}
+              onClick={() => setActiveTab('home')}
+              data-testid="nav-home"
+            >
+              <IconHome />
+              <span>Home</span>
+            </button>
+
+            <button
               className={`nav-item ${activeTab === 'goals' ? 'active' : ''}`}
               onClick={() => setActiveTab('goals')}
               data-testid="nav-goals"
             >
               <IconTarget />
-              <span>Goals</span>
+              <span>All tasks</span>
             </button>
 
             <button
@@ -53,9 +95,13 @@ export function App() {
               data-testid="nav-progress"
             >
               <IconActivity />
-              <span>AI Progress</span>
+              <span>History</span>
             </button>
+          </nav>
+        </div>
 
+        <div>
+          <nav className="nav-links">
             <button
               className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
               onClick={() => setActiveTab('settings')}
@@ -65,12 +111,18 @@ export function App() {
               <span>Settings</span>
             </button>
           </nav>
-        </div>
 
-        <div className="sidebar-version">Plover v1.0.0</div>
+          <div className="plover-profile-row">
+            <span className="plover-profile-row__avatar" aria-hidden>
+              {accountEmail ? accountEmail[0]?.toUpperCase() : '?'}
+            </span>
+            <span className="plover-profile-row__label">{accountEmail ?? 'Not signed in'}</span>
+          </div>
+        </div>
       </aside>
 
       <main className="main-content">
+        {activeTab === 'home' && <Home data-testid="page-home" />}
         {activeTab === 'goals' && <GoalsList data-testid="page-goals" />}
         {activeTab === 'progress' && <AIProgress data-testid="page-progress" />}
         {activeTab === 'settings' && <Settings data-testid="page-settings" />}

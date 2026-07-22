@@ -2,10 +2,7 @@ import { useState } from 'react';
 import { motion, ploverDuration, ploverEasing } from '../lib/motion';
 import './SignupScreen.css';
 
-type State =
-  | { kind: 'idle' }
-  | { kind: 'opened-browser' }
-  | { kind: 'error'; message: string };
+type State = { kind: 'idle' } | { kind: 'opened-browser' } | { kind: 'error'; message: string };
 
 export function SignupScreen() {
   const [state, setState] = useState<State>({ kind: 'idle' });
@@ -27,7 +24,7 @@ export function SignupScreen() {
       ? state.message
       : state.kind === 'opened-browser'
         ? 'Complete sign-in in your browser. This window will close automatically.'
-        : 'One-time setup so Plover can plan your goals with Gemini.';
+        : 'One-time setup so Plover can plan your goals.';
 
   const buttonLabel =
     state.kind === 'error'

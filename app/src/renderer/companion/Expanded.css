@@ -1,133 +1,383 @@
+/*
+  "Liquid glass" material, per explicit spec — see Collapsed.css for the full
+  rationale (light white tint + heavy blur + white/20 border + animated
+  gradient mesh, instead of relying on OS/backdrop-filter blur of real
+  content behind the window, which proved unreliable on Windows). Radius
+  otherwise still follows Figma node 4:2 for layout/spacing. StatusIndicator
+  and StepRow are shared components (owned elsewhere); the overrides below
+  are scoped under .plover-expanded so they don't leak into other consumers.
+*/
 .plover-expanded {
+  /* Same drag-region reasoning as .plover-collapsed in Collapsed.css — the
+     buttons inside (pause, menu, grabber, Change, Resume/Yes/Pause) are all
+     real <button> elements, so index.css's global `button { no-drag }` rule
+     already keeps them clickable without needing per-button overrides here. */
+  -webkit-app-region: drag;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 20px;
-  background: rgba(20, 21, 22, 0.45);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: var(--plover-radius-lg);
-  box-shadow: var(--plover-shadow-card);
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  box-shadow:
+    0 20px 48px -10px rgba(40, 46, 70, 0.38),
+    0 2px 10px rgba(20, 24, 40, 0.2),
+    inset 0 1px 1px rgba(255, 255, 255, 0.35);
   width: 100%;
+}
+
+.plover-expanded__mesh {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.plover-expanded__mesh::before,
+.plover-expanded__mesh::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(36px);
+  opacity: 0.5;
+}
+
+.plover-expanded__mesh::before {
+  width: 130%;
+  height: 90%;
+  top: -30%;
+  left: -25%;
+  background: radial-gradient(circle, rgba(140, 224, 175, 0.4), transparent 70%);
+  animation: plover-glass-drift-a 16s ease-in-out infinite;
+}
+
+.plover-expanded__mesh::after {
+  width: 110%;
+  height: 80%;
+  bottom: -25%;
+  right: -20%;
+  background: radial-gradient(circle, rgba(159, 190, 255, 0.35), transparent 70%);
+  animation: plover-glass-drift-b 20s ease-in-out infinite;
+}
+
+@keyframes plover-glass-drift-a {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(7%, 9%) scale(1.1);
+  }
+}
+
+@keyframes plover-glass-drift-b {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-9%, -7%) scale(1.08);
+  }
 }
 
 .plover-expanded__header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 4px;
+  flex-direction: column;
+  gap: 13px;
+  padding: 15px 17px 13px;
 }
 
-.plover-expanded__close {
+.plover-expanded__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.plover-expanded .plover-status {
+  background: none;
+  padding: 0;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.plover-expanded .plover-status__dot {
+  width: 6px;
+  height: 6px;
+}
+
+.plover-expanded .plover-status[data-kind='observing'] .plover-status__label,
+.plover-expanded .plover-status[data-kind='done'] .plover-status__label {
+  color: rgba(159, 225, 203, 0.85);
+}
+
+.plover-expanded__actions {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.plover-expanded__pause,
+.plover-expanded__menu {
+  display: flex;
+  align-items: center;
   background: none;
   border: none;
-  color: var(--plover-text-muted);
-  font-size: 16px;
-  cursor: pointer;
   padding: 4px;
+  cursor: pointer;
+}
+
+.plover-expanded__pause {
+  gap: 2px;
+}
+
+.plover-expanded__pause span {
+  width: 2.5px;
+  height: 11px;
+  border-radius: 1px;
+  background: rgba(246, 242, 235, 0.45);
+  transition: background-color var(--plover-duration-fast);
+}
+
+.plover-expanded__pause:hover span {
+  background: rgba(246, 242, 235, 0.75);
+}
+
+.plover-expanded__menu {
+  gap: 2.5px;
+}
+
+.plover-expanded__menu span {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(246, 242, 235, 0.45);
+  transition: background-color var(--plover-duration-fast);
+}
+
+.plover-expanded__menu:hover span {
+  background: rgba(246, 242, 235, 0.75);
+}
+
+/* Explicit top-right minimize control, per user design: the compact pill's
+   bottom grabber opens the big view; this closes it back down. The bottom
+   .plover-expanded__grabber still works too (kept, not asked to be
+   removed) — this just adds the specific top-right affordance requested. */
+.plover-expanded__minimize {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color var(--plover-duration-fast);
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
 }
 
-.plover-expanded__close:hover {
-  color: var(--plover-text);
+.plover-expanded__minimize span {
+  width: 10px;
+  height: 2px;
+  border-radius: 1px;
+  background: rgba(246, 242, 235, 0.45);
+  transition: background-color var(--plover-duration-fast);
+}
+
+.plover-expanded__minimize:hover span {
+  background: rgba(246, 242, 235, 0.75);
+}
+
+.plover-expanded__titlerow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.plover-expanded__titlecol {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .plover-expanded__title {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--plover-text);
+  font-size: 15px;
+  font-weight: 500;
+  color: #f6f2eb;
   margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .plover-expanded__meta {
-  font-size: 12px;
-  color: var(--plover-text-muted);
+  font-size: 11.5px;
+  color: rgba(246, 242, 235, 0.45);
   margin: 0;
 }
 
 .plover-expanded__pct {
   font-family: var(--plover-font-serif);
-  font-size: 32px;
-  font-weight: 500;
-  color: var(--plover-mint);
+  font-size: 34px;
+  font-weight: 400;
+  letter-spacing: -0.68px;
+  color: #f6f2eb;
   line-height: 1;
+  flex-shrink: 0;
 }
 
 .plover-expanded__segments {
   display: flex;
-  gap: 6px;
-  margin: 12px 0;
+  gap: 5px;
+  width: 100%;
 }
 
 .plover-expanded__segments span {
   flex: 1;
-  height: 6px;
-  border-radius: 3px;
-  background: var(--plover-text-dim);
+  height: 7px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.14);
   transition: background-color var(--plover-duration-normal);
 }
 
 .plover-expanded__segments span[data-filled='true'] {
-  background: var(--plover-mint);
+  background: #f3eee4;
 }
 
 .plover-expanded__steps {
   list-style: none;
-  padding: 0;
-  margin: 12px 0;
+  padding: 6px 17px 8px;
+  margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+}
+
+.plover-expanded__steps li + li {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.plover-expanded .plover-step {
+  padding: 8px 0;
+  gap: 10px;
+}
+
+.plover-expanded .plover-step__bullet {
+  width: 17px;
+  height: 17px;
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.plover-expanded .plover-step__label {
+  font-size: 13px;
+  color: rgba(246, 242, 235, 0.5);
+}
+
+.plover-expanded .plover-step[data-state='done'] .plover-step__bullet {
+  background: rgba(159, 225, 203, 0.16);
+  color: rgba(159, 225, 203, 0.85);
+}
+
+.plover-expanded .plover-step[data-state='done'] .plover-step__label {
+  color: rgba(246, 242, 235, 0.55);
+}
+
+.plover-expanded .plover-step[data-state='current'] .plover-step__bullet {
+  border-color: rgba(159, 225, 203, 0.85);
+  color: rgba(159, 225, 203, 0.85);
+}
+
+.plover-expanded .plover-step[data-state='current'] .plover-step__label {
+  color: rgba(246, 242, 235, 0.95);
+  font-weight: 500;
 }
 
 .plover-now {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--plover-mint);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  background: var(--plover-mint-soft);
-  padding: 2px 6px;
-  border-radius: 4px;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: rgba(159, 225, 203, 0.8);
+}
+
+.plover-expanded__footer-holder {
+  padding: 2px 12px 12px;
 }
 
 .plover-expanded__watching {
   display: flex;
   flex-direction: column;
+  gap: 7px;
+  padding: 11px 13px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.plover-expanded__watching-row {
+  display: flex;
+  align-items: center;
   gap: 8px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: var(--plover-radius-sm);
-  border: 1px solid var(--plover-border);
-  font-size: 12px;
-  color: var(--plover-text-muted);
 }
 
-.plover-expanded__watching span {
+.plover-expanded__watching-row span {
+  font-size: 11px;
   font-weight: 500;
-  color: var(--plover-text);
+  color: rgba(246, 242, 235, 0.8);
 }
 
-.plover-expanded__watching p {
+.plover-expanded__eye {
+  color: rgba(246, 242, 235, 0.7);
+  flex-shrink: 0;
+}
+
+.plover-expanded__watching-doc {
   margin: 0;
+  font-size: 11.5px;
+  color: rgba(246, 242, 235, 0.6);
+}
+
+.plover-expanded__watching-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.plover-expanded__watching-meta span {
+  font-size: 10.5px;
+  color: rgba(246, 242, 235, 0.4);
+}
+
+.plover-expanded__change {
+  padding: 0;
+  background: none;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: rgba(159, 225, 203, 0.7);
+}
+
+.plover-expanded__change:hover {
+  background: none;
+  opacity: 0.85;
 }
 
 .plover-expanded__resume {
-  width: 100%;
+  width: calc(100% - 34px);
+  margin: 6px 17px 13px;
 }
 
 .plover-expanded__verify {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  margin: 6px 17px 13px;
   padding: 12px;
   background: rgba(255, 255, 255, 0.02);
-  border-radius: var(--plover-radius-sm);
-  border: 1px solid var(--plover-border);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
 }
 
 .plover-expanded__verify span {
@@ -143,4 +393,27 @@
 
 .plover-expanded__verify button {
   flex: 1;
+}
+
+.plover-expanded__grabber {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 2px 0 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.plover-expanded__grabber span {
+  width: 28px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.18);
+  transition: background-color var(--plover-duration-fast);
+}
+
+.plover-expanded__grabber:hover span {
+  background: rgba(255, 255, 255, 0.3);
 }

@@ -8,6 +8,23 @@ export function Overlay() {
   const variant =
     new URLSearchParams(window.location.search).get('variant') === 'window' ? 'window' : 'overlay';
 
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+
+  useEffect(() => {
+    let active = true;
+    window.api
+      .getSettings()
+      .then((settings) => {
+        if (active && settings.theme) {
+          setTheme(settings.theme);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, []);
+
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -72,13 +89,20 @@ export function Overlay() {
           boxSizing: 'border-box' as const,
           width: '100%',
           padding: '22px 24px',
-          backgroundColor: 'rgba(20, 20, 22, 0.45)',
+          backgroundColor:
+            theme === 'light' ? 'rgba(243, 238, 228, 0.85)' : 'rgba(20, 20, 22, 0.45)',
           backdropFilter: 'blur(24px) saturate(180%)',
           WebkitBackdropFilter: 'blur(24px) saturate(180%)',
           borderRadius: '12px',
-          border: '1px solid rgba(255, 255, 255, 0.09)',
-          boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
-          color: '#f5f5f7',
+          border:
+            theme === 'light'
+              ? '1px solid rgba(36, 33, 28, 0.12)'
+              : '1px solid rgba(255, 255, 255, 0.09)',
+          boxShadow:
+            theme === 'light'
+              ? '0 8px 32px 0 rgba(36, 33, 28, 0.15)'
+              : '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
+          color: theme === 'light' ? '#24211c' : '#f5f5f7',
           fontFamily:
             '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
           overflow: 'hidden' as const,
@@ -89,14 +113,18 @@ export function Overlay() {
           height: '100%',
           padding: '0',
           backgroundColor: 'transparent',
-          color: '#f5f5f7',
+          color: theme === 'light' ? '#24211c' : '#f5f5f7',
           fontFamily:
             '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
           overflow: 'hidden' as const,
         };
 
   return (
-    <div ref={containerRef} style={overlayStyle}>
+    <div
+      ref={containerRef}
+      style={overlayStyle}
+      className={theme === 'light' ? 'plover-shell--light' : 'plover-shell--dark'}
+    >
       <SetupFlow key={resetCounter} variant={variant} />
     </div>
   );

@@ -19,7 +19,7 @@ export interface CompanionApi {
   hide: () => Promise<void>;
   setActiveTask: (taskId: string | null) => Promise<void>;
   setState: (kind: StateKind) => Promise<void>;
-  resize: (height: number) => Promise<void>;
+  resize: (height: number, width?: number) => Promise<void>;
   getInitialState: () => Promise<{ kind: StateKind; activeTaskId: string | null }>;
 }
 
@@ -83,6 +83,8 @@ export interface PloverApi {
     workingHours: { start: string; end: string };
     horizonDays: number;
     pauseScheduling: boolean;
+    theme: 'light' | 'dark';
+    companionMode: 'full' | 'compact';
     pauseAllTracking: boolean;
     windowTrackingEnabled: boolean;
     gdocsPollingEnabled: boolean;
@@ -99,6 +101,8 @@ export interface PloverApi {
       workingHours: { start: string; end: string };
       horizonDays: number;
       pauseScheduling: boolean;
+      theme: 'light' | 'dark';
+      companionMode: 'full' | 'compact';
       pauseAllTracking: boolean;
       windowTrackingEnabled: boolean;
       gdocsPollingEnabled: boolean;
@@ -114,6 +118,8 @@ export interface PloverApi {
     workingHours: { start: string; end: string };
     horizonDays: number;
     pauseScheduling: boolean;
+    theme: 'light' | 'dark';
+    companionMode: 'full' | 'compact';
     pauseAllTracking: boolean;
     windowTrackingEnabled: boolean;
     gdocsPollingEnabled: boolean;
@@ -219,7 +225,7 @@ const api: PloverApi = {
     hide: () => ipcRenderer.invoke('companion:hide'),
     setActiveTask: (taskId) => ipcRenderer.invoke('companion:setActiveTask', taskId),
     setState: (kind) => ipcRenderer.invoke('companion:setState', kind),
-    resize: (height) => ipcRenderer.invoke('companion:resize', height),
+    resize: (height, width) => ipcRenderer.invoke('companion:resize', height, width),
     getInitialState: () => ipcRenderer.invoke('companion:getInitialState'),
   },
 

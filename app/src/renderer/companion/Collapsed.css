@@ -1,59 +1,298 @@
+/*
+  "Liquid glass" material, per explicit spec: a light translucent white tint
+  (not a dark card), a heavy backdrop blur, a subtle white/20 border, and
+  animated gradient "mesh" blobs (.plover-collapsed__mesh) to simulate liquid
+  movement/light refraction — since real OS/backdrop-filter blur of actual
+  desktop content behind the window proved unreliable on Windows (confirmed
+  live: it either stayed sharp/unblurred, or with backgroundMaterial:
+  'acrylic' rendered as a flat opaque block with no blur at all). Faking the
+  blur with our own moving content inside the page is the reliable part.
+  Radius otherwise still follows Figma nodes 3:15/3:42 for layout/spacing.
+*/
 .plover-collapsed {
+  /* Frameless BrowserWindow with no OS title bar — this whole surface is a
+     drag region so the user can reposition it by grabbing anywhere on it.
+     The only click target is the .plover-collapsed__grabber handle at the
+     bottom (a real <button>, kept clickable under the drag region via the
+     global `button { -webkit-app-region: no-drag }` rule in index.css) —
+     deliberately not the whole pill, since a click handler on the same
+     surface as a drag region is an ambiguous gesture that can silently eat
+     clicks. */
+  -webkit-app-region: drag;
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 18px;
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: var(--plover-radius-xl);
-  background: rgba(20, 21, 22, 0.45);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  box-shadow: var(--plover-shadow-pill);
-  cursor: pointer;
+  flex-direction: column;
+  gap: 11px;
+  padding: 13px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  /* Soft + colored, not flat black — a cool-toned shadow reads as glass
+     resting on the desktop rather than a plain UI card. */
+  box-shadow:
+    0 16px 40px -8px rgba(40, 46, 70, 0.35),
+    0 2px 8px rgba(20, 24, 40, 0.18),
+    inset 0 1px 1px rgba(255, 255, 255, 0.35);
+  cursor: grab;
   position: relative;
   width: 100%;
   color: var(--plover-text);
   font-size: 14px;
   font-weight: 500;
-  transition: background-color var(--plover-duration-fast);
+  transition: filter var(--plover-duration-fast);
 }
 
 .plover-collapsed:hover {
-  background: rgba(20, 21, 22, 0.55);
+  filter: brightness(1.12);
 }
 
 .plover-collapsed:active {
-  opacity: 0.95;
+  cursor: grabbing;
+}
+
+/* Two soft, differently-colored radial blobs drifting slowly behind the
+   content — this is what actually reads as "liquid" motion, independent of
+   whether the platform can truly blur real content behind the window.
+   Positioned/clipped on the mesh element (not .plover-collapsed itself) so
+   the outer box-shadow above isn't clipped by overflow:hidden too. */
+.plover-collapsed__mesh {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  /* -1, not 0: z-index:0 is a *positioned* stacking level, which paints
+     ABOVE ordinary non-positioned in-flow content per CSS stacking order —
+     the opposite of "behind everything". -1 is the only value that sits
+     below in-flow content automatically, no per-content z-index needed. */
+  z-index: -1;
+  pointer-events: none;
+}
+
+.plover-collapsed__mesh::before,
+.plover-collapsed__mesh::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(30px);
+  opacity: 0.55;
+}
+
+.plover-collapsed__mesh::before {
+  width: 140%;
+  height: 140%;
+  top: -45%;
+  left: -35%;
+  background: radial-gradient(circle, rgba(140, 224, 175, 0.4), transparent 70%);
+  animation: plover-glass-drift-a 16s ease-in-out infinite;
+}
+
+.plover-collapsed__mesh::after {
+  width: 120%;
+  height: 120%;
+  bottom: -40%;
+  right: -30%;
+  background: radial-gradient(circle, rgba(159, 190, 255, 0.35), transparent 70%);
+  animation: plover-glass-drift-b 20s ease-in-out infinite;
+}
+
+@keyframes plover-glass-drift-a {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(7%, 9%) scale(1.1);
+  }
+}
+
+@keyframes plover-glass-drift-b {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-9%, -7%) scale(1.08);
+  }
+}
+
+/* Content sits in normal flow (no position set), which paints above the
+   mesh's z-index: -1 absolutely-positioned layer automatically per CSS
+   stacking rules — no per-element z-index needed on the row/grabber. */
+
+.plover-collapsed__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.plover-collapsed__left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .plover-collapsed__sep {
-  opacity: 0.4;
   flex-shrink: 0;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(246, 242, 235, 0.4);
 }
 
 .plover-collapsed__title {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: var(--plover-text);
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(246, 242, 235, 0.9);
 }
 
 .plover-collapsed__pct {
   font-family: var(--plover-font-serif);
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--plover-text-muted);
+  font-size: 23px;
+  font-weight: 400;
+  letter-spacing: -0.46px;
+  color: #f6f2eb;
   flex-shrink: 0;
-  min-width: 35px;
-  text-align: right;
 }
 
-.plover-collapsed ::slotted(.plover-progress) {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  border-radius: 0 0 var(--plover-radius-xl) var(--plover-radius-xl);
+.plover-collapsed .plover-status {
+  background: none;
+  padding: 0;
+  gap: 8px;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.plover-collapsed .plover-status__dot {
+  width: 6px;
+  height: 6px;
+}
+
+.plover-collapsed .plover-status[data-kind='observing'] .plover-status__label,
+.plover-collapsed .plover-status[data-kind='done'] .plover-status__label {
+  color: rgba(159, 225, 203, 0.85);
+}
+
+.plover-collapsed .plover-progress {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 3px;
+}
+
+.plover-collapsed .plover-progress__fill {
+  border-radius: 3px;
+}
+
+.plover-collapsed .plover-progress[data-tone='solid'] .plover-progress__fill {
+  background: #f3eee4;
+  opacity: 1;
+}
+
+/* Companion root window sizes. box-sizing: content-box (overriding the
+   global border-box reset) + padding gives a transparent buffer around the
+   card equal to the window's actual native size (companion:resize sizes the
+   BrowserWindow to exactly match this element's getBoundingClientRect()).
+   Without it, the box-shadow above — which visually extends beyond the
+   card's own edges — gets hard-clipped at the window boundary instead of
+   fading out. Smaller than the original 32px buffer since the shadow itself
+   is smaller/softer now (colored glass shadow, not a big dark halo). */
+.plover-companion-root {
+  box-sizing: content-box;
+  width: 300px;
+  padding: 18px;
+  margin: 0 auto;
+  transition: width 0.22s ease-in-out;
+}
+.plover-companion-root.is-expanded {
+  width: 330px;
+}
+.plover-companion-root.is-collapsed.is-compact {
+  width: 210px;
+}
+
+/* Compact layout style */
+.plover-collapsed.plover-collapsed--compact {
+  height: auto;
+  padding: 8px 14px 2px 12px;
+  gap: 0;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+/* Bottom grabber handle — the only click target for expanding into the big
+   (Expanded) view. Same visual language as .plover-expanded__grabber so the
+   two feel like one continuous affordance across collapse/expand. A real
+   <button>, so it stays reliably clickable under the pill's drag region via
+   index.css's global `button { -webkit-app-region: no-drag }` rule. */
+.plover-collapsed__grabber {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 6px 0 2px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.plover-collapsed__grabber span {
+  width: 24px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.18);
+  transition: background-color var(--plover-duration-fast);
+}
+
+.plover-collapsed__grabber:hover span {
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.plover-collapsed--compact .plover-collapsed__compact-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.plover-collapsed--compact .plover-collapsed__compact-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.plover-collapsed--compact .plover-status {
+  background: none;
+  padding: 0;
+  gap: 0;
+  flex-shrink: 0;
+}
+
+.plover-collapsed--compact .plover-status__label {
+  display: none;
+}
+
+.plover-collapsed--compact .plover-progress {
+  width: 96px;
+  height: 6px;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.plover-collapsed--compact .plover-collapsed__pct {
+  font-size: 20px;
+  line-height: 1;
+  font-weight: 400;
+  letter-spacing: -0.4px;
+  margin-top: -2px;
 }

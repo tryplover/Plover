@@ -15,7 +15,7 @@ export function useCompanionState(): CompanionView {
   const [view, setView] = useState<CompanionView>({
     kind: 'observing',
     task: null,
-    progress: 0.65,
+    progress: 0,
     steps: [],
     watching: null,
   });
@@ -32,11 +32,13 @@ export function useCompanionState(): CompanionView {
           if (!active) return;
           const siblings = task ? await window.api.getTasksByGoal(task.goal_id) : [];
           if (!active) return;
+          const steps = buildSteps(task, siblings);
           setView((v) => ({
             ...v,
             kind: kind as StateKind,
             task,
-            steps: buildSteps(task, siblings),
+            steps,
+            progress: stepsProgress(steps),
           }));
         } else {
           setView((v) => ({ ...v, kind: kind as StateKind }));
@@ -47,12 +49,13 @@ export function useCompanionState(): CompanionView {
     const offTask = window.api.on('companion:activeTask', async (taskId: unknown) => {
       if (!active) return;
       const id = taskId as string | null;
-      if (!id) return setView((v) => ({ ...v, task: null, steps: [] }));
+      if (!id) return setView((v) => ({ ...v, task: null, steps: [], progress: 0 }));
       const task = await window.api.getTaskById(id);
       if (!active) return;
       const siblings = task ? await window.api.getTasksByGoal(task.goal_id) : [];
       if (!active) return;
-      setView((v) => ({ ...v, task, steps: buildSteps(task, siblings) }));
+      const steps = buildSteps(task, siblings);
+      setView((v) => ({ ...v, task, steps, progress: stepsProgress(steps) }));
     });
     const offState = window.api.on('companion:state', (kind: unknown) => {
       if (!active) return;
@@ -66,6 +69,11 @@ export function useCompanionState(): CompanionView {
   }, []);
 
   return view;
+}
+
+function stepsProgress(steps: CompanionView['steps']): number {
+  if (steps.length === 0) return 0;
+  return steps.filter((s) => s.done).length / steps.length;
 }
 
 function buildSteps(task: Task | null, all: Task[]): CompanionView['steps'] {

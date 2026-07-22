@@ -51,6 +51,8 @@ export interface PloverAPI {
     workingHours: { start: string; end: string };
     horizonDays: number;
     pauseScheduling: boolean;
+    theme: 'light' | 'dark';
+    companionMode: 'full' | 'compact';
     pauseAllTracking: boolean;
     windowTrackingEnabled: boolean;
     gdocsPollingEnabled: boolean;
@@ -67,6 +69,8 @@ export interface PloverAPI {
       workingHours: { start: string; end: string };
       horizonDays: number;
       pauseScheduling: boolean;
+      theme: 'light' | 'dark';
+      companionMode: 'full' | 'compact';
       pauseAllTracking: boolean;
       windowTrackingEnabled: boolean;
       gdocsPollingEnabled: boolean;
@@ -82,6 +86,8 @@ export interface PloverAPI {
     workingHours: { start: string; end: string };
     horizonDays: number;
     pauseScheduling: boolean;
+    theme: 'light' | 'dark';
+    companionMode: 'full' | 'compact';
     pauseAllTracking: boolean;
     windowTrackingEnabled: boolean;
     gdocsPollingEnabled: boolean;
@@ -120,6 +126,14 @@ export interface PloverAPI {
     ) => Promise<{ signedIn: boolean; email: string | null; needsEmailConfirmation: boolean }>;
     signOut: () => Promise<{ signedIn: boolean; email: string | null }>;
     getStatus: () => Promise<{ signedIn: boolean; email: string | null }>;
+  };
+  companion: {
+    show(): Promise<void>;
+    hide(): Promise<void>;
+    setActiveTask(taskId: string | null): Promise<void>;
+    setState(kind: string): Promise<void>;
+    resize(height: number, width?: number): Promise<void>;
+    getInitialState(): Promise<{ kind: string; activeTaskId: string | null }>;
   };
   platform: string;
   minimizeWindow(): Promise<void>;
