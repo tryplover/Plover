@@ -1,10 +1,9 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { setupIpcHandlers } from '../../src/main/ipc';
-import { goalsRepo, tasksRepo, settingsRepo, activityRepo } from '../../src/main/store';
+import { goalsRepo, tasksRepo, settingsRepo } from '../../src/main/store';
 import { ipcMain } from 'electron';
 import { ProposedPlan } from '../../src/preload/index';
 import { BrowserWindow } from 'electron';
-import * as nodeFs from 'node:fs';
 
 const { mockSupabaseAuth } = vi.hoisted(() => {
   return {
@@ -145,45 +144,6 @@ describe('IPC Handlers', () => {
     const handler = closeCall?.[1] as (event: unknown) => Promise<void>;
     await handler({});
     expect(mockOverlayWindow.hide).toHaveBeenCalled();
-  });
-
-  // Skipped: the `activity:purge` IPC handler was removed alongside the Activity tab
-  // in commit 9e8d534 ("Redesign overlay glassmorphism… remove Today and Activity tabs").
-  // The handler no longer exists in src/main/ipc.ts, so this test has nothing to exercise.
-  // Unrelated to Milestone C-8 authedFetch changes.
-  it.skip('activity:purge with olderThan unlinks screenshot files before purging DB rows', async () => {
-    const unlinkSpy = vi.fn().mockResolvedValue(undefined);
-    vi.spyOn(nodeFs.promises, 'unlink').mockImplementation(unlinkSpy);
-
-    const oldTs = '2026-01-01T00:00:00.000Z';
-    const recentTs = '2026-06-24T00:00:00.000Z';
-    activityRepo.insert({
-      kind: 'screenshot_captured',
-      payload: { filePath: '/tmp/plover-screens/old.png', width: 1, height: 1 },
-      ts: oldTs,
-    });
-    activityRepo.insert({
-      kind: 'screenshot_captured',
-      payload: { filePath: '/tmp/plover-screens/recent.png', width: 1, height: 1 },
-      ts: recentTs,
-    });
-
-    const calls = (ipcMain.handle as ReturnType<typeof vi.fn>).mock.calls;
-    const purgeCall = calls.find((call) => call[0] === 'activity:purge');
-    expect(purgeCall).toBeDefined();
-    const handler = purgeCall?.[1] as (
-      event: unknown,
-      args: { olderThan?: string; ids?: number[] },
-    ) => Promise<{ deleted: number }>;
-
-    const olderThan = '2026-06-01T00:00:00.000Z';
-    const result = await handler({}, { olderThan });
-
-    expect(result.deleted).toBe(1);
-    expect(unlinkSpy).toHaveBeenCalledWith('/tmp/plover-screens/old.png');
-    expect(unlinkSpy).not.toHaveBeenCalledWith('/tmp/plover-screens/recent.png');
-
-    vi.restoreAllMocks();
   });
 
   it('handles overlay:resize by setting bounds if height changed', async () => {
