@@ -1,0 +1,39 @@
+import { BrowserWindow } from 'electron';
+import * as supabaseAuth from '../auth/supabase-auth.js';
+import { startEventForwarding } from '../planner/goal-manager.js';
+import { registerGoalsHandlers } from './goals.js';
+import { registerTasksHandlers } from './tasks.js';
+import { registerAuthHandlers, googleAuth } from './auth.js';
+import { registerSettingsHandlers } from './settings.js';
+import { registerOverlayHandlers } from './overlay.js';
+import { registerSystemHandlers } from './system.js';
+import { broadcast } from './shared.js';
+
+export { googleAuth };
+
+export function setupIpcHandlers(
+  getOverlayWindow: () => BrowserWindow | null,
+  onWatchedFoldersChange?: (folders: string[]) => Promise<void> | void,
+  createOverlayWindow?: (variant: 'overlay' | 'window') => BrowserWindow,
+): void {
+  void googleAuth.loadSavedCredentials();
+  void supabaseAuth.restoreSession().then((hasSession) => {
+    if (hasSession) supabaseAuth.startAutoRefresh();
+  });
+
+  registerGoalsHandlers(getOverlayWindow);
+  registerTasksHandlers();
+  registerAuthHandlers();
+  registerSettingsHandlers(onWatchedFoldersChange);
+  registerOverlayHandlers(getOverlayWindow, createOverlayWindow);
+  registerSystemHandlers();
+}
+
+export function setupIpc(
+  getOverlayWindow: () => BrowserWindow | null,
+  onWatchedFoldersChange?: (folders: string[]) => Promise<void> | void,
+  createOverlayWindow?: (variant: 'overlay' | 'window') => BrowserWindow,
+): void {
+  setupIpcHandlers(getOverlayWindow, onWatchedFoldersChange, createOverlayWindow);
+  startEventForwarding(broadcast);
+}
