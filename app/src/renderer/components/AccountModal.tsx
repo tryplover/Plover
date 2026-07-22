@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Button } from './Button';
+import { Button } from './Button/Button';
 
 interface AccountStatus {
   signedIn: boolean;

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { type StatusKind } from '../../../src/renderer/components/StatusIndicator';
+import { type StatusKind } from './StatusIndicator';
 
 describe('StatusIndicator', () => {
   it('has correct kind types', () => {
