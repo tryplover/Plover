@@ -24,7 +24,11 @@ checkout.
 
 ## Non-goals
 
-- No behavior changes. Zero runtime-visible diffs.
+- No behavior changes, with one accepted exception: after Task 2, packaged
+  builds where `SUPABASE_URL` / `SUPABASE_ANON_KEY` weren't baked at build
+  time now throw at `getSupabaseClient()` call time instead of silently
+  constructing a client with empty strings. Consciously accepted — loud
+  misconfiguration failure is preferable to silent broken sign-in.
 - No new abstractions beyond the specific deduplications listed above (no
   event-bus wrapper, no repo base class, no error-handling wrapper).
 - No barrel `index.ts` files in existing subdirs.
