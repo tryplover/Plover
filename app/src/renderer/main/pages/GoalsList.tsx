@@ -400,14 +400,14 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
       {/* Goal Creation Setup Flow Modal Overlay */}
       {showSetupModal && (
         <div className="plover-modal-backdrop" onClick={() => setShowSetupModal(false)}>
+          <button
+            className="plover-modal-backdrop-close"
+            onClick={() => setShowSetupModal(false)}
+            aria-label="Close modal"
+          >
+            ✕
+          </button>
           <div className="plover-modal-content" onClick={(e) => e.stopPropagation()}>
-            <button
-              className="plover-modal-close"
-              onClick={() => setShowSetupModal(false)}
-              aria-label="Close modal"
-            >
-              ✕
-            </button>
             <SetupFlow
               variant="window"
               onClose={() => {

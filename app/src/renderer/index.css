@@ -1153,11 +1153,45 @@ input:checked + .slider:before {
   animation: fadeIn 0.25s ease-out;
 }
 
+.plover-modal-backdrop-close {
+  position: absolute;
+  top: 32px;
+  right: 32px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-size: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--plover-duration-fast);
+  z-index: 1001;
+}
+
+.plover-modal-backdrop-close:hover {
+  background: rgba(255, 255, 255, 0.16);
+  transform: scale(1.05);
+}
+
+.plover-shell--light .plover-modal-backdrop-close {
+  background: rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: #24211c;
+}
+
+.plover-shell--light .plover-modal-backdrop-close:hover {
+  background: rgba(0, 0, 0, 0.16);
+}
+
 .plover-modal-content {
   background-color: var(--plover-surface);
   border: 1px solid var(--plover-border);
-  border-radius: var(--plover-radius-lg);
-  width: 680px;
+  border-radius: 18px;
+  width: 440px;
   max-width: 90%;
   max-height: 90vh;
   overflow-y: auto;
