@@ -12,6 +12,7 @@ const { getSources, getMediaAccessStatus } = vi.hoisted(() => ({
 vi.mock('electron', () => ({
   desktopCapturer: { getSources },
   systemPreferences: { getMediaAccessStatus },
+  app: { isPackaged: false },
 }));
 
 const mockGetPloverToken = vi.hoisted(() => vi.fn().mockResolvedValue('test-token-xyz'));
