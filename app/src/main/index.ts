@@ -1,5 +1,5 @@
 import './load-env.js';
-import { app, BrowserWindow, globalShortcut, ipcMain, nativeImage } from 'electron';
+import { app, BrowserWindow, globalShortcut, nativeImage } from 'electron';
 import { join } from 'node:path';
 import { setupIpc, googleAuth } from './ipc.js';
 import { activityRepo, settingsRepo, tasksRepo, summariesRepo } from './store/index.js';
@@ -47,7 +47,6 @@ let folderWatcher: FolderWatcher | null = null;
 let inferenceEngine: InferenceEngine | null = null;
 let gitCommitTracker: GitCommitTracker | null = null;
 let gdocsPoller: GDocsPoller | null = null;
-let deviationLoopDispose: (() => void) | null = null;
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();
@@ -98,24 +97,17 @@ if (!gotTheLock) {
     }
   }
 
-  function createOverlayWindow(variant: 'overlay' | 'window' = 'overlay'): BrowserWindow {
-    const isWindow = variant === 'window';
+  function createOverlayWindow(): BrowserWindow {
     const win = new BrowserWindow({
-      width: isWindow ? 820 : 560,
-      height: isWindow ? 780 : 480,
-      frame: isWindow,
-      transparent: !isWindow,
-      alwaysOnTop: !isWindow,
-      skipTaskbar: !isWindow,
+      width: 560,
+      height: 480,
+      frame: false,
+      transparent: true,
+      alwaysOnTop: true,
+      skipTaskbar: true,
       show: false,
-      resizable: isWindow,
-      titleBarStyle: isWindow
-        ? process.platform === 'darwin'
-          ? 'hiddenInset'
-          : 'hidden'
-        : undefined,
-      titleBarOverlay: isWindow && process.platform === 'win32' ? { height: 32 } : false,
-      vibrancy: isWindow ? undefined : 'under-window',
+      resizable: false,
+      vibrancy: 'under-window',
       webPreferences: {
         preload: join(import.meta.dirname, '../preload/index.js'),
         sandbox: true,
@@ -125,23 +117,19 @@ if (!gotTheLock) {
 
     const devUrl = process.env['ELECTRON_RENDERER_URL'];
     if (devUrl) {
-      void win.loadURL(`${devUrl}?variant=${variant}`);
+      void win.loadURL(`${devUrl}?variant=overlay`);
     } else {
       void win.loadFile(join(import.meta.dirname, '../renderer/index.html'), {
-        search: `variant=${variant}`,
+        search: 'variant=overlay',
       });
     }
 
-    if (!isWindow) {
-      win.on('blur', () => {
-        win.hide();
-      });
-    }
+    win.on('blur', () => {
+      win.hide();
+    });
 
     win.on('closed', () => {
-      if (variant === 'overlay') {
-        overlayWindow = null;
-      }
+      overlayWindow = null;
     });
 
     return win;
@@ -149,7 +137,7 @@ if (!gotTheLock) {
 
   function toggleOverlayWindow(): void {
     if (!overlayWindow) {
-      overlayWindow = createOverlayWindow('overlay');
+      overlayWindow = createOverlayWindow();
     }
 
     if (overlayWindow) {
@@ -193,32 +181,13 @@ if (!gotTheLock) {
     gdocsPoller.start();
 
     // Register all typed IPC handlers first
-    setupIpc(
-      () => overlayWindow,
-      async (folders: string[]) => {
-        if (folderWatcher) {
-          await folderWatcher.watch(folders);
-        }
-      },
-      (variant) => createOverlayWindow(variant),
-    );
+    setupIpc(() => overlayWindow);
 
     // Initialize passive activity monitoring system
     initActivityMonitoring();
 
-    ipcMain.handle('signup:complete', async () => {
-      for (const w of BrowserWindow.getAllWindows()) {
-        if (w.webContents.getURL().includes('variant=signup')) {
-          w.close();
-        }
-      }
-      if (!mainWindow) {
-        createMainWindow();
-      }
-    });
-
     createMainWindow();
-    overlayWindow = createOverlayWindow('overlay');
+    overlayWindow = createOverlayWindow();
 
     // Option is mac-only; Alt+Shift+Space elsewhere to avoid Windows' Alt+Space system-menu conflict
     const hotkey = process.platform === 'darwin' ? 'Option+Space' : 'Alt+Shift+Space';
@@ -253,10 +222,6 @@ if (!gotTheLock) {
     }
     if (gdocsPoller) {
       gdocsPoller.stop();
-    }
-    if (deviationLoopDispose) {
-      deviationLoopDispose();
-      deviationLoopDispose = null;
     }
     clearAllTimers();
   });

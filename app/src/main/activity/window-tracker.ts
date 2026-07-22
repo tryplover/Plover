@@ -1,4 +1,4 @@
-import { activeWindow, openWindows } from 'get-windows';
+import { activeWindow } from 'get-windows';
 import { execFile } from 'node:child_process';
 import { ActivityRepo } from '../store/repos/activity.js';
 import { SettingsRepo } from '../store/repos/settings.js';
@@ -117,31 +117,5 @@ export class WindowTracker {
         resolve(url ? { url, title: rest.join(' ').trim() || appName } : null);
       });
     });
-  }
-}
-
-export async function listActiveWindows(): Promise<{ app: string; title: string }[]> {
-  try {
-    if (process.platform !== 'darwin' && process.platform !== 'win32') {
-      return [];
-    }
-    const windows = await openWindows();
-    return windows
-      .filter((w) => {
-        const app = w.owner?.name;
-        const title = w.title;
-        if (process.platform === 'darwin') {
-          return app !== 'Finder' && title !== 'Unknown';
-        } else {
-          return app !== 'explorer' && title !== 'Unknown';
-        }
-      })
-      .map((w) => ({
-        app: w.owner?.name || 'Unknown',
-        title: w.title || 'Unknown',
-      }));
-  } catch (err) {
-    console.error('Error listing active windows:', err);
-    return [];
   }
 }

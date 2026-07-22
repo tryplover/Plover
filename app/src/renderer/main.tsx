@@ -6,7 +6,6 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { Overlay } from './overlay/Overlay';
-import { SignupScreen } from './setup/SignupScreen';
 import './index.css';
 
 const container = document.getElementById('root');
@@ -14,10 +13,8 @@ if (!container) throw new Error('root element missing');
 
 const params = new URLSearchParams(window.location.search);
 const variant = params.get('variant');
-const isSignup = variant === 'signup';
 const isOverlay =
   variant === 'overlay' ||
-  variant === 'window' ||
   window.location.search.includes('overlay') ||
   window.location.hash.includes('overlay');
 
@@ -34,6 +31,6 @@ if (showGallery) {
   });
 } else {
   createRoot(container).render(
-    <StrictMode>{isSignup ? <SignupScreen /> : isOverlay ? <Overlay /> : <App />}</StrictMode>,
+    <StrictMode>{isOverlay ? <Overlay /> : <App />}</StrictMode>,
   );
 }

@@ -211,41 +211,6 @@ describe('WindowTracker', () => {
   });
 });
 
-describe('listActiveWindows', () => {
-  it('returns list of active windows filtered by platform', async () => {
-    const { listActiveWindows } = await import('@main/activity/window-tracker.js');
-
-    mockOpenWindows.mockResolvedValue([
-      { owner: { name: 'Safari' }, title: 'Google Search' },
-      { owner: { name: 'Finder' }, title: 'Desktop' },
-      { owner: { name: 'Slack' }, title: 'Unknown' },
-      { owner: { name: 'explorer' }, title: 'Desktop' },
-    ]);
-
-    // Test for 'darwin' (macOS)
-    Object.defineProperty(process, 'platform', {
-      value: 'darwin',
-      configurable: true,
-    });
-    let result = await listActiveWindows();
-    expect(result).toEqual([
-      { app: 'Safari', title: 'Google Search' },
-      { app: 'explorer', title: 'Desktop' },
-    ]);
-
-    // Test for 'win32' (Windows)
-    Object.defineProperty(process, 'platform', {
-      value: 'win32',
-      configurable: true,
-    });
-    result = await listActiveWindows();
-    expect(result).toEqual([
-      { app: 'Safari', title: 'Google Search' },
-      { app: 'Finder', title: 'Desktop' },
-    ]);
-  });
-});
-
 describe('WindowTracker — enhanced metadata', () => {
   let db: Database.Database;
   let activityRepo: ActivityRepo;
