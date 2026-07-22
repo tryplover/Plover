@@ -3,7 +3,7 @@ import { Goal, Task } from '../../../../shared/types';
 import { StepRow } from '../../../components/StepRow/StepRow.js';
 import { ProgressLine } from '../../../components/ProgressLine/ProgressLine.js';
 import { Button } from '../../../components/Button/Button.js';
-import { SetupFlow } from '../../../overlay/SetupFlow.js';
+import { SetupFlow } from '../../../overlay/SetupFlow/SetupFlow.js';
 import { useAppEvents } from '../../../hooks/useAppEvents.js';
 
 interface GoalsListProps {

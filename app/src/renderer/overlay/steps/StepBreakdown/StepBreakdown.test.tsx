@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { StepBreakdown } from '../../../../src/renderer/overlay/steps/StepBreakdown';
+import { StepBreakdown } from './StepBreakdown.js';
 
 describe('StepBreakdown', () => {
   beforeEach(() => {

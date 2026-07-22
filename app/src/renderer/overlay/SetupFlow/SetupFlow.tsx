@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { safeAsync } from '../lib/async';
-import { AnimatePresence, motion, ploverDuration, ploverEasing } from '../lib/motion';
-import { Stepper } from './steps/Stepper';
-import { StepName } from './steps/StepName';
-import { StepBreakdown } from './steps/StepBreakdown';
+import { safeAsync } from '../../lib/async';
+import { AnimatePresence, motion, ploverDuration, ploverEasing } from '../../lib/motion';
+import { Stepper } from '../steps/Stepper/Stepper';
+import { StepName } from '../steps/StepName/StepName';
+import { StepBreakdown } from '../steps/StepBreakdown/StepBreakdown';
 import './SetupFlow.css';
 
 type Step = 'name' | 'breakdown' | 'committed';
