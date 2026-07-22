@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { AnimatePresence, motion, ploverDuration, ploverEasing } from '../lib/motion';
-import { Stepper } from './steps/Stepper';
-import { StepName } from './steps/StepName';
-import { StepBreakdown } from './steps/StepBreakdown';
-import { StepConnect } from './steps/StepConnect';
-import type { ProposedPlan } from '../../preload';
+import { AnimatePresence, motion, ploverDuration, ploverEasing } from '../../lib/motion';
+import { Stepper } from '../steps/Stepper/Stepper';
+import { StepName } from '../steps/StepName/StepName';
+import { StepBreakdown } from '../steps/StepBreakdown/StepBreakdown';
+import { StepConnect } from '../steps/StepConnect/StepConnect';
+import type { ProposedPlan } from '../../../preload';
 import './SetupFlow.css';
 
 type Step = 'name' | 'breakdown' | 'connect' | 'committed';

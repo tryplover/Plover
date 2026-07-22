@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { StatusIndicator } from '../../components/StatusIndicator/StatusIndicator';
-import { StepRow } from '../../components/StepRow/StepRow';
-import { Button } from '../../components/Button/Button';
-import { Reorder, useDragControls } from '../../lib/motion';
-import type { ProposedPlan } from '../../../preload';
+import { StatusIndicator } from '../../../components/StatusIndicator/StatusIndicator';
+import { StepRow } from '../../../components/StepRow/StepRow';
+import { Button } from '../../../components/Button/Button';
+import { Reorder, useDragControls } from '../../../lib/motion';
+import type { ProposedPlan } from '../../../../preload';
 import './StepBreakdown.css';
 
 interface Props {

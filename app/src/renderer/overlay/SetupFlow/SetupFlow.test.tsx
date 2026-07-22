@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { ProposedPlan } from '../../../src/preload';
+import type { ProposedPlan } from '../../../preload/index.js';
 
 describe('SetupFlow', () => {
   beforeEach(() => {
