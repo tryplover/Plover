@@ -2,6 +2,7 @@ import { Goal, Task } from '../shared/types';
 
 export interface PloverAPI {
   getGoals(): Promise<Goal[]>;
+  deleteGoal(id: string): Promise<void>;
   getTasks(): Promise<Task[]>;
   updateTaskStatus(id: string, status: Task['status']): Promise<Task>;
   decomposeGoal(goalText: string): Promise<{

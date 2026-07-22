@@ -26,6 +26,7 @@ export interface CompanionApi {
 export interface PloverApi {
   // Main Goals & Tasks
   getGoals: () => Promise<Goal[]>;
+  deleteGoal: (id: string) => Promise<void>;
   getTasks: () => Promise<Task[]>;
   getSummaries: () => Promise<
     (SummaryRow & { task_title: string | null; goal_title: string | null })[]
@@ -154,6 +155,7 @@ export interface PloverApi {
 
 const api: PloverApi = {
   getGoals: () => ipcRenderer.invoke('goals:get'),
+  deleteGoal: (id) => ipcRenderer.invoke('goals:delete', id),
   getTasks: () => ipcRenderer.invoke('tasks:get'),
   getSummaries: () => ipcRenderer.invoke('summaries:get'),
   updateTaskStatus: (id, status) => ipcRenderer.invoke('tasks:updateStatus', id, status),

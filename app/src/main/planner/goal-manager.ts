@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Goal, Task, SummaryRow } from '../../shared/types.js';
-import { goalsRepo, tasksRepo, settingsRepo } from '../store/index.js';
+import { goalsRepo, tasksRepo, settingsRepo, db } from '../store/index.js';
 import { eventBus } from '../bus.js';
 import { GoogleCalendarSync } from '../sync/calendar.js';
 
@@ -97,7 +97,43 @@ export async function saveGoalAndTasks(
   return { goal, tasks: newTasks };
 }
 
-export function startEventForwarding(broadcast: (channel: string, payload?: unknown) => void): void {
+export async function deleteGoalAndTasks(
+  goalId: string,
+  calendarSync: GoogleCalendarSync,
+): Promise<void> {
+  const tasks = tasksRepo.listByGoal(goalId);
+  const isGoogleConnected = settingsRepo.getAll().googleConnected;
+
+  if (isGoogleConnected) {
+    for (const task of tasks) {
+      if (task.calendar_event_id) {
+        try {
+          await calendarSync.deleteEvent(task.calendar_event_id);
+        } catch (err) {
+          console.error(`Failed to delete calendar event for task ${task.title}:`, err);
+        }
+      }
+    }
+  }
+
+  const deleteTx = db.transaction(() => {
+    tasksRepo.deleteByGoal(goalId);
+    goalsRepo.delete(goalId);
+  });
+  deleteTx();
+
+  eventBus.emit('goal.deleted', goalId);
+  eventBus.emit('calendar.synced');
+}
+
+export function startEventForwarding(
+  broadcast: (channel: string, payload?: unknown) => void,
+): void {
+  eventBus.on('goal.deleted', (goalId: string) => {
+    broadcast('goal:deleted', goalId);
+    broadcast('app-event', { type: 'goal.deleted', payload: { goalId } });
+  });
+
   eventBus.on('goal.created', (goal: Goal) => {
     broadcast('goal:created', goal);
     broadcast('app-event', { type: 'goal.created', payload: { goalId: goal.id } });

@@ -20,6 +20,7 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
   const [showSetupModal, setShowSetupModal] = useState(false);
 
   const [expandedGoals, setExpandedGoals] = useState<Record<string, boolean>>({});
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -80,6 +81,25 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
       }
     } catch (err) {
       console.error('Failed to update task status:', err);
+    }
+  };
+
+  const handleDeleteGoal = async (goalId: string) => {
+    if (confirmDeleteId !== goalId) {
+      setConfirmDeleteId(goalId);
+      return;
+    }
+    try {
+      setGoals((prev) => prev.filter((g) => g.id !== goalId));
+      setTasks((prev) => prev.filter((t) => t.goal_id !== goalId));
+      setConfirmDeleteId(null);
+      await window.api.deleteGoal(goalId);
+      if (onTasksUpdated) {
+        onTasksUpdated();
+      }
+    } catch (err) {
+      console.error('Failed to delete goal:', err);
+      void fetchData();
     }
   };
 
@@ -287,6 +307,45 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
                               </button>
                             ))
                           )}
+                        </div>
+
+                        {/* Delete Goal */}
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'flex-end',
+                            marginTop: '16px',
+                            paddingTop: '12px',
+                            borderTop: '1px solid var(--plover-border)',
+                          }}
+                        >
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void handleDeleteGoal(goal.id);
+                            }}
+                            onBlur={() => setConfirmDeleteId(null)}
+                            style={{
+                              background:
+                                confirmDeleteId === goal.id
+                                  ? 'var(--plover-danger, #ef4444)'
+                                  : 'none',
+                              color:
+                                confirmDeleteId === goal.id ? '#fff' : 'var(--plover-text-muted)',
+                              border:
+                                confirmDeleteId === goal.id
+                                  ? 'none'
+                                  : '1px solid var(--plover-border)',
+                              borderRadius: 'var(--plover-radius-md, 8px)',
+                              padding: '8px 16px',
+                              fontSize: '13px',
+                              fontWeight: 500,
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease',
+                            }}
+                          >
+                            {confirmDeleteId === goal.id ? 'Confirm Delete' : 'Delete Goal'}
+                          </button>
                         </div>
                       </div>
                     )}
