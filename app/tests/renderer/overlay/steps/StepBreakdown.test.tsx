@@ -23,7 +23,7 @@ describe('StepBreakdown', () => {
     const draft = { text: 'Learn TypeScript', frequency: 'one-off' as const };
     render(<StepBreakdown draft={draft} onBack={vi.fn()} onNext={vi.fn()} variant="overlay" />);
 
-    expect(screen.getByText('Asking Gemini…')).toBeInTheDocument();
+    expect(screen.getByText('Plover is planning…')).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByText('Learn TypeScript')).toBeInTheDocument();
