@@ -1,4 +1,4 @@
-import { motion } from '../lib/motion';
+import { motion } from '../../lib/motion';
 import './Button.css';
 
 export interface ButtonProps

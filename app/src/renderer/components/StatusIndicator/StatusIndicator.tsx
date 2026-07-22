@@ -1,4 +1,4 @@
-import { motion } from '../lib/motion';
+import { motion } from '../../lib/motion';
 import './StatusIndicator.css';
 
 export type StatusKind = 'observing' | 'paused' | 'done' | 'not-sure';

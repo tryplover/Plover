@@ -1,6 +1,6 @@
 import { motion } from '../lib/motion';
-import { StatusIndicator } from '../components/StatusIndicator';
-import { ProgressLine } from '../components/ProgressLine';
+import { StatusIndicator } from '../components/StatusIndicator/StatusIndicator';
+import { ProgressLine } from '../components/ProgressLine/ProgressLine';
 import './Collapsed.css';
 import type { CompanionView } from './useCompanionState';
 

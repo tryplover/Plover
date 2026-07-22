@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Goal, Task } from '../../../shared/types';
-import { StepRow } from '../../components/StepRow';
-import { ProgressLine } from '../../components/ProgressLine';
-import { Button } from '../../components/Button';
+import { StepRow } from '../../components/StepRow/StepRow';
+import { ProgressLine } from '../../components/ProgressLine/ProgressLine';
+import { Button } from '../../components/Button/Button';
 import { SetupFlow } from '../../overlay/SetupFlow';
 import { useAppEvents } from '../../hooks/useAppEvents';
 
