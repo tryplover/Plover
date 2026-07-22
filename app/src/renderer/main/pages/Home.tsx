@@ -96,23 +96,9 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
     void fetchData();
   });
 
-  // The "currently active/watched" task is computed locally from real task
-  // data (pickCurrentTask) rather than fabricated — there's no persisted
-  // "watching" signal to read instead. Home is the source of truth here: it
-  // pushes the result to the companion overlay via setActiveTask so the two
-  // windows agree on what's active, rather than each guessing independently.
-  // Known limitation: this only re-syncs while Home is mounted (it unmounts
-  // when switching tabs), so a task started from elsewhere won't update the
-  // overlay until the user returns to Home.
   const currentTask = useMemo(() => pickCurrentTask(tasks), [tasks]);
   const activeTaskId = currentTask?.id ?? null;
   const activeGoalId = currentTask?.goal_id ?? null;
-
-  useEffect(() => {
-    window.api.companion.setActiveTask(activeTaskId).catch((err: unknown) => {
-      console.error('Failed to sync active task to companion overlay:', err);
-    });
-  }, [activeTaskId]);
 
   const activeGoalSteps = useMemo(() => {
     if (!activeGoalId) return [];

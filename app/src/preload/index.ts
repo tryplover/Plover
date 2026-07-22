@@ -106,6 +106,9 @@ export interface PloverApi {
   // Window Controls (Windows)
   platform: string;
 
+  // Window tracking (Phase 2+ — stub returns empty list until implemented)
+  listActiveWindows: () => Promise<{ app: string; title: string }[]>;
+
   // Plover Account (Supabase) API
   auth: {
     signIn: () => Promise<{ signedIn: boolean; email: string | null }>;
@@ -164,6 +167,8 @@ const api: PloverApi = {
   },
 
   platform: process.platform,
+
+  listActiveWindows: () => Promise.resolve([]),
 
   // Events
   on: (channel, callback) => {

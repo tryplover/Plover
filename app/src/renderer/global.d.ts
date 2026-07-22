@@ -95,14 +95,7 @@ export interface PloverAPI {
     signOut: () => Promise<{ signedIn: boolean; email: string | null }>;
     getStatus: () => Promise<{ signedIn: boolean; email: string | null }>;
   };
-  companion: {
-    show(): Promise<void>;
-    hide(): Promise<void>;
-    setActiveTask(taskId: string | null): Promise<void>;
-    setState(kind: string): Promise<void>;
-    resize(height: number, width?: number): Promise<void>;
-    getInitialState(): Promise<{ kind: string; activeTaskId: string | null }>;
-  };
+  listActiveWindows(): Promise<{ app: string; title: string }[]>;
   platform: string;
 }
 
