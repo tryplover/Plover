@@ -59,7 +59,10 @@ describe('Event forwarding', () => {
       throw new Error('mock window not found');
     }
 
-    expect(mockWindowInstance.webContents.send).toHaveBeenCalledWith('goal:created', mockGoal);
+    expect(mockWindowInstance.webContents.send).toHaveBeenCalledWith('app-event', {
+      type: 'goal.created',
+      payload: { goalId: mockGoal.id },
+    });
   });
 
   it('does not forward events to destroyed windows', () => {

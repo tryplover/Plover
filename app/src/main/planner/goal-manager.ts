@@ -86,22 +86,18 @@ export function startEventForwarding(
   broadcast: (channel: string, payload?: unknown) => void,
 ): void {
   eventBus.on('goal.created', (goal: Goal) => {
-    broadcast('goal:created', goal);
     broadcast('app-event', { type: 'goal.created', payload: { goalId: goal.id } });
   });
 
   eventBus.on('goal.updated', (goal: Goal) => {
-    broadcast('goal:updated', goal);
     broadcast('app-event', { type: 'goal.updated', payload: { goalId: goal.id } });
   });
 
   eventBus.on('goal.deleted', (goalId: string) => {
-    broadcast('goal:deleted', goalId);
     broadcast('app-event', { type: 'goal.deleted', payload: { goalId } });
   });
 
   eventBus.on('task.scheduled', (task: Task) => {
-    broadcast('task:scheduled', task);
     broadcast('app-event', {
       type: 'task.scheduled',
       payload: {
@@ -113,12 +109,10 @@ export function startEventForwarding(
   });
 
   eventBus.on('task.completed', (task: Task) => {
-    broadcast('task:completed', task);
     broadcast('app-event', { type: 'task.completed', payload: { taskId: task.id } });
   });
 
   eventBus.on('summary.created', (summary: SummaryRow) => {
-    broadcast('summary:created', summary);
     broadcast('app-event', { type: 'summary.created', payload: summary });
   });
 }
