@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { SummaryRow } from '../../../shared/types';
-import { StatusIndicator } from '../../components/StatusIndicator/StatusIndicator';
+import { SummaryRow } from '../../../../shared/types';
+import { StatusIndicator } from '../../../components/StatusIndicator/StatusIndicator.js';
 
 interface AIProgressProps {
   'data-testid'?: string;

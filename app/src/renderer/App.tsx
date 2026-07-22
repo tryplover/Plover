@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import Home from './main/pages/Home';
-import AIProgress from './main/pages/AIProgress';
-import Settings from './main/pages/Settings';
-import { Onboarding } from './main/pages/Onboarding';
+import Home from './main/pages/Home/Home';
+import AIProgress from './main/pages/AIProgress/AIProgress';
+import Settings from './main/pages/Settings/Settings';
+import { Onboarding } from './main/pages/Onboarding/Onboarding';
 import { AccountModal } from './components/AccountModal';
 import { IconHome, IconGear, IconActivity } from './main/icons';
 import ploverLogo from './plover-logo.png';

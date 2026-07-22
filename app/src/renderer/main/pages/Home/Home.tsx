@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Goal, Task } from '../../../shared/types';
-import { pickCurrentTask, sortByScheduledStart } from '../../../shared/current-task';
-import { StepRow } from '../../components/StepRow/StepRow';
-import { ProgressLine } from '../../components/ProgressLine/ProgressLine';
-import { Button } from '../../components/Button/Button';
-import { SetupFlow } from '../../overlay/SetupFlow';
-import { useAppEvents } from '../../hooks/useAppEvents';
+import { Goal, Task } from '../../../../shared/types';
+import { pickCurrentTask, sortByScheduledStart } from '../../../../shared/current-task';
+import { StepRow } from '../../../components/StepRow/StepRow';
+import { ProgressLine } from '../../../components/ProgressLine/ProgressLine';
+import { Button } from '../../../components/Button/Button';
+import { SetupFlow } from '../../../overlay/SetupFlow';
+import { useAppEvents } from '../../../hooks/useAppEvents';
 import './Home.css';
 
 interface HomeProps {

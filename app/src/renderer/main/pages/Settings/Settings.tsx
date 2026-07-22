@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Button } from '../../components/Button/Button';
-import { Chip } from '../../components/Chip/Chip';
+import { Button } from '../../../components/Button/Button.js';
+import { Chip } from '../../../components/Chip/Chip.js';
 
 interface SettingsProps {
   'data-testid'?: string;
