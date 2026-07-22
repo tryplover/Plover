@@ -12,17 +12,6 @@ export interface ProposedPlan {
   }[];
 }
 
-export type StateKind = 'observing' | 'paused' | 'done' | 'not-sure';
-
-export interface CompanionApi {
-  show: () => Promise<void>;
-  hide: () => Promise<void>;
-  setActiveTask: (taskId: string | null) => Promise<void>;
-  setState: (kind: StateKind) => Promise<void>;
-  resize: (height: number, width?: number) => Promise<void>;
-  getInitialState: () => Promise<{ kind: StateKind; activeTaskId: string | null }>;
-}
-
 export interface PloverApi {
   // Main Goals & Tasks
   getGoals: () => Promise<Goal[]>;
@@ -34,48 +23,14 @@ export interface PloverApi {
     (SummaryRow & { task_title: string | null; goal_title: string | null })[]
   >;
   updateTaskStatus: (id: string, status: Task['status']) => Promise<Task>;
-  decomposeGoal: (goalText: string) => Promise<{
-    goal: Omit<Goal, 'id' | 'created_at' | 'updated_at' | 'status'>;
-    subtasks: Omit<
-      Task,
-      | 'id'
-      | 'goal_id'
-      | 'status'
-      | 'created_at'
-      | 'updated_at'
-      | 'scheduled_start'
-      | 'scheduled_end'
-    >[];
-  }>;
-  scheduleTasks: (
-    tasks: Omit<
-      Task,
-      | 'id'
-      | 'goal_id'
-      | 'status'
-      | 'created_at'
-      | 'updated_at'
-      | 'scheduled_start'
-      | 'scheduled_end'
-      | 'calendar_event_id'
-    >[],
-    workingHours: { start: string; end: string },
-    horizonDays: number,
-  ) => Promise<{ taskId: string; start: string; end: string }[]>;
-  saveGoalAndTasks: (
-    goal: Omit<Goal, 'id' | 'created_at' | 'updated_at' | 'status'>,
-    tasks: Omit<
-      Task,
-      | 'id'
-      | 'goal_id'
-      | 'status'
-      | 'created_at'
-      | 'updated_at'
-      | 'scheduled_start'
-      | 'scheduled_end'
-    >[],
-    scheduledSlots: { tempIndex: number; start: string; end: string }[],
-  ) => Promise<{ goal: Goal; tasks: Task[] }>;
+  createTask: (input: {
+    goal_id: string;
+    title: string;
+    estimate_minutes: number;
+  }) => Promise<Task>;
+  updateTask: (id: string, patch: { title?: string; estimate_minutes?: number }) => Promise<Task>;
+  deleteTask: (id: string) => Promise<{ ok: true }>;
+  reorderTasks: (goal_id: string, orderedIds: string[]) => Promise<{ ok: true }>;
 
   // Settings
   getSettings: () => Promise<{
@@ -140,10 +95,6 @@ export interface PloverApi {
   commitGoal: (plan: ProposedPlan) => Promise<{ goalId: string }>;
   closeOverlay: () => Promise<void>;
   resizeOverlay: (height: number, width?: number) => Promise<void>;
-  openSetupWindow: () => Promise<void>;
-  listActiveWindows: () => Promise<{ app: string; title: string }[]>;
-  setIgnoreMouseEvents: (ignore: boolean) => Promise<void>;
-  setTrackingState: (tracking: boolean) => Promise<void>;
 
   // Permissions
   getScreenRecordingStatus: () => Promise<
@@ -152,20 +103,8 @@ export interface PloverApi {
   requestScreenRecording: () => Promise<'granted' | 'denied' | 'unsupported'>;
   openScreenRecordingSettings: () => Promise<void>;
 
-  // Companion API
-  companion: CompanionApi;
-
   // Window Controls (Windows)
   platform: string;
-  minimizeWindow: () => Promise<void>;
-  maximizeWindow: () => Promise<void>;
-  closeWindow: () => Promise<void>;
-
-  // Signup API
-  signup: {
-    start: () => Promise<void>;
-    complete: () => Promise<void>;
-  };
 
   // Plover Account (Supabase) API
   auth: {
@@ -194,11 +133,10 @@ const api: PloverApi = {
   getTasksByGoal: (goalId) => ipcRenderer.invoke('tasks:getByGoal', goalId),
   getSummaries: () => ipcRenderer.invoke('summaries:get'),
   updateTaskStatus: (id, status) => ipcRenderer.invoke('tasks:updateStatus', id, status),
-  decomposeGoal: (goalText) => ipcRenderer.invoke('goals:decompose', goalText),
-  scheduleTasks: (tasks, workingHours, horizonDays) =>
-    ipcRenderer.invoke('tasks:schedule', tasks, workingHours, horizonDays),
-  saveGoalAndTasks: (goal, tasks, scheduledSlots) =>
-    ipcRenderer.invoke('goals:save', goal, tasks, scheduledSlots),
+  createTask: (input) => ipcRenderer.invoke('tasks:create', input),
+  updateTask: (id, patch) => ipcRenderer.invoke('tasks:update', id, patch),
+  deleteTask: (id) => ipcRenderer.invoke('tasks:delete', id),
+  reorderTasks: (goal_id, orderedIds) => ipcRenderer.invoke('tasks:reorder', goal_id, orderedIds),
   getSettings: () => ipcRenderer.invoke('settings:get'),
   updateSettings: (settings) => ipcRenderer.invoke('settings:update', settings),
   connectGoogle: () => ipcRenderer.invoke('google:connect'),
@@ -209,31 +147,11 @@ const api: PloverApi = {
   commitGoal: (plan) => ipcRenderer.invoke('goal:commit', plan),
   closeOverlay: () => ipcRenderer.invoke('overlay:close'),
   resizeOverlay: (height, width) => ipcRenderer.invoke('overlay:resize', height, width),
-  openSetupWindow: () => ipcRenderer.invoke('overlay:openWindow'),
-  listActiveWindows: () => ipcRenderer.invoke('windows:list'),
-  setIgnoreMouseEvents: (ignore) => ipcRenderer.invoke('overlay:set-ignore-mouse-events', ignore),
-  setTrackingState: (tracking) => ipcRenderer.invoke('overlay:set-tracking', tracking),
 
   // Permissions
   getScreenRecordingStatus: () => ipcRenderer.invoke('permissions:screenRecording:status'),
   requestScreenRecording: () => ipcRenderer.invoke('permissions:screenRecording:request'),
   openScreenRecordingSettings: () => ipcRenderer.invoke('permissions:screenRecording:openSettings'),
-
-  // Companion
-  companion: {
-    show: () => ipcRenderer.invoke('companion:show'),
-    hide: () => ipcRenderer.invoke('companion:hide'),
-    setActiveTask: (taskId) => ipcRenderer.invoke('companion:setActiveTask', taskId),
-    setState: (kind) => ipcRenderer.invoke('companion:setState', kind),
-    resize: (height, width) => ipcRenderer.invoke('companion:resize', height, width),
-    getInitialState: () => ipcRenderer.invoke('companion:getInitialState'),
-  },
-
-  // Signup
-  signup: {
-    start: () => ipcRenderer.invoke('signup:start'),
-    complete: () => ipcRenderer.invoke('signup:complete'),
-  },
 
   // Plover Account (Supabase)
   auth: {
@@ -246,9 +164,6 @@ const api: PloverApi = {
   },
 
   platform: process.platform,
-  minimizeWindow: () => ipcRenderer.invoke('window:minimize'),
-  maximizeWindow: () => ipcRenderer.invoke('window:maximize'),
-  closeWindow: () => ipcRenderer.invoke('window:close'),
 
   // Events
   on: (channel, callback) => {

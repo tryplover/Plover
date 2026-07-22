@@ -15,11 +15,14 @@ export interface EventPayloads {
   'goal.created': Goal;
   'goal.updated': Goal;
   'goal.deleted': string;
+  'task.created': { task: Task };
+  'task.updated': { task: Task };
   'task.scheduled': Task;
   'task.completed': Task;
+  'task.deleted': { id: string };
+  'tasks.reordered': { goal_id: string; orderedIds: string[] };
   'folder.file_changed': FolderEventPayload;
   'folder.file_added': FolderEventPayload;
   'gdocs.revision': GDocsRevisionPayload;
   'summary.created': SummaryRow;
 }
-

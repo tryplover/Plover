@@ -20,6 +20,7 @@ export async function decomposeGoal(input: {
     | 'updated_at'
     | 'scheduled_start'
     | 'scheduled_end'
+    | 'sort_index'
   >[];
 }> {
   const body: Record<string, unknown> = {

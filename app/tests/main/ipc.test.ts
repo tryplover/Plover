@@ -36,6 +36,7 @@ vi.mock('electron', () => {
     BrowserWindow: Object.assign(vi.fn(), {
       getAllWindows: vi.fn().mockReturnValue([]),
     }),
+    app: { isPackaged: false },
   };
 });
 
@@ -393,6 +394,121 @@ describe('IPC Handlers', () => {
       const result = await getHandler('auth:getStatus')({});
 
       expect(result).toEqual({ signedIn: false, email: null });
+    });
+  });
+});
+
+describe('goals/tasks CRUD handlers', () => {
+  function getHandler(channel: string): IpcHandler {
+    const calls = (ipcMain.handle as ReturnType<typeof vi.fn>).mock.calls;
+    const call = calls.find((c) => c[0] === channel);
+    if (!call) {
+      throw new Error(`handler not registered for channel: ${channel}`);
+    }
+    return call[1] as IpcHandler;
+  }
+
+  function seedTask() {
+    const goal = goalsRepo.create({
+      title: 'Seed goal',
+      description: '',
+      status: 'active',
+    });
+    const task = tasksRepo.create({
+      goal_id: goal.id,
+      title: 'Seed task',
+      estimate_minutes: 30,
+      status: 'todo',
+    });
+    return { goal, task };
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setupIpcHandlers(() => null);
+  });
+
+  describe('tasks:create handler', () => {
+    it('creates a task via the repo and returns it', async () => {
+      const goal = goalsRepo.create({ title: 'Goal', description: '', status: 'active' });
+      const handler = getHandler('tasks:create');
+
+      const result = (await handler(
+        {},
+        {
+          goal_id: goal.id,
+          title: 'New task',
+          estimate_minutes: 45,
+        },
+      )) as { id: string; title: string; estimate_minutes: number; status: string };
+
+      expect(result.title).toBe('New task');
+      expect(result.estimate_minutes).toBe(45);
+      expect(result.status).toBe('todo');
+
+      const stored = tasksRepo.get(result.id);
+      expect(stored?.title).toBe('New task');
+    });
+  });
+
+  describe('tasks:update handler', () => {
+    it('renames the task via the repo', async () => {
+      const { task } = seedTask();
+      const handler = getHandler('tasks:update');
+
+      const result = (await handler({}, task.id, { title: 'Renamed' })) as { title: string };
+
+      expect(result.title).toBe('Renamed');
+      expect(tasksRepo.get(task.id)?.title).toBe('Renamed');
+    });
+
+    it('updates estimate_minutes via the repo', async () => {
+      const { task } = seedTask();
+      const handler = getHandler('tasks:update');
+
+      const result = (await handler({}, task.id, { estimate_minutes: 90 })) as {
+        estimate_minutes: number;
+      };
+
+      expect(result.estimate_minutes).toBe(90);
+    });
+  });
+
+  describe('tasks:delete handler', () => {
+    it('removes the row via the repo', async () => {
+      const { task } = seedTask();
+      const handler = getHandler('tasks:delete');
+
+      const result = await handler({}, task.id);
+
+      expect(result).toEqual({ ok: true });
+      expect(tasksRepo.get(task.id)).toBeNull();
+    });
+  });
+
+  describe('tasks:reorder handler', () => {
+    it('calls repo.reorder', async () => {
+      const goal = goalsRepo.create({ title: 'Reorder goal', description: '', status: 'active' });
+      const taskA = tasksRepo.create({
+        goal_id: goal.id,
+        title: 'A',
+        estimate_minutes: 10,
+        status: 'todo',
+      });
+      const taskB = tasksRepo.create({
+        goal_id: goal.id,
+        title: 'B',
+        estimate_minutes: 10,
+        status: 'todo',
+      });
+      const handler = getHandler('tasks:reorder');
+
+      const result = await handler({}, goal.id, [taskB.id, taskA.id]);
+
+      expect(result).toEqual({ ok: true });
+      const [first, second] = tasksRepo.listByGoal(goal.id);
+      expect(first?.id).toBe(taskB.id);
+      expect(second?.id).toBe(taskA.id);
     });
   });
 });

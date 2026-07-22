@@ -20,6 +20,7 @@ export interface Task {
   scheduled_start?: string; // ISO8601 string
   scheduled_end?: string; // ISO8601 string
   status: 'todo' | 'scheduled' | 'in_progress' | 'done' | 'skipped';
+  sort_index: number;
   created_at: string;
   updated_at: string;
 }

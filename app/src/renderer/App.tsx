@@ -119,6 +119,7 @@ export function App() {
             <span className="plover-profile-row__label">{accountEmail ?? 'Not signed in'}</span>
           </div>
         </div>
+        <div className="sidebar-version">Plover v{import.meta.env.PLOVER_VERSION}</div>
       </aside>
 
       <main className="main-content">

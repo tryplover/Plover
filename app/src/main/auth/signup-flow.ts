@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { shell } from 'electron';
 import { setPloverToken } from './plover-token.js';
+import { resolveRequiredEnv } from '../config/env.js';
 
 const NONCE_TTL_MS = 10 * 60 * 1000;
 
@@ -21,7 +22,7 @@ function getBackendUrl(): string {
   } catch {
     // ignore — import.meta.env not defined in this runtime
   }
-  return process.env.PLOVER_BACKEND_URL ?? 'http://localhost:3000';
+  return resolveRequiredEnv('PLOVER_BACKEND_URL', { devFallback: 'http://localhost:3000' });
 }
 
 function generateState(): string {
