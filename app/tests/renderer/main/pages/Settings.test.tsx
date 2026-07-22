@@ -20,6 +20,7 @@ beforeEach(() => {
         workingHours: { start: '09:00', end: '18:00' },
         horizonDays: 14,
         pauseScheduling: false,
+        theme: 'light',
         pauseAllTracking: false,
         windowTrackingEnabled: true,
         gdocsPollingEnabled: true,
@@ -54,6 +55,17 @@ describe('Settings', () => {
     await act(async () => {
       await Promise.resolve();
     });
+  });
+
+  it('renders the Appearance section heading and toggles theme', async () => {
+    render(<Settings />);
+    expect(await screen.findByRole('heading', { name: 'Appearance' })).toBeTruthy();
+    const darkChip = screen.getByText('Dark');
+    await act(async () => {
+      fireEvent.click(darkChip);
+      await Promise.resolve();
+    });
+    expect(window.api.updateSettings).toHaveBeenCalledWith({ theme: 'dark' });
   });
 
   it('renders the Account section heading', async () => {

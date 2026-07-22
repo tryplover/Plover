@@ -10,6 +10,9 @@ export interface SettingsData {
   supabaseUserId: string | null;
   supabaseUserEmail: string | null;
 
+  theme: 'light' | 'dark';
+  companionMode: 'full' | 'compact';
+
   pauseAllTracking: boolean;
   windowTrackingEnabled: boolean;
   gdocsPollingEnabled: boolean;
@@ -73,6 +76,15 @@ export class SettingsRepo {
     const supabaseUserId = map.get('supabaseUserId') ?? null;
     const supabaseUserEmail = map.get('supabaseUserEmail') ?? null;
 
+    const rawTheme = map.get('theme');
+    const theme: 'light' | 'dark' = rawTheme === 'dark' ? 'dark' : 'light';
+
+    // Compact is the default: the Figma-designed "Full" collapsed pill is too
+    // large for a persistent top-of-screen overlay per explicit user feedback.
+    // An explicit 'full' choice (via Settings) is still respected either way.
+    const rawCompanionMode = map.get('companionMode');
+    const companionMode: 'full' | 'compact' = rawCompanionMode === 'full' ? 'full' : 'compact';
+
     const pauseAllTracking = map.get('pauseAllTracking') === 'true';
     const windowTrackingEnabled = map.get('windowTrackingEnabled') !== 'false';
     const gdocsPollingEnabled = map.get('gdocsPollingEnabled') !== 'false';
@@ -101,6 +113,8 @@ export class SettingsRepo {
       lastInferenceTs,
       supabaseUserId,
       supabaseUserEmail,
+      theme,
+      companionMode,
       pauseAllTracking,
       windowTrackingEnabled,
       gdocsPollingEnabled,
@@ -149,6 +163,12 @@ export class SettingsRepo {
       } else {
         this.set('supabaseUserEmail', patch.supabaseUserEmail);
       }
+    }
+    if (patch.theme !== undefined) {
+      this.set('theme', patch.theme);
+    }
+    if (patch.companionMode !== undefined) {
+      this.set('companionMode', patch.companionMode);
     }
     if (patch.pauseAllTracking !== undefined) {
       this.set('pauseAllTracking', String(patch.pauseAllTracking));

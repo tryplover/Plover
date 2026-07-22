@@ -28,10 +28,7 @@ export interface PloverApi {
     title: string;
     estimate_minutes: number;
   }) => Promise<Task>;
-  updateTask: (
-    id: string,
-    patch: { title?: string; estimate_minutes?: number },
-  ) => Promise<Task>;
+  updateTask: (id: string, patch: { title?: string; estimate_minutes?: number }) => Promise<Task>;
   deleteTask: (id: string) => Promise<{ ok: true }>;
   reorderTasks: (goal_id: string, orderedIds: string[]) => Promise<{ ok: true }>;
 
@@ -41,6 +38,8 @@ export interface PloverApi {
     workingHours: { start: string; end: string };
     horizonDays: number;
     pauseScheduling: boolean;
+    theme: 'light' | 'dark';
+    companionMode: 'full' | 'compact';
     pauseAllTracking: boolean;
     windowTrackingEnabled: boolean;
     gdocsPollingEnabled: boolean;
@@ -57,6 +56,8 @@ export interface PloverApi {
       workingHours: { start: string; end: string };
       horizonDays: number;
       pauseScheduling: boolean;
+      theme: 'light' | 'dark';
+      companionMode: 'full' | 'compact';
       pauseAllTracking: boolean;
       windowTrackingEnabled: boolean;
       gdocsPollingEnabled: boolean;
@@ -72,6 +73,8 @@ export interface PloverApi {
     workingHours: { start: string; end: string };
     horizonDays: number;
     pauseScheduling: boolean;
+    theme: 'light' | 'dark';
+    companionMode: 'full' | 'compact';
     pauseAllTracking: boolean;
     windowTrackingEnabled: boolean;
     gdocsPollingEnabled: boolean;
@@ -133,8 +136,7 @@ const api: PloverApi = {
   createTask: (input) => ipcRenderer.invoke('tasks:create', input),
   updateTask: (id, patch) => ipcRenderer.invoke('tasks:update', id, patch),
   deleteTask: (id) => ipcRenderer.invoke('tasks:delete', id),
-  reorderTasks: (goal_id, orderedIds) =>
-    ipcRenderer.invoke('tasks:reorder', goal_id, orderedIds),
+  reorderTasks: (goal_id, orderedIds) => ipcRenderer.invoke('tasks:reorder', goal_id, orderedIds),
   getSettings: () => ipcRenderer.invoke('settings:get'),
   updateSettings: (settings) => ipcRenderer.invoke('settings:update', settings),
   connectGoogle: () => ipcRenderer.invoke('google:connect'),

@@ -26,4 +26,3 @@ export interface EventPayloads {
   'gdocs.revision': GDocsRevisionPayload;
   'summary.created': SummaryRow;
 }
-

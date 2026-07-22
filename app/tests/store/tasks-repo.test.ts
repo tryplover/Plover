@@ -30,7 +30,7 @@ describe('TasksRepo.reorder', () => {
     expect(l2?.sort_index).toBe(2);
   });
 
-  it('throws when orderedIds is not exactly the goal\'s task id set', () => {
+  it("throws when orderedIds is not exactly the goal's task id set", () => {
     const { tasks, goals } = makeRepos();
     const goal = goals.create({ title: 'g', description: '', status: 'active' });
     tasks.create({ id: 'a', goal_id: goal.id, title: 'a', estimate_minutes: 10, status: 'todo' });

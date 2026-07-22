@@ -433,11 +433,14 @@ describe('goals/tasks CRUD handlers', () => {
       const goal = goalsRepo.create({ title: 'Goal', description: '', status: 'active' });
       const handler = getHandler('tasks:create');
 
-      const result = (await handler({}, {
-        goal_id: goal.id,
-        title: 'New task',
-        estimate_minutes: 45,
-      })) as { id: string; title: string; estimate_minutes: number; status: string };
+      const result = (await handler(
+        {},
+        {
+          goal_id: goal.id,
+          title: 'New task',
+          estimate_minutes: 45,
+        },
+      )) as { id: string; title: string; estimate_minutes: number; status: string };
 
       expect(result.title).toBe('New task');
       expect(result.estimate_minutes).toBe(45);
