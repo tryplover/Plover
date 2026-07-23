@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow } from 'electron';
+import { ipcMain, BrowserWindow, screen } from 'electron';
 import { Task } from '../shared/types.js';
 import { goalsRepo, tasksRepo, settingsRepo, summariesRepo, activityRepo } from './store/index.js';
 import { decomposeGoal } from './planner/decompose.js';
@@ -18,6 +18,7 @@ import {
 } from './permissions/screen-recording.js';
 import { SettingsData } from './store/repos/settings.js';
 import * as supabaseAuth from './auth/supabase-auth.js';
+import { createCompanionWindow } from './windows/companion.js';
 
 export const googleAuth = new GoogleAuth();
 
@@ -45,7 +46,9 @@ function broadcast(channel: string, payload?: unknown): void {
   }
 }
 
-export function setupIpcHandlers(getOverlayWindow: () => BrowserWindow | null): void {
+export function setupIpcHandlers(
+  getOverlayWindow: () => BrowserWindow | null,
+): () => BrowserWindow {
   void googleAuth.loadSavedCredentials();
   void supabaseAuth.restoreSession().then((hasSession) => {
     if (hasSession) supabaseAuth.startAutoRefresh();
@@ -314,9 +317,71 @@ export function setupIpcHandlers(getOverlayWindow: () => BrowserWindow | null): 
   ipcMain.handle('permissions:screenRecording:openSettings', async () =>
     openScreenRecordingSettings(),
   );
+
+  // Companion
+  let companion: BrowserWindow | null = null;
+  let companionKind = 'observing';
+  let companionActiveTaskId: string | null = null;
+
+  function ensureCompanion(): BrowserWindow {
+    if (!companion || companion.isDestroyed()) {
+      companion = createCompanionWindow();
+      companion.on('closed', () => {
+        companion = null;
+      });
+    }
+    return companion;
+  }
+
+  ipcMain.handle('companion:show', () => {
+    ensureCompanion().show();
+  });
+  ipcMain.handle('companion:hide', () => {
+    companion?.hide();
+  });
+  ipcMain.handle('companion:resize', (_e, height: number, width?: number) => {
+    const w = ensureCompanion();
+    const bounds = w.getBounds();
+    const nextHeight = Math.max(20, Math.min(640, Math.round(height)));
+    const nextWidth =
+      width !== undefined ? Math.max(100, Math.min(600, Math.round(width))) : bounds.width;
+
+    if (width !== undefined && nextWidth !== bounds.width) {
+      const { workArea } = screen.getPrimaryDisplay();
+      const nextX = workArea.x + Math.round((workArea.width - nextWidth) / 2);
+      w.setBounds({
+        x: nextX,
+        y: bounds.y,
+        width: nextWidth,
+        height: nextHeight,
+      });
+    } else {
+      w.setBounds({
+        x: bounds.x,
+        y: bounds.y,
+        width: bounds.width,
+        height: nextHeight,
+      });
+    }
+  });
+  ipcMain.handle('companion:setActiveTask', (_e, taskId: string | null) => {
+    companionActiveTaskId = taskId;
+    ensureCompanion().webContents.send('companion:activeTask', taskId);
+  });
+  ipcMain.handle('companion:setState', (_e, kind: string) => {
+    companionKind = kind;
+    ensureCompanion().webContents.send('companion:state', kind);
+  });
+  ipcMain.handle('companion:getInitialState', () => ({
+    kind: companionKind,
+    activeTaskId: companionActiveTaskId,
+  }));
+
+  return ensureCompanion;
 }
 
-export function setupIpc(getOverlayWindow: () => BrowserWindow | null): void {
-  setupIpcHandlers(getOverlayWindow);
+export function setupIpc(getOverlayWindow: () => BrowserWindow | null): () => BrowserWindow {
+  const ensureCompanion = setupIpcHandlers(getOverlayWindow);
   startEventForwarding(broadcast);
+  return ensureCompanion;
 }
