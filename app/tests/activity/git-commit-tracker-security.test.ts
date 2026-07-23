@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GitCommitTracker } from '@main/activity/git-commit-tracker.js';
-import { TypedEventBus } from '@main/bus.js';
+import { TypedEventBus } from '@main/events/bus.js';
 import * as child_process from 'node:child_process';
 import type { TasksRepo } from '@main/store/repos/tasks.js';
 import type { ActivityRepo } from '@main/store/repos/activity.js';
 
 vi.mock('node:child_process', async () => {
-  const actual = await vi.importActual('node:child_process') as object;
+  const actual = (await vi.importActual('node:child_process')) as object;
   return {
     ...actual,
     execFile: vi.fn(),

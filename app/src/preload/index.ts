@@ -192,7 +192,7 @@ const api: PloverApi = {
     getInitialState: () => ipcRenderer.invoke('companion:getInitialState'),
   },
 
-  listActiveWindows: () => Promise.resolve([]),
+  listActiveWindows: () => ipcRenderer.invoke('window:list-active'),
 
   // Events
   on: (channel, callback) => {

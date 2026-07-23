@@ -4,7 +4,7 @@ import { GDocsActivitySubscriber } from './gdocs-subscriber.js';
 import { ScreenCapturer } from './screen-capturer.js';
 import { runRetention } from './retention.js';
 import { settingsRepo, activityRepo } from '../store/index.js';
-import { eventBus } from '../bus.js';
+import { eventBus } from '../events/bus.js';
 
 let windowTracker: WindowTracker | null = null;
 let gdocsSubscriber: GDocsActivitySubscriber | null = null;

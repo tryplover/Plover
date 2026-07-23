@@ -10,7 +10,7 @@
   width: 100%;
   padding: 0;
   gap: 0;
-  height: auto;
+  height: auto !important;
 }
 
 .plover-setup--window {
@@ -83,7 +83,7 @@
 }
 
 .plover-setup--overlay > div:not(.plover-setup__chrome) {
-  flex: 0 0 auto;
+  flex: 0 0 auto !important;
 }
 
 .plover-setup .plover-stepper {

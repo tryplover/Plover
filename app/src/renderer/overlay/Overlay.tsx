@@ -31,8 +31,24 @@ export function Overlay() {
     const resizeWindow = () => {
       const el = containerRef.current;
       if (!el) return;
-      const height = Math.ceil(Math.max(el.getBoundingClientRect().height, el.scrollHeight));
+
+      const child = el.firstElementChild;
+      let contentHeight = 0;
+      if (child && child.children.length > 0) {
+        for (const c of child.children) {
+          if (c) {
+            contentHeight += c.getBoundingClientRect().height || c.scrollHeight;
+          }
+        }
+        contentHeight += 24; // buffer for gaps/margins
+      } else {
+        contentHeight = el.scrollHeight;
+      }
+
+      // Add container's vertical padding (22px * 2) and border (1px * 2)
+      const height = Math.ceil(contentHeight) + 46;
       const width = Math.ceil(el.getBoundingClientRect().width);
+
       window.api.resizeOverlay(height, width).catch((err) => {
         console.error('Failed to resize overlay:', err);
       });
@@ -41,10 +57,14 @@ export function Overlay() {
     resizeWindow();
     const raf = requestAnimationFrame(resizeWindow);
 
+    const el = containerRef.current;
     const observer = new ResizeObserver(() => {
       resizeWindow();
     });
-    observer.observe(containerRef.current);
+    observer.observe(el);
+    if (el.firstElementChild) {
+      observer.observe(el.firstElementChild);
+    }
 
     return () => {
       cancelAnimationFrame(raf);
@@ -74,10 +94,24 @@ export function Overlay() {
 
   useEffect(() => {
     if (variant === 'overlay') {
-      const originalBg = document.body.style.background;
+      const originalBodyBg = document.body.style.background;
+      const originalHtmlBg = document.documentElement.style.background;
+
       document.body.style.background = 'transparent';
+      document.documentElement.style.background = 'transparent';
+
+      const rootEl = document.getElementById('root');
+      const originalRootBg = rootEl ? rootEl.style.background : '';
+      if (rootEl) {
+        rootEl.style.background = 'transparent';
+      }
+
       return () => {
-        document.body.style.background = originalBg;
+        document.body.style.background = originalBodyBg;
+        document.documentElement.style.background = originalHtmlBg;
+        if (rootEl) {
+          rootEl.style.background = originalRootBg;
+        }
       };
     }
     return undefined;
@@ -88,6 +122,7 @@ export function Overlay() {
       ? {
           boxSizing: 'border-box' as const,
           width: '100%',
+          height: 'fit-content',
           padding: '22px 24px',
           backgroundColor:
             theme === 'light' ? 'rgba(243, 238, 228, 0.85)' : 'rgba(20, 20, 22, 0.45)',

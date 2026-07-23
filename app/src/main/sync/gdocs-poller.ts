@@ -1,7 +1,7 @@
 import { google } from 'googleapis';
 import { GoogleAuth } from './google-auth.js';
 import { SettingsRepo } from '../store/repos/settings.js';
-import { TypedEventBus } from '../bus.js';
+import { TypedEventBus } from '../events/bus.js';
 
 export class GDocsPoller {
   private googleAuth: GoogleAuth;

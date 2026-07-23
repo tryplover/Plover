@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import Home from './main/pages/Home';
-import GoalsList from './main/pages/GoalsList';
 import AIProgress from './main/pages/AIProgress';
 import Settings from './main/pages/Settings';
 import { Onboarding } from './main/pages/Onboarding';
-import { IconHome, IconTarget, IconGear, IconActivity } from './main/icons';
+import { IconHome, IconGear, IconActivity } from './main/icons';
 import ploverLogo from './plover-logo.png';
 
-type Tab = 'home' | 'goals' | 'progress' | 'settings';
+type Tab = 'home' | 'progress' | 'settings';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<Tab>('home');
@@ -81,15 +80,6 @@ export function App() {
             </button>
 
             <button
-              className={`nav-item ${activeTab === 'goals' ? 'active' : ''}`}
-              onClick={() => setActiveTab('goals')}
-              data-testid="nav-goals"
-            >
-              <IconTarget />
-              <span>All tasks</span>
-            </button>
-
-            <button
               className={`nav-item ${activeTab === 'progress' ? 'active' : ''}`}
               onClick={() => setActiveTab('progress')}
               data-testid="nav-progress"
@@ -100,31 +90,34 @@ export function App() {
           </nav>
         </div>
 
-        <div>
-          <nav className="nav-links">
-            <button
-              className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
-              onClick={() => setActiveTab('settings')}
-              data-testid="nav-settings"
-            >
-              <IconGear />
-              <span>Settings</span>
-            </button>
-          </nav>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div>
+            <div className="plover-profile-row" style={{ marginTop: 0, padding: '0 8px' }}>
+              <span className="plover-profile-row__avatar" aria-hidden>
+                {accountEmail ? accountEmail[0]?.toUpperCase() : '?'}
+              </span>
+              <span className="plover-profile-row__label">{accountEmail ?? 'Not signed in'}</span>
+            </div>
 
-          <div className="plover-profile-row">
-            <span className="plover-profile-row__avatar" aria-hidden>
-              {accountEmail ? accountEmail[0]?.toUpperCase() : '?'}
-            </span>
-            <span className="plover-profile-row__label">{accountEmail ?? 'Not signed in'}</span>
+            <nav className="nav-links" style={{ marginTop: '8px' }}>
+              <button
+                className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
+                onClick={() => setActiveTab('settings')}
+                data-testid="nav-settings"
+              >
+                <IconGear />
+                <span>Settings</span>
+              </button>
+            </nav>
+          </div>
+          <div className="sidebar-version" style={{ padding: 0 }}>
+            Plover v{import.meta.env.PLOVER_VERSION}
           </div>
         </div>
-        <div className="sidebar-version">Plover v{import.meta.env.PLOVER_VERSION}</div>
       </aside>
 
       <main className="main-content">
         {activeTab === 'home' && <Home data-testid="page-home" />}
-        {activeTab === 'goals' && <GoalsList data-testid="page-goals" />}
         {activeTab === 'progress' && <AIProgress data-testid="page-progress" />}
         {activeTab === 'settings' && <Settings data-testid="page-settings" />}
       </main>

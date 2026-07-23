@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import Database from 'better-sqlite3';
 import { Task } from '@shared/types.js';
-import { eventBus } from '../../bus.js';
+import { eventBus } from '../../events/bus.js';
 
 export class TasksRepo {
   private db: Database.Database;
@@ -25,14 +25,14 @@ export class TasksRepo {
     this.getStmt = this.db.prepare(`
       SELECT id, goal_id, title, estimate_minutes, depends_on,
              scheduled_start, scheduled_end, status,
-             sort_index, created_at, updated_at
+             sort_index, progress, created_at, updated_at
       FROM tasks
       WHERE id = ?
     `);
     this.listByGoalStmt = this.db.prepare(`
       SELECT id, goal_id, title, estimate_minutes, depends_on,
              scheduled_start, scheduled_end, status,
-             sort_index, created_at, updated_at
+             sort_index, progress, created_at, updated_at
       FROM tasks
       WHERE goal_id = ?
       ORDER BY sort_index, created_at
@@ -47,13 +47,13 @@ export class TasksRepo {
     this.listStmt = this.db.prepare(`
       SELECT id, goal_id, title, estimate_minutes, depends_on,
              scheduled_start, scheduled_end, status,
-             sort_index, created_at, updated_at
+             sort_index, progress, created_at, updated_at
       FROM tasks
     `);
     this.listActiveScheduledBeforeStmt = this.db.prepare(`
       SELECT id, goal_id, title, estimate_minutes, depends_on,
              scheduled_start, scheduled_end, status,
-             sort_index, created_at, updated_at
+             sort_index, progress, created_at, updated_at
       FROM tasks
       WHERE status NOT IN ('done', 'skipped')
         AND scheduled_start IS NOT NULL
@@ -67,7 +67,7 @@ export class TasksRepo {
   }
 
   create(
-    input: Omit<Task, 'id' | 'created_at' | 'updated_at' | 'sort_index'> & {
+    input: Omit<Task, 'id' | 'created_at' | 'updated_at' | 'sort_index' | 'progress'> & {
       id?: string;
       sort_index?: number;
     },
@@ -90,6 +90,7 @@ export class TasksRepo {
       scheduled_end: input.scheduled_end,
       status: input.status,
       sort_index: sortIndex,
+      progress: 0,
       created_at: now,
       updated_at: now,
     };
@@ -123,6 +124,7 @@ export class TasksRepo {
           scheduled_end: string | null;
           status: string;
           sort_index: number;
+          progress: number;
           created_at: string;
           updated_at: string;
         }
@@ -142,6 +144,7 @@ export class TasksRepo {
       scheduled_end: row.scheduled_end ?? undefined,
       status: row.status as Task['status'],
       sort_index: row.sort_index,
+      progress: row.progress,
       created_at: row.created_at,
       updated_at: row.updated_at,
     };
@@ -158,6 +161,7 @@ export class TasksRepo {
       scheduled_end: string | null;
       status: string;
       sort_index: number;
+      progress: number;
       created_at: string;
       updated_at: string;
     }[];
@@ -172,6 +176,7 @@ export class TasksRepo {
       scheduled_end: row.scheduled_end ?? undefined,
       status: row.status as Task['status'],
       sort_index: row.sort_index,
+      progress: row.progress,
       created_at: row.created_at,
       updated_at: row.updated_at,
     }));
@@ -218,6 +223,7 @@ export class TasksRepo {
       scheduled_end: string | null;
       status: string;
       sort_index: number;
+      progress: number;
       created_at: string;
       updated_at: string;
     }[];
@@ -232,6 +238,7 @@ export class TasksRepo {
       scheduled_end: row.scheduled_end ?? undefined,
       status: row.status as Task['status'],
       sort_index: row.sort_index,
+      progress: row.progress,
       created_at: row.created_at,
       updated_at: row.updated_at,
     }));
@@ -248,6 +255,7 @@ export class TasksRepo {
       scheduled_end: string | null;
       status: string;
       sort_index: number;
+      progress: number;
       created_at: string;
       updated_at: string;
     }[];
@@ -262,9 +270,30 @@ export class TasksRepo {
       scheduled_end: row.scheduled_end ?? undefined,
       status: row.status as Task['status'],
       sort_index: row.sort_index,
+      progress: row.progress,
       created_at: row.created_at,
       updated_at: row.updated_at,
     }));
+  }
+
+  incrementProgress(id: string, delta: number): Task {
+    const now = new Date().toISOString();
+    const info = this.db
+      .prepare(
+        `UPDATE tasks
+         SET progress = MAX(0, MIN(100, progress + ?)),
+             updated_at = ?
+         WHERE id = ?`,
+      )
+      .run(delta, now, id);
+    if (info.changes === 0) {
+      throw new Error(`Task with id ${id} not found`);
+    }
+    const updated = this.get(id);
+    if (!updated) {
+      throw new Error(`Task with id ${id} not found`);
+    }
+    return updated;
   }
 
   deleteByGoal(goalId: string): void {

@@ -48,11 +48,18 @@
   border-radius: 13px;
   padding: 16px 20px 16px 18px;
   text-align: left;
-  transition: border-color var(--plover-duration-fast);
+  transition:
+    border-color var(--plover-duration-fast),
+    background-color var(--plover-duration-fast);
+  cursor: pointer;
+}
+
+.plover-home-task-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 .plover-home-task-row--active {
-  cursor: pointer;
   border: 1.5px solid var(--plover-home-active-border);
   box-shadow: var(--plover-home-active-shadow);
 }
@@ -277,4 +284,32 @@
   transition:
     opacity 0.25s ease,
     filter 0.25s ease;
+}
+
+.plover-home-task-row__delete {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+  transition: all 0.15s ease;
+}
+
+.plover-home-task-row__delete:hover {
+  color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.12);
+}
+
+.plover-shell--light .plover-home-task-row__delete {
+  color: rgba(36, 33, 28, 0.45);
+}
+
+.plover-shell--light .plover-home-task-row__delete:hover {
+  color: #d93838;
+  background: rgba(217, 56, 56, 0.08);
 }

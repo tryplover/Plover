@@ -1,7 +1,7 @@
 import { watch, FSWatcher } from 'chokidar';
 import { ActivityRepo } from '../store/repos/activity.js';
 import { SettingsRepo } from '../store/repos/settings.js';
-import { TypedEventBus } from '../bus.js';
+import { TypedEventBus } from '../events/bus.js';
 import { FolderEventPayload } from '@shared/events.js';
 
 export class FolderWatcher {

@@ -95,11 +95,7 @@ export function StepConnect({ plan, variant, onBack, onNext }: Props) {
         <Button variant="secondary" onClick={onBack} disabled={committing}>
           Back
         </Button>
-        <Button
-          variant="primary"
-          onClick={handleStart}
-          disabled={selectedIndex === null || committing}
-        >
+        <Button variant="primary" onClick={handleStart} disabled={committing}>
           Start tracking →
         </Button>
       </footer>
