@@ -94,10 +94,24 @@ export function Overlay() {
 
   useEffect(() => {
     if (variant === 'overlay') {
-      const originalBg = document.body.style.background;
+      const originalBodyBg = document.body.style.background;
+      const originalHtmlBg = document.documentElement.style.background;
+
       document.body.style.background = 'transparent';
+      document.documentElement.style.background = 'transparent';
+
+      const rootEl = document.getElementById('root');
+      const originalRootBg = rootEl ? rootEl.style.background : '';
+      if (rootEl) {
+        rootEl.style.background = 'transparent';
+      }
+
       return () => {
-        document.body.style.background = originalBg;
+        document.body.style.background = originalBodyBg;
+        document.documentElement.style.background = originalHtmlBg;
+        if (rootEl) {
+          rootEl.style.background = originalRootBg;
+        }
       };
     }
     return undefined;
