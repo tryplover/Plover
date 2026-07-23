@@ -33,8 +33,17 @@ export function Overlay() {
       if (!el) return;
 
       const child = el.firstElementChild;
-      // Measure the child's height directly to avoid measuring the stretched container
-      const contentHeight = child ? child.scrollHeight : el.scrollHeight;
+      let contentHeight = 0;
+      if (child && child.children.length > 0) {
+        for (const c of child.children) {
+          if (c) {
+            contentHeight += c.getBoundingClientRect().height || c.scrollHeight;
+          }
+        }
+        contentHeight += 24; // buffer for gaps/margins
+      } else {
+        contentHeight = el.scrollHeight;
+      }
 
       // Add container's vertical padding (22px * 2) and border (1px * 2)
       const height = Math.ceil(contentHeight) + 46;
@@ -48,10 +57,14 @@ export function Overlay() {
     resizeWindow();
     const raf = requestAnimationFrame(resizeWindow);
 
+    const el = containerRef.current;
     const observer = new ResizeObserver(() => {
       resizeWindow();
     });
-    observer.observe(containerRef.current);
+    observer.observe(el);
+    if (el.firstElementChild) {
+      observer.observe(el.firstElementChild);
+    }
 
     return () => {
       cancelAnimationFrame(raf);

@@ -294,6 +294,16 @@ export function setupIpcHandlers(getOverlayWindow: () => BrowserWindow | null): 
   });
 
   ipcMain.handle('overlay:resize', async (_event, height: number, width?: number) => {
+    try {
+      const fs = await import('fs');
+      fs.appendFileSync(
+        '/Users/liyuxiao/Documents/GitHub/BuildWithGeminiHackathon/debug.log',
+        `[IPC] overlay:resize received height=${height}, width=${width} at ${new Date().toISOString()}\n`,
+      );
+    } catch {
+      // ignore
+    }
+    console.log(`[IPC] overlay:resize received height=${height}, width=${width}`);
     const overlayWin = getOverlayWindow();
     if (overlayWin) {
       const bounds = overlayWin.getBounds();
