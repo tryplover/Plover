@@ -60,5 +60,4 @@ describe('TypedEventBus', () => {
 
     expect(handler).toHaveBeenCalledTimes(1);
   });
-
 });

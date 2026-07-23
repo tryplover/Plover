@@ -6,7 +6,7 @@ import type { TasksRepo } from '@main/store/repos/tasks.js';
 import type { ActivityRepo } from '@main/store/repos/activity.js';
 
 vi.mock('node:child_process', async () => {
-  const actual = await vi.importActual('node:child_process') as object;
+  const actual = (await vi.importActual('node:child_process')) as object;
   return {
     ...actual,
     execFile: vi.fn(),

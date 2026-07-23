@@ -181,13 +181,14 @@ if (!gotTheLock) {
     gdocsPoller.start();
 
     // Register all typed IPC handlers first
-    setupIpc(() => overlayWindow);
+    const ensureCompanion = setupIpc(() => overlayWindow);
 
     // Initialize passive activity monitoring system
     initActivityMonitoring();
 
     createMainWindow();
     overlayWindow = createOverlayWindow();
+    ensureCompanion().show();
 
     // Option is mac-only; Alt+Shift+Space elsewhere to avoid Windows' Alt+Space system-menu conflict
     const hotkey = process.platform === 'darwin' ? 'Option+Space' : 'Alt+Shift+Space';

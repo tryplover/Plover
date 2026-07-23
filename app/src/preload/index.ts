@@ -12,6 +12,17 @@ export interface ProposedPlan {
   }[];
 }
 
+export type StateKind = 'observing' | 'paused' | 'done' | 'not-sure';
+
+export interface CompanionApi {
+  show: () => Promise<void>;
+  hide: () => Promise<void>;
+  setActiveTask: (taskId: string | null) => Promise<void>;
+  setState: (kind: StateKind) => Promise<void>;
+  resize: (height: number, width?: number) => Promise<void>;
+  getInitialState: () => Promise<{ kind: StateKind; activeTaskId: string | null }>;
+}
+
 export interface PloverApi {
   // Main Goals & Tasks
   getGoals: () => Promise<Goal[]>;
@@ -106,6 +117,9 @@ export interface PloverApi {
   // Window Controls (Windows)
   platform: string;
 
+  // Companion API
+  companion: CompanionApi;
+
   // Window tracking (Phase 2+ — stub returns empty list until implemented)
   listActiveWindows: () => Promise<{ app: string; title: string }[]>;
 
@@ -167,6 +181,16 @@ const api: PloverApi = {
   },
 
   platform: process.platform,
+
+  // Companion
+  companion: {
+    show: () => ipcRenderer.invoke('companion:show'),
+    hide: () => ipcRenderer.invoke('companion:hide'),
+    setActiveTask: (taskId) => ipcRenderer.invoke('companion:setActiveTask', taskId),
+    setState: (kind) => ipcRenderer.invoke('companion:setState', kind),
+    resize: (height, width) => ipcRenderer.invoke('companion:resize', height, width),
+    getInitialState: () => ipcRenderer.invoke('companion:getInitialState'),
+  },
 
   listActiveWindows: () => ipcRenderer.invoke('window:list-active'),
 
