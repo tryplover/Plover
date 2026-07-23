@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { setupIpcHandlers } from '../../src/main/ipc';
 import { goalsRepo, tasksRepo, settingsRepo, activityRepo } from '../../src/main/store';
+import { eventBus } from '../../src/main/events/bus';
 import { ipcMain } from 'electron';
 import { ProposedPlan } from '../../src/preload/index';
 import { BrowserWindow } from 'electron';
@@ -471,6 +472,51 @@ describe('goals/tasks CRUD handlers', () => {
       };
 
       expect(result.estimate_minutes).toBe(90);
+    });
+  });
+
+  describe('tasks:updateStatus handler', () => {
+    it('emits task.updated but not task.completed for a non-done status change', async () => {
+      const { task } = seedTask();
+      const handler = getHandler('tasks:updateStatus');
+      const updatedListener = vi.fn();
+      const completedListener = vi.fn();
+      eventBus.on('task.updated', updatedListener);
+      eventBus.on('task.completed', completedListener);
+
+      try {
+        const result = (await handler({}, task.id, 'in_progress')) as { status: string };
+
+        expect(result.status).toBe('in_progress');
+        expect(updatedListener).toHaveBeenCalledWith({
+          task: expect.objectContaining({ id: task.id, status: 'in_progress' }),
+        });
+        expect(completedListener).not.toHaveBeenCalled();
+      } finally {
+        eventBus.off('task.updated', updatedListener);
+        eventBus.off('task.completed', completedListener);
+      }
+    });
+
+    it('emits both task.updated and task.completed when the status is done', async () => {
+      const { task } = seedTask();
+      const handler = getHandler('tasks:updateStatus');
+      const updatedListener = vi.fn();
+      const completedListener = vi.fn();
+      eventBus.on('task.updated', updatedListener);
+      eventBus.on('task.completed', completedListener);
+
+      try {
+        await handler({}, task.id, 'done');
+
+        expect(updatedListener).toHaveBeenCalledWith({
+          task: expect.objectContaining({ id: task.id, status: 'done' }),
+        });
+        expect(completedListener).toHaveBeenCalled();
+      } finally {
+        eventBus.off('task.updated', updatedListener);
+        eventBus.off('task.completed', completedListener);
+      }
     });
   });
 

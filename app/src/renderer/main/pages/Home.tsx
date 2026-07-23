@@ -25,7 +25,7 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
   const [loading, setLoading] = useState(true);
   const [stepsExpanded, setStepsExpanded] = useState(false);
   const [showSetupModal, setShowSetupModal] = useState(false);
-  const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
+  const [expandedGoalId, setExpandedGoalId] = useState<string | null>(null);
 
   const tasksByGoal = useMemo(() => {
     const map: Record<string, Task[]> = {};
@@ -64,27 +64,52 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
     void fetchData();
   });
 
+  const selectAsActiveTask = useCallback(
+    async (taskId: string) => {
+      const others = tasks.filter((t) => t.status === 'in_progress' && t.id !== taskId);
+      try {
+        await Promise.all(
+          others.map((t) =>
+            window.api.updateTaskStatus(t.id, t.scheduled_start ? 'scheduled' : 'todo'),
+          ),
+        );
+        await window.api.updateTaskStatus(taskId, 'in_progress');
+        await fetchData();
+      } catch (err) {
+        console.error('Failed to set active task:', err);
+      }
+    },
+    [tasks, fetchData],
+  );
+
+  const watchGoal = useCallback(
+    async (goal: Goal) => {
+      const goalTasks = tasksByGoal[goal.id] ?? [];
+      const target = pickCurrentTask(goalTasks) ?? goalTasks[0];
+      if (!target) return;
+      setExpandedGoalId(goal.id);
+      setStepsExpanded(true);
+      await selectAsActiveTask(target.id);
+    },
+    [tasksByGoal, selectAsActiveTask],
+  );
+
   const defaultCurrentTask = useMemo(() => pickCurrentTask(tasks), [tasks]);
   const defaultActiveGoalId = defaultCurrentTask?.goal_id ?? null;
 
-  const activeGoalId = selectedGoalId ?? defaultActiveGoalId;
+  const activeGoalId = defaultActiveGoalId;
 
   const currentTask = useMemo(() => {
-    if (selectedGoalId) {
-      const goalTasks = tasksByGoal[selectedGoalId] ?? [];
-      const current = pickCurrentTask(goalTasks);
-      if (current) return current;
-      return goalTasks[0] ?? null;
-    }
-    return defaultCurrentTask;
-  }, [tasksByGoal, selectedGoalId, defaultCurrentTask]);
+    if (expandedGoalId && expandedGoalId === activeGoalId) return defaultCurrentTask;
+    return null;
+  }, [expandedGoalId, activeGoalId, defaultCurrentTask]);
 
   const activeTaskId = currentTask?.id ?? null;
 
   const activeGoalSteps = useMemo(() => {
-    if (!activeGoalId) return [];
-    return sortByScheduledStart(tasksByGoal[activeGoalId] ?? []);
-  }, [activeGoalId, tasksByGoal]);
+    if (!expandedGoalId) return [];
+    return sortByScheduledStart(tasksByGoal[expandedGoalId] ?? []);
+  }, [expandedGoalId, tasksByGoal]);
 
   // Frequency grouping (One-off / Daily / Weekly headers from the Figma
   // design) is deferred: Goal/Task has no `frequency` field today — the
@@ -198,10 +223,10 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
             <div
               className={`plover-home-task-row ${isActive ? 'plover-home-task-row--active' : ''}`}
               onClick={() => {
-                if (isActive) {
+                if (expandedGoalId === goal.id) {
                   setStepsExpanded((v) => !v);
                 } else {
-                  setSelectedGoalId(goal.id);
+                  setExpandedGoalId(goal.id);
                   setStepsExpanded(true);
                 }
               }}
@@ -222,6 +247,32 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
                 <ProgressLine value={progress} />
               </div>
               <span className="plover-home-task-row__pct">{Math.round(progress * 100)}%</span>
+              {!isActive && (tasksByGoal[goal.id] ?? []).length > 0 && (
+                <button
+                  type="button"
+                  className="plover-home-task-row__watch"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void watchGoal(goal);
+                  }}
+                  title="Watch this"
+                  aria-label="Watch this"
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"></circle>
+                  </svg>
+                </button>
+              )}
               <button
                 type="button"
                 className="plover-home-task-row__delete"
@@ -234,8 +285,8 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
                   ) {
                     try {
                       await window.api.deleteGoal(goal.id);
-                      if (selectedGoalId === goal.id) {
-                        setSelectedGoalId(null);
+                      if (expandedGoalId === goal.id) {
+                        setExpandedGoalId(null);
                       }
                       await fetchData();
                     } catch (err) {
@@ -264,7 +315,7 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
               </button>
             </div>
 
-            {isActive && stepsExpanded && (
+            {expandedGoalId === goal.id && stepsExpanded && (
               <div className="plover-home-steps-panel">
                 <div className="plover-home-steps-list">
                   {activeGoalSteps.length === 0 ? (

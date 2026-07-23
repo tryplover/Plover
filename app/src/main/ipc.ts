@@ -83,6 +83,7 @@ export function setupIpcHandlers(
     if (status === 'done') {
       eventBus.emit('task.completed', task);
     }
+    eventBus.emit('task.updated', { task });
     return task;
   });
 
