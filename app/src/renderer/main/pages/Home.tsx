@@ -58,6 +58,7 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
   const [loading, setLoading] = useState(true);
   const [stepsExpanded, setStepsExpanded] = useState(false);
   const [showSetupModal, setShowSetupModal] = useState(false);
+  const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
 
   const tasksByGoal = useMemo(() => {
     const map: Record<string, Task[]> = {};
@@ -96,9 +97,22 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
     void fetchData();
   });
 
-  const currentTask = useMemo(() => pickCurrentTask(tasks), [tasks]);
+  const defaultCurrentTask = useMemo(() => pickCurrentTask(tasks), [tasks]);
+  const defaultActiveGoalId = defaultCurrentTask?.goal_id ?? null;
+
+  const activeGoalId = selectedGoalId ?? defaultActiveGoalId;
+
+  const currentTask = useMemo(() => {
+    if (selectedGoalId) {
+      const goalTasks = tasksByGoal[selectedGoalId] ?? [];
+      const current = pickCurrentTask(goalTasks);
+      if (current) return current;
+      return goalTasks[0] ?? null;
+    }
+    return defaultCurrentTask;
+  }, [tasksByGoal, selectedGoalId, defaultCurrentTask]);
+
   const activeTaskId = currentTask?.id ?? null;
-  const activeGoalId = currentTask?.goal_id ?? null;
 
   const activeGoalSteps = useMemo(() => {
     if (!activeGoalId) return [];
@@ -112,11 +126,8 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
   const goalCards = useMemo(() => {
     return goals.map((goal) => {
       const goalTasks = tasksByGoal[goal.id] ?? [];
-      const totalProgress = goalTasks.reduce(
-        (sum, t) => sum + (t.status === 'done' ? 100 : t.progress),
-        0,
-      );
-      const progress = goalTasks.length > 0 ? totalProgress / (goalTasks.length * 100) : 0;
+      const doneTasks = goalTasks.filter((t) => t.status === 'done');
+      const progress = goalTasks.length > 0 ? doneTasks.length / goalTasks.length : 0;
       return { goal, progress, isActive: goal.id === activeGoalId };
     });
   }, [goals, tasksByGoal, activeGoalId]);
@@ -219,9 +230,16 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
           <div key={goal.id} className="plover-home-card-group">
             <div
               className={`plover-home-task-row ${isActive ? 'plover-home-task-row--active' : ''}`}
-              onClick={isActive ? () => setStepsExpanded((v) => !v) : undefined}
-              role={isActive ? 'button' : undefined}
-              tabIndex={isActive ? 0 : undefined}
+              onClick={() => {
+                if (isActive) {
+                  setStepsExpanded((v) => !v);
+                } else {
+                  setSelectedGoalId(goal.id);
+                  setStepsExpanded(true);
+                }
+              }}
+              role="button"
+              tabIndex={0}
             >
               <div className="plover-home-task-row__info">
                 <div className="plover-home-task-row__title-line">
@@ -237,6 +255,46 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
                 <ProgressLine value={progress} />
               </div>
               <span className="plover-home-task-row__pct">{Math.round(progress * 100)}%</span>
+              <button
+                type="button"
+                className="plover-home-task-row__delete"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  if (
+                    confirm(
+                      `Are you sure you want to delete the goal "${goal.title}" and all its subtasks?`,
+                    )
+                  ) {
+                    try {
+                      await window.api.deleteGoal(goal.id);
+                      if (selectedGoalId === goal.id) {
+                        setSelectedGoalId(null);
+                      }
+                      await fetchData();
+                    } catch (err) {
+                      console.error('Failed to delete goal:', err);
+                    }
+                  }
+                }}
+                title="Delete goal"
+                aria-label="Delete goal"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  <line x1="10" y1="11" x2="10" y2="17"></line>
+                  <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+              </button>
             </div>
 
             {isActive && stepsExpanded && (
@@ -256,17 +314,19 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
                               ? 'current'
                               : 'pending'
                         }
-                        trailing={
-                          step.id === activeTaskId ? (
-                            step.progress > 0 ? (
-                              <span>{step.progress}% • now</span>
-                            ) : (
-                              'now'
-                            )
-                          ) : step.progress > 0 && step.status !== 'done' ? (
-                            <span>{step.progress}%</span>
-                          ) : undefined
-                        }
+                        trailing={step.id === activeTaskId ? 'now' : undefined}
+                        onDelete={async () => {
+                          if (
+                            confirm(`Are you sure you want to delete the subtask "${step.title}"?`)
+                          ) {
+                            try {
+                              await window.api.deleteTask(step.id);
+                              await fetchData();
+                            } catch (err) {
+                              console.error('Failed to delete subtask:', err);
+                            }
+                          }
+                        }}
                       />
                     ))
                   )}

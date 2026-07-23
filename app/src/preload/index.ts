@@ -168,7 +168,7 @@ const api: PloverApi = {
 
   platform: process.platform,
 
-  listActiveWindows: () => Promise.resolve([]),
+  listActiveWindows: () => ipcRenderer.invoke('window:list-active'),
 
   // Events
   on: (channel, callback) => {

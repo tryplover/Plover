@@ -18,6 +18,7 @@ import {
 } from './permissions/screen-recording.js';
 import { SettingsData } from './store/repos/settings.js';
 import * as supabaseAuth from './auth/supabase-auth.js';
+import { openWindows } from 'get-windows';
 
 export const googleAuth = new GoogleAuth();
 
@@ -315,6 +316,39 @@ export function setupIpcHandlers(getOverlayWindow: () => BrowserWindow | null): 
   ipcMain.handle('permissions:screenRecording:openSettings', async () =>
     openScreenRecordingSettings(),
   );
+
+  ipcMain.handle('window:list-active', async () => {
+    try {
+      const wins = await openWindows({
+        screenRecordingPermission: false,
+        accessibilityPermission: false,
+      });
+      const unique = new Map<string, { app: string; title: string }>();
+      for (const w of wins) {
+        const app = w.owner?.name || 'Unknown';
+        const title = w.title || app;
+        const lowerApp = app.toLowerCase();
+        if (
+          app === 'Unknown' ||
+          lowerApp === 'notification center' ||
+          lowerApp === 'window server' ||
+          lowerApp === 'dock' ||
+          lowerApp === 'systemuiserver' ||
+          lowerApp === 'loginwindow'
+        ) {
+          continue;
+        }
+        const key = `${app}::${title}`;
+        if (!unique.has(key)) {
+          unique.set(key, { app, title });
+        }
+      }
+      return Array.from(unique.values());
+    } catch (err) {
+      console.error('Failed to list active windows:', err);
+      return [];
+    }
+  });
 }
 
 export function setupIpc(getOverlayWindow: () => BrowserWindow | null): void {
