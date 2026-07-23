@@ -112,8 +112,11 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
   const goalCards = useMemo(() => {
     return goals.map((goal) => {
       const goalTasks = tasksByGoal[goal.id] ?? [];
-      const doneTasks = goalTasks.filter((t) => t.status === 'done');
-      const progress = goalTasks.length > 0 ? doneTasks.length / goalTasks.length : 0;
+      const totalProgress = goalTasks.reduce(
+        (sum, t) => sum + (t.status === 'done' ? 100 : t.progress),
+        0,
+      );
+      const progress = goalTasks.length > 0 ? totalProgress / (goalTasks.length * 100) : 0;
       return { goal, progress, isActive: goal.id === activeGoalId };
     });
   }, [goals, tasksByGoal, activeGoalId]);
@@ -253,7 +256,17 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
                               ? 'current'
                               : 'pending'
                         }
-                        trailing={step.id === activeTaskId ? 'now' : undefined}
+                        trailing={
+                          step.id === activeTaskId ? (
+                            step.progress > 0 ? (
+                              <span>{step.progress}% • now</span>
+                            ) : (
+                              'now'
+                            )
+                          ) : step.progress > 0 && step.status !== 'done' ? (
+                            <span>{step.progress}%</span>
+                          ) : undefined
+                        }
                       />
                     ))
                   )}
