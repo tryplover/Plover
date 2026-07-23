@@ -12,12 +12,14 @@ export function createCompanionWindow(): BrowserWindow {
   // native rectangle — live testing showed it rendering as a flat solid
   // block (no real blur-through) and with wrong/oversized native window
   // sizing. Back to `transparent: true` for a real per-pixel-alpha window;
-  // the "liquid glass" look is now faked entirely in CSS (see Collapsed.css
-  // / Expanded.css): a light translucent tint + heavy backdrop-filter blur
-  // + animated gradient "mesh" blobs painted within the page itself, which
-  // is the reliable, cross-platform way to get this look rather than
-  // depending on the OS actually blurring arbitrary content behind the
-  // window (confirmed unreliable on this Windows setup).
+  // the surface look is entirely CSS-driven (see Collapsed.css /
+  // Expanded.css): a near-opaque dark tint + crisp border, not a blur
+  // effect, so it renders identically on every platform. Deliberately no
+  // `vibrancy` — that's a macOS-only native blur that showed real desktop
+  // content through the window, which looked inconsistent with (much
+  // lighter than) the Windows fallback where vibrancy is a no-op. Per
+  // explicit user feedback the two platforms should match, not each lean
+  // on whatever OS effects happen to be available.
   const win = new BrowserWindow({
     width: COLLAPSED_WIDTH,
     height: COLLAPSED_HEIGHT,
@@ -34,8 +36,6 @@ export function createCompanionWindow(): BrowserWindow {
     alwaysOnTop: true,
     skipTaskbar: true,
     hasShadow: false,
-    vibrancy: 'under-window',
-    visualEffectState: 'active',
     webPreferences: {
       preload: join(import.meta.dirname, '../preload/index.js'),
       sandbox: true,
