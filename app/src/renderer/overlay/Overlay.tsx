@@ -31,10 +31,15 @@ export function Overlay() {
     const resizeWindow = () => {
       const el = containerRef.current;
       if (!el) return;
-      // Use scrollHeight + 2 (for top/bottom borders) to get the true content height,
-      // avoiding the feedback loop of getBoundingClientRect().height which gets stuck at the window height.
-      const height = Math.ceil(el.scrollHeight) + 2;
+
+      const child = el.firstElementChild;
+      // Measure the child's height directly to avoid measuring the stretched container
+      const contentHeight = child ? child.scrollHeight : el.scrollHeight;
+
+      // Add container's vertical padding (22px * 2) and border (1px * 2)
+      const height = Math.ceil(contentHeight) + 46;
       const width = Math.ceil(el.getBoundingClientRect().width);
+
       window.api.resizeOverlay(height, width).catch((err) => {
         console.error('Failed to resize overlay:', err);
       });
@@ -90,6 +95,7 @@ export function Overlay() {
       ? {
           boxSizing: 'border-box' as const,
           width: '100%',
+          height: 'fit-content',
           padding: '22px 24px',
           backgroundColor:
             theme === 'light' ? 'rgba(243, 238, 228, 0.85)' : 'rgba(20, 20, 22, 0.45)',
