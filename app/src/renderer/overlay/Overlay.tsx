@@ -31,7 +31,9 @@ export function Overlay() {
     const resizeWindow = () => {
       const el = containerRef.current;
       if (!el) return;
-      const height = Math.ceil(Math.max(el.getBoundingClientRect().height, el.scrollHeight));
+      // Use scrollHeight + 2 (for top/bottom borders) to get the true content height,
+      // avoiding the feedback loop of getBoundingClientRect().height which gets stuck at the window height.
+      const height = Math.ceil(el.scrollHeight) + 2;
       const width = Math.ceil(el.getBoundingClientRect().width);
       window.api.resizeOverlay(height, width).catch((err) => {
         console.error('Failed to resize overlay:', err);
