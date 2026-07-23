@@ -1,7 +1,16 @@
 import { resolve } from 'node:path';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { defineConfig } from 'electron-vite';
 import react from '@vitejs/plugin-react';
+
+// Load env vars at build time so they are baked into define
+const appEnv = resolve('app/.env');
+const rootEnv = resolve('.env');
+if (existsSync(appEnv)) {
+  process.loadEnvFile(appEnv);
+} else if (existsSync(rootEnv)) {
+  process.loadEnvFile(rootEnv);
+}
 
 const pkgVersion = (
   JSON.parse(readFileSync(resolve('package.json'), 'utf-8')) as { version: string }
