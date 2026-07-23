@@ -28,16 +28,19 @@ export function Expanded({ view, onCollapse }: Props) {
             <button
               type="button"
               className="plover-expanded__pause"
-              aria-label="Pause"
-              onClick={safeAsync(() => window.api.companion.setState('paused'))}
+              aria-label={view.kind === 'paused' ? 'Resume' : 'Pause'}
+              onClick={safeAsync(() =>
+                window.api.companion.setState(view.kind === 'paused' ? 'observing' : 'paused'),
+              )}
             >
-              <span />
-              <span />
-            </button>
-            <button type="button" className="plover-expanded__menu" aria-label="More options">
-              <span />
-              <span />
-              <span />
+              {view.kind === 'paused' ? (
+                <PlayIcon />
+              ) : (
+                <>
+                  <span />
+                  <span />
+                </>
+              )}
             </button>
             <button
               type="button"
@@ -147,6 +150,21 @@ function stateLabel(k: CompanionView['kind']) {
     case 'not-sure':
       return 'not sure';
   }
+}
+
+function PlayIcon() {
+  return (
+    <svg
+      className="plover-expanded__play"
+      width="10"
+      height="11"
+      viewBox="0 0 10 11"
+      fill="none"
+      aria-hidden
+    >
+      <path d="M1 1L9 5.5L1 10Z" fill="currentColor" />
+    </svg>
+  );
 }
 
 function EyeIcon() {

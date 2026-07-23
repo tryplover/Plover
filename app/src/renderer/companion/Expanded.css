@@ -121,18 +121,14 @@
   gap: 11px;
 }
 
-.plover-expanded__pause,
-.plover-expanded__menu {
+.plover-expanded__pause {
   display: flex;
   align-items: center;
+  gap: 2px;
   background: none;
   border: none;
   padding: 4px;
   cursor: pointer;
-}
-
-.plover-expanded__pause {
-  gap: 2px;
 }
 
 .plover-expanded__pause span {
@@ -147,20 +143,13 @@
   background: rgba(246, 242, 235, 0.75);
 }
 
-.plover-expanded__menu {
-  gap: 2.5px;
+.plover-expanded__play {
+  color: rgba(246, 242, 235, 0.45);
+  transition: color var(--plover-duration-fast);
 }
 
-.plover-expanded__menu span {
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background: rgba(246, 242, 235, 0.45);
-  transition: background-color var(--plover-duration-fast);
-}
-
-.plover-expanded__menu:hover span {
-  background: rgba(246, 242, 235, 0.75);
+.plover-expanded__pause:hover .plover-expanded__play {
+  color: rgba(246, 242, 235, 0.75);
 }
 
 /* Explicit top-right minimize control, per user design: the compact pill's
