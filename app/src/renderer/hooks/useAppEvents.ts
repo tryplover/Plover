@@ -1,6 +1,16 @@
 import { useEffect, useRef } from 'react';
 
-const DEFAULT_EVENTS = ['goal.created', 'task.completed', 'task.scheduled'];
+const DEFAULT_EVENTS = [
+  'goal.created',
+  'goal.updated',
+  'goal.deleted',
+  'task.created',
+  'task.updated',
+  'task.scheduled',
+  'task.completed',
+  'task.deleted',
+  'tasks.reordered',
+];
 
 /**
  * Hook to subscribe to common app events that should trigger a data refresh.

@@ -528,4 +528,43 @@ branches for a non-root HTML entry, verify both branches resolve to the *same* f
 serves dev files at their real path relative to `root`, which is easy to get wrong by
 analogy with the production build's flattened-looking `entryFileNames` output naming.
 
+### 2026-07-22 — the user runs a *second, separate* local checkout of this repo, `D:\GitHub\Plover`, on its own branch (`ui-fixes`)
+
+**Symptom:** Implemented and verified (typecheck/lint/test all green) a fix for the
+companion pill not syncing its active task with Home, on a branch built off
+`wip/liquid-glass-overlay`. User tested by restarting `pnpm dev` and reported "still not
+synced up." Everything checked out statically — Home and the companion call the exact same
+shared `pickCurrentTask` against the exact same `window.api.getTasks()` IPC channel, so
+they logically *cannot* disagree if the same code is running for both.
+
+**Root cause:** The user's `pnpm dev` was running from `D:\GitHub\Plover` — a second,
+entirely separate local clone of the same GitHub remote (`tryplover/Plover`), sitting on
+branch `ui-fixes` (tracking `origin/ui-fixes`), not the `C:\Users\hhl_c\Documents\GitHub\Plover`
+checkout this session had been working in. `ui-fixes` has its own independent companion-overlay
+history (`e645e5e` "fix: restore companion overlay deleted by dead-code cleanup" plus later
+fixes) — a *third* parallel restoration of the feature, distinct from both `main`'s deletion
+and `wip/liquid-glass-overlay`'s rebuild (see the 2026-07-22 lesson above this one). The fix
+built against the wrong branch was 100% correct for that branch and 100% invisible to the
+user, since `pnpm dev` reads from whichever checkout's disk it's launched from — there is no
+cross-checkout code sharing short of git itself.
+
+Also notable: on `ui-fixes`, the bug's shape was slightly different from the
+`wip/liquid-glass-overlay` diagnosis — Home there never called `window.api.companion.setActiveTask(...)`
+at all (verified by grepping the whole `app/src` tree for `setActiveTask` and finding zero
+renderer callers), so it wasn't a mount-lifecycle race, it was dead wiring. The eventual fix
+(make the companion self-fetch tasks instead of waiting for a push) was the same either way,
+but don't assume a diagnosis from one branch's copy of a feature transfers exactly to
+another's — re-verify against the actual current file contents on whichever branch is real.
+
+**Fix:** Before trusting a bug report against a locally-running dev build, confirm which
+checkout/branch is actually being run — ask directly ("what folder/drive is `pnpm dev`
+running from?") rather than assuming the primary working directory this session started in
+is the only one. If a fix doesn't take effect despite a full app restart and the code
+logically can't produce the observed behavior, checkout-mismatch is a stronger hypothesis
+than a subtle runtime race — check `git remote -v` / `git rev-parse --abbrev-ref HEAD` in
+the other location before re-diagnosing the same bug from scratch. To move a fix between two
+local checkouts of the same repo without touching the shared GitHub remote, commit it in one
+and `git fetch <absolute-path-to-other-checkout> <branch>:<branch>` from the other — works
+entirely offline, no push permission needed.
+
 

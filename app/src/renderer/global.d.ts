@@ -100,12 +100,10 @@ export interface PloverAPI {
   companion: {
     show(): Promise<void>;
     hide(): Promise<void>;
-    setActiveTask(taskId: string | null): Promise<void>;
     setState(kind: 'observing' | 'paused' | 'done' | 'not-sure'): Promise<void>;
     resize(height: number, width?: number): Promise<void>;
     getInitialState(): Promise<{
       kind: 'observing' | 'paused' | 'done' | 'not-sure';
-      activeTaskId: string | null;
     }>;
   };
 }
