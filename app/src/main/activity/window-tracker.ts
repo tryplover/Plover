@@ -3,6 +3,7 @@ import { execFile } from 'node:child_process';
 import { ActivityRepo } from '../store/repos/activity.js';
 import { SettingsRepo } from '../store/repos/settings.js';
 import { getScreenRecordingStatus } from '../permissions/screen-recording.js';
+import { gate } from './shared/gate.js';
 
 const BROWSER_BUNDLES: Record<string, string> = {
   'com.google.Chrome': 'Google Chrome',
@@ -21,18 +22,13 @@ interface WindowMeta {
 }
 
 export class WindowTracker {
-  private activityRepo: ActivityRepo;
-  private settingsRepo: SettingsRepo;
   private intervalId: NodeJS.Timeout | null = null;
   private lastApp: string | null = null;
   private lastTitle: string | null = null;
   private lastLogTime = 0;
   private isChecking = false;
 
-  constructor(activityRepo: ActivityRepo, settingsRepo: SettingsRepo) {
-    this.activityRepo = activityRepo;
-    this.settingsRepo = settingsRepo;
-  }
+  constructor(private activityRepo: ActivityRepo, private settingsRepo: SettingsRepo) {}
 
   start(): void {
     if (process.platform !== 'darwin' && process.platform !== 'win32') return;
@@ -50,29 +46,11 @@ export class WindowTracker {
   }
 
   async checkActiveWindow(): Promise<void> {
-    if (process.platform !== 'darwin' && process.platform !== 'win32') return;
-    if (process.platform === 'darwin' && getScreenRecordingStatus() !== 'granted') return;
-    if (this.isChecking) return;
+    if (!this.canRun()) return;
     this.isChecking = true;
     try {
-      const settings = this.settingsRepo.getAll();
-      if (settings.pauseAllTracking || settings.pauseScheduling || !settings.windowTrackingEnabled)
-        return;
-
       const meta = await this.getActiveWindowFromOS();
-      const now = Date.now();
-      const hasChanged = meta.app !== this.lastApp || meta.title !== this.lastTitle;
-      const reachedTimeLimit = now - this.lastLogTime >= 60000;
-      if (hasChanged || reachedTimeLimit) {
-        this.lastApp = meta.app;
-        this.lastTitle = meta.title;
-        this.lastLogTime = now;
-        const payload: Record<string, unknown> = { app: meta.app, title: meta.title };
-        if (meta.bundleId) payload.bundleId = meta.bundleId;
-        if (meta.browserUrl) payload.browserUrl = meta.browserUrl;
-        if (meta.browserTabTitle) payload.browserTabTitle = meta.browserTabTitle;
-        this.activityRepo.log('window_focus', payload);
-      }
+      this.diffAndRecord(meta);
     } catch (err) {
       console.error('Error tracking active window:', err);
     } finally {
@@ -117,5 +95,33 @@ export class WindowTracker {
         resolve(url ? { url, title: rest.join(' ').trim() || appName } : null);
       });
     });
+  }
+
+  private canRun(): boolean {
+    if (process.platform !== 'darwin' && process.platform !== 'win32') return false;
+    if (process.platform === 'darwin' && getScreenRecordingStatus() !== 'granted') return false;
+    if (this.isChecking) return false;
+    if (!gate(this.settingsRepo, 'windowTrackingEnabled')) return false;
+    if (this.settingsRepo.getAll().pauseScheduling) return false;
+    return true;
+  }
+
+  private diffAndRecord(meta: WindowMeta): void {
+    const now = Date.now();
+    const hasChanged = meta.app !== this.lastApp || meta.title !== this.lastTitle;
+    const reachedTimeLimit = now - this.lastLogTime >= 60000;
+    if (!hasChanged && !reachedTimeLimit) return;
+    this.lastApp = meta.app;
+    this.lastTitle = meta.title;
+    this.lastLogTime = now;
+    this.activityRepo.log('window_focus', this.buildPayload(meta));
+  }
+
+  private buildPayload(meta: WindowMeta): Record<string, unknown> {
+    const payload: Record<string, unknown> = { app: meta.app, title: meta.title };
+    if (meta.bundleId) payload.bundleId = meta.bundleId;
+    if (meta.browserUrl) payload.browserUrl = meta.browserUrl;
+    if (meta.browserTabTitle) payload.browserTabTitle = meta.browserTabTitle;
+    return payload;
   }
 }
