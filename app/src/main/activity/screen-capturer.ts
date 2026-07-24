@@ -2,10 +2,11 @@ import { desktopCapturer, type NativeImage } from 'electron';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { ActivityRepo } from '../store/repos/activity.js';
+import { ActivityRepo, ActivityRow } from '../store/repos/activity.js';
 import { SettingsRepo } from '../store/repos/settings.js';
 import { getScreenRecordingStatus } from '../permissions/screen-recording.js';
 import { authedFetch } from '../http/authed-fetch.js';
+import { gate } from './shared/gate.js';
 
 const VISION_UPLOAD_MAX_WIDTH = 1024;
 
@@ -16,40 +17,25 @@ export interface ScreenCapturerDeps {
   now?: () => Date;
 }
 
+interface GrabbedScreen {
+  png: Buffer;
+  size: { width: number; height: number };
+  thumbnail: NativeImage;
+}
+
 export class ScreenCapturer {
-  private deps: ScreenCapturerDeps;
   private timeoutId: NodeJS.Timeout | null = null;
   private running = false;
   private now: () => Date;
 
-  constructor(deps: ScreenCapturerDeps) {
-    this.deps = deps;
+  constructor(private deps: ScreenCapturerDeps) {
     this.now = deps.now ?? (() => new Date());
   }
 
   start(): void {
     if (this.running) return;
     this.running = true;
-    // Recursive setTimeout instead of setInterval so captures never overlap
-    // and the interval setting is re-read each tick from settings.
-    const tick = async (): Promise<void> => {
-      try {
-        await this.captureOnce();
-      } catch (err) {
-        console.error('[ScreenCapturer] capture failed:', err);
-      }
-      if (!this.running) return;
-      const intervalMs =
-        Math.max(1, this.deps.settingsRepo.getAll().screenCaptureIntervalMinutes) * 60 * 1000;
-      this.timeoutId = setTimeout(() => {
-        void tick();
-      }, intervalMs);
-    };
-    const intervalMs =
-      Math.max(1, this.deps.settingsRepo.getAll().screenCaptureIntervalMinutes) * 60 * 1000;
-    this.timeoutId = setTimeout(() => {
-      void tick();
-    }, intervalMs);
+    this.scheduleNext();
   }
 
   stop(): void {
@@ -61,50 +47,70 @@ export class ScreenCapturer {
   }
 
   async captureOnce(): Promise<string | null> {
-    const settings = this.deps.settingsRepo.getAll();
-    if (!settings.screenCaptureEnabled) return null;
-    if (settings.pauseAllTracking) return null;
-    if (getScreenRecordingStatus() !== 'granted') return null;
+    if (!this.canCapture()) return null;
+    const grabbed = await this.grabPrimaryScreen();
+    if (!grabbed) return null;
+    const persisted = await this.persistScreenshot(grabbed.png, grabbed.size);
+    await this.maybeRunInference(persisted.row, persisted.filePath, grabbed);
+    return persisted.filePath;
+  }
 
+  private canCapture(): boolean {
+    if (!gate(this.deps.settingsRepo, 'screenCaptureEnabled')) return false;
+    if (getScreenRecordingStatus() !== 'granted') return false;
+    return true;
+  }
+
+  private async grabPrimaryScreen(): Promise<GrabbedScreen | null> {
     const sources = await desktopCapturer.getSources({
       types: ['screen'],
       thumbnailSize: { width: 1920, height: 1080 },
     });
     const primary = sources[0];
     if (!primary) return null;
-    const png = primary.thumbnail.toPNG();
-    const size = primary.thumbnail.getSize();
+    return {
+      png: primary.thumbnail.toPNG(),
+      size: primary.thumbnail.getSize(),
+      thumbnail: primary.thumbnail,
+    };
+  }
+
+  private async persistScreenshot(
+    png: Buffer,
+    size: { width: number; height: number },
+  ): Promise<{ filePath: string; row: ActivityRow }> {
     const now = this.now();
     const yyyy = String(now.getUTCFullYear());
     const mm = String(now.getUTCMonth() + 1).padStart(2, '0');
     const dd = String(now.getUTCDate()).padStart(2, '0');
     const dir = path.join(this.deps.userDataDir, 'screenshots', yyyy, mm, dd);
     await fs.mkdir(dir, { recursive: true });
-    const filename = `${crypto.randomUUID()}.png`;
-    const filePath = path.join(dir, filename);
+    const filePath = path.join(dir, `${crypto.randomUUID()}.png`);
     await fs.writeFile(filePath, png);
-    const captureRow = this.deps.activityRepo.insert({
+    const row = this.deps.activityRepo.insert({
       kind: 'screenshot_captured',
       payload: { filePath, width: size.width, height: size.height },
       ts: now.toISOString(),
     });
-    if (settings.screenVisionInferenceEnabled) {
-      await this.runInference(captureRow.id, filePath, png, primary.thumbnail, size).catch((err) =>
-        console.error('[ScreenCapturer] infer failed:', err),
-      );
-    }
-    return filePath;
+    return { filePath, row };
+  }
+
+  private async maybeRunInference(
+    row: ActivityRow,
+    filePath: string,
+    grabbed: GrabbedScreen,
+  ): Promise<void> {
+    if (!this.deps.settingsRepo.getAll().screenVisionInferenceEnabled) return;
+    await this.runInference(row.id, filePath, grabbed).catch((err) =>
+      console.error('[ScreenCapturer] infer failed:', err),
+    );
   }
 
   private async runInference(
     screenshotId: number,
     filePath: string,
-    png: Buffer,
-    thumbnail: NativeImage,
-    size: { width: number; height: number },
+    grabbed: GrabbedScreen,
   ): Promise<void> {
-    // Pass the most recent window_focus payload to the backend so Gemini Vision
-    // has the active app/title/URL as context instead of falling back to "no context".
     const lastFocus = this.deps.activityRepo.list({ kind: 'window_focus', limit: 1 })[0];
     const windowContext =
       lastFocus?.kind === 'window_focus'
@@ -119,10 +125,12 @@ export class ScreenCapturer {
     // upload to cut per-call cost. Both dimensions are computed explicitly
     // because NativeImage.resize does not guarantee proportional scaling when
     // only one dimension is supplied.
-    let uploadPng = png;
-    if (size.width > VISION_UPLOAD_MAX_WIDTH) {
-      const targetHeight = Math.round(size.height * (VISION_UPLOAD_MAX_WIDTH / size.width));
-      uploadPng = thumbnail
+    let uploadPng = grabbed.png;
+    if (grabbed.size.width > VISION_UPLOAD_MAX_WIDTH) {
+      const targetHeight = Math.round(
+        grabbed.size.height * (VISION_UPLOAD_MAX_WIDTH / grabbed.size.width),
+      );
+      uploadPng = grabbed.thumbnail
         .resize({ width: VISION_UPLOAD_MAX_WIDTH, height: targetHeight })
         .toPNG();
     }
@@ -148,5 +156,23 @@ export class ScreenCapturer {
       currentTask: body.currentTask ?? null,
       confidence: Number(body.confidence ?? 0),
     });
+  }
+
+  private scheduleNext(): void {
+    if (!this.running) return;
+    const intervalMs =
+      Math.max(1, this.deps.settingsRepo.getAll().screenCaptureIntervalMinutes) * 60 * 1000;
+    this.timeoutId = setTimeout(() => {
+      void this.tick();
+    }, intervalMs);
+  }
+
+  private async tick(): Promise<void> {
+    try {
+      await this.captureOnce();
+    } catch (err) {
+      console.error('[ScreenCapturer] capture failed:', err);
+    }
+    this.scheduleNext();
   }
 }
