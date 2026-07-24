@@ -2,38 +2,38 @@ import { app } from 'electron';
 import { WindowTracker } from './window-tracker.js';
 import { GDocsActivitySubscriber } from './gdocs-subscriber.js';
 import { ScreenCapturer } from './screen-capturer.js';
+import { FolderWatcher } from './folder-watcher.js';
+import { InferenceEngine } from './inference.js';
+import { GitCommitTracker } from './git-commit-tracker.js';
+import { CommitTaskMatcher } from './commit-task-matcher.js';
 import { runRetention } from './retention.js';
-import { settingsRepo, activityRepo } from '../store/index.js';
+import { settingsRepo, activityRepo, tasksRepo, summariesRepo } from '../store/index.js';
 import { eventBus } from '../events/bus.js';
 
 let windowTracker: WindowTracker | null = null;
 let gdocsSubscriber: GDocsActivitySubscriber | null = null;
 let screenCapturer: ScreenCapturer | null = null;
+let folderWatcher: FolderWatcher | null = null;
+let inferenceEngine: InferenceEngine | null = null;
+let gitCommitTracker: GitCommitTracker | null = null;
+let commitTaskMatcher: CommitTaskMatcher | null = null;
 let retentionIntervalId: NodeJS.Timeout | null = null;
 
-export function initActivityMonitoring(): void {
+export async function initActivityMonitoring(): Promise<void> {
   console.log('[Activity] Initializing active monitoring subsystems...');
 
-  // Initialize and start Window Tracker (ticks every 10 seconds, macOS + Windows)
   if (process.platform === 'darwin' || process.platform === 'win32') {
     if (!windowTracker) {
-      console.log('[Activity] Initializing active window tracker...');
       windowTracker = new WindowTracker(activityRepo, settingsRepo);
       windowTracker.start();
-    } else {
-      console.log('[Activity] Window tracker already initialized.');
     }
   } else {
     console.log('[Activity] Window tracking is only supported on macOS and Windows. Skipping.');
   }
 
-  // Initialize and start Google Docs Activity Subscriber
   if (!gdocsSubscriber) {
-    console.log('[Activity] Initializing Google Docs subscriber...');
     gdocsSubscriber = new GDocsActivitySubscriber(activityRepo, settingsRepo, eventBus);
     gdocsSubscriber.start();
-  } else {
-    console.log('[Activity] Google Docs subscriber already initialized.');
   }
 
   if ((process.platform === 'darwin' || process.platform === 'win32') && !screenCapturer) {
@@ -42,9 +42,36 @@ export function initActivityMonitoring(): void {
       settingsRepo,
       userDataDir: app.getPath('userData'),
     });
-    // Always start the loop; captureOnce gates on screenCaptureEnabled +
-    // pauseAllTracking each tick, so toggling the setting at runtime works.
     screenCapturer.start();
+  }
+
+  if (!folderWatcher) {
+    folderWatcher = new FolderWatcher(activityRepo, settingsRepo, eventBus);
+    const settings = settingsRepo.getAll();
+    if (settings.watchedFolders.length > 0) {
+      await folderWatcher.watch(settings.watchedFolders);
+    }
+  }
+
+  if (!inferenceEngine) {
+    inferenceEngine = new InferenceEngine(
+      tasksRepo,
+      activityRepo,
+      summariesRepo,
+      settingsRepo,
+      eventBus,
+    );
+    inferenceEngine.start();
+  }
+
+  if (!gitCommitTracker) {
+    gitCommitTracker = new GitCommitTracker(activityRepo, eventBus);
+    gitCommitTracker.start();
+  }
+
+  if (!commitTaskMatcher) {
+    commitTaskMatcher = new CommitTaskMatcher(tasksRepo, eventBus);
+    commitTaskMatcher.start();
   }
 
   void runRetention({ activityRepo, settingsRepo, now: new Date() }).catch((err) =>
@@ -64,6 +91,22 @@ export function initActivityMonitoring(): void {
 
 export function stopActivityMonitoring(): void {
   console.log('[Activity] Stopping active monitoring subsystems...');
+  if (folderWatcher) {
+    void folderWatcher.closeAllWatchers();
+    folderWatcher = null;
+  }
+  if (inferenceEngine) {
+    inferenceEngine.stop();
+    inferenceEngine = null;
+  }
+  if (gitCommitTracker) {
+    gitCommitTracker.stop();
+    gitCommitTracker = null;
+  }
+  if (commitTaskMatcher) {
+    commitTaskMatcher.stop();
+    commitTaskMatcher = null;
+  }
   if (windowTracker) {
     windowTracker.stop();
     windowTracker = null;
