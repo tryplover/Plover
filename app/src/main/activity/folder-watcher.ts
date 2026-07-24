@@ -3,11 +3,15 @@ import { ActivityRepo } from '../store/repos/activity.js';
 import { SettingsRepo } from '../store/repos/settings.js';
 import { TypedEventBus } from '../events/bus.js';
 import { FolderEventPayload } from '@shared/events.js';
+import { gate } from './shared/gate.js';
+import { serializeAsync } from './shared/serialize-async.js';
 
 export class FolderWatcher {
   private watcher: FSWatcher | null = null;
   private watchedPaths = new Set<string>();
-  private watchChain: Promise<void> = Promise.resolve();
+  private enqueue = serializeAsync((err) => {
+    console.error('[FolderWatcher]', err);
+  });
 
   constructor(
     private activityRepo: ActivityRepo,
@@ -16,49 +20,15 @@ export class FolderWatcher {
   ) {}
 
   watch(paths: string[]): Promise<void> {
-    this.watchChain = this.watchChain
-      .then(() => this.internalWatch(paths))
-      .catch((err) => {
-        console.error('[FolderWatcher] Error in watch:', err);
-      });
-    return this.watchChain;
+    return this.enqueue(() => this.internalWatch(paths));
   }
 
   unwatch(paths: string[]): Promise<void> {
-    this.watchChain = this.watchChain
-      .then(async () => {
-        for (const path of paths) {
-          this.watchedPaths.delete(path);
-        }
-
-        if (this.watchedPaths.size === 0) {
-          if (this.watcher) {
-            await this.watcher.close();
-            this.watcher = null;
-          }
-        } else {
-          await this.internalWatch(Array.from(this.watchedPaths));
-        }
-      })
-      .catch((err) => {
-        console.error('[FolderWatcher] Error in unwatch:', err);
-      });
-    return this.watchChain;
+    return this.enqueue(() => this.internalUnwatch(paths));
   }
 
   closeAllWatchers(): Promise<void> {
-    this.watchChain = this.watchChain
-      .then(async () => {
-        if (this.watcher) {
-          await this.watcher.close();
-          this.watcher = null;
-        }
-        this.watchedPaths.clear();
-      })
-      .catch((err) => {
-        console.error('[FolderWatcher] Error in closeAllWatchers:', err);
-      });
-    return this.watchChain;
+    return this.enqueue(() => this.internalClose());
   }
 
   private async internalWatch(paths: string[]): Promise<void> {
@@ -75,34 +45,45 @@ export class FolderWatcher {
 
     this.watcher = watch(paths, {
       awaitWriteFinish: false,
-      ignored: (testPath: string) => {
-        const normalized = testPath.replace(/\\/g, '/');
-        if (normalized.includes('node_modules')) {
-          return true;
-        }
-        const parts = normalized.split('/');
-        const gitIndex = parts.indexOf('.git');
-        if (gitIndex !== -1) {
-          const subPath = parts.slice(gitIndex).join('/');
-          return subPath !== '.git' && subPath !== '.git/COMMIT_EDITMSG';
-        }
-        const basename = parts[parts.length - 1] ?? '';
-        return basename.startsWith('.') && basename !== '.git';
-      },
+      ignored: shouldIgnoreForFolderWatch,
       persistent: true,
     });
 
-    this.watcher.on('change', (path: string) => {
-      this.handleFileChange(path);
+    this.watcher.on('change', (p: string) => {
+      this.handleFileEvent('file_modified', 'folder.file_changed', p);
     });
 
-    this.watcher.on('add', (path: string) => {
-      this.handleFileAdd(path);
+    this.watcher.on('add', (p: string) => {
+      this.handleFileEvent('file_added', 'folder.file_added', p);
     });
 
     this.watcher.on('error', (err: unknown) => {
       console.error('[FolderWatcher] chokidar watcher error:', err);
     });
+  }
+
+  private async internalUnwatch(paths: string[]): Promise<void> {
+    for (const p of paths) {
+      this.watchedPaths.delete(p);
+    }
+
+    if (this.watchedPaths.size === 0) {
+      if (this.watcher) {
+        await this.watcher.close();
+        this.watcher = null;
+      }
+      return;
+    }
+
+    await this.internalWatch(Array.from(this.watchedPaths));
+  }
+
+  private async internalClose(): Promise<void> {
+    if (this.watcher) {
+      await this.watcher.close();
+      this.watcher = null;
+    }
+    this.watchedPaths.clear();
   }
 
   private determineKind(filePath: string): 'md' | 'git_commit_editmsg' | 'other' {
@@ -116,37 +97,36 @@ export class FolderWatcher {
     return 'other';
   }
 
-  private handleFileChange(path: string): void {
-    const settings = this.settingsRepo.getAll();
-    if (settings.pauseAllTracking || !settings.fileWatchingEnabled) {
-      return;
-    }
+  private handleFileEvent(
+    kind: 'file_added' | 'file_modified',
+    busChannel: 'folder.file_added' | 'folder.file_changed',
+    path: string,
+  ): void {
+    if (!gate(this.settingsRepo, 'fileWatchingEnabled')) return;
 
-    const kind = this.determineKind(path);
-    const payload: FolderEventPayload = { path, kind };
+    const fileKind = this.determineKind(path);
+    const payload: FolderEventPayload = { path, kind: fileKind };
 
-    this.activityRepo.insert({
-      kind: 'file_modified',
-      payload: { path, kind },
-    });
+    this.activityRepo.insert({ kind, payload: { path, kind: fileKind } });
+    this.bus.emit(busChannel, payload);
+  }
+}
 
-    this.bus.emit('folder.file_changed', payload);
+function shouldIgnoreForFolderWatch(testPath: string): boolean {
+  const normalized = testPath.replace(/\\/g, '/');
+
+  if (normalized.includes('node_modules')) {
+    return true;
   }
 
-  private handleFileAdd(path: string): void {
-    const settings = this.settingsRepo.getAll();
-    if (settings.pauseAllTracking || !settings.fileWatchingEnabled) {
-      return;
-    }
+  const parts = normalized.split('/');
+  const gitIndex = parts.indexOf('.git');
 
-    const kind = this.determineKind(path);
-    const payload: FolderEventPayload = { path, kind };
-
-    this.activityRepo.insert({
-      kind: 'file_added',
-      payload: { path, kind },
-    });
-
-    this.bus.emit('folder.file_added', payload);
+  if (gitIndex !== -1) {
+    const subPath = parts.slice(gitIndex).join('/');
+    return subPath !== '.git' && subPath !== '.git/COMMIT_EDITMSG';
   }
+
+  const basename = parts[parts.length - 1] ?? '';
+  return basename.startsWith('.') && basename !== '.git';
 }
