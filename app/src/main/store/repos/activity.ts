@@ -9,6 +9,8 @@ import {
   GitCommitSchema,
 } from './activity-types.js';
 
+export type { ActivityRow };
+
 interface ActivityDbRow {
   id: number;
   ts: string;
