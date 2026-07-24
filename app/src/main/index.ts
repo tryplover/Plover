@@ -6,6 +6,7 @@ import { activityRepo, settingsRepo, tasksRepo, summariesRepo } from './store/in
 import { FolderWatcher } from './activity/folder-watcher.js';
 import { InferenceEngine } from './activity/inference.js';
 import { GitCommitTracker } from './activity/git-commit-tracker.js';
+import { CommitTaskMatcher } from './activity/commit-task-matcher.js';
 import { GDocsPoller } from './sync/gdocs-poller.js';
 import { eventBus } from './events/bus.js';
 import { clearAllTimers } from './lifecycle/periodic.js';
@@ -46,6 +47,7 @@ let overlayWindow: BrowserWindow | null = null;
 let folderWatcher: FolderWatcher | null = null;
 let inferenceEngine: InferenceEngine | null = null;
 let gitCommitTracker: GitCommitTracker | null = null;
+let commitTaskMatcher: CommitTaskMatcher | null = null;
 let gdocsPoller: GDocsPoller | null = null;
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
@@ -174,8 +176,11 @@ if (!gotTheLock) {
     );
     inferenceEngine.start();
 
-    gitCommitTracker = new GitCommitTracker(tasksRepo, activityRepo, eventBus);
+    gitCommitTracker = new GitCommitTracker(activityRepo, eventBus);
     gitCommitTracker.start();
+
+    commitTaskMatcher = new CommitTaskMatcher(tasksRepo, eventBus);
+    commitTaskMatcher.start();
 
     gdocsPoller = new GDocsPoller(googleAuth, settingsRepo, eventBus);
     gdocsPoller.start();
@@ -220,6 +225,9 @@ if (!gotTheLock) {
     }
     if (gitCommitTracker) {
       gitCommitTracker.stop();
+    }
+    if (commitTaskMatcher) {
+      commitTaskMatcher.stop();
     }
     if (gdocsPoller) {
       gdocsPoller.stop();
