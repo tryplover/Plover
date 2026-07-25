@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { SummaryRow } from '../../../shared/types';
+import { Task, SummaryRow } from '../../../shared/types';
 import { StatusIndicator } from '../../components/StatusIndicator';
 
 interface AIProgressProps {
@@ -13,12 +13,17 @@ type JoinedSummary = SummaryRow & {
 
 export default function AIProgress({ 'data-testid': dataTestId }: AIProgressProps) {
   const [summaries, setSummaries] = useState<JoinedSummary[]>([]);
+  const [activeTasks, setActiveTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchSummaries = useCallback(async () => {
     try {
-      const data = await window.api.getSummaries();
-      setSummaries(data);
+      const [summaryData, taskData] = await Promise.all([
+        window.api.getSummaries(),
+        window.api.getTasks(),
+      ]);
+      setSummaries(summaryData);
+      setActiveTasks(taskData.filter((t) => t.status === 'todo' || t.status === 'scheduled'));
     } catch (err) {
       console.error('Failed to load AI progress summaries:', err);
     } finally {
@@ -32,7 +37,11 @@ export default function AIProgress({ 'data-testid': dataTestId }: AIProgressProp
 
     const unsubscribe = window.api.on('app-event', (event: unknown) => {
       const appEvent = event as { type: string };
-      if (appEvent.type === 'summary.created' || appEvent.type === 'task.completed') {
+      if (
+        appEvent.type === 'summary.created' ||
+        appEvent.type === 'summary.corrected' ||
+        appEvent.type === 'task.completed'
+      ) {
         void fetchSummaries();
       }
     });
@@ -41,6 +50,31 @@ export default function AIProgress({ 'data-testid': dataTestId }: AIProgressProp
       unsubscribe();
     };
   }, [fetchSummaries]);
+
+  const handleUndo = useCallback(
+    async (summaryId: number) => {
+      try {
+        await window.api.undoSummary(summaryId);
+        await fetchSummaries();
+      } catch (err) {
+        console.error('Failed to undo summary:', err);
+      }
+    },
+    [fetchSummaries],
+  );
+
+  const handleReassign = useCallback(
+    async (summaryId: number, newTaskId: string) => {
+      if (!newTaskId) return;
+      try {
+        await window.api.reassignSummary(summaryId, newTaskId);
+        await fetchSummaries();
+      } catch (err) {
+        console.error('Failed to reassign summary:', err);
+      }
+    },
+    [fetchSummaries],
+  );
 
   const groupedPasses = useMemo(() => {
     const byTs = new Map<string, JoinedSummary[]>();
@@ -164,7 +198,10 @@ export default function AIProgress({ 'data-testid': dataTestId }: AIProgressProp
                   ) : (
                     <div className="timeline-feed-hits">
                       {pass.hits.map((hit) => (
-                        <div key={hit.id} className="timeline-feed-hit">
+                        <div
+                          key={hit.id}
+                          className={`timeline-feed-hit${hit.corrected ? ' timeline-feed-hit--corrected' : ''}`}
+                        >
                           <div className="timeline-feed-hit-header">
                             <div className="timeline-feed-tags">
                               {hit.goal_title && (
@@ -176,6 +213,35 @@ export default function AIProgress({ 'data-testid': dataTestId }: AIProgressProp
                             </div>
                           </div>
                           <p className="timeline-feed-reasoning">“{hit.summary}”</p>
+                          {hit.corrected ? (
+                            <span className="timeline-feed-corrected-label">Corrected</span>
+                          ) : hit.task_id ? (
+                            <div className="timeline-feed-hit-actions">
+                              <button
+                                type="button"
+                                className="timeline-feed-action-btn"
+                                onClick={() => void handleUndo(hit.id)}
+                              >
+                                Undo
+                              </button>
+                              <select
+                                className="timeline-feed-reassign-select"
+                                value=""
+                                onChange={(e) => void handleReassign(hit.id, e.target.value)}
+                              >
+                                <option value="" disabled>
+                                  Wrong task?
+                                </option>
+                                {activeTasks
+                                  .filter((t) => t.id !== hit.task_id)
+                                  .map((t) => (
+                                    <option key={t.id} value={t.id}>
+                                      {t.title}
+                                    </option>
+                                  ))}
+                              </select>
+                            </div>
+                          ) : null}
                         </div>
                       ))}
                     </div>
