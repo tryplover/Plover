@@ -25,4 +25,5 @@ export interface EventPayloads {
   'folder.file_added': FolderEventPayload;
   'gdocs.revision': GDocsRevisionPayload;
   'summary.created': SummaryRow;
+  'summary.corrected': SummaryRow;
 }

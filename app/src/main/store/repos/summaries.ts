@@ -1,12 +1,5 @@
 import Database from 'better-sqlite3';
-
-export interface SummaryRow {
-  id: number;
-  task_id: string | null;
-  ts: string;
-  summary: string;
-  signal: number;
-}
+import { SummaryRow } from '../../../shared/types.js';
 
 export class SummariesRepo {
   private db: Database.Database;
@@ -35,8 +28,19 @@ export class SummariesRepo {
     `);
   }
 
-  insert(row: { taskId: string | null; summary: string; signal: number; ts?: string }): SummaryRow {
+  insert(row: {
+    taskId: string | null;
+    summary: string;
+    signal: number;
+    source?: 'inference' | 'commit_match';
+    progressDelta?: number | null;
+    previousStatus?: string | null;
+    ts?: string;
+  }): SummaryRow {
     const ts = row.ts || new Date().toISOString();
+    const source = row.source ?? 'inference';
+    const progressDelta = row.progressDelta ?? null;
+    const previousStatus = row.previousStatus ?? null;
     const result = this.insertStmt.run(row.taskId, ts, row.summary, row.signal);
 
     return {
@@ -45,6 +49,10 @@ export class SummariesRepo {
       ts,
       summary: row.summary,
       signal: row.signal,
+      source,
+      progress_delta: progressDelta,
+      previous_status: previousStatus,
+      corrected: 0,
     };
   }
 
@@ -53,6 +61,9 @@ export class SummariesRepo {
   }
 
   listAll(): (SummaryRow & { task_title: string | null; goal_title: string | null })[] {
-    return this.listAllStmt.all() as (SummaryRow & { task_title: string | null; goal_title: string | null })[];
+    return this.listAllStmt.all() as (SummaryRow & {
+      task_title: string | null;
+      goal_title: string | null;
+    })[];
   }
 }
