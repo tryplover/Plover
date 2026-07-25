@@ -100,6 +100,7 @@ export class InferenceEngine {
 
       const increment = entry.progress_increment ?? 0;
       const updated = this.tasksRepo.incrementProgress(entry.taskId, increment);
+      const previousStatus = updated.status;
 
       const shouldComplete = entry.completed || updated.progress >= 100;
       if (shouldComplete && updated.status !== 'done') {
@@ -111,6 +112,9 @@ export class InferenceEngine {
         taskId: entry.taskId,
         summary: entry.reasoning,
         signal: Math.min(1, Math.max(0, increment / 100)),
+        source: 'inference',
+        progressDelta: increment,
+        previousStatus,
         ts: nowTs,
       });
       this.bus.emit('summary.created', inserted);
