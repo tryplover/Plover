@@ -174,7 +174,7 @@ if (!gotTheLock) {
     );
     inferenceEngine.start();
 
-    gitCommitTracker = new GitCommitTracker(tasksRepo, activityRepo, eventBus);
+    gitCommitTracker = new GitCommitTracker(tasksRepo, activityRepo, eventBus, summariesRepo);
     gitCommitTracker.start();
 
     gdocsPoller = new GDocsPoller(googleAuth, settingsRepo, eventBus);

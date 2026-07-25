@@ -10,6 +10,7 @@ import { runMigrations } from '@main/store/db.js';
 import { TasksRepo } from '@main/store/repos/tasks.js';
 import { GoalsRepo } from '@main/store/repos/goals.js';
 import { ActivityRepo } from '@main/store/repos/activity.js';
+import { SummariesRepo } from '@main/store/repos/summaries.js';
 import { TypedEventBus } from '@main/events/bus.js';
 import {
   GitCommitTracker,
@@ -45,6 +46,7 @@ interface Harness {
   tasksRepo: TasksRepo;
   goalsRepo: GoalsRepo;
   activityRepo: ActivityRepo;
+  summariesRepo: SummariesRepo;
   bus: TypedEventBus;
   notifySpy: ReturnType<typeof vi.fn>;
   matcherSpy: ReturnType<typeof vi.fn>;
@@ -57,6 +59,7 @@ function freshHarness(matcherImpl?: CommitMatcher): Harness {
   const tasksRepo = new TasksRepo(db);
   const goalsRepo = new GoalsRepo(db);
   const activityRepo = new ActivityRepo(db);
+  const summariesRepo = new SummariesRepo(db);
   const bus = new TypedEventBus();
   const notifySpy = vi.fn();
   const matcherSpy = vi.fn(
@@ -67,11 +70,22 @@ function freshHarness(matcherImpl?: CommitMatcher): Harness {
     tasksRepo,
     activityRepo,
     bus,
+    summariesRepo,
     matcherSpy as unknown as CommitMatcher,
     notifySpy,
   );
   tracker.start();
-  return { db, tasksRepo, goalsRepo, activityRepo, bus, notifySpy, matcherSpy, tracker };
+  return {
+    db,
+    tasksRepo,
+    goalsRepo,
+    activityRepo,
+    summariesRepo,
+    bus,
+    notifySpy,
+    matcherSpy,
+    tracker,
+  };
 }
 
 function seedTask(h: Pick<Harness, 'tasksRepo' | 'goalsRepo'>, title: string): { taskId: string } {
@@ -136,6 +150,30 @@ describe('GitCommitTracker', () => {
     const activity = harness.activityRepo.listSince('1970-01-01T00:00:00.000Z');
     const commitRows = activity.filter((a) => a.kind === 'git_commit');
     expect(commitRows).toHaveLength(1);
+  });
+
+  it('writes a commit_match summary row with previous_status captured pre-update', async () => {
+    harness = freshHarness();
+    const { taskId } = seedTask(harness, 'Implement AST generator');
+    harness.matcherSpy.mockResolvedValue({
+      matchedTaskId: taskId,
+      reasoning: 'Commit message references AST generator',
+    });
+
+    await makeCommit(repo.repoPath, 'feat: implement AST generator');
+    harness.bus.emit('folder.file_changed', {
+      path: join(repo.repoPath, '.git', 'COMMIT_EDITMSG'),
+      kind: 'git_commit_editmsg',
+    });
+
+    await (harness.tracker as unknown as { inflight: Promise<void> }).inflight;
+
+    const [summary] = harness.summariesRepo.listForTask(taskId);
+    expect(summary?.source).toBe('commit_match');
+    expect(summary?.signal).toBe(1);
+    expect(summary?.previous_status).toBe('todo');
+    expect(summary?.progress_delta).toBeNull();
+    expect(summary?.summary).toBe('Commit message references AST generator');
   });
 
   it('does nothing when the matcher returns null', async () => {

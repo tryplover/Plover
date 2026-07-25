@@ -4,6 +4,7 @@ import { TypedEventBus } from '@main/events/bus.js';
 import * as child_process from 'node:child_process';
 import type { TasksRepo } from '@main/store/repos/tasks.js';
 import type { ActivityRepo } from '@main/store/repos/activity.js';
+import type { SummariesRepo } from '@main/store/repos/summaries.js';
 
 vi.mock('node:child_process', async () => {
   const actual = (await vi.importActual('node:child_process')) as object;
@@ -16,14 +17,16 @@ vi.mock('node:child_process', async () => {
 describe('GitCommitTracker Security', () => {
   let tasksRepo: TasksRepo;
   let activityRepo: ActivityRepo;
+  let summariesRepo: SummariesRepo;
   let bus: TypedEventBus;
   let tracker: GitCommitTracker;
 
   beforeEach(() => {
     tasksRepo = { list: vi.fn().mockReturnValue([]), update: vi.fn() } as unknown as TasksRepo;
     activityRepo = { insert: vi.fn() } as unknown as ActivityRepo;
+    summariesRepo = { insert: vi.fn() } as unknown as SummariesRepo;
     bus = new TypedEventBus();
-    tracker = new GitCommitTracker(tasksRepo, activityRepo, bus);
+    tracker = new GitCommitTracker(tasksRepo, activityRepo, bus, summariesRepo);
     tracker.start();
     vi.clearAllMocks();
   });
