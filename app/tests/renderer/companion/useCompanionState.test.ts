@@ -1,4 +1,6 @@
+// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { renderHook, waitFor } from '@testing-library/react';
 import { useCompanionState } from '../../../src/renderer/companion/useCompanionState';
 import type { Task } from '../../../src/shared/types';
 
@@ -14,6 +16,10 @@ const mockWindowApi = vi.hoisted(() => {
         };
       }),
       getTasks: vi.fn(() => Promise.resolve([] as Task[])),
+      getTasksByGoal: vi.fn(() => Promise.resolve([] as Task[])),
+      companion: {
+        getInitialState: vi.fn(() => Promise.resolve({ kind: 'observing' as const })),
+      },
     },
     triggerEvent: (channel: string, data: unknown) => {
       const listener = onListeners.get(channel);
@@ -24,175 +30,141 @@ const mockWindowApi = vi.hoisted(() => {
 
 vi.stubGlobal('api', mockWindowApi.api);
 
+function makeTask(overrides: Partial<Task> & { id: string; goal_id: string }): Task {
+  return {
+    title: 'Untitled',
+    estimate_minutes: 30,
+    sort_index: 0,
+    progress: 0,
+    status: 'todo',
+    created_at: '2026-06-20T00:00:00Z',
+    updated_at: '2026-06-20T00:00:00Z',
+    ...overrides,
+  };
+}
+
 describe('useCompanionState', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockWindowApi.api.companion.getInitialState.mockResolvedValue({ kind: 'observing' });
+    mockWindowApi.api.getTasks.mockResolvedValue([]);
+    mockWindowApi.api.getTasksByGoal.mockResolvedValue([]);
   });
 
-  it('exports useCompanionState hook', () => {
-    expect(useCompanionState).toBeDefined();
-  });
-
-  it('hook accepts window.api shape', () => {
-    const taskArray: Task[] = [
-      {
-        id: 'task-1',
-        goal_id: 'goal-1',
-        title: 'First step',
-        estimate_minutes: 30,
-        sort_index: 0,
-        progress: 0,
-        status: 'todo',
-        created_at: '2026-06-20T00:00:00Z',
-        updated_at: '2026-06-20T00:00:00Z',
-        scheduled_start: '2026-06-20T09:00:00Z',
-      },
-    ];
-    expect(taskArray).toHaveLength(1);
-  });
-
-  it('builds steps from task siblings', () => {
+  it('picks the current task and builds steps/progress on mount', async () => {
     const tasks: Task[] = [
-      {
+      makeTask({
         id: 'task-1',
         goal_id: 'goal-1',
         title: 'First step',
-        estimate_minutes: 30,
-        sort_index: 1,
-        progress: 0,
-        status: 'todo',
-        created_at: '2026-06-20T00:00:00Z',
-        updated_at: '2026-06-20T00:00:00Z',
+        status: 'done',
         scheduled_start: '2026-06-20T09:00:00Z',
-      },
-      {
+      }),
+      makeTask({
         id: 'task-2',
         goal_id: 'goal-1',
         title: 'Second step',
-        estimate_minutes: 45,
-        sort_index: 2,
-        progress: 0,
         status: 'todo',
-        created_at: '2026-06-20T00:00:00Z',
-        updated_at: '2026-06-20T00:00:00Z',
         scheduled_start: '2026-06-20T10:00:00Z',
-      },
-      {
+      }),
+    ];
+    mockWindowApi.api.getTasks.mockResolvedValue(tasks);
+    mockWindowApi.api.getTasksByGoal.mockResolvedValue(tasks);
+
+    const { result } = renderHook(() => useCompanionState());
+
+    await waitFor(() => {
+      expect(result.current.task?.id).toBe('task-2');
+    });
+
+    expect(result.current.steps).toHaveLength(2);
+    expect(result.current.progress).toBe(0.5);
+    const [s0, s1] = result.current.steps;
+    expect(s0?.done).toBe(true);
+    expect(s1?.current).toBe(true);
+  });
+
+  it('reports no task when there are no tasks', async () => {
+    mockWindowApi.api.getTasks.mockResolvedValue([]);
+
+    const { result } = renderHook(() => useCompanionState());
+
+    await waitFor(() => {
+      expect(mockWindowApi.api.getTasks).toHaveBeenCalled();
+    });
+
+    expect(result.current.task).toBeNull();
+    expect(result.current.steps).toEqual([]);
+    expect(result.current.progress).toBe(0);
+  });
+
+  it('updates kind when a companion:state event fires', async () => {
+    const { result } = renderHook(() => useCompanionState());
+
+    await waitFor(() => {
+      expect(result.current.kind).toBe('observing');
+    });
+
+    mockWindowApi.triggerEvent('companion:state', 'paused');
+
+    await waitFor(() => {
+      expect(result.current.kind).toBe('paused');
+    });
+  });
+
+  it('refetches the active task when an app-event task.completed fires', async () => {
+    mockWindowApi.api.getTasks.mockResolvedValue([]);
+
+    const { result } = renderHook(() => useCompanionState());
+
+    await waitFor(() => {
+      expect(mockWindowApi.api.getTasks).toHaveBeenCalledTimes(1);
+    });
+    expect(result.current.task).toBeNull();
+
+    const tasks: Task[] = [
+      makeTask({
         id: 'task-3',
         goal_id: 'goal-2',
-        title: 'Different goal',
-        estimate_minutes: 60,
-        sort_index: 3,
-        progress: 0,
+        title: 'New current task',
         status: 'todo',
-        created_at: '2026-06-20T00:00:00Z',
-        updated_at: '2026-06-20T00:00:00Z',
-      },
+      }),
     ];
+    mockWindowApi.api.getTasks.mockResolvedValue(tasks);
+    mockWindowApi.api.getTasksByGoal.mockResolvedValue(tasks);
 
-    mockWindowApi.api.getTasks.mockResolvedValueOnce(tasks);
-    expect(mockWindowApi.api.getTasks).toBeDefined();
+    mockWindowApi.triggerEvent('app-event', { type: 'task.completed' });
+
+    await waitFor(() => {
+      expect(result.current.task?.id).toBe('task-3');
+    });
   });
 
-  it('marks only the active task as current', () => {
+  it('refetches the active task when an app-event task.deleted fires', async () => {
+    mockWindowApi.api.getTasks.mockResolvedValue([]);
+
+    const { result } = renderHook(() => useCompanionState());
+
+    await waitFor(() => {
+      expect(mockWindowApi.api.getTasks).toHaveBeenCalledTimes(1);
+    });
+    expect(result.current.task).toBeNull();
+
     const tasks: Task[] = [
-      {
-        id: 'task-a',
-        goal_id: 'goal-x',
-        title: 'Task A',
-        estimate_minutes: 30,
-        sort_index: 4,
-        progress: 0,
+      makeTask({
+        id: 'task-4',
+        goal_id: 'goal-3',
+        title: 'Remaining task',
         status: 'todo',
-        created_at: '2026-06-20T00:00:00Z',
-        updated_at: '2026-06-20T00:00:00Z',
-        scheduled_start: '2026-06-20T09:00:00Z',
-      },
-      {
-        id: 'task-b',
-        goal_id: 'goal-x',
-        title: 'Task B',
-        estimate_minutes: 45,
-        sort_index: 5,
-        progress: 0,
-        status: 'done',
-        created_at: '2026-06-20T00:00:00Z',
-        updated_at: '2026-06-20T00:00:00Z',
-        scheduled_start: '2026-06-20T10:00:00Z',
-      },
-      {
-        id: 'task-c',
-        goal_id: 'goal-x',
-        title: 'Task C',
-        estimate_minutes: 60,
-        sort_index: 6,
-        progress: 0,
-        status: 'todo',
-        created_at: '2026-06-20T00:00:00Z',
-        updated_at: '2026-06-20T00:00:00Z',
-        scheduled_start: '2026-06-20T11:00:00Z',
-      },
+      }),
     ];
+    mockWindowApi.api.getTasks.mockResolvedValue(tasks);
+    mockWindowApi.api.getTasksByGoal.mockResolvedValue(tasks);
 
-    mockWindowApi.api.getTasks.mockResolvedValueOnce(tasks);
-    expect(tasks).toHaveLength(3);
-  });
+    mockWindowApi.triggerEvent('app-event', { type: 'task.deleted' });
 
-  it('sorts steps by scheduled_start, putting unscheduled last', () => {
-    const tasks: Task[] = [
-      {
-        id: 'z-no-schedule',
-        goal_id: 'goal-1',
-        title: 'Z no schedule',
-        estimate_minutes: 30,
-        sort_index: 7,
-        progress: 0,
-        status: 'todo',
-        created_at: '2026-06-20T00:00:00Z',
-        updated_at: '2026-06-20T00:00:00Z',
-      },
-      {
-        id: 'a-later',
-        goal_id: 'goal-1',
-        title: 'A later',
-        estimate_minutes: 30,
-        sort_index: 8,
-        progress: 0,
-        status: 'todo',
-        created_at: '2026-06-20T00:00:00Z',
-        updated_at: '2026-06-20T00:00:00Z',
-        scheduled_start: '2026-06-20T11:00:00Z',
-      },
-      {
-        id: 'b-earlier',
-        goal_id: 'goal-1',
-        title: 'B earlier',
-        estimate_minutes: 30,
-        sort_index: 9,
-        progress: 0,
-        status: 'todo',
-        created_at: '2026-06-20T00:00:00Z',
-        updated_at: '2026-06-20T00:00:00Z',
-        scheduled_start: '2026-06-20T09:00:00Z',
-      },
-    ];
-
-    const siblings = tasks
-      .filter((t) => t.goal_id === 'goal-1')
-      .sort((a, b) => {
-        const aStart = a.scheduled_start;
-        const bStart = b.scheduled_start;
-        if (!aStart && !bStart) return a.id.localeCompare(b.id);
-        if (!aStart) return 1;
-        if (!bStart) return -1;
-        if (aStart !== bStart) return aStart.localeCompare(bStart);
-        return a.id.localeCompare(b.id);
-      });
-
-    expect(siblings).toHaveLength(3);
-    const [s0, s1, s2] = siblings;
-    expect(s0?.title).toBe('B earlier');
-    expect(s1?.title).toBe('A later');
-    expect(s2?.title).toBe('Z no schedule');
+    await waitFor(() => {
+      expect(result.current.task?.id).toBe('task-4');
+    });
   });
 });

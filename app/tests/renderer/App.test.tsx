@@ -21,8 +21,7 @@ beforeEach(() => {
         theme: 'light',
       }),
       companion: {
-        getInitialState: vi.fn().mockResolvedValue({ kind: 'observing', activeTaskId: null }),
-        setActiveTask: vi.fn().mockResolvedValue(undefined),
+        getInitialState: vi.fn().mockResolvedValue({ kind: 'observing' }),
       },
       auth: {
         getStatus: vi.fn().mockResolvedValue({ signedIn: false, email: null }),

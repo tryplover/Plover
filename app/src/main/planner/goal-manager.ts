@@ -113,6 +113,25 @@ export function startEventForwarding(
     broadcast('app-event', { type: 'task.completed', payload: { taskId: task.id } });
   });
 
+  eventBus.on('task.created', ({ task }) => {
+    broadcast('app-event', { type: 'task.created', payload: { taskId: task.id } });
+  });
+
+  eventBus.on('task.updated', ({ task }) => {
+    broadcast('app-event', { type: 'task.updated', payload: { taskId: task.id } });
+  });
+
+  eventBus.on('task.deleted', ({ id }) => {
+    broadcast('app-event', { type: 'task.deleted', payload: { taskId: id } });
+  });
+
+  eventBus.on('tasks.reordered', ({ goal_id, orderedIds }) => {
+    broadcast('app-event', {
+      type: 'tasks.reordered',
+      payload: { goalId: goal_id, orderedIds },
+    });
+  });
+
   eventBus.on('summary.created', (summary: SummaryRow) => {
     broadcast('app-event', { type: 'summary.created', payload: summary });
   });

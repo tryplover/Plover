@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Task } from '../../shared/types';
+import { pickCurrentTask } from '../../shared/current-task';
+import { useAppEvents } from '../hooks/useAppEvents';
 
 export type StateKind = 'observing' | 'paused' | 'done' | 'not-sure';
 
@@ -19,54 +21,49 @@ export function useCompanionState(): CompanionView {
     steps: [],
     watching: null,
   });
+  const mounted = useRef(true);
+
+  const refetchTask = useCallback(async () => {
+    const tasks = await window.api.getTasks();
+    if (!mounted.current) return;
+    const task = pickCurrentTask(tasks);
+    if (!task) {
+      setView((v) => ({ ...v, task: null, steps: [], progress: 0 }));
+      return;
+    }
+    const siblings = await window.api.getTasksByGoal(task.goal_id);
+    if (!mounted.current) return;
+    const steps = buildSteps(task, siblings);
+    setView((v) => ({ ...v, task, steps, progress: stepsProgress(steps) }));
+  }, []);
 
   useEffect(() => {
-    let active = true;
+    mounted.current = true;
 
     window.api.companion
       .getInitialState()
-      .then(async ({ kind, activeTaskId }) => {
-        if (!active) return;
-        if (activeTaskId) {
-          const task = await window.api.getTaskById(activeTaskId);
-          if (!active) return;
-          const siblings = task ? await window.api.getTasksByGoal(task.goal_id) : [];
-          if (!active) return;
-          const steps = buildSteps(task, siblings);
-          setView((v) => ({
-            ...v,
-            kind: kind as StateKind,
-            task,
-            steps,
-            progress: stepsProgress(steps),
-          }));
-        } else {
-          setView((v) => ({ ...v, kind: kind as StateKind }));
-        }
+      .then(({ kind }) => {
+        if (!mounted.current) return;
+        setView((v) => ({ ...v, kind: kind as StateKind }));
       })
       .catch(() => undefined);
 
-    const offTask = window.api.on('companion:activeTask', async (taskId: unknown) => {
-      if (!active) return;
-      const id = taskId as string | null;
-      if (!id) return setView((v) => ({ ...v, task: null, steps: [], progress: 0 }));
-      const task = await window.api.getTaskById(id);
-      if (!active) return;
-      const siblings = task ? await window.api.getTasksByGoal(task.goal_id) : [];
-      if (!active) return;
-      const steps = buildSteps(task, siblings);
-      setView((v) => ({ ...v, task, steps, progress: stepsProgress(steps) }));
-    });
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void refetchTask();
+
     const offState = window.api.on('companion:state', (kind: unknown) => {
-      if (!active) return;
+      if (!mounted.current) return;
       setView((v) => ({ ...v, kind: kind as StateKind }));
     });
     return () => {
-      active = false;
-      offTask();
+      mounted.current = false;
       offState();
     };
-  }, []);
+  }, [refetchTask]);
+
+  useAppEvents(() => {
+    void refetchTask();
+  });
 
   return view;
 }
