@@ -9,6 +9,7 @@ import {
   deleteGoalAndTasks,
 } from './planner/goal-manager.js';
 import { GoogleAuth } from './sync/google-auth.js';
+import { undoSummary, reassignSummary } from './store/correction.js';
 import { eventBus } from './events/bus.js';
 import { ProposedPlan } from '../preload/index.js';
 import {
@@ -207,6 +208,14 @@ export function setupIpcHandlers(
   // Summaries
   ipcMain.handle('summaries:get', async () => {
     return summariesRepo.listAll();
+  });
+
+  ipcMain.handle('summaries:undo', async (_, summaryId: number) => {
+    return undoSummary(tasksRepo, summariesRepo, eventBus, summaryId);
+  });
+
+  ipcMain.handle('summaries:reassign', async (_, summaryId: number, newTaskId: string) => {
+    return reassignSummary(tasksRepo, summariesRepo, eventBus, summaryId, newTaskId);
   });
 
   // Google OAuth (for Docs tracking)
