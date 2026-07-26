@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 import type { HTMLAttributes } from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { StepRow } from '../../../src/renderer/components/StepRow';
+import { StepRow } from './StepRow';
 
 describe('StepRow', () => {
   it('accepts all three state types', () => {

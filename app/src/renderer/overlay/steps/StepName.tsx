@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { Button } from '../../components/Button';
-import { Chip } from '../../components/Chip';
-import { StatusIndicator } from '../../components/StatusIndicator';
+import { Button } from '../../components/Button/Button';
+import { Chip } from '../../components/Chip/Chip';
+import { StatusIndicator } from '../../components/StatusIndicator/StatusIndicator';
 import './StepName.css';
 
 interface Props {

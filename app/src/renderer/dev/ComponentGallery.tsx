@@ -1,8 +1,8 @@
-import { StatusIndicator } from '../components/StatusIndicator';
-import { ProgressLine } from '../components/ProgressLine';
-import { Button } from '../components/Button';
-import { StepRow } from '../components/StepRow';
-import { Chip } from '../components/Chip';
+import { StatusIndicator } from '../components/StatusIndicator/StatusIndicator';
+import { ProgressLine } from '../components/ProgressLine/ProgressLine';
+import { Button } from '../components/Button/Button';
+import { StepRow } from '../components/StepRow/StepRow';
+import { Chip } from '../components/Chip/Chip';
 import './ComponentGallery.css';
 
 export function ComponentGallery() {

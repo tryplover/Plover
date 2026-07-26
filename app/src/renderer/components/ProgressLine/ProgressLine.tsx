@@ -1,4 +1,4 @@
-import { motion, ploverDuration, ploverEasing } from '../lib/motion';
+import { motion, ploverDuration, ploverEasing } from '../../lib/motion';
 import './ProgressLine.css';
 
 export interface ProgressLineProps {

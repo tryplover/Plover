@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { StatusIndicator } from '../../components/StatusIndicator';
-import { AppRow } from '../../components/AppRow';
-import { Button } from '../../components/Button';
+import { StatusIndicator } from '../../components/StatusIndicator/StatusIndicator';
+import { AppRow } from '../../components/AppRow/AppRow';
+import { Button } from '../../components/Button/Button';
 import type { ProposedPlan } from '../../../preload';
 import './StepConnect.css';
 
