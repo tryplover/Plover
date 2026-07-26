@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { setupIpcHandlers } from '../../src/main/ipc';
+import { setupIpcHandlers } from '../../src/main/ipc/index';
 import { goalsRepo, tasksRepo, settingsRepo, activityRepo } from '../../src/main/store';
 import { eventBus } from '../../src/main/events/bus';
 import { ipcMain } from 'electron';

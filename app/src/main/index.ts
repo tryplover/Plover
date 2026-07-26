@@ -1,7 +1,7 @@
 import './load-env.js';
 import { app, BrowserWindow, globalShortcut, nativeImage } from 'electron';
 import { join } from 'node:path';
-import { setupIpc, googleAuth } from './ipc.js';
+import { setupIpc, googleAuth } from './ipc/index.js';
 import { settingsRepo } from './store/index.js';
 import { GDocsPoller } from './sync/gdocs-poller.js';
 import { eventBus } from './events/bus.js';
