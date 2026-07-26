@@ -11,6 +11,12 @@ export interface GDocsRevisionPayload {
   modifiedTime: string;
 }
 
+export interface GitCommitInfo {
+  repoPath: string;
+  hash: string;
+  message: string;
+}
+
 export interface EventPayloads {
   'goal.created': Goal;
   'goal.updated': Goal;
@@ -25,4 +31,5 @@ export interface EventPayloads {
   'folder.file_added': FolderEventPayload;
   'gdocs.revision': GDocsRevisionPayload;
   'summary.created': SummaryRow;
+  'activity.git_commit': GitCommitInfo;
 }
