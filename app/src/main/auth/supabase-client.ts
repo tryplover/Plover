@@ -2,6 +2,7 @@ import { createClient, SupabaseClient, SupportedStorage } from '@supabase/supaba
 import { app, safeStorage } from 'electron';
 import { join } from 'node:path';
 import { readFile, writeFile, unlink } from 'node:fs/promises';
+import { readViteEnv } from '../config/vite-env.js';
 
 const SESSION_FILE_NAME = 'supabase-session.enc';
 
@@ -51,14 +52,8 @@ class EncryptedFileStorage implements SupportedStorage {
 }
 
 function resolveEnv(key: 'SUPABASE_URL' | 'SUPABASE_ANON_KEY'): string {
-  try {
-    const fromVite = (import.meta as unknown as { env?: Record<string, string | undefined> }).env?.[
-      key
-    ];
-    if (fromVite) return fromVite;
-  } catch {
-    // import.meta.env not defined outside the Vite-built bundle (tests, etc.)
-  }
+  const fromVite = readViteEnv(key);
+  if (fromVite) return fromVite;
   return process.env[key] ?? '';
 }
 
