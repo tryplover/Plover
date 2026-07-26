@@ -1,7 +1,7 @@
-import { resolveViteOrEnv } from '../config/env.js';
+import { resolveRequiredEnv } from '../config/env.js';
 
 export function getBackendUrl(): string {
-  return resolveViteOrEnv('PLOVER_BACKEND_URL', {
+  return resolveRequiredEnv('PLOVER_BACKEND_URL', {
     devFallback: 'http://localhost:3000',
   }).replace(/\/$/, '');
 }

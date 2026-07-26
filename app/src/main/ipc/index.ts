@@ -15,7 +15,7 @@ export function setupIpcHandlers(
   getOverlayWindow: () => BrowserWindow | null,
   onWatchedFoldersChange?: (folders: string[]) => Promise<void> | void,
   createOverlayWindow?: (variant: 'overlay' | 'window') => BrowserWindow,
-): void {
+): () => BrowserWindow {
   void googleAuth.loadSavedCredentials();
   void supabaseAuth.restoreSession().then((hasSession) => {
     if (hasSession) supabaseAuth.startAutoRefresh();
@@ -25,15 +25,17 @@ export function setupIpcHandlers(
   registerTasksHandlers();
   registerAuthHandlers();
   registerSettingsHandlers(onWatchedFoldersChange);
-  registerOverlayHandlers(getOverlayWindow, createOverlayWindow);
+  const ensureCompanion = registerOverlayHandlers(getOverlayWindow, createOverlayWindow);
   registerSystemHandlers();
+  return ensureCompanion;
 }
 
 export function setupIpc(
   getOverlayWindow: () => BrowserWindow | null,
   onWatchedFoldersChange?: (folders: string[]) => Promise<void> | void,
   createOverlayWindow?: (variant: 'overlay' | 'window') => BrowserWindow,
-): void {
-  setupIpcHandlers(getOverlayWindow, onWatchedFoldersChange, createOverlayWindow);
+): () => BrowserWindow {
+  const ensureCompanion = setupIpcHandlers(getOverlayWindow, onWatchedFoldersChange, createOverlayWindow);
   startEventForwarding(broadcast);
+  return ensureCompanion;
 }

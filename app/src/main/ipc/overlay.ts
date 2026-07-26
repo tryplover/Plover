@@ -1,11 +1,10 @@
 import { ipcMain, BrowserWindow } from 'electron';
 import { createCompanionWindow } from '../windows/companion.js';
-import { listActiveWindows } from '../activity/window-tracker.js';
 
 export function registerOverlayHandlers(
   getOverlayWindow: () => BrowserWindow | null,
   createOverlayWindow?: (variant: 'overlay' | 'window') => BrowserWindow,
-): void {
+): () => BrowserWindow {
   ipcMain.handle('overlay:close', async () => {
     const overlayWin = getOverlayWindow();
     if (overlayWin) {
@@ -88,15 +87,6 @@ export function registerOverlayHandlers(
     activeTaskId: companionActiveTaskId,
   }));
 
-  ipcMain.handle('windows:list', async () => {
-    try {
-      return await listActiveWindows();
-    } catch (err) {
-      console.error('[IPC] Failed to list active windows:', err);
-      return [];
-    }
-  });
-
   ipcMain.handle('overlay:set-ignore-mouse-events', async (_event, ignore: boolean) => {
     const overlayWin = getOverlayWindow();
     if (overlayWin) {
@@ -110,4 +100,6 @@ export function registerOverlayHandlers(
       (overlayWin as BrowserWindow & { isTracking?: boolean }).isTracking = tracking;
     }
   });
+
+  return ensureCompanion;
 }
