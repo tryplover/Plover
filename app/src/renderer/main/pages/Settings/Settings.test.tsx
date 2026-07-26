@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, act, fireEvent } from '@testing-library/react';
-import Settings from '../../../../src/renderer/main/pages/Settings';
+import Settings from './Settings.js';
 
 const mockUnsubscribe = vi.fn();
 let mockAuthGetStatus: ReturnType<typeof vi.fn>;
