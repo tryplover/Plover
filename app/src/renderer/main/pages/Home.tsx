@@ -82,6 +82,20 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
     [tasks, fetchData],
   );
 
+  const toggleTaskDone = useCallback(
+    async (task: Task) => {
+      try {
+        const nextStatus =
+          task.status === 'done' ? (task.scheduled_start ? 'scheduled' : 'todo') : 'done';
+        await window.api.updateTaskStatus(task.id, nextStatus);
+        await fetchData();
+      } catch (err) {
+        console.error('Failed to toggle task completion:', err);
+      }
+    },
+    [fetchData],
+  );
+
   const watchGoal = useCallback(
     async (goal: Goal) => {
       const goalTasks = tasksByGoal[goal.id] ?? [];
@@ -333,6 +347,7 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
                               : 'pending'
                         }
                         trailing={step.id === activeTaskId ? 'now' : undefined}
+                        onToggleDone={() => void toggleTaskDone(step)}
                         onDelete={async () => {
                           if (
                             confirm(`Are you sure you want to delete the subtask "${step.title}"?`)

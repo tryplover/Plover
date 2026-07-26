@@ -8,6 +8,7 @@ export interface StepRowProps {
   trailing?: React.ReactNode;
   onChangeLabel?: (newLabel: string) => void;
   onDelete?: () => void;
+  onToggleDone?: () => void;
   dragHandleProps?: React.HTMLAttributes<HTMLSpanElement>;
   autoFocus?: boolean;
   placeholder?: string;
@@ -20,10 +21,13 @@ export function StepRow({
   trailing,
   onChangeLabel,
   onDelete,
+  onToggleDone,
   dragHandleProps,
   autoFocus,
   placeholder,
 }: StepRowProps) {
+  const bulletContent = state === 'done' ? '✓' : index !== undefined ? index : null;
+
   return (
     <motion.div
       className="plover-step"
@@ -31,9 +35,21 @@ export function StepRow({
       layout
       transition={{ duration: ploverDuration.normal, ease: ploverEasing.soft }}
     >
-      <span className="plover-step__bullet" aria-hidden>
-        {state === 'done' ? '✓' : index !== undefined ? index : null}
-      </span>
+      {onToggleDone ? (
+        <button
+          type="button"
+          className="plover-step__bullet plover-step__bullet--toggle"
+          onClick={onToggleDone}
+          aria-label={state === 'done' ? 'Mark step incomplete' : 'Mark step complete'}
+          title={state === 'done' ? 'Mark incomplete' : 'Mark complete'}
+        >
+          {bulletContent}
+        </button>
+      ) : (
+        <span className="plover-step__bullet" aria-hidden>
+          {bulletContent}
+        </span>
+      )}
       {onChangeLabel ? (
         <input
           type="text"

@@ -44,6 +44,30 @@ describe('StepRow', () => {
     expect(handleDelete).toHaveBeenCalledTimes(1);
   });
 
+  it('renders the bullet as a clickable toggle when onToggleDone is provided', () => {
+    const handleToggle = vi.fn();
+    render(<StepRow label="Toggle me" state="pending" onToggleDone={handleToggle} />);
+
+    const toggleBtn = screen.getByRole('button', { name: /mark step complete/i });
+    expect(toggleBtn).toBeInTheDocument();
+
+    fireEvent.click(toggleBtn);
+    expect(handleToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it('labels the toggle button for un-marking a done step', () => {
+    const handleToggle = vi.fn();
+    render(<StepRow label="Done step" state="done" onToggleDone={handleToggle} />);
+
+    expect(screen.getByRole('button', { name: /mark step incomplete/i })).toBeInTheDocument();
+  });
+
+  it('renders a plain, non-interactive bullet when onToggleDone is omitted', () => {
+    render(<StepRow label="Static step" state="done" />);
+
+    expect(screen.queryByRole('button', { name: /mark step/i })).not.toBeInTheDocument();
+  });
+
   it('renders drag handle when dragHandleProps are provided', () => {
     const dragProps: HTMLAttributes<HTMLSpanElement> = {
       'aria-label': 'Custom handle',
