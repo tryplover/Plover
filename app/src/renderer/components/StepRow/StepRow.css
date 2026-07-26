@@ -30,6 +30,21 @@
   color: var(--plover-mint);
 }
 
+.plover-step__bullet--toggle {
+  cursor: pointer;
+  border: none;
+  padding: 0;
+  transition: transform 0.15s ease;
+}
+
+.plover-step__bullet--toggle:hover {
+  transform: scale(1.1);
+}
+
+.plover-step[data-state='current'] .plover-step__bullet--toggle:hover {
+  background: rgba(183, 228, 199, 0.12);
+}
+
 .plover-step__label {
   flex: 1;
   color: var(--plover-text);

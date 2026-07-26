@@ -100,6 +100,9 @@ describe('InferenceEngine', () => {
     const [s0] = summaries;
     expect(s0?.summary).toBe('Edited parser.ts');
     expect(s0?.signal).toBe(1);
+    expect(s0?.source).toBe('inference');
+    expect(s0?.progress_delta).toBe(100);
+    expect(s0?.previous_status).toBe('todo');
 
     expect(settingsRepo.getAll().lastInferenceTs).not.toBeNull();
   });
@@ -218,5 +221,34 @@ describe('InferenceEngine', () => {
       expect(task.id).toBe(taskId);
       expect(task.status).toBe('done');
     }
+  });
+
+  it('captures previous_status as the pre-pass status, not post-completion status', async () => {
+    const { tasksRepo, goalsRepo, activityRepo, summariesRepo, engine } = freshHarness();
+    const { taskId } = seedGoalAndTask(goalsRepo, tasksRepo, 'Partial progress task');
+    activityRepo.insert({
+      kind: 'file_modified',
+      payload: { path: '/src/a.ts' },
+      ts: '2026-06-12T10:00:00.000Z',
+    });
+
+    fetchSpy.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          task_progress: [
+            { taskId, progress_increment: 40, completed: false, reasoning: 'partial work' },
+          ],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+
+    await engine.runInferencePass();
+
+    const [s0] = summariesRepo.listForTask(taskId);
+    expect(s0?.source).toBe('inference');
+    expect(s0?.progress_delta).toBe(40);
+    expect(s0?.previous_status).toBe('todo');
+    expect(tasksRepo.get(taskId)?.status).toBe('todo');
   });
 });

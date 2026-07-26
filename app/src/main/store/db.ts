@@ -99,6 +99,15 @@ export const MIGRATIONS: { version: number; sql: string }[] = [
       UPDATE tasks SET progress = 100 WHERE status = 'done';
     `,
   },
+  {
+    version: 6,
+    sql: `
+      ALTER TABLE summaries ADD COLUMN source TEXT NOT NULL DEFAULT 'inference';
+      ALTER TABLE summaries ADD COLUMN progress_delta REAL;
+      ALTER TABLE summaries ADD COLUMN previous_status TEXT;
+      ALTER TABLE summaries ADD COLUMN corrected INTEGER NOT NULL DEFAULT 0;
+    `,
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {

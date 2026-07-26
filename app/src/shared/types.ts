@@ -32,6 +32,10 @@ export interface SummaryRow {
   ts: string;
   summary: string;
   signal: number;
+  source: 'inference' | 'commit_match';
+  progress_delta: number | null;
+  previous_status: string | null;
+  corrected: 0 | 1;
 }
 
 export interface Session {
