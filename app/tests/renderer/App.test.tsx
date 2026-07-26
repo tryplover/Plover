@@ -12,12 +12,20 @@ beforeEach(() => {
     value: {
       getTasks: vi.fn().mockResolvedValue([]),
       getGoals: vi.fn().mockResolvedValue([]),
+      getTaskById: vi.fn().mockResolvedValue(null),
       getSettings: vi.fn().mockResolvedValue({
         googleConnected: false,
         workingHours: { start: '09:00', end: '18:00' },
         horizonDays: 14,
         pauseScheduling: false,
+        theme: 'light',
       }),
+      companion: {
+        getInitialState: vi.fn().mockResolvedValue({ kind: 'observing' }),
+      },
+      auth: {
+        getStatus: vi.fn().mockResolvedValue({ signedIn: false, email: null }),
+      },
       on: vi.fn().mockReturnValue(mockUnsubscribe),
     },
     writable: true,
@@ -31,17 +39,26 @@ describe('App', () => {
     expect(await screen.findByText('Plover')).toBeTruthy();
   });
 
+  it('applies plover-shell--light when theme is light', async () => {
+    const { container } = render(<App />);
+    expect(await screen.findByText('Plover')).toBeTruthy();
+    expect(
+      container.querySelector('.app-container')?.classList.contains('plover-shell--light'),
+    ).toBe(true);
+  });
+
   it('renders all nav tabs', async () => {
     render(<App />);
-    expect(await screen.findByTestId('nav-goals')).toBeTruthy();
+    expect(await screen.findByTestId('nav-home')).toBeTruthy();
     expect(screen.getByTestId('nav-progress')).toBeTruthy();
     expect(screen.getByTestId('nav-settings')).toBeTruthy();
+    expect(screen.queryByTestId('nav-goals')).toBeNull();
     expect(screen.queryByTestId('nav-today')).toBeNull();
     expect(screen.queryByTestId('nav-activity')).toBeNull();
   });
 
-  it('shows Goals page by default', async () => {
+  it('shows Home page by default', async () => {
     render(<App />);
-    expect(await screen.findByTestId('page-goals')).toBeTruthy();
+    expect(await screen.findByTestId('page-home')).toBeTruthy();
   });
 });

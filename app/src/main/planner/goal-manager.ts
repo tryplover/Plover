@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Goal, Task, SummaryRow } from '../../shared/types.js';
 import { goalsRepo, tasksRepo } from '../store/index.js';
-import { eventBus } from '../bus.js';
+import { eventBus } from '../events/bus.js';
 
 export async function saveGoalAndTasks(
   goalInput: Omit<Goal, 'id' | 'created_at' | 'updated_at' | 'status'>,
@@ -15,6 +15,7 @@ export async function saveGoalAndTasks(
     | 'scheduled_start'
     | 'scheduled_end'
     | 'sort_index'
+    | 'progress'
   >[],
   scheduledSlots: { tempIndex: number; start: string; end: string }[],
 ) {
@@ -110,6 +111,25 @@ export function startEventForwarding(
 
   eventBus.on('task.completed', (task: Task) => {
     broadcast('app-event', { type: 'task.completed', payload: { taskId: task.id } });
+  });
+
+  eventBus.on('task.created', ({ task }) => {
+    broadcast('app-event', { type: 'task.created', payload: { taskId: task.id } });
+  });
+
+  eventBus.on('task.updated', ({ task }) => {
+    broadcast('app-event', { type: 'task.updated', payload: { taskId: task.id } });
+  });
+
+  eventBus.on('task.deleted', ({ id }) => {
+    broadcast('app-event', { type: 'task.deleted', payload: { taskId: id } });
+  });
+
+  eventBus.on('tasks.reordered', ({ goal_id, orderedIds }) => {
+    broadcast('app-event', {
+      type: 'tasks.reordered',
+      payload: { goalId: goal_id, orderedIds },
+    });
   });
 
   eventBus.on('summary.created', (summary: SummaryRow) => {

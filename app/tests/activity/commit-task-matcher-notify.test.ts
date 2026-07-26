@@ -16,7 +16,7 @@ vi.mock('electron', () => {
   };
 });
 
-import { defaultNotify } from '../../src/main/activity/git-commit-tracker.js';
+import { defaultNotify } from '../../src/main/activity/commit-task-matcher.js';
 
 describe('defaultNotify', () => {
   beforeEach(() => {
@@ -55,7 +55,7 @@ describe('defaultNotify', () => {
     defaultNotify('Test Title', 'Test Body');
 
     expect(consoleSpy).toHaveBeenCalledWith(
-      '[GitCommitTracker] Notification failed:',
+      '[CommitTaskMatcher] Notification failed:',
       expect.any(Error),
     );
     const call0 = consoleSpy.mock.calls[0];
@@ -79,7 +79,7 @@ describe('defaultNotify', () => {
 
     expect(showSpy).toHaveBeenCalled();
     expect(consoleSpy).toHaveBeenCalledWith(
-      '[GitCommitTracker] Notification failed:',
+      '[CommitTaskMatcher] Notification failed:',
       expect.any(Error),
     );
     const call0 = consoleSpy.mock.calls[0];

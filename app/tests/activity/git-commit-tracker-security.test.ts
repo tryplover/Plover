@@ -1,12 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GitCommitTracker } from '@main/activity/git-commit-tracker.js';
-import { TypedEventBus } from '@main/bus.js';
+import { TypedEventBus } from '@main/events/bus.js';
 import * as child_process from 'node:child_process';
-import type { TasksRepo } from '@main/store/repos/tasks.js';
 import type { ActivityRepo } from '@main/store/repos/activity.js';
 
 vi.mock('node:child_process', async () => {
-  const actual = await vi.importActual('node:child_process') as object;
+  const actual = (await vi.importActual('node:child_process')) as object;
   return {
     ...actual,
     execFile: vi.fn(),
@@ -14,16 +13,14 @@ vi.mock('node:child_process', async () => {
 });
 
 describe('GitCommitTracker Security', () => {
-  let tasksRepo: TasksRepo;
   let activityRepo: ActivityRepo;
   let bus: TypedEventBus;
   let tracker: GitCommitTracker;
 
   beforeEach(() => {
-    tasksRepo = { list: vi.fn().mockReturnValue([]), update: vi.fn() } as unknown as TasksRepo;
     activityRepo = { insert: vi.fn() } as unknown as ActivityRepo;
     bus = new TypedEventBus();
-    tracker = new GitCommitTracker(tasksRepo, activityRepo, bus);
+    tracker = new GitCommitTracker(activityRepo, bus);
     tracker.start();
     vi.clearAllMocks();
   });
@@ -51,7 +48,9 @@ describe('GitCommitTracker Security', () => {
     });
 
     // Wait for the async processing
-    await (tracker as unknown as { inflight: Promise<void> }).inflight;
+    await (
+      tracker as unknown as { enqueue: <T>(fn: () => Promise<T>) => Promise<T> }
+    ).enqueue(() => Promise.resolve());
 
     // Check if git was called - it SHOULD NOT be called
     expect(mockExecFile).not.toHaveBeenCalled();

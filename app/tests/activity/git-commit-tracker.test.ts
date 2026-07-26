@@ -1,5 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { Task } from '@shared/types.js';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtemp, rm, mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -10,13 +9,9 @@ import { runMigrations } from '@main/store/db.js';
 import { TasksRepo } from '@main/store/repos/tasks.js';
 import { GoalsRepo } from '@main/store/repos/goals.js';
 import { ActivityRepo } from '@main/store/repos/activity.js';
-import { TypedEventBus } from '@main/bus.js';
-import {
-  GitCommitTracker,
-  extractRepoPath,
-  type CommitMatcher,
-  type MatchCommitResponse,
-} from '@main/activity/git-commit-tracker.js';
+import { TypedEventBus } from '@main/events/bus.js';
+import { GitCommitTracker, extractRepoPath } from '@main/activity/git-commit-tracker.js';
+import type { GitCommitInfo } from '@shared/events.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -46,32 +41,19 @@ interface Harness {
   goalsRepo: GoalsRepo;
   activityRepo: ActivityRepo;
   bus: TypedEventBus;
-  notifySpy: ReturnType<typeof vi.fn>;
-  matcherSpy: ReturnType<typeof vi.fn>;
   tracker: GitCommitTracker;
 }
 
-function freshHarness(matcherImpl?: CommitMatcher): Harness {
+function freshHarness(): Harness {
   const db = new Database(':memory:');
   runMigrations(db);
   const tasksRepo = new TasksRepo(db);
   const goalsRepo = new GoalsRepo(db);
   const activityRepo = new ActivityRepo(db);
   const bus = new TypedEventBus();
-  const notifySpy = vi.fn();
-  const matcherSpy = vi.fn(
-    matcherImpl ??
-      (async () => ({ matchedTaskId: null, reasoning: 'no match' }) as MatchCommitResponse),
-  );
-  const tracker = new GitCommitTracker(
-    tasksRepo,
-    activityRepo,
-    bus,
-    matcherSpy as unknown as CommitMatcher,
-    notifySpy,
-  );
+  const tracker = new GitCommitTracker(activityRepo, bus);
   tracker.start();
-  return { db, tasksRepo, goalsRepo, activityRepo, bus, notifySpy, matcherSpy, tracker };
+  return { db, tasksRepo, goalsRepo, activityRepo, bus, tracker };
 }
 
 function seedTask(h: Pick<Harness, 'tasksRepo' | 'goalsRepo'>, title: string): { taskId: string } {
@@ -84,6 +66,12 @@ function seedTask(h: Pick<Harness, 'tasksRepo' | 'goalsRepo'>, title: string): {
     depends_on: [],
   });
   return { taskId: t.id };
+}
+
+async function flush(tracker: GitCommitTracker): Promise<void> {
+  await (
+    tracker as unknown as { enqueue: <T>(fn: () => Promise<T>) => Promise<T> }
+  ).enqueue(() => Promise.resolve());
 }
 
 describe('extractRepoPath', () => {
@@ -114,12 +102,13 @@ describe('GitCommitTracker', () => {
     await repo.cleanup();
   });
 
-  it('marks the matched task done and fires a notification when the matcher returns a task id', async () => {
+  it('emits activity.git_commit on the bus with the parsed commit info', async () => {
     harness = freshHarness();
-    const { taskId } = seedTask(harness, 'Implement AST generator');
-    harness.matcherSpy.mockResolvedValue({
-      matchedTaskId: taskId,
-      reasoning: 'message mentions AST',
+    seedTask(harness, 'Task A');
+
+    const emitted: GitCommitInfo[] = [];
+    harness.bus.on('activity.git_commit', (commit) => {
+      emitted.push(commit);
     });
 
     await makeCommit(repo.repoPath, 'feat: add AST generator');
@@ -128,20 +117,17 @@ describe('GitCommitTracker', () => {
       kind: 'git_commit_editmsg',
     });
 
-    await (harness.tracker as unknown as { inflight: Promise<void> }).inflight;
+    await flush(harness.tracker);
 
-    expect(harness.matcherSpy).toHaveBeenCalledTimes(1);
-    expect(harness.tasksRepo.get(taskId)?.status).toBe('done');
-    expect(harness.notifySpy).toHaveBeenCalledTimes(1);
-    const activity = harness.activityRepo.listSince('1970-01-01T00:00:00.000Z');
-    const commitRows = activity.filter((a) => a.kind === 'git_commit');
-    expect(commitRows).toHaveLength(1);
+    expect(emitted).toHaveLength(1);
+    expect(emitted[0]?.repoPath).toBe(repo.repoPath);
+    expect(emitted[0]?.message).toBe('feat: add AST generator');
+    expect(typeof emitted[0]?.hash).toBe('string');
+    expect(emitted[0]?.hash.length).toBeGreaterThan(0);
   });
 
-  it('does nothing when the matcher returns null', async () => {
+  it('writes a git_commit activity row', async () => {
     harness = freshHarness();
-    const { taskId } = seedTask(harness, 'Some task');
-    harness.matcherSpy.mockResolvedValue({ matchedTaskId: null, reasoning: 'no match' });
 
     await makeCommit(repo.repoPath, 'chore: bump deps');
     harness.bus.emit('folder.file_changed', {
@@ -149,16 +135,21 @@ describe('GitCommitTracker', () => {
       kind: 'git_commit_editmsg',
     });
 
-    await (harness.tracker as unknown as { inflight: Promise<void> }).inflight;
+    await flush(harness.tracker);
 
-    expect(harness.matcherSpy).toHaveBeenCalledTimes(1);
-    expect(harness.tasksRepo.get(taskId)?.status).toBe('todo');
-    expect(harness.notifySpy).not.toHaveBeenCalled();
+    const activity = harness.activityRepo.listSince('1970-01-01T00:00:00.000Z');
+    const commitRows = activity.filter((a) => a.kind === 'git_commit');
+    expect(commitRows).toHaveLength(1);
   });
 
   it('ignores duplicate events for the same commit hash', async () => {
     harness = freshHarness();
     seedTask(harness, 'Task A');
+
+    let emitCount = 0;
+    harness.bus.on('activity.git_commit', () => {
+      emitCount += 1;
+    });
 
     await makeCommit(repo.repoPath, 'feat: add x');
     const payload = {
@@ -170,9 +161,9 @@ describe('GitCommitTracker', () => {
     harness.bus.emit('folder.file_changed', payload);
     harness.bus.emit('folder.file_added', payload);
 
-    await (harness.tracker as unknown as { inflight: Promise<void> }).inflight;
+    await flush(harness.tracker);
 
-    expect(harness.matcherSpy).toHaveBeenCalledTimes(1);
+    expect(emitCount).toBe(1);
     const activity = harness.activityRepo.listSince('1970-01-01T00:00:00.000Z');
     expect(activity.filter((a) => a.kind === 'git_commit')).toHaveLength(1);
   });
@@ -180,6 +171,11 @@ describe('GitCommitTracker', () => {
   it('skips events whose kind is not git_commit_editmsg', async () => {
     harness = freshHarness();
     seedTask(harness, 'Task A');
+
+    let emitCount = 0;
+    harness.bus.on('activity.git_commit', () => {
+      emitCount += 1;
+    });
 
     harness.bus.emit('folder.file_changed', {
       path: join(repo.repoPath, 'notes.md'),
@@ -190,70 +186,11 @@ describe('GitCommitTracker', () => {
       kind: 'other',
     });
 
-    await (harness.tracker as unknown as { inflight: Promise<void> }).inflight;
+    await flush(harness.tracker);
 
-    expect(harness.matcherSpy).not.toHaveBeenCalled();
-  });
-
-  it('skips the matcher call when there are no active tasks', async () => {
-    harness = freshHarness();
-
-    await makeCommit(repo.repoPath, 'feat: something');
-    harness.bus.emit('folder.file_changed', {
-      path: join(repo.repoPath, '.git', 'COMMIT_EDITMSG'),
-      kind: 'git_commit_editmsg',
-    });
-
-    await (harness.tracker as unknown as { inflight: Promise<void> }).inflight;
-
-    expect(harness.matcherSpy).not.toHaveBeenCalled();
-  });
-
-  it('ignores a matcher response that names an unknown task id', async () => {
-    harness = freshHarness();
-    const { taskId } = seedTask(harness, 'Real task');
-    harness.matcherSpy.mockResolvedValue({
-      matchedTaskId: 'ghost-id',
-      reasoning: 'spoofed',
-    });
-
-    await makeCommit(repo.repoPath, 'feat: real');
-    harness.bus.emit('folder.file_changed', {
-      path: join(repo.repoPath, '.git', 'COMMIT_EDITMSG'),
-      kind: 'git_commit_editmsg',
-    });
-
-    await (harness.tracker as unknown as { inflight: Promise<void> }).inflight;
-
-    expect(harness.tasksRepo.get(taskId)?.status).toBe('todo');
-    expect(harness.notifySpy).not.toHaveBeenCalled();
-  });
-
-  it('emits task.completed event on bus when task is marked done', async () => {
-    harness = freshHarness();
-    const { taskId } = seedTask(harness, 'Implement AST generator');
-    harness.matcherSpy.mockResolvedValue({
-      matchedTaskId: taskId,
-      reasoning: 'message mentions AST',
-    });
-
-    const completedPromise = new Promise<Task>((resolve) => {
-      harness.bus.once('task.completed', (task) => {
-        resolve(task);
-      });
-    });
-
-    await makeCommit(repo.repoPath, 'feat: add AST generator');
-    harness.bus.emit('folder.file_changed', {
-      path: join(repo.repoPath, '.git', 'COMMIT_EDITMSG'),
-      kind: 'git_commit_editmsg',
-    });
-
-    await (harness.tracker as unknown as { inflight: Promise<void> }).inflight;
-
-    const completedTask = await completedPromise;
-    expect(completedTask.id).toBe(taskId);
-    expect(completedTask.status).toBe('done');
+    expect(emitCount).toBe(0);
+    const activity = harness.activityRepo.listSince('1970-01-01T00:00:00.000Z');
+    expect(activity.filter((a) => a.kind === 'git_commit')).toHaveLength(0);
   });
 
   it('caps seenHashes list at 5000 and evicts the oldest entries', async () => {
@@ -270,8 +207,7 @@ describe('GitCommitTracker', () => {
       tracker.seenHashesList.push(hash);
     }
 
-    const { taskId } = seedTask(harness, 'Task A');
-    harness.matcherSpy.mockResolvedValue({ matchedTaskId: taskId, reasoning: 'match' });
+    seedTask(harness, 'Task A');
 
     // Make a commit which will have a new hash
     await makeCommit(repo.repoPath, 'feat: x');
@@ -280,7 +216,7 @@ describe('GitCommitTracker', () => {
       kind: 'git_commit_editmsg',
     });
 
-    await (harness.tracker as unknown as { inflight: Promise<void> }).inflight;
+    await flush(harness.tracker);
 
     // The set and array size should still be 5000
     expect(tracker.seenHashes.size).toBe(5000);

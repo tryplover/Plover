@@ -5,7 +5,7 @@ import { writeFileSync, mkdirSync } from 'node:fs';
 import { FolderWatcher } from '@main/activity/folder-watcher.js';
 import { ActivityRepo } from '@main/store/repos/activity.js';
 import { SettingsRepo } from '@main/store/repos/settings.js';
-import { TypedEventBus } from '@main/bus.js';
+import { TypedEventBus } from '@main/events/bus.js';
 import Database from 'better-sqlite3';
 import { runMigrations } from '@main/store/db.js';
 
@@ -107,8 +107,8 @@ describe('FolderWatcher', () => {
     const activities = activityRepo.listSince('2026-01-01T00:00:00.000Z');
     expect(activities.length).toBeGreaterThan(0);
 
-    const fileActivity = activities.find(
-      (a) => (a.payload as { path?: string }).path?.includes('activity-test.txt'),
+    const fileActivity = activities.find((a) =>
+      (a.payload as { path?: string }).path?.includes('activity-test.txt'),
     );
     expect(fileActivity).toBeDefined();
     if (fileActivity) {
@@ -151,9 +151,7 @@ describe('FolderWatcher', () => {
 
     const calls = fileAddedHandler.mock.calls;
     const gitOrNodeModulesCalls = calls.filter(
-      (call) =>
-        call[0].path.includes('.git') ||
-        call[0].path.includes('node_modules'),
+      (call) => call[0].path.includes('.git') || call[0].path.includes('node_modules'),
     );
 
     expect(gitOrNodeModulesCalls.length).toBe(0);

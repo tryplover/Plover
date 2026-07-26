@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow } from 'electron';
+import { ipcMain, BrowserWindow, screen } from 'electron';
 import { Task } from '../shared/types.js';
 import { goalsRepo, tasksRepo, settingsRepo, summariesRepo, activityRepo } from './store/index.js';
 import { decomposeGoal } from './planner/decompose.js';
@@ -9,7 +9,7 @@ import {
   deleteGoalAndTasks,
 } from './planner/goal-manager.js';
 import { GoogleAuth } from './sync/google-auth.js';
-import { eventBus } from './bus.js';
+import { eventBus } from './events/bus.js';
 import { ProposedPlan } from '../preload/index.js';
 import {
   getScreenRecordingStatus,
@@ -18,10 +18,14 @@ import {
 } from './permissions/screen-recording.js';
 import { SettingsData } from './store/repos/settings.js';
 import * as supabaseAuth from './auth/supabase-auth.js';
+import { createCompanionWindow } from './windows/companion.js';
+import { openWindows } from 'get-windows';
 
 export const googleAuth = new GoogleAuth();
 
-function getRecentActivityContext(settings: SettingsData): { kind: string; payload: Record<string, unknown>; ts: string }[] | undefined {
+function getRecentActivityContext(
+  settings: SettingsData,
+): { kind: string; payload: Record<string, unknown>; ts: string }[] | undefined {
   if (settings.planner_useRecentActivityContext) {
     const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     return activityRepo
@@ -43,7 +47,9 @@ function broadcast(channel: string, payload?: unknown): void {
   }
 }
 
-export function setupIpcHandlers(getOverlayWindow: () => BrowserWindow | null): void {
+export function setupIpcHandlers(
+  getOverlayWindow: () => BrowserWindow | null,
+): () => BrowserWindow {
   void googleAuth.loadSavedCredentials();
   void supabaseAuth.restoreSession().then((hasSession) => {
     if (hasSession) supabaseAuth.startAutoRefresh();
@@ -77,6 +83,7 @@ export function setupIpcHandlers(getOverlayWindow: () => BrowserWindow | null): 
     if (status === 'done') {
       eventBus.emit('task.completed', task);
     }
+    eventBus.emit('task.updated', { task });
     return task;
   });
 
@@ -114,57 +121,42 @@ export function setupIpcHandlers(getOverlayWindow: () => BrowserWindow | null): 
   });
 
   ipcMain.handle('auth:signIn', async () => {
-    try {
-      await supabaseAuth.signIn();
-      const user = await supabaseAuth.getCurrentUser();
-      if (!user) {
-        throw new Error('Supabase sign-in completed but no user was returned');
-      }
-      settingsRepo.update({ supabaseUserId: user.id, supabaseUserEmail: user.email });
-      const status = { signedIn: true, email: user.email };
-      broadcast('auth:status-changed', status);
-      return status;
-    } catch (err) {
-      console.error('[Auth] Sign-in failed:', err);
-      throw err;
+    await supabaseAuth.signIn();
+    const user = await supabaseAuth.getCurrentUser();
+    if (!user) {
+      throw new Error('Supabase sign-in completed but no user was returned');
     }
+    settingsRepo.update({ supabaseUserId: user.id, supabaseUserEmail: user.email });
+    const status = { signedIn: true, email: user.email };
+    broadcast('auth:status-changed', status);
+    return status;
   });
 
   ipcMain.handle('auth:signInWithPassword', async (_event, email: string, password: string) => {
-    try {
-      await supabaseAuth.signInWithPassword(email, password);
-      const user = await supabaseAuth.getCurrentUser();
-      if (!user) {
-        throw new Error('Supabase sign-in completed but no user was returned');
-      }
-      settingsRepo.update({ supabaseUserId: user.id, supabaseUserEmail: user.email });
-      const status = { signedIn: true, email: user.email };
-      broadcast('auth:status-changed', status);
-      return status;
-    } catch (err) {
-      console.error('[Auth] Password sign-in failed:', err);
-      throw err;
+    await supabaseAuth.signInWithPassword(email, password);
+    const user = await supabaseAuth.getCurrentUser();
+    if (!user) {
+      throw new Error('Supabase sign-in completed but no user was returned');
     }
+    settingsRepo.update({ supabaseUserId: user.id, supabaseUserEmail: user.email });
+    const status = { signedIn: true, email: user.email };
+    broadcast('auth:status-changed', status);
+    return status;
   });
 
   ipcMain.handle('auth:signUp', async (_event, email: string, password: string) => {
-    try {
-      const { needsEmailConfirmation } = await supabaseAuth.signUp(email, password);
-      if (needsEmailConfirmation) {
-        return { signedIn: false, email, needsEmailConfirmation: true };
-      }
-      const user = await supabaseAuth.getCurrentUser();
-      if (!user) {
-        throw new Error('Supabase sign-up completed but no user was returned');
-      }
-      settingsRepo.update({ supabaseUserId: user.id, supabaseUserEmail: user.email });
-      const status = { signedIn: true, email: user.email, needsEmailConfirmation: false };
-      broadcast('auth:status-changed', { signedIn: true, email: user.email });
-      return status;
-    } catch (err) {
-      console.error('[Auth] Sign-up failed:', err);
-      throw err;
+    const { needsEmailConfirmation } = await supabaseAuth.signUp(email, password);
+    if (needsEmailConfirmation) {
+      return { signedIn: false, email, needsEmailConfirmation: true };
     }
+    const user = await supabaseAuth.getCurrentUser();
+    if (!user) {
+      throw new Error('Supabase sign-up completed but no user was returned');
+    }
+    settingsRepo.update({ supabaseUserId: user.id, supabaseUserEmail: user.email });
+    const status = { signedIn: true, email: user.email, needsEmailConfirmation: false };
+    broadcast('auth:status-changed', { signedIn: true, email: user.email });
+    return status;
   });
 
   ipcMain.handle('auth:signOut', async () => {
@@ -238,6 +230,7 @@ export function setupIpcHandlers(getOverlayWindow: () => BrowserWindow | null): 
       depends_on: t.depends_on,
       status: 'todo',
       sort_index: 0,
+      progress: 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }));
@@ -290,6 +283,7 @@ export function setupIpcHandlers(getOverlayWindow: () => BrowserWindow | null): 
   });
 
   ipcMain.handle('overlay:resize', async (_event, height: number, width?: number) => {
+    console.log(`[IPC] overlay:resize received height=${height}, width=${width}`);
     const overlayWin = getOverlayWindow();
     if (overlayWin) {
       const bounds = overlayWin.getBounds();
@@ -312,9 +306,98 @@ export function setupIpcHandlers(getOverlayWindow: () => BrowserWindow | null): 
   ipcMain.handle('permissions:screenRecording:openSettings', async () =>
     openScreenRecordingSettings(),
   );
+
+  ipcMain.handle('window:list-active', async () => {
+    try {
+      const wins = await openWindows({
+        screenRecordingPermission: false,
+        accessibilityPermission: false,
+      });
+      const unique = new Map<string, { app: string; title: string }>();
+      for (const w of wins) {
+        const app = w.owner?.name || 'Unknown';
+        const title = w.title || app;
+        const lowerApp = app.toLowerCase();
+        if (
+          app === 'Unknown' ||
+          lowerApp === 'notification center' ||
+          lowerApp === 'window server' ||
+          lowerApp === 'dock' ||
+          lowerApp === 'systemuiserver' ||
+          lowerApp === 'loginwindow'
+        ) {
+          continue;
+        }
+        const key = `${app}::${title}`;
+        if (!unique.has(key)) {
+          unique.set(key, { app, title });
+        }
+      }
+      return Array.from(unique.values());
+    } catch (err) {
+      console.error('Failed to list active windows:', err);
+      return [];
+    }
+  });
+
+  // Companion
+  let companion: BrowserWindow | null = null;
+  let companionKind = 'observing';
+
+  function ensureCompanion(): BrowserWindow {
+    if (!companion || companion.isDestroyed()) {
+      companion = createCompanionWindow();
+      companion.on('closed', () => {
+        companion = null;
+      });
+    }
+    return companion;
+  }
+
+  ipcMain.handle('companion:show', () => {
+    ensureCompanion().show();
+  });
+  ipcMain.handle('companion:hide', () => {
+    companion?.hide();
+  });
+  ipcMain.handle('companion:resize', (_e, height: number, width?: number) => {
+    const w = ensureCompanion();
+    const bounds = w.getBounds();
+    const nextHeight = Math.max(20, Math.min(640, Math.round(height)));
+    const nextWidth =
+      width !== undefined ? Math.max(100, Math.min(600, Math.round(width))) : bounds.width;
+
+    if (width !== undefined && nextWidth !== bounds.width) {
+      const { workArea } = screen.getPrimaryDisplay();
+      const nextX = workArea.x + Math.round((workArea.width - nextWidth) / 2);
+      w.setBounds({
+        x: nextX,
+        y: bounds.y,
+        width: nextWidth,
+        height: nextHeight,
+      });
+    } else {
+      w.setBounds({
+        x: bounds.x,
+        y: bounds.y,
+        width: bounds.width,
+        height: nextHeight,
+      });
+    }
+  });
+  ipcMain.handle('companion:setState', (_e, kind: string) => {
+    companionKind = kind;
+    ensureCompanion().webContents.send('companion:state', kind);
+  });
+  ipcMain.handle('companion:getInitialState', () => ({
+    kind: companionKind,
+  }));
+
+  return ensureCompanion;
 }
 
-export function setupIpc(getOverlayWindow: () => BrowserWindow | null): void {
-  setupIpcHandlers(getOverlayWindow);
+export function setupIpc(getOverlayWindow: () => BrowserWindow | null): () => BrowserWindow {
+  const ensureCompanion = setupIpcHandlers(getOverlayWindow);
   startEventForwarding(broadcast);
+  return ensureCompanion;
 }

@@ -192,4 +192,82 @@ describe('ScreenCapturer', () => {
     expect(body.windowContext).toBeUndefined();
     vi.unstubAllGlobals();
   });
+
+  describe('vision upload downscaling', () => {
+    const fullResPng = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
+    const resizedPng = Buffer.from([0x01, 0x02, 0x03, 0x04]);
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('resizes the upload to VISION_UPLOAD_MAX_WIDTH when the capture is wider, but writes the full-res PNG to disk', async () => {
+      settingsRepo.update({ screenCaptureEnabled: true, screenVisionInferenceEnabled: true });
+      const resize = vi.fn().mockReturnValue({ toPNG: () => resizedPng });
+      getSources.mockResolvedValueOnce([
+        {
+          name: 'Entire Screen',
+          thumbnail: {
+            toPNG: () => fullResPng,
+            getSize: () => ({ width: 1920, height: 1080 }),
+            resize,
+          },
+        },
+      ]);
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          summary: 'Desktop',
+          activeApp: 'Finder',
+          currentTask: null,
+          confidence: 0.5,
+        }),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      const filePath = await capturer.captureOnce();
+      expect(resize).toHaveBeenCalledWith({ width: 1024, height: 576 });
+
+      const [, callOptions] = fetchMock.mock.calls[0] as [string, { body: string }];
+      const body = JSON.parse(callOptions.body) as { screenshotBase64: string };
+      expect(Buffer.from(body.screenshotBase64, 'base64').equals(resizedPng)).toBe(true);
+
+      expect(filePath).toBeTruthy();
+      if (!filePath) return;
+      const onDisk = await fs.readFile(filePath);
+      expect(onDisk.equals(fullResPng)).toBe(true);
+    });
+
+    it('skips resizing when the capture is already at or under VISION_UPLOAD_MAX_WIDTH', async () => {
+      settingsRepo.update({ screenCaptureEnabled: true, screenVisionInferenceEnabled: true });
+      const resize = vi.fn().mockReturnValue({ toPNG: () => resizedPng });
+      getSources.mockResolvedValueOnce([
+        {
+          name: 'Entire Screen',
+          thumbnail: {
+            toPNG: () => fullResPng,
+            getSize: () => ({ width: 800, height: 600 }),
+            resize,
+          },
+        },
+      ]);
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          summary: 'Desktop',
+          activeApp: 'Finder',
+          currentTask: null,
+          confidence: 0.5,
+        }),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      await capturer.captureOnce();
+      expect(resize).not.toHaveBeenCalled();
+
+      const [, callOptions] = fetchMock.mock.calls[0] as [string, { body: string }];
+      const body = JSON.parse(callOptions.body) as { screenshotBase64: string };
+      expect(Buffer.from(body.screenshotBase64, 'base64').equals(fullResPng)).toBe(true);
+    });
+  });
 });

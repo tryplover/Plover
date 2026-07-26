@@ -28,6 +28,7 @@
 .plover-btn--secondary {
   background: var(--plover-button-secondary);
   color: var(--plover-text);
+  border: 1px solid var(--plover-border);
 }
 
 .plover-btn--secondary:hover {

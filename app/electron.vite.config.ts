@@ -1,7 +1,16 @@
 import { resolve } from 'node:path';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { defineConfig } from 'electron-vite';
 import react from '@vitejs/plugin-react';
+
+// Load env vars at build time so they are baked into define
+const appEnv = resolve('app/.env');
+const rootEnv = resolve('.env');
+if (existsSync(appEnv)) {
+  process.loadEnvFile(appEnv);
+} else if (existsSync(rootEnv)) {
+  process.loadEnvFile(rootEnv);
+}
 
 const pkgVersion = (
   JSON.parse(readFileSync(resolve('package.json'), 'utf-8')) as { version: string }
@@ -33,6 +42,10 @@ export default defineConfig({
       'import.meta.env.PLOVER_BACKEND_URL': JSON.stringify(process.env.PLOVER_BACKEND_URL ?? ''),
       'import.meta.env.SUPABASE_URL': JSON.stringify(process.env.SUPABASE_URL ?? ''),
       'import.meta.env.SUPABASE_ANON_KEY': JSON.stringify(process.env.SUPABASE_ANON_KEY ?? ''),
+      'import.meta.env.GOOGLE_CLIENT_ID': JSON.stringify(process.env.GOOGLE_CLIENT_ID ?? ''),
+      'import.meta.env.GOOGLE_CLIENT_SECRET': JSON.stringify(
+        process.env.GOOGLE_CLIENT_SECRET ?? '',
+      ),
     },
     resolve: {
       alias: {
@@ -59,6 +72,7 @@ export default defineConfig({
       rollupOptions: {
         input: {
           index: resolve('src/renderer/index.html'),
+          companion: resolve('src/renderer/companion/index.html'),
         },
       },
     },

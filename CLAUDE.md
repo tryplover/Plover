@@ -456,4 +456,115 @@ Subagents that need to install deps will hit this same wall and report "network/
 
 **Fix:** When there's any chance the user or another session is concurrently using the primary repo directory (ask if unsure — don't assume), do multi-step git work (branch + commits) in an isolated `git worktree` instead: `git worktree add <sibling-path> <branch>`, then run all further `Bash`/`Edit` calls with that path, never the primary directory. If a stray commit already landed on the wrong branch before noticing, recover it non-destructively — `git cherry-pick <sha>` onto the correct branch from the worktree — rather than resetting the branch the other actor is using, which they might be actively building on top of.
 
+### 2026-07-21 — `app/package.json` pins Electron `^42.7.0`, not `^33.2.0`
+
+The "native module compilation crash on Electron 42" lesson above (2026-05-31) describes
+downgrading to `electron ^33.2.0` to fix a `better-sqlite3`/V8 ABI mismatch. That downgrade
+has since been reverted/superseded — as of 2026-07-21 `app/package.json` pins `^42.7.0`.
+If you hit native-module ABI errors again, don't assume the fix is still in place; check
+the actual pinned version first (`grep '"electron"' app/package.json`) rather than trusting
+this file's older entries at face value.
+
+### 2026-07-21 — transparent `BrowserWindow` on Windows can render solid black instead of glass
+
+**Symptom:** A frameless, `transparent: true`, `alwaysOnTop: true` companion overlay window
+(`app/src/main/windows/companion.ts`) rendered as a solid black rectangle on a Windows 11
+machine instead of the intended frosted-glass translucent pill, and was positioned in the
+top-right corner instead of top-center.
+
+**Root cause (transparency):** This was the *first time* the companion window had ever
+actually been shown to a user — `window.api.companion.show()` had existed as dead IPC
+plumbing with no caller anywhere in the renderer until this session wired up an
+auto-show-at-launch call. So a pre-existing but never-exercised transparency setup hit a
+known Electron/Windows footgun: on some Windows systems, a `transparent: true`
+`BrowserWindow` created *without* an explicit `backgroundColor` falls back to an opaque
+black backing surface for the native win32 window class instead of a genuine per-pixel-alpha
+one (see [electron/electron#40515](https://github.com/electron/electron/issues/40515)).
+`resizable: true` is a separate known trigger for the same symptom (not the cause here —
+this window already had `resizable: false`). Disabling hardware acceleration app-wide is
+the other commonly-cited workaround but has too broad a blast radius (affects every
+window's rendering) to reach for by default.
+
+**Fix:** Set `backgroundColor: '#00000000'` explicitly on the transparent
+`BrowserWindow`'s constructor options — don't just omit `backgroundColor` and assume
+`transparent: true` alone is enough on Windows. If a transparent overlay window still
+renders opaque after that, the next things to check are (in order): whether `resizable` is
+accidentally `true`, whether the user is on a remote/virtualized session where DWM
+composition may be degraded, and only as a last resort whether
+`app.disableHardwareAcceleration()` is needed (accept the app-wide rendering-quality
+tradeoff explicitly with the user before adding it).
+
+**Fix (positioning):** Was hardcoded to the top-right corner
+(`workArea.x + workArea.width - COLLAPSED_WIDTH - 24`). Changed to horizontally centered at
+the top (`workArea.x + Math.round((workArea.width - COLLAPSED_WIDTH) / 2)`, `workArea.y +
+12`) per explicit user feedback that a top-right corner pill read as "not centered" /
+misplaced once actually visible on screen — this app's design intent for this overlay is a
+persistent top-center bar, not a corner toast.
+
+### 2026-07-21 — companion window's *dev-mode* URL didn't match its actual file path, so it silently loaded the main app instead
+
+**Symptom:** After fixing the black-box/preload issues above, the companion window
+stopped crashing but rendered the **entire main app window** (full Home Dashboard, sidebar
+nav, title bar) instead of the small collapsed pill — at full window size, not the
+56×360px pill dimensions.
+
+**Root cause:** `createCompanionWindow()`'s two load paths didn't agree with each other.
+The production path (`win.loadFile(join(..., '../renderer/companion/index.html'))`)
+correctly targets the file at its real location, `src/renderer/companion/index.html`. But
+the dev path (`win.loadURL(`${process.env.ELECTRON_RENDERER_URL}/companion.html`)`)
+requested `/companion.html` — flat, no subdirectory — which doesn't exist under Vite's dev
+server (root = `src/renderer`, so the file is actually served at `/companion/index.html`).
+Vite's dev server has no route for the flat path and falls back to serving the root
+`index.html` (the main app's entry), so `main.tsx`'s `?variant=` branching logic ran with
+no variant and mounted the default `<App />` shell — indistinguishable at a glance from
+"the overlay is now the main window." Same root story as the two lessons above this one:
+this window had never actually been shown to a user before this session, so this dev/prod
+URL divergence had never been exercised either.
+
+**Fix:** Make the dev URL match the production `loadFile` path's structure:
+`` `${process.env.ELECTRON_RENDERER_URL}/companion/index.html` ``, not `/companion.html`.
+General lesson: when a `BrowserWindow` has separate `loadURL` (dev) / `loadFile` (prod)
+branches for a non-root HTML entry, verify both branches resolve to the *same* file — Vite
+serves dev files at their real path relative to `root`, which is easy to get wrong by
+analogy with the production build's flattened-looking `entryFileNames` output naming.
+
+### 2026-07-22 — the user runs a *second, separate* local checkout of this repo, `D:\GitHub\Plover`, on its own branch (`ui-fixes`)
+
+**Symptom:** Implemented and verified (typecheck/lint/test all green) a fix for the
+companion pill not syncing its active task with Home, on a branch built off
+`wip/liquid-glass-overlay`. User tested by restarting `pnpm dev` and reported "still not
+synced up." Everything checked out statically — Home and the companion call the exact same
+shared `pickCurrentTask` against the exact same `window.api.getTasks()` IPC channel, so
+they logically *cannot* disagree if the same code is running for both.
+
+**Root cause:** The user's `pnpm dev` was running from `D:\GitHub\Plover` — a second,
+entirely separate local clone of the same GitHub remote (`tryplover/Plover`), sitting on
+branch `ui-fixes` (tracking `origin/ui-fixes`), not the `C:\Users\hhl_c\Documents\GitHub\Plover`
+checkout this session had been working in. `ui-fixes` has its own independent companion-overlay
+history (`e645e5e` "fix: restore companion overlay deleted by dead-code cleanup" plus later
+fixes) — a *third* parallel restoration of the feature, distinct from both `main`'s deletion
+and `wip/liquid-glass-overlay`'s rebuild (see the 2026-07-22 lesson above this one). The fix
+built against the wrong branch was 100% correct for that branch and 100% invisible to the
+user, since `pnpm dev` reads from whichever checkout's disk it's launched from — there is no
+cross-checkout code sharing short of git itself.
+
+Also notable: on `ui-fixes`, the bug's shape was slightly different from the
+`wip/liquid-glass-overlay` diagnosis — Home there never called `window.api.companion.setActiveTask(...)`
+at all (verified by grepping the whole `app/src` tree for `setActiveTask` and finding zero
+renderer callers), so it wasn't a mount-lifecycle race, it was dead wiring. The eventual fix
+(make the companion self-fetch tasks instead of waiting for a push) was the same either way,
+but don't assume a diagnosis from one branch's copy of a feature transfers exactly to
+another's — re-verify against the actual current file contents on whichever branch is real.
+
+**Fix:** Before trusting a bug report against a locally-running dev build, confirm which
+checkout/branch is actually being run — ask directly ("what folder/drive is `pnpm dev`
+running from?") rather than assuming the primary working directory this session started in
+is the only one. If a fix doesn't take effect despite a full app restart and the code
+logically can't produce the observed behavior, checkout-mismatch is a stronger hypothesis
+than a subtle runtime race — check `git remote -v` / `git rev-parse --abbrev-ref HEAD` in
+the other location before re-diagnosing the same bug from scratch. To move a fix between two
+local checkouts of the same repo without touching the shared GitHub remote, commit it in one
+and `git fetch <absolute-path-to-other-checkout> <branch>:<branch>` from the other — works
+entirely offline, no push permission needed.
+
 

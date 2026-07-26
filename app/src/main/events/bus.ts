@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events';
-import { EventPayloads } from '../shared/events.js';
+import { EventPayloads } from '../../shared/events.js';
 
 export class TypedEventBus {
   private emitter = new EventEmitter();

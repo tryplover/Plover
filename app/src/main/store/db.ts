@@ -91,6 +91,14 @@ export const MIGRATIONS: { version: number; sql: string }[] = [
       CREATE INDEX idx_tasks_goal_sort ON tasks(goal_id, sort_index, created_at);
     `,
   },
+  {
+    version: 5,
+    sql: `
+      ALTER TABLE tasks ADD COLUMN progress REAL NOT NULL DEFAULT 0;
+
+      UPDATE tasks SET progress = 100 WHERE status = 'done';
+    `,
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {
@@ -104,8 +112,7 @@ export function runMigrations(db: Database.Database): void {
   ).run();
 
   const row = db.prepare('SELECT MAX(version) as current_version FROM _migrations').get() as
-    | { current_version: number | null }
-    | undefined;
+    { current_version: number | null } | undefined;
   const currentVersion = row?.current_version ?? 0;
 
   const maxAvailableVersion =

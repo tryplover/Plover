@@ -1,9 +1,11 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { setupIpcHandlers } from '../../src/main/ipc';
-import { goalsRepo, tasksRepo, settingsRepo } from '../../src/main/store';
+import { goalsRepo, tasksRepo, settingsRepo, activityRepo } from '../../src/main/store';
+import { eventBus } from '../../src/main/events/bus';
 import { ipcMain } from 'electron';
 import { ProposedPlan } from '../../src/preload/index';
 import { BrowserWindow } from 'electron';
+import * as nodeFs from 'node:fs';
 
 const { mockSupabaseAuth } = vi.hoisted(() => {
   return {
@@ -144,6 +146,45 @@ describe('IPC Handlers', () => {
     const handler = closeCall?.[1] as (event: unknown) => Promise<void>;
     await handler({});
     expect(mockOverlayWindow.hide).toHaveBeenCalled();
+  });
+
+  // Skipped: the `activity:purge` IPC handler was removed alongside the Activity tab
+  // in commit 9e8d534 ("Redesign overlay glassmorphism… remove Today and Activity tabs").
+  // The handler no longer exists in src/main/ipc.ts, so this test has nothing to exercise.
+  // Unrelated to Milestone C-8 authedFetch changes.
+  it.skip('activity:purge with olderThan unlinks screenshot files before purging DB rows', async () => {
+    const unlinkSpy = vi.fn().mockResolvedValue(undefined);
+    vi.spyOn(nodeFs.promises, 'unlink').mockImplementation(unlinkSpy);
+
+    const oldTs = '2026-01-01T00:00:00.000Z';
+    const recentTs = '2026-06-24T00:00:00.000Z';
+    activityRepo.insert({
+      kind: 'screenshot_captured',
+      payload: { filePath: '/tmp/plover-screens/old.png', width: 1, height: 1 },
+      ts: oldTs,
+    });
+    activityRepo.insert({
+      kind: 'screenshot_captured',
+      payload: { filePath: '/tmp/plover-screens/recent.png', width: 1, height: 1 },
+      ts: recentTs,
+    });
+
+    const calls = (ipcMain.handle as ReturnType<typeof vi.fn>).mock.calls;
+    const purgeCall = calls.find((call) => call[0] === 'activity:purge');
+    expect(purgeCall).toBeDefined();
+    const handler = purgeCall?.[1] as (
+      event: unknown,
+      args: { olderThan?: string; ids?: number[] },
+    ) => Promise<{ deleted: number }>;
+
+    const olderThan = '2026-06-01T00:00:00.000Z';
+    const result = await handler({}, { olderThan });
+
+    expect(result.deleted).toBe(1);
+    expect(unlinkSpy).toHaveBeenCalledWith('/tmp/plover-screens/old.png');
+    expect(unlinkSpy).not.toHaveBeenCalledWith('/tmp/plover-screens/recent.png');
+
+    vi.restoreAllMocks();
   });
 
   it('handles overlay:resize by setting bounds if height changed', async () => {
@@ -393,11 +434,14 @@ describe('goals/tasks CRUD handlers', () => {
       const goal = goalsRepo.create({ title: 'Goal', description: '', status: 'active' });
       const handler = getHandler('tasks:create');
 
-      const result = (await handler({}, {
-        goal_id: goal.id,
-        title: 'New task',
-        estimate_minutes: 45,
-      })) as { id: string; title: string; estimate_minutes: number; status: string };
+      const result = (await handler(
+        {},
+        {
+          goal_id: goal.id,
+          title: 'New task',
+          estimate_minutes: 45,
+        },
+      )) as { id: string; title: string; estimate_minutes: number; status: string };
 
       expect(result.title).toBe('New task');
       expect(result.estimate_minutes).toBe(45);
@@ -428,6 +472,51 @@ describe('goals/tasks CRUD handlers', () => {
       };
 
       expect(result.estimate_minutes).toBe(90);
+    });
+  });
+
+  describe('tasks:updateStatus handler', () => {
+    it('emits task.updated but not task.completed for a non-done status change', async () => {
+      const { task } = seedTask();
+      const handler = getHandler('tasks:updateStatus');
+      const updatedListener = vi.fn();
+      const completedListener = vi.fn();
+      eventBus.on('task.updated', updatedListener);
+      eventBus.on('task.completed', completedListener);
+
+      try {
+        const result = (await handler({}, task.id, 'in_progress')) as { status: string };
+
+        expect(result.status).toBe('in_progress');
+        expect(updatedListener).toHaveBeenCalledWith({
+          task: expect.objectContaining({ id: task.id, status: 'in_progress' }),
+        });
+        expect(completedListener).not.toHaveBeenCalled();
+      } finally {
+        eventBus.off('task.updated', updatedListener);
+        eventBus.off('task.completed', completedListener);
+      }
+    });
+
+    it('emits both task.updated and task.completed when the status is done', async () => {
+      const { task } = seedTask();
+      const handler = getHandler('tasks:updateStatus');
+      const updatedListener = vi.fn();
+      const completedListener = vi.fn();
+      eventBus.on('task.updated', updatedListener);
+      eventBus.on('task.completed', completedListener);
+
+      try {
+        await handler({}, task.id, 'done');
+
+        expect(updatedListener).toHaveBeenCalledWith({
+          task: expect.objectContaining({ id: task.id, status: 'done' }),
+        });
+        expect(completedListener).toHaveBeenCalled();
+      } finally {
+        eventBus.off('task.updated', updatedListener);
+        eventBus.off('task.completed', completedListener);
+      }
     });
   });
 

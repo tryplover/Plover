@@ -72,6 +72,10 @@
   background-color: rgba(255, 255, 255, 0.08);
 }
 
+.plover-step-breakdown .plover-status {
+  align-self: flex-start;
+}
+
 .plover-step-breakdown footer {
   display: flex;
   gap: 8px;
@@ -80,4 +84,29 @@
 
 .plover-step-breakdown footer button {
   flex: 1;
+}
+
+.plover-step-breakdown--window footer {
+  justify-content: space-between;
+  margin-top: 24px;
+  margin-bottom: 16px;
+}
+
+.plover-step-breakdown--window footer button {
+  flex: 0 0 auto !important;
+}
+
+/* Light theme overrides */
+.plover-shell--light .plover-step-breakdown__loading {
+  color: var(--plover-text-muted, rgba(36, 33, 28, 0.6));
+}
+
+.plover-shell--light .plover-step-breakdown__add {
+  border-color: rgba(36, 33, 28, 0.25);
+  color: var(--plover-text, #24211c);
+}
+
+.plover-shell--light .plover-step-breakdown__add:hover {
+  border-color: rgba(36, 33, 28, 0.5);
+  background-color: rgba(36, 33, 28, 0.06);
 }

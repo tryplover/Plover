@@ -174,9 +174,6 @@ export default function AIProgress({ 'data-testid': dataTestId }: AIProgressProp
                                 <span className="timeline-feed-tag-task">{hit.task_title}</span>
                               )}
                             </div>
-                            <span className="timeline-feed-signal">
-                              +{Math.round(hit.signal * 100)}% Progress
-                            </span>
                           </div>
                           <p className="timeline-feed-reasoning">“{hit.summary}”</p>
                         </div>

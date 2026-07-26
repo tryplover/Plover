@@ -5,7 +5,7 @@ import { runMigrations } from '../../src/main/store/db';
 import { SettingsRepo } from '../../src/main/store/repos/settings';
 import { GoogleAuth } from '../../src/main/sync/google-auth';
 import { GDocsPoller } from '../../src/main/sync/gdocs-poller';
-import { TypedEventBus } from '../../src/main/bus';
+import { TypedEventBus } from '../../src/main/events/bus';
 import { GDocsRevisionPayload } from '../../src/shared/events';
 
 const { mockKeychain } = vi.hoisted(() => {

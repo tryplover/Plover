@@ -28,9 +28,10 @@ describe('migration v4 — sort_index backfill', () => {
                 OR (t2.created_at = tasks.created_at AND t2.id < tasks.id))
        )`,
     );
-    const rows = db
-      .prepare(`SELECT id, sort_index FROM tasks ORDER BY sort_index`)
-      .all() as { id: string; sort_index: number }[];
+    const rows = db.prepare(`SELECT id, sort_index FROM tasks ORDER BY sort_index`).all() as {
+      id: string;
+      sort_index: number;
+    }[];
     expect(rows).toHaveLength(3);
     const [r0, r1, r2] = rows;
     expect(r0?.id).toBe('t1');

@@ -11,6 +11,7 @@ function createTask(id: string, estimate_minutes: number, depends_on?: string[])
     depends_on,
     status: 'todo',
     sort_index: 0,
+    progress: 0,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
@@ -141,7 +142,7 @@ describe('Deterministic Auto-Scheduling', () => {
     expect(() =>
       scheduleTasks({
         tasks,
-          workingHours,
+        workingHours,
         horizonDays,
         now: baseDate,
       }),
@@ -154,7 +155,7 @@ describe('Deterministic Auto-Scheduling', () => {
     expect(() =>
       scheduleTasks({
         tasks,
-          workingHours: { start: 'oops', end: '17:00' },
+        workingHours: { start: 'oops', end: '17:00' },
         horizonDays,
         now: baseDate,
       }),
@@ -163,7 +164,7 @@ describe('Deterministic Auto-Scheduling', () => {
     expect(() =>
       scheduleTasks({
         tasks,
-          workingHours: { start: '09:00', end: '25:99' },
+        workingHours: { start: '09:00', end: '25:99' },
         horizonDays,
         now: baseDate,
       }),
