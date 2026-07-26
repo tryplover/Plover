@@ -567,4 +567,45 @@ local checkouts of the same repo without touching the shared GitHub remote, comm
 and `git fetch <absolute-path-to-other-checkout> <branch>:<branch>` from the other — works
 entirely offline, no push permission needed.
 
+### 2026-07-25 — `vi.advanceTimersByTimeAsync` does not wait for real (non-timer) I/O between ticks
+
+**Symptom:** Testing `ScreenCapturer.start()`'s recursive `setTimeout` loop with
+`vi.useFakeTimers()` + `vi.advanceTimersByTimeAsync(60_000)` — first tick's capture was
+observed (`desktopCapturer.getSources` called once), but the *second* tick never fired
+even after advancing fake time by another full interval; `vi.getTimerCount()` read `0`,
+meaning no next timeout had even been scheduled yet.
+
+**Root cause (two compounding issues):**
+1. `start()`'s tick callback was `setTimeout(() => { void tick(); }, intervalMs)` — voiding
+   the returned promise. `advanceTimersByTimeAsync` only awaits a timer callback if the
+   callback's return value is itself a promise; a void-discarded one gives it nothing to
+   await, so it moves on as soon as the synchronous portion of the callback returns.
+2. Even after fixing that (`setTimeout(() => tick(), intervalMs)`, letting the promise
+   propagate), the second tick still didn't fire in time. `captureOnce()` does *real* disk
+   I/O (`fs.mkdir`/`fs.writeFile`) that resolves via the real event loop's poll phase (libuv
+   threadpool), not a plain microtask. `advanceTimersByTimeAsync`'s internal loop flushes
+   microtasks between fake-timer ticks, but it does not cede control back to the real event
+   loop long enough for outstanding real I/O to complete — so the `setTimeout` that schedules
+   tick 2 (which only happens *after* `await this.captureOnce()` resolves) hadn't been
+   registered yet by the time the test's next `advanceTimersByTimeAsync` call ran. Confirmed
+   by instrumenting the tick loop: the "scheduling next tick" log line printed only in real
+   time, after the test's assertions had already failed and `afterEach` had already called
+   `capturer.stop()`.
+
+**Fix:** Both changes were needed, in [screen-capturer.ts](app/src/main/activity/screen-capturer.ts):
+return the promise from the `setTimeout` callback instead of voiding it, **and** in the test
+file ([screen-capturer.test.ts](app/tests/activity/screen-capturer.test.ts)), stub out the
+real disk I/O for the fake-timer describe block specifically:
+```ts
+vi.spyOn(fs, 'mkdir').mockResolvedValue(undefined);
+vi.spyOn(fs, 'writeFile').mockResolvedValue(undefined);
+```
+(`fs` here is the `import { promises as fs } from 'node:fs'` already at the top of the test
+file — spying on it patches the same singleton object the source file imports, no `vi.mock`
+hoisting needed.) `vi.restoreAllMocks()` in that block's `afterEach` undoes the spies so
+other tests in the same file keep exercising real disk I/O. General lesson: any production
+code path under fake-timer test coverage must resolve exclusively through microtasks
+(mocked I/O, not real `fs`/network calls) for each simulated tick, or the fake-timer advance
+will silently "complete" one tick early relative to what the test expects.
+
 
