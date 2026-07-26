@@ -4,7 +4,7 @@ import { pickCurrentTask, sortByScheduledStart } from '../../../../shared/curren
 import { StepRow } from '../../../components/StepRow/StepRow';
 import { ProgressLine } from '../../../components/ProgressLine/ProgressLine';
 import { Button } from '../../../components/Button/Button';
-import { SetupFlow } from '../../../overlay/SetupFlow';
+import { SetupFlow } from '../../../overlay/SetupFlow/SetupFlow';
 import { useAppEvents } from '../../../hooks/useAppEvents';
 import './Home.css';
 

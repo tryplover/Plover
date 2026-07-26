@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { SetupFlow } from './SetupFlow';
+import { SetupFlow } from './SetupFlow/SetupFlow.js';
 
 export function Overlay() {
   const containerRef = useRef<HTMLDivElement>(null);
