@@ -4,7 +4,7 @@
 >
 > **Status:** stub. Expand to a detailed spec before writing its plan.
 
-Extend the existing Google integration (Phase 1 = Calendar OAuth + Drive metadata reads) so Plover can:
+Extend the existing Google integration (Phase 1 = Google Docs/Drive metadata reads via OAuth) so Plover can:
 
 - **read** Google Docs / Sheets content (not just file lists) as decomposition context,
 - **write** a goal summary into a Drive doc when the user asks (e.g. "save this plan as a Doc in /Plover Plans/"),
@@ -13,9 +13,9 @@ Extend the existing Google integration (Phase 1 = Calendar OAuth + Drive metadat
 
 ## Open questions (resolve before plan)
 
-1. **Scope escalation.** Current scopes are `calendar.events` + `drive.metadata.readonly`. Writes require `drive.file` (per-doc) or `drive` (full Drive). Default to `drive.file` and create-only / user-picker access via Google Picker if possible.
+1. **Scope escalation.** Current scope is `drive.metadata.readonly`. Writes require `drive.file` (per-doc) or `drive` (full Drive). Default to `drive.file` and create-only / user-picker access via Google Picker if possible.
 2. **Sheets vs. Docs.** Pick one as v1 — Docs is simpler (insert content into a doc). Sheets needs schema mapping like Notion.
-3. **Doc structure.** When writing a "goal summary" doc, what's the template? Suggest: heading = goal title, body = subtasks as a checklist, footer = deadline + calendar link.
+3. **Doc structure.** When writing a "goal summary" doc, what's the template? Suggest: heading = goal title, body = subtasks as a checklist, footer = deadline + schedule link.
 4. **File location.** User picks a Drive folder once in Settings; new files go there.
 
 ## Sketch of module additions
@@ -28,7 +28,7 @@ Extend the existing Google integration (Phase 1 = Calendar OAuth + Drive metadat
 
 - Allowlist additions: `docs.googleapis.com`, `sheets.googleapis.com` (Drive endpoints already allowlisted).
 - Reuse the existing Google OAuth client — do not add a second OAuth provider for Google.
-- Scope escalation is opt-in: the existing Calendar-only consent stays intact until the user enables write-back.
+- Scope escalation is opt-in: the existing read-only consent stays intact until the user enables write-back.
 
 ## Out of scope for this feature
 

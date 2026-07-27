@@ -72,7 +72,6 @@ export function registerTasksHandlers(): void {
         | 'updated_at'
         | 'scheduled_start'
         | 'scheduled_end'
-        | 'calendar_event_id'
       >[],
       workingHours: { start: string; end: string },
       horizonDays: number,

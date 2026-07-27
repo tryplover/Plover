@@ -9,7 +9,9 @@ import { ProposedPlan } from '../../preload/index.js';
 import { SettingsData } from '../store/repos/settings.js';
 import { withAuthRetry } from '../auth/with-auth-retry.js';
 
-function getRecentActivityContext(settings: SettingsData): { kind: string; payload: Record<string, unknown>; ts: string }[] | undefined {
+function getRecentActivityContext(
+  settings: SettingsData,
+): { kind: string; payload: Record<string, unknown>; ts: string }[] | undefined {
   if (settings.planner_useRecentActivityContext) {
     const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     return activityRepo
@@ -71,7 +73,6 @@ export function registerGoalsHandlers(getOverlayWindow: () => BrowserWindow | nu
         | 'updated_at'
         | 'scheduled_start'
         | 'scheduled_end'
-        | 'calendar_event_id'
       >[],
       scheduledSlots: { tempIndex: number; start: string; end: string }[],
     ) => {

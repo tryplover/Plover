@@ -22,7 +22,6 @@ export const MIGRATIONS: { version: number; sql: string }[] = [
         depends_on TEXT,
         scheduled_start TEXT,
         scheduled_end TEXT,
-        calendar_event_id TEXT,
         status TEXT NOT NULL,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL

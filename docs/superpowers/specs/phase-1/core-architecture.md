@@ -1,8 +1,6 @@
 # Plover — Phase 1 Core Architecture
 
-> **2026-07-18 — deprecation notice.** Google Calendar sync (OAuth, event writes, `calendar_event_id`, `calendar.synced` event, `deviation-detector`) has been removed. The Sync module still exists but only polls Google Docs. Everywhere this doc references "Calendar" as a Phase 1 feature or an inter-module contract, treat it as stale — subtasks are scheduled locally into working-hours windows only.
-
-Cross-cutting architecture, constraints, and conventions for **Phase 1** of Plover. Every feature spec under [features/](./features/) assumes this doc. Read this first; the feature docs only restate what's specific to themselves.
+Cross-cutting architecture, constraints, and conventions for **Phase 1** of Plover. Read this first; feature specifications assume this document as authoritative.
 
 The product motivation lives in the [product spec](../2026-05-24-task-tracker-agent-product-spec.md).
 
@@ -10,12 +8,12 @@ The product motivation lives in the [product spec](../2026-05-24-task-tracker-ag
 
 Phase 1 covers exactly:
 
-- typed goal capture — [features/typed-goal-capture.md](./features/typed-goal-capture.md)
-- Gemini-powered subtask decomposition — [features/subtask-decomposition.md](./features/subtask-decomposition.md)
-- Deterministic Calendar auto-scheduling — [features/scheduling.md](./features/scheduling.md)
-- Google Calendar sync (OAuth + writes) — [features/calendar-sync.md](./features/calendar-sync.md)
-- Local todo views (Today / Goals / Settings) — [features/todo-views.md](./features/todo-views.md)
-- Overlay quick-add (global hotkey) — [features/overlay-quick-add.md](./features/overlay-quick-add.md)
+- typed goal capture
+- Gemini-powered subtask decomposition
+- Deterministic local scheduling (working-hours aware)
+- Google Docs integration (OAuth + metadata/revision polling)
+- Local todo views (Today / Goals / Settings)
+- Overlay quick-add (global hotkey)
 
 **Deferred to later phases — do not add yet:**
 
@@ -28,25 +26,24 @@ Phase 1 covers exactly:
 
 ## Runtime flow
 
-The two diagrams below are the same Phase 1 system at different zoom levels. The flowchart names every module and the external endpoints that any outbound HTTP must come from (see "Hard constraints" below). The sequence diagram walks the canonical path: user types a goal → Gemini decomposes it → local scheduler places it → Calendar gets written.
+The flowchart below shows the Phase 1 system modules and the external endpoints that any outbound HTTP must come from (see "Hard constraints" below).
 
 ### Module map + external endpoints
 
 ![Module map + external endpoints](../../../diagrams/core-architecture.svg)
 
-### Goal → calendar sequence
+### Goal → schedule sequence
 
-![Goal → calendar sequence](../../../diagrams/seq-diagram.svg)
+![Goal → schedule sequence](../../../diagrams/seq-diagram.svg)
 
 Notes:
 
-- Every external arrow is one of the three allowlisted hosts in "Hard constraints". Nothing else should make outbound calls.
-- `Planner.schedule` is intentionally pure — no DB, no network — which is why it has a self-loop instead of an external arrow. It's the most-tested module for that reason (see [features/scheduling.md](./features/scheduling.md)).
-- `Nudge` is wired into the bus but does nothing in Phase 1; it exists so later phases don't reshape the module graph.
+- Every external arrow is one of the allowlisted hosts in "Hard constraints". Nothing else should make outbound calls.
+- `Planner.schedule` is intentionally pure — no DB, no network — which is why it has a self-loop. It's the most-tested module for that reason.
 
 ## Hard constraints
 
-1. **Local-only data.** SQLite + local filesystem. No backend server. The only outbound HTTP traffic allowed is to `generativelanguage.googleapis.com` (Gemini), `www.googleapis.com` (Calendar), and the Google OAuth endpoints. Add a runtime allowlist check around the HTTP client.
+1. **Local-only data.** SQLite + local filesystem. No backend server. The only outbound HTTP traffic allowed is to `generativelanguage.googleapis.com` (Gemini), `www.googleapis.com` (Docs/Drive), and the Google OAuth endpoints. Add a runtime allowlist check around the HTTP client.
 2. **Privacy posture.** Never capture keystroke content. Never upload screenshots anywhere except (later) Gemini Vision with explicit user consent surfaced in settings.
 3. **Permissions.** Phase 1 does not need Screen Recording or Accessibility — defer those to the Monitor milestone. Do not request them now.
 4. **Module boundaries are load-bearing.** Modules communicate via an in-process event bus and the typed `Store` repositories. No module imports another's internals.
@@ -55,9 +52,9 @@ Notes:
 
 - **Electron** (latest stable) + **TypeScript** (strict). Main process in TS, renderer in React + TS.
 - **better-sqlite3** for the local DB.
-- **Google API**: `googleapis` Node SDK for Calendar; OAuth 2.0 desktop flow with a loopback redirect. Tokens stored via OS keychain (`keytar`).
-- **Gemini**: `@google/generative-ai` SDK. Use Gemini 2.x with **function/tool calling** for the Planner.
-- **Build/dev**: `electron-vite` or `electron-forge`. `pnpm` for package management.
+- **Google API**: `googleapis` Node SDK for Google Docs metadata/revisions; OAuth 2.0 desktop flow with a loopback redirect. Tokens stored via OS keychain (`keytar`).
+- **Gemini**: `@google/generative-ai` on hosted proxy. Use Gemini 2.x with function/tool calling for the Planner.
+- **Build/dev**: `electron-vite`. `pnpm` for package management.
 - **Lint/format**: `eslint` + `prettier`. CI on a `pnpm typecheck && pnpm lint && pnpm test` script.
 - **Tests**: `vitest` for unit. Do not write integration tests against real Google APIs — record fixtures with `nock` instead.
 
@@ -70,8 +67,14 @@ app/
   src/
     main/
       index.ts                 # app lifecycle, window creation, hotkey
-      ipc.ts                   # typed IPC channels
-      bus.ts                   # in-process event bus
+      ipc/                     # typed IPC channels (split by domain)
+        goals.ts
+        tasks.ts
+        auth.ts
+        settings.ts
+        system.ts
+      events/
+        bus.ts                 # in-process event bus
       store/
         db.ts                  # better-sqlite3 init, migrations
         repos/
@@ -80,27 +83,26 @@ app/
           sessions.ts          # SessionsRepo (stub for Phase 1)
           activity.ts          # ActivityRepo (stub for Phase 1)
       planner/
-        gemini.ts              # Gemini client wrapper, tool defs
-        decompose.ts           # goal -> subtasks (uses gemini.ts)
+        decompose.ts           # goal -> subtasks
         schedule.ts            # slot-finder
+        goal-manager.ts        # save/delete goal and tasks orchestrator
       sync/
         google-auth.ts         # OAuth flow + keychain
-        calendar.ts            # Calendar reads/writes
+        gdocs-poller.ts        # Google Docs revisions poller
       nudge/
         index.ts               # stub for Phase 1 (no-op except surface API)
     renderer/
+      main.tsx                 # renderer entry
+      App.tsx
       main/
-        App.tsx
         pages/
-          TasksToday.tsx
-          GoalsList.tsx
-          Settings.tsx
-        components/...
+          Home/                # Today task view
+          GoalsList/           # Goals view
+          Settings/            # Settings view
       overlay/
         Overlay.tsx
-        QuickAdd.tsx
     shared/
-      types.ts                 # Goal, Task, ProgressSignal, etc.
+      types.ts                 # Goal, Task, etc.
       events.ts                # event-bus event names + payloads
   tests/
     planner/...
@@ -129,7 +131,7 @@ CREATE TABLE tasks (
   depends_on TEXT,          -- JSON array of task ids
   scheduled_start TEXT,     -- ISO8601, nullable
   scheduled_end TEXT,
-  calendar_event_id TEXT,   -- Google event id once scheduled
+  calendar_event_id TEXT,   -- [DEPRECATED] Leftover column from Calendar sync
   status TEXT NOT NULL,     -- 'todo' | 'scheduled' | 'in_progress' | 'done' | 'skipped'
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
@@ -154,9 +156,9 @@ Modules communicate via the in-process event bus + typed `Store` repos. No modul
 
 ### Event bus events (Phase 1)
 
-- `goal.created`, `goal.updated`
-- `task.scheduled`, `task.completed`
-- `calendar.synced`
+- `goal.created`, `goal.updated`, `goal.deleted`
+- `task.created`, `task.updated`, `task.scheduled`, `task.completed`, `task.deleted`
+- `gdocs.revision`
 
 ## Implementation order
 
@@ -164,29 +166,25 @@ Do the steps in this order. Each builds on the previous; don't jump ahead.
 
 1. Scaffold the Electron + Vite + TS project. Get an empty main window rendering.
 2. Add `better-sqlite3` and write the migration runner. Write `GoalsRepo` and `TasksRepo` with unit tests. See [store-layer.md](./store-layer.md).
-3. Build `planner/gemini.ts` with a single hello-world tool-call against Gemini. Then `decomposeGoal` with a focused prompt and a JSON schema. Unit-test with a mocked Gemini client. See [features/subtask-decomposition.md](./features/subtask-decomposition.md).
-4. Build `planner/schedule.ts` as a pure function. Unit-test extensively — this is the part most likely to have edge cases. See [features/scheduling.md](./features/scheduling.md).
-5. Build the Google OAuth flow and `calendar.ts`. Use recorded fixtures with `nock` for tests. See [features/calendar-sync.md](./features/calendar-sync.md).
-6. Wire the renderer: Settings → connect; main form → decompose → schedule → write events. See [features/typed-goal-capture.md](./features/typed-goal-capture.md) and [features/todo-views.md](./features/todo-views.md).
-7. Add the overlay window + global hotkey last, since it depends on everything above. See [features/overlay-quick-add.md](./features/overlay-quick-add.md).
+3. Build `planner/decompose.ts` with a single hello-world tool-call against Gemini. Then `decomposeGoal` with a focused prompt and a JSON schema. Unit-test with a mocked Gemini client.
+4. Build `planner/schedule.ts` as a pure function. Unit-test extensively — this is the part most likely to have edge cases.
+5. Build the Google OAuth flow and `gdocs-poller.ts`. Use recorded fixtures with `nock` for tests.
+6. Wire the renderer: Settings → connect; main form → decompose → schedule → write events.
+7. Add the overlay window + global hotkey last, since it depends on everything above.
 
 ## What NOT to do
 
 - Don't add activity monitoring, screenshots, voice, or nudges in Phase 1. They have their own milestones.
-- Don't add a cloud backend.
+- Don't add a cloud backend for user data.
 - Don't request Accessibility / Screen Recording permissions yet.
 - Don't bundle Wispr Flow, Cluely, or any third-party overlay app. Build the overlay with Electron `BrowserWindow` primitives.
 - Don't add error handling for impossible states. Validate at the boundaries (user input, Google API responses) and trust internal calls.
 
 ## Cross-cutting acceptance criteria
 
-These apply to Phase 1 as a whole. Per-feature acceptance criteria live in the feature docs.
+These apply to Phase 1 as a whole.
 
 1. `pnpm install && pnpm dev` launches the app on macOS.
 2. Close the app, reopen it — state persists.
 3. `pnpm test` passes with no real network calls.
 4. `pnpm typecheck && pnpm lint` is clean.
-
-## Reporting
-
-After finishing each numbered implementation-order step above, run typecheck + lint + tests and report green before moving on. Use TDD where it helps (Planner and Scheduler — yes; UI scaffolding — no).

@@ -55,7 +55,7 @@ implementation order. Do not jump ahead.
 .
 ├── CLAUDE.md                       # ← you are here
 ├── package.json                    # pnpm workspace root, husky/lint-staged
-├── pnpm-workspace.yaml             # packages: [app, server]
+├── pnpm-workspace.yaml             # packages: [app]
 ├── .nvmrc                          # Node 22 (LTS)
 ├── .husky/pre-commit               # runs lint-staged
 ├── .github/
@@ -72,13 +72,6 @@ implementation order. Do not jump ahead.
 └── app/                            # the Electron app (single workspace pkg)
     ├── package.json                # name: "plover"
     ├── electron.vite.config.ts
-    ...
-└── server/                         # secure backend proxy server for Gemini API
-    ├── package.json                # name: "plover-server"
-    ├── tsconfig.json
-    ├── .env.example
-    └── src/
-        └── index.ts                # Express app + Gemini API logic
     ├── tsconfig.json               # strict TS, path aliases
     ├── eslint.config.js            # flat config
     ├── vitest.config.ts            # v8 coverage, scoped 60% thresholds
@@ -106,8 +99,6 @@ via `pnpm --filter ./app`.
 | `pnpm test` | Vitest run (no coverage) |
 | `pnpm --filter ./app run test:coverage` | Vitest run + v8 coverage report |
 | `pnpm --filter ./app exec <tool>` | Run a tool binary inside the app workspace |
-| `pnpm --filter ./server dev` | Start the backend proxy server locally in watch mode |
-| `pnpm --filter ./server build` | Compile the backend server TypeScript code |
 
 **Always use path-based filters (`--filter ./app`)**, not name-based
 (`-F plover`). See lessons-learned #1.
@@ -115,7 +106,7 @@ via `pnpm --filter ./app`.
 **Always use `pnpm --filter ./app run <script>`** when the script name contains
 a colon (e.g. `test:coverage`). See lessons-learned #2.
 
-To run the app end-to-end locally (API keys, Google OAuth setup, manual test
+To run the app end-to-end locally (API keys, Google Docs/Drive OAuth setup, manual test
 walkthrough), see [docs/RUNNING.md](docs/RUNNING.md).
 
 ## Architecture rules (load-bearing)

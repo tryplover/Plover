@@ -31,13 +31,13 @@ listScheduledBetween(start: Date, end: Date): Task[];
 update(id: string, patch: Partial<Task>): Task;
 ```
 
-IDs are generated inside the repo (UUID v7 or ULID — pick one and stay consistent). `created_at` / `updated_at` are set by the repo, not the caller.
+IDs are generated inside the repo (UUID v4 or v7 — pick one and stay consistent). `created_at` / `updated_at` are set by the repo, not the caller.
 
 ## Migrations
 
 Numbered SQL statements applied in order on app startup. Run inside `db.ts`:
 
-- Keep one migration per file or per numbered constant; never edit an applied migration — add a new one.
+- Keep one migration per version in the migration array; never edit an applied migration — add a new one.
 - Migration 001 creates all tables from [core-architecture.md → Data model](./core-architecture.md#data-model-sqlite), including the Phase 2 stub tables (`sessions`, `activity`, `summaries`).
 - A `_migrations` table tracks applied versions.
 
@@ -50,22 +50,19 @@ Cases worth covering:
 - Migration runner: applies in order, is idempotent, refuses to downgrade.
 - Repo create/get round-trip — every column survives a round trip and ISO timestamps deserialize correctly.
 - `depends_on` JSON column: arrays serialize/deserialize.
-- Foreign-key: deleting a goal with tasks behaves as designed (Phase 1: don't delete goals — soft-status only).
+- Foreign-key: deleting a goal with tasks behaves as designed (Phase 1: delete tasks when deleting a goal).
 - `listScheduledBetween` boundary inclusivity.
 
 No fixtures needed — use an in-memory `better-sqlite3` database (`:memory:`) per test.
 
 ## Acceptance criteria
 
-- `pnpm test` covers migrations and both repos with no real filesystem writes.
-- App restart preserves all `goals` and `tasks` rows (cross-checked by the cross-cutting acceptance criterion in [core-architecture.md](./core-architecture.md#cross-cutting-acceptance-criteria)).
+- `pnpm test` covers migrations and repos with no real filesystem writes.
+- App restart preserves all `goals` and `tasks` rows.
 - Coverage gate on `src/main/store/**` ≥ 60% (per CLAUDE.md's coverage rules).
 
 ## Consumers
 
-- [features/typed-goal-capture.md](./features/typed-goal-capture.md) — writes via `GoalsRepo`.
-- [features/subtask-decomposition.md](./features/subtask-decomposition.md) — its output is persisted via `TasksRepo` by the IPC caller.
-- [features/scheduling.md](./features/scheduling.md) — reads tasks, writes scheduled times back via `TasksRepo`.
-- [features/calendar-sync.md](./features/calendar-sync.md) — writes `tasks.calendar_event_id` after successful event creation.
-- [features/todo-views.md](./features/todo-views.md) — reads via both repos.
-- [features/overlay-quick-add.md](./features/overlay-quick-add.md) — same pipeline as `typed-goal-capture`.
+- goals:create, goals:update, goals:delete IPC handlers.
+- decomposition and scheduling orchestrator (`saveGoalAndTasks`).
+- Google Docs poller flow.

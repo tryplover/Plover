@@ -1,14 +1,15 @@
 # Plover
 
-A local-first desktop agent that turns vague goals into a calendar and
+A local-first desktop agent that turns vague goals into a schedule and
 shepherds you toward finishing them. Built for the 3-month Gemini hackathon.
 
 You tell Plover what you want to get done — by voice or text. It decomposes
-the goal with Gemini, books time on your Google Calendar, watches your screen
-in the background, and tells you when you're on or off track. Nothing leaves
-your machine except calls to Gemini and Google APIs.
+the goal with Gemini, schedules tasks locally within your working-hours windows,
+watches your screen and files in the background, and tells you when you're on or
+off track. Nothing leaves your machine except calls to Gemini and Google APIs
+(Google Drive/Docs).
 
-> **Status:** Phase 1 — Scaffold and tooling complete. The backend server is extracted to the standalone repository [plover-server](https://github.com/tryplover/plover-server) and hosted on Google Cloud Run. Feature work (goal capture → planner → calendar sync → overlay) is ongoing.
+> **Status:** Phase 1 — Scaffold and tooling complete. The backend server is hosted on Google Cloud Run (source in the standalone repository [plover-server](https://github.com/tryplover/plover-server)). Feature work (goal capture → planner → local scheduling → overlay) is ongoing.
 > See [docs/superpowers/specs/](docs/superpowers/specs/) for the product specs, and the [GCP & GitHub Setup Details](docs/plans/gcp-setup-details.md) for details on the hosted infrastructure.
 
 ## Quickstart
@@ -52,7 +53,7 @@ eslint+prettier on staged files at commit time.
 .
 ├── CLAUDE.md                       # context for Claude sessions
 ├── README.md                       # ← you are here
-├── docs/superpowers/specs/         # product spec + Phase 1 architecture + feature specs
+├── docs/superpowers/specs/         # product spec + Phase 1 architecture
 ├── .github/                        # CI workflow, Dependabot, PR template
 └── app/                            # the Electron app
     ├── src/
@@ -63,8 +64,7 @@ eslint+prettier on staged files at commit time.
     └── tests/
 ```
 
-The `app/` directory is a pnpm workspace package named `plover`. Single
-package today — splitting only if it ever earns its weight.
+The `app/` directory is a pnpm workspace package named `plover`.
 
 ## Documentation
 
@@ -87,7 +87,7 @@ Plover is local-first by design:
 
 - All persistent data lives on disk (SQLite + local files). No cloud backend.
 - Outbound HTTP is allowlisted to `generativelanguage.googleapis.com`,
-  `www.googleapis.com`, and Google OAuth endpoints. The HTTP client enforces
+  `www.googleapis.com` (Google Docs/Drive), and Google OAuth endpoints. The HTTP client enforces
   the allowlist at runtime.
 - Keystroke **counts only** — never key content.
 - Screenshots are never uploaded anywhere except (later, Phase 2+) Gemini
@@ -98,7 +98,7 @@ Plover is local-first by design:
 ## Tech stack
 
 Electron · TypeScript (strict) · React · Vite (electron-vite) · better-sqlite3 ·
-`googleapis` SDK (Calendar) · `@google/generative-ai` (Gemini) · `keytar` (OAuth
+`googleapis` SDK (Drive/Docs) · `@google/generative-ai` (on hosted proxy) · `keytar` (OAuth
 token storage) · Vitest · ESLint · Prettier · pnpm workspaces · GitHub Actions.
 
 (Native modules like `better-sqlite3` and `keytar` are added when the
