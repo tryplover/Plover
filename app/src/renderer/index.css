@@ -1453,6 +1453,51 @@ input:checked + .slider:before {
   border-radius: var(--plover-radius-sm);
 }
 
+.timeline-feed-hit--corrected {
+  opacity: 0.55;
+}
+
+.timeline-feed-hit--corrected .timeline-feed-reasoning {
+  text-decoration: line-through;
+}
+
+.timeline-feed-corrected-label {
+  font-size: 11px;
+  color: var(--plover-text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.timeline-feed-hit-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.timeline-feed-action-btn {
+  font-size: 12px;
+  padding: 4px 10px;
+  background: transparent;
+  border: 1px solid var(--plover-border);
+  border-radius: var(--plover-radius-sm);
+  color: var(--plover-text-muted);
+  cursor: pointer;
+}
+
+.timeline-feed-action-btn:hover {
+  border-color: var(--plover-text-muted);
+  color: var(--plover-text);
+}
+
+.timeline-feed-reassign-select {
+  font-size: 12px;
+  padding: 4px 8px;
+  background: transparent;
+  border: 1px solid var(--plover-border);
+  border-radius: var(--plover-radius-sm);
+  color: var(--plover-text-muted);
+}
+
 .timeline-feed-hit-header {
   display: flex;
   justify-content: space-between;

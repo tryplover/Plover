@@ -1,5 +1,6 @@
 import { Notification } from 'electron';
 import { TasksRepo } from '../store/repos/tasks.js';
+import { SummariesRepo } from '../store/repos/summaries.js';
 import { TypedEventBus } from '../events/bus.js';
 import { GitCommitInfo } from '@shared/events.js';
 import { authedFetch } from '../http/authed-fetch.js';
@@ -17,6 +18,7 @@ export type CommitMatcher = (
 export class CommitTaskMatcher {
   constructor(
     private tasksRepo: TasksRepo,
+    private summariesRepo: SummariesRepo,
     private bus: TypedEventBus,
     private matchCommit: CommitMatcher = defaultMatchCommit,
     private notify: (title: string, body: string) => void = defaultNotify,
@@ -50,10 +52,21 @@ export class CommitTaskMatcher {
     const matched = activeTasks.find((t) => t.id === result.matchedTaskId);
     if (!matched) return;
 
+    const previousStatus = matched.status;
     const updated = this.tasksRepo.update(matched.id, { status: 'done' });
     if (updated) {
       this.bus.emit('task.completed', updated);
     }
+
+    const inserted = this.summariesRepo.insert({
+      taskId: matched.id,
+      summary: result.reasoning ?? `Matched to commit ${commit.hash.slice(0, 7)}`,
+      signal: 1,
+      source: 'commit_match',
+      previousStatus,
+    });
+    this.bus.emit('summary.created', inserted);
+
     this.notify('Plover', `Marked "${matched.title}" as done based on your git commit.`);
   }
 }

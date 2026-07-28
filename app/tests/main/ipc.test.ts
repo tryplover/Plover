@@ -1,6 +1,12 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { setupIpcHandlers } from '../../src/main/ipc/index';
-import { goalsRepo, tasksRepo, settingsRepo, activityRepo } from '../../src/main/store';
+import {
+  goalsRepo,
+  tasksRepo,
+  settingsRepo,
+  activityRepo,
+  summariesRepo,
+} from '../../src/main/store';
 import { eventBus } from '../../src/main/events/bus';
 import { ipcMain } from 'electron';
 import { ProposedPlan } from '../../src/preload/index';
@@ -517,6 +523,47 @@ describe('goals/tasks CRUD handlers', () => {
         eventBus.off('task.updated', updatedListener);
         eventBus.off('task.completed', completedListener);
       }
+    });
+  });
+
+  describe('summaries:undo / summaries:reassign handlers', () => {
+    it('summaries:undo reverses a progress-based summary', async () => {
+      const { task } = seedTask();
+      tasksRepo.incrementProgress(task.id, 50);
+      const summary = summariesRepo.insert({
+        taskId: task.id,
+        summary: 'e',
+        signal: 0.5,
+        source: 'inference',
+        progressDelta: 50,
+        previousStatus: 'todo',
+      });
+
+      const handler = getHandler('summaries:undo');
+      const result = (await handler({}, summary.id)) as { corrected: number };
+
+      expect(result.corrected).toBe(1);
+      expect(tasksRepo.get(task.id)?.progress).toBe(0);
+    });
+
+    it('summaries:reassign moves the effect to a new task', async () => {
+      const { task: oldTask } = seedTask();
+      const { task: newTask } = seedTask();
+      tasksRepo.incrementProgress(oldTask.id, 30);
+      const summary = summariesRepo.insert({
+        taskId: oldTask.id,
+        summary: 'e',
+        signal: 0.3,
+        source: 'inference',
+        progressDelta: 30,
+        previousStatus: 'todo',
+      });
+
+      const handler = getHandler('summaries:reassign');
+      const result = (await handler({}, summary.id, newTask.id)) as { task_id: string };
+
+      expect(result.task_id).toBe(newTask.id);
+      expect(tasksRepo.get(newTask.id)?.progress).toBe(30);
     });
   });
 

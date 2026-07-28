@@ -70,7 +70,7 @@ export async function initActivityMonitoring(): Promise<void> {
   }
 
   if (!commitTaskMatcher) {
-    commitTaskMatcher = new CommitTaskMatcher(tasksRepo, eventBus);
+    commitTaskMatcher = new CommitTaskMatcher(tasksRepo, summariesRepo, eventBus);
     commitTaskMatcher.start();
   }
 

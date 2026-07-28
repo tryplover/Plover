@@ -7,6 +7,7 @@ import { registerAuthHandlers, googleAuth } from './auth.js';
 import { registerSettingsHandlers } from './settings.js';
 import { registerOverlayHandlers } from './overlay.js';
 import { registerSystemHandlers } from './system.js';
+import { registerSummariesHandlers } from './summaries.js';
 import { broadcast } from './shared.js';
 
 export { googleAuth };
@@ -27,6 +28,7 @@ export function setupIpcHandlers(
   registerSettingsHandlers(onWatchedFoldersChange);
   const ensureCompanion = registerOverlayHandlers(getOverlayWindow, createOverlayWindow);
   registerSystemHandlers();
+  registerSummariesHandlers();
   return ensureCompanion;
 }
 
