@@ -2,7 +2,7 @@ const activeCancels = new Map<string, () => void>();
 
 export function schedulePeriodic(
   name: string,
-  intervalMs: number,
+  intervalMs: number | (() => number),
   fn: () => Promise<void>,
 ): () => void {
   const existingCancel = activeCancels.get(name);
@@ -12,6 +12,8 @@ export function schedulePeriodic(
 
   let cancelled = false;
   let timer: ReturnType<typeof setTimeout> | null = null;
+  const resolveIntervalMs = (): number =>
+    typeof intervalMs === 'function' ? intervalMs() : intervalMs;
 
   const schedule = async (): Promise<void> => {
     if (cancelled) return;
@@ -26,7 +28,7 @@ export function schedulePeriodic(
 
     timer = setTimeout(() => {
       void schedule();
-    }, intervalMs);
+    }, resolveIntervalMs());
   };
 
   const cancel = (): void => {
