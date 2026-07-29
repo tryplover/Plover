@@ -69,9 +69,9 @@ function seedTask(h: Pick<Harness, 'tasksRepo' | 'goalsRepo'>, title: string): {
 }
 
 async function flush(tracker: GitCommitTracker): Promise<void> {
-  await (
-    tracker as unknown as { enqueue: <T>(fn: () => Promise<T>) => Promise<T> }
-  ).enqueue(() => Promise.resolve());
+  await (tracker as unknown as { enqueue: <T>(fn: () => Promise<T>) => Promise<T> }).enqueue(() =>
+    Promise.resolve(),
+  );
 }
 
 describe('extractRepoPath', () => {
@@ -120,7 +120,7 @@ describe('GitCommitTracker', () => {
     await flush(harness.tracker);
 
     expect(emitted).toHaveLength(1);
-    expect(emitted[0]?.repoPath).toBe(repo.repoPath);
+    expect(emitted[0]?.repoPath).toBe(repo.repoPath.replace(/\\/g, '/'));
     expect(emitted[0]?.message).toBe('feat: add AST generator');
     expect(typeof emitted[0]?.hash).toBe('string');
     expect(emitted[0]?.hash.length).toBeGreaterThan(0);

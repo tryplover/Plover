@@ -589,4 +589,28 @@ using any `*_at` column as an "age since X happened" signal, check what else wri
 column and whether rows for the same "unit of work" get bulk-created together — either can
 silently invalidate the assumption.
 
+### 2026-07-29 — a PR merged into a feature branch (not `main`) doesn't ship, even after that branch was already merged once
+
+**Symptom:** A user-reported bug (companion overlay not syncing its active task after reinstalling
+a fresh release build) traced back to PR #274 ("Sync companion overlay with active task + manual
+watch/expand model"), which looked merged on GitHub. `pnpm run` from `main` still didn't have the
+fix.
+
+**Root cause:** PR #273 merged branch `ui-fixes` into `main`. Branch `ui-fixes` kept living after
+that, and PR #274 was opened and merged *into `ui-fixes`*, not `main` — GitHub shows #274 as
+"merged" regardless of which branch it targeted, so it's easy to misread as "merged into main."
+Those post-#273 commits on `ui-fixes` never made it back to `main` through the normal PR flow (a
+direct, unreviewed `git merge branch 'ui-fixes' into main` several days later happened to pull
+them in — good luck, not process). The same branch picked up *more* unmerged work afterward (PR
+#285), which now conflicts with `main`'s independent refactor of the same files — same failure
+mode, still live as of this writing.
+
+**Fix / prevention:** Before treating a "merged" PR as shipped, check its **base branch**, not
+just its merged status: `gh pr view <n> --json baseRefName,mergeCommit` and
+`git merge-base --is-ancestor <mergeCommit.oid> origin/main`. A branch that was merged to `main`
+once is not safe to keep opening PRs against — either merge each follow-up PR to `main` directly,
+or delete the branch after its first merge so a second round of work can't silently accumulate
+off of it. Before cutting a release, spot-check recent PRs the same way (base branch + ancestor
+check) rather than trusting "Merged" badges at face value.
+
 
