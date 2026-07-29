@@ -7,8 +7,21 @@ import { schedulePeriodic } from '../lifecycle/periodic.js';
 import { TypedEventBus } from '../events/bus.js';
 import { authedFetch, UnauthorizedError } from '../http/authed-fetch.js';
 
-const INFERENCE_INTERVAL_MS = 30 * 60_000;
+const BASELINE_INFERENCE_INTERVAL_MS = 30 * 60_000;
+// Faster cadence used while a task is newly started, so users see progress signal
+// soon after beginning work instead of waiting up to the baseline interval.
+const FAST_INFERENCE_INTERVAL_MS = 10 * 60_000;
+// How long after a task first enters 'in_progress' it still counts as newly
+// started. Tracked in-memory only (see firstSeenInProgressAt below) rather than
+// a persisted "started_at" column — created_at is unusable here because Planner
+// bulk-creates all of a goal's subtasks at once, so it reflects when the goal was
+// planned, not when this specific task began; updated_at is unusable because
+// incrementProgress() bumps it on every pass, which would keep a task "young"
+// forever. The in-memory tracking resets on app restart, same tradeoff already
+// accepted for ScreenCapturer's pacing state.
+const TASK_YOUNG_WINDOW_MS = 2 * 60 * 60_000;
 const EPOCH_TS = '1970-01-01T00:00:00.000Z';
+const SCREENSHOT_ACTIVITY_KINDS = new Set(['screenshot_captured', 'screenshot_inferred']);
 
 export interface TaskProgressEntry {
   taskId: string;
@@ -24,6 +37,9 @@ interface InferProgressResponse {
 
 export class InferenceEngine {
   private dispose: (() => void) | null = null;
+  private now: () => Date;
+  private currentIntervalMs: number = BASELINE_INFERENCE_INTERVAL_MS;
+  private firstSeenInProgressAt = new Map<string, number>();
 
   constructor(
     private tasksRepo: TasksRepo,
@@ -31,11 +47,20 @@ export class InferenceEngine {
     private summariesRepo: SummariesRepo,
     private settingsRepo: SettingsRepo,
     private bus: TypedEventBus,
-  ) {}
+    now?: () => Date,
+  ) {
+    this.now = now ?? (() => new Date());
+  }
+
+  get pollIntervalMs(): number {
+    return this.currentIntervalMs;
+  }
 
   start(): void {
-    this.dispose = schedulePeriodic('inference', INFERENCE_INTERVAL_MS, () =>
-      this.runInferencePass(),
+    this.dispose = schedulePeriodic(
+      'inference',
+      () => this.currentIntervalMs,
+      () => this.runInferencePass(),
     );
   }
 
@@ -46,10 +71,34 @@ export class InferenceEngine {
     }
   }
 
+  // Returns true while any task is within its "just started" window. Also
+  // updates the in-memory first-seen tracking: records the moment a task first
+  // shows up as 'in_progress', and forgets tasks that have left that status.
+  private updatePacing(allTasks: Task[], nowMs: number): boolean {
+    const inProgressIds = new Set(
+      allTasks.filter((t) => t.status === 'in_progress').map((t) => t.id),
+    );
+    for (const id of inProgressIds) {
+      if (!this.firstSeenInProgressAt.has(id)) {
+        this.firstSeenInProgressAt.set(id, nowMs);
+      }
+    }
+    for (const id of [...this.firstSeenInProgressAt.keys()]) {
+      if (!inProgressIds.has(id)) {
+        this.firstSeenInProgressAt.delete(id);
+      }
+    }
+    for (const startedAtMs of this.firstSeenInProgressAt.values()) {
+      if (nowMs - startedAtMs < TASK_YOUNG_WINDOW_MS) return true;
+    }
+    return false;
+  }
+
   async runInferencePass(): Promise<void> {
     const lastTs = this.settingsRepo.getAll().lastInferenceTs ?? EPOCH_TS;
-    const nowTs = new Date().toISOString();
-    const { activeTasks, activity } = this.collectInputs(lastTs);
+    const now = this.now();
+    const nowTs = now.toISOString();
+    const { activeTasks, activity } = this.collectInputs(lastTs, now.getTime());
 
     if (activeTasks.length === 0 || activity.length === 0) {
       this.settingsRepo.update({ lastInferenceTs: nowTs });
@@ -63,10 +112,26 @@ export class InferenceEngine {
     this.settingsRepo.update({ lastInferenceTs: nowTs });
   }
 
-  private collectInputs(lastTs: string): { activeTasks: Task[]; activity: ActivityRow[] } {
+  private collectInputs(
+    lastTs: string,
+    nowMs: number,
+  ): { activeTasks: Task[]; activity: ActivityRow[] } {
     const allTasks = this.tasksRepo.list();
     const activeTasks = allTasks.filter((t) => t.status === 'todo' || t.status === 'scheduled');
-    const activity = this.activityRepo.listSince(lastTs);
+
+    const isFastTick = this.updatePacing(allTasks, nowMs);
+    this.currentIntervalMs = isFastTick
+      ? FAST_INFERENCE_INTERVAL_MS
+      : BASELINE_INFERENCE_INTERVAL_MS;
+
+    const rawActivity = this.activityRepo.listSince(lastTs);
+    // Fast ticks stay text-only (no screenshot/vision-derived signal) so they
+    // never depend on the vision pipeline's cost or gating — the normal
+    // baseline-cadence passes still see everything, screenshots included.
+    const activity = isFastTick
+      ? rawActivity.filter((a) => !SCREENSHOT_ACTIVITY_KINDS.has(a.kind))
+      : rawActivity;
+
     return { activeTasks, activity };
   }
 

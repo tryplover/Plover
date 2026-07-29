@@ -558,4 +558,35 @@ local checkouts of the same repo without touching the shared GitHub remote, comm
 and `git fetch <absolute-path-to-other-checkout> <branch>:<branch>` from the other — works
 entirely offline, no push permission needed.
 
+### 2026-07-28 — `tasks.created_at`/`updated_at` are not usable as a "when did work on this task begin" signal
+
+**Symptom:** While building an adaptive polling cadence for `InferenceEngine` (poll faster
+while a task is newly started), the first instinct was to key "newly started" off
+`tasks.created_at` or `tasks.updated_at`. Both are wrong for this purpose, for different
+reasons, and the bug wouldn't show up in a quick manual test — it only surfaces over time
+or across multiple tasks in the same goal.
+
+**Root cause:**
+1. `created_at` reflects when the **goal** was decomposed, not when this specific subtask's
+   work began. Planner bulk-creates all of a goal's subtasks in one pass
+   ([tasks.ts](app/src/main/store/repos/tasks.ts) `create()`), so every subtask in a goal
+   shares essentially the same `created_at` regardless of when the user actually starts
+   each one — a task started today could have a `created_at` from weeks ago if the goal was
+   planned early.
+2. `updated_at` looked like a better fit (it does change when a task moves to `in_progress`
+   via `.update()`), but `TasksRepo.incrementProgress()` **also** bumps `updated_at` on every
+   call — including calls made by the very inference pass that would be reading it. Using
+   `updated_at` as the "age" signal creates a self-refreshing loop: every fast-cadence pass
+   that increments progress resets the timestamp, so the task looks "freshly started" forever
+   and the cadence never backs off to baseline.
+
+**Fix:** Don't derive "task age" from any persisted task-table timestamp. Instead track it
+in memory: `InferenceEngine.firstSeenInProgressAt` (a `Map<taskId, timestampMs>`) records the
+moment each task is first observed with `status === 'in_progress'`, and entries are dropped
+once a task leaves that status. This avoids both pitfalls, at the cost of resetting on app
+restart — an accepted, simple tradeoff for in-memory pacing state. General lesson: before
+using any `*_at` column as an "age since X happened" signal, check what else writes to that
+column and whether rows for the same "unit of work" get bulk-created together — either can
+silently invalidate the assumption.
+
 

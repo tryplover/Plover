@@ -19,7 +19,7 @@ import { Task } from '@shared/types.js';
 
 import { TypedEventBus } from '@main/events/bus.js';
 
-function freshHarness(): {
+function freshHarness(now?: () => Date): {
   db: Database.Database;
   tasksRepo: TasksRepo;
   goalsRepo: GoalsRepo;
@@ -37,7 +37,14 @@ function freshHarness(): {
   const summariesRepo = new SummariesRepo(db);
   const settingsRepo = new SettingsRepo(db);
   const bus = new TypedEventBus();
-  const engine = new InferenceEngine(tasksRepo, activityRepo, summariesRepo, settingsRepo, bus);
+  const engine = new InferenceEngine(
+    tasksRepo,
+    activityRepo,
+    summariesRepo,
+    settingsRepo,
+    bus,
+    now,
+  );
   return { db, tasksRepo, goalsRepo, activityRepo, summariesRepo, settingsRepo, bus, engine };
 }
 
@@ -55,6 +62,29 @@ function seedGoalAndTask(
     depends_on: [],
   });
   return { taskId: task.id, goalId: goal.id };
+}
+
+function seedInProgressTask(
+  goalsRepo: GoalsRepo,
+  tasksRepo: TasksRepo,
+  goalId: string,
+  title: string,
+): string {
+  const task = tasksRepo.create({
+    goal_id: goalId,
+    title,
+    estimate_minutes: 30,
+    status: 'in_progress',
+    depends_on: [],
+  });
+  return task.id;
+}
+
+function fetchBodyOf(fetchSpy: ReturnType<typeof vi.spyOn>): {
+  activity: { kind: string }[];
+} {
+  const [, init] = fetchSpy.mock.calls[0] as [string, { body: string }];
+  return JSON.parse(init.body) as { activity: { kind: string }[] };
 }
 
 describe('InferenceEngine', () => {
@@ -250,5 +280,152 @@ describe('InferenceEngine', () => {
     expect(s0?.progress_delta).toBe(40);
     expect(s0?.previous_status).toBe('todo');
     expect(tasksRepo.get(taskId)?.status).toBe('todo');
+  });
+
+  describe('adaptive fast-tick pacing', () => {
+    const T0 = new Date('2026-07-28T09:00:00.000Z');
+    const FAST_INTERVAL_MS = 10 * 60_000;
+    const BASELINE_INTERVAL_MS = 30 * 60_000;
+    const YOUNG_WINDOW_MS = 2 * 60 * 60_000;
+
+    it('uses the fast interval and strips screenshot activity while a task is newly in_progress', async () => {
+      const now = T0;
+      const { tasksRepo, goalsRepo, activityRepo, engine } = freshHarness(() => now);
+      const { goalId } = seedGoalAndTask(goalsRepo, tasksRepo, 'Todo target');
+      seedInProgressTask(goalsRepo, tasksRepo, goalId, 'Newly started work');
+      activityRepo.insert({
+        kind: 'file_modified',
+        payload: { path: '/src/a.ts' },
+        ts: now.toISOString(),
+      });
+      activityRepo.insert({
+        kind: 'screenshot_inferred',
+        payload: {
+          screenshotId: 1,
+          filePath: '/x.png',
+          summary: 'coding',
+          activeApp: 'VS Code',
+          currentTask: null,
+          confidence: 0.5,
+        },
+        ts: now.toISOString(),
+      });
+
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify({ task_progress: [] }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+
+      await engine.runInferencePass();
+
+      expect(engine.pollIntervalMs).toBe(FAST_INTERVAL_MS);
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      const kinds = fetchBodyOf(fetchSpy).activity.map((a) => a.kind);
+      expect(kinds).toContain('file_modified');
+      expect(kinds).not.toContain('screenshot_inferred');
+    });
+
+    it('uses the baseline interval and keeps screenshot activity when no task is newly in_progress', async () => {
+      const now = T0;
+      const { tasksRepo, goalsRepo, activityRepo, engine } = freshHarness(() => now);
+      seedGoalAndTask(goalsRepo, tasksRepo, 'Todo target');
+      activityRepo.insert({
+        kind: 'file_modified',
+        payload: { path: '/src/a.ts' },
+        ts: now.toISOString(),
+      });
+      activityRepo.insert({
+        kind: 'screenshot_inferred',
+        payload: {
+          screenshotId: 1,
+          filePath: '/x.png',
+          summary: 'coding',
+          activeApp: 'VS Code',
+          currentTask: null,
+          confidence: 0.5,
+        },
+        ts: now.toISOString(),
+      });
+
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify({ task_progress: [] }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+
+      await engine.runInferencePass();
+
+      expect(engine.pollIntervalMs).toBe(BASELINE_INTERVAL_MS);
+      const kinds = fetchBodyOf(fetchSpy).activity.map((a) => a.kind);
+      expect(kinds).toContain('file_modified');
+      expect(kinds).toContain('screenshot_inferred');
+    });
+
+    it('falls back to the baseline interval once a task ages out of the young window', async () => {
+      let now = T0;
+      const { tasksRepo, goalsRepo, activityRepo, engine } = freshHarness(() => now);
+      const { goalId } = seedGoalAndTask(goalsRepo, tasksRepo, 'Todo target');
+      seedInProgressTask(goalsRepo, tasksRepo, goalId, 'Newly started work');
+      activityRepo.insert({
+        kind: 'file_modified',
+        payload: { path: '/src/a.ts' },
+        ts: now.toISOString(),
+      });
+
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify({ task_progress: [] }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+
+      await engine.runInferencePass();
+      expect(engine.pollIntervalMs).toBe(FAST_INTERVAL_MS);
+
+      now = new Date(T0.getTime() + YOUNG_WINDOW_MS + 1);
+      activityRepo.insert({
+        kind: 'file_modified',
+        payload: { path: '/src/b.ts' },
+        ts: now.toISOString(),
+      });
+      await engine.runInferencePass();
+
+      expect(engine.pollIntervalMs).toBe(BASELINE_INTERVAL_MS);
+    });
+
+    it('reverts to the baseline interval as soon as the task leaves in_progress, without waiting out the window', async () => {
+      const now = T0;
+      const { tasksRepo, goalsRepo, activityRepo, engine } = freshHarness(() => now);
+      const { goalId } = seedGoalAndTask(goalsRepo, tasksRepo, 'Todo target');
+      const activeTaskId = seedInProgressTask(goalsRepo, tasksRepo, goalId, 'Newly started work');
+      activityRepo.insert({
+        kind: 'file_modified',
+        payload: { path: '/src/a.ts' },
+        ts: now.toISOString(),
+      });
+
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify({ task_progress: [] }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+
+      await engine.runInferencePass();
+      expect(engine.pollIntervalMs).toBe(FAST_INTERVAL_MS);
+
+      tasksRepo.update(activeTaskId, { status: 'done' });
+      activityRepo.insert({
+        kind: 'file_modified',
+        payload: { path: '/src/b.ts' },
+        ts: now.toISOString(),
+      });
+      await engine.runInferencePass();
+
+      expect(engine.pollIntervalMs).toBe(BASELINE_INTERVAL_MS);
+    });
   });
 });
