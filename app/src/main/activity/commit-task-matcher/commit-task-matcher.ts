@@ -1,19 +1,10 @@
 import { Notification } from 'electron';
-import { TasksRepo } from '../store/repos/tasks.js';
-import { SummariesRepo } from '../store/repos/summaries.js';
-import { TypedEventBus } from '../events/bus.js';
+import { TasksRepo } from '../../store/repos/tasks.js';
+import { SummariesRepo } from '../../store/repos/summaries.js';
+import { TypedEventBus } from '../../events/bus.js';
 import { GitCommitInfo } from '@shared/events.js';
-import { authedFetch } from '../http/authed-fetch.js';
-
-export interface MatchCommitResponse {
-  matchedTaskId: string | null;
-  reasoning?: string;
-}
-
-export type CommitMatcher = (
-  commit: GitCommitInfo,
-  tasks: { id: string; title: string }[],
-) => Promise<MatchCommitResponse>;
+import { authedFetch } from '../../http/authed-fetch.js';
+import type { MatchCommitResponse, CommitMatcher } from './types.js';
 
 export class CommitTaskMatcher {
   constructor(

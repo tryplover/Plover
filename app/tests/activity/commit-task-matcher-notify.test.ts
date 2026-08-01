@@ -16,7 +16,7 @@ vi.mock('electron', () => {
   };
 });
 
-import { defaultNotify } from '../../src/main/activity/commit-task-matcher.js';
+import { defaultNotify } from '../../src/main/activity/commit-task-matcher/index.js';
 
 describe('defaultNotify', () => {
   beforeEach(() => {

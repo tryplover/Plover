@@ -1,12 +1,12 @@
 import { app } from 'electron';
-import { WindowTracker } from './window-tracker.js';
-import { GDocsActivitySubscriber } from './gdocs-subscriber.js';
-import { ScreenCapturer } from './screen-capturer.js';
-import { FolderWatcher } from './folder-watcher.js';
-import { InferenceEngine } from './inference.js';
-import { GitCommitTracker } from './git-commit-tracker.js';
-import { CommitTaskMatcher } from './commit-task-matcher.js';
-import { runRetention } from './retention.js';
+import { WindowTracker } from './window-tracker/index.js';
+import { GDocsActivitySubscriber } from './gdocs-subscriber/index.js';
+import { ScreenCapturer } from './screen-capturer/index.js';
+import { FolderWatcher } from './folder-watcher/index.js';
+import { InferenceEngine } from './inference/index.js';
+import { GitCommitTracker } from './git-commit-tracker/index.js';
+import { CommitTaskMatcher } from './commit-task-matcher/index.js';
+import { runRetention } from './retention/index.js';
 import { settingsRepo, activityRepo, tasksRepo, summariesRepo } from '../store/index.js';
 import { eventBus } from '../events/bus.js';
 

@@ -1,27 +1,12 @@
-import { desktopCapturer, type NativeImage } from 'electron';
+import { desktopCapturer } from 'electron';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { ActivityRepo, ActivityRow } from '../store/repos/activity.js';
-import { SettingsRepo } from '../store/repos/settings.js';
-import { getScreenRecordingStatus } from '../permissions/screen-recording.js';
-import { authedFetch } from '../http/authed-fetch.js';
-import { gate } from './shared/gate.js';
-
-const VISION_UPLOAD_MAX_WIDTH = 1024;
-
-export interface ScreenCapturerDeps {
-  activityRepo: ActivityRepo;
-  settingsRepo: SettingsRepo;
-  userDataDir: string;
-  now?: () => Date;
-}
-
-interface GrabbedScreen {
-  png: Buffer;
-  size: { width: number; height: number };
-  thumbnail: NativeImage;
-}
+import { ActivityRow } from '../../store/repos/activity.js';
+import { getScreenRecordingStatus } from '../../permissions/screen-recording.js';
+import { authedFetch } from '../../http/authed-fetch.js';
+import { gate } from '../shared/gate.js';
+import { VISION_UPLOAD_MAX_WIDTH, type ScreenCapturerDeps, type GrabbedScreen } from './types.js';
 
 export class ScreenCapturer {
   private timeoutId: NodeJS.Timeout | null = null;
