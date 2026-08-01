@@ -65,6 +65,14 @@
   "build": {
     "appId": "com.plover.app",
     "productName": "Plover",
+    "protocols": [
+      {
+        "name": "Plover Protocol",
+        "schemes": [
+          "plover"
+        ]
+      }
+    ],
     "directories": {
       "output": "dist"
     },
