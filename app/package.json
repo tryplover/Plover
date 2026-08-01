@@ -25,7 +25,7 @@
     "@fontsource/instrument-serif": "^5.3.0",
     "@fontsource/inter": "^5.3.0",
     "@supabase/supabase-js": "^2.110.9",
-    "better-sqlite3": "^12.10.1",
+    "better-sqlite3": "^13.0.1",
     "chokidar": "^5.0.0",
     "framer-motion": "^12.42.0",
     "get-windows": "^9.0.0",
