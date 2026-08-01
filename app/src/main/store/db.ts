@@ -22,7 +22,6 @@ export const MIGRATIONS: { version: number; sql: string }[] = [
         depends_on TEXT,
         scheduled_start TEXT,
         scheduled_end TEXT,
-        calendar_event_id TEXT,
         status TEXT NOT NULL,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
@@ -97,6 +96,15 @@ export const MIGRATIONS: { version: number; sql: string }[] = [
       ALTER TABLE tasks ADD COLUMN progress REAL NOT NULL DEFAULT 0;
 
       UPDATE tasks SET progress = 100 WHERE status = 'done';
+    `,
+  },
+  {
+    version: 6,
+    sql: `
+      ALTER TABLE summaries ADD COLUMN source TEXT NOT NULL DEFAULT 'inference';
+      ALTER TABLE summaries ADD COLUMN progress_delta REAL;
+      ALTER TABLE summaries ADD COLUMN previous_status TEXT;
+      ALTER TABLE summaries ADD COLUMN corrected INTEGER NOT NULL DEFAULT 0;
     `,
   },
 ];

@@ -7,13 +7,13 @@
 
 ## 1. Vision
 
-A local, always-on agent that turns vague goals into a calendar and shepherds you toward finishing them. You tell it what you want to get done — by voice or text, in any wording. It decomposes the goal, books time on your calendar, watches your screen and files in the background, and tells you when you're on or off track. The agent is private by design: nothing leaves your machine except calls to Gemini and Google APIs.
+A local, always-on agent that turns vague goals into a local schedule and shepherds you toward finishing them. You tell it what you want to get done — by voice or text, in any wording. It decomposes the goal, schedules time within your working-hours windows, watches your screen and files in the background, and tells you when you're on or off track. The agent is private by design: nothing leaves your machine except calls to Gemini and Google APIs (Docs/Drive).
 
 ## 2. Target user
 
 A focused knowledge worker / student / builder who:
 
-- Lives in Google Calendar and Google Docs
+- Lives in Google Docs and local markdown/text files
 - Has more goals than free hours
 - Wants a system that reduces planning overhead, not adds to it
 - Trusts a local-only privacy posture more than a SaaS dashboard
@@ -27,7 +27,7 @@ A focused knowledge worker / student / builder who:
 3. Agent calls Gemini with the user's goal + recent activity context.
 4. Gemini returns: a structured goal, 3–7 subtasks with effort estimates, dependencies, and suggested deadlines.
 5. Agent surfaces the breakdown for one-tap accept / edit.
-6. On accept, agent schedules subtasks into open Google Calendar slots respecting working hours and existing events.
+6. On accept, agent schedules subtasks into open local time slots respecting working hours and existing tasks.
 
 ### 3.2 Daily check-in
 
@@ -41,7 +41,7 @@ A focused knowledge worker / student / builder who:
 
 ### 3.4 Nudges and warnings
 
-- Nudge engine combines deterministic rules (deadline math, calendar slip) with LLM judgment over recent progress signals.
+- Nudge engine combines deterministic rules (deadline math, schedule slip) with LLM judgment over recent progress signals.
 - Surfaces: overlay glance, native notification, end-of-day digest.
 - Examples:
   - "You blocked 2 hrs for the profiler doc but spent it in Slack — want me to reschedule?"
@@ -58,7 +58,7 @@ A focused knowledge worker / student / builder who:
 
 - Goal & task data model (SQLite)
 - Goal capture (typed) → Gemini subtask decomposition
-- Google Calendar OAuth + slot-finder + event writer
+- Google Docs OAuth + local slot-finder + document reader
 - Daily + long-term todo views (main window)
 - Overlay window (transparent, frameless, always-on-top, hotkey)
 - Screenshot loop + active-window-title logger (macOS first)
@@ -89,7 +89,7 @@ A focused knowledge worker / student / builder who:
 ## 5. Privacy & permissions
 
 - All persistent data stored in `~/Library/Application Support/<app>` (macOS) and `%APPDATA%/<app>` (Windows).
-- Outbound network limited to: `generativelanguage.googleapis.com` (Gemini), `www.googleapis.com` (Calendar/Docs), and the Google OAuth endpoints.
+- Outbound network limited to: `generativelanguage.googleapis.com` (Gemini), `www.googleapis.com` (Docs/Drive), and the Google OAuth endpoints.
 - Permissions required:
   - **macOS**: Screen Recording, Accessibility, Input Monitoring, Notifications. Granted via TCC; the app surfaces a guided permissions wizard. **Not** literal root.
   - **Windows**: UAC elevation on first run for global hooks (`SetWindowsHookEx`) and screen capture. Then runs at user level for normal operation where possible.
@@ -107,9 +107,9 @@ A focused knowledge worker / student / builder who:
 |                                                                  |
 |  Monitor (privileged)        Inference              Sync         |
 |  - screenshot loop           - Gemini Vision        - Google     |
-|  - active window title       - text reasoning         Calendar   |
-|  - foreground time           - progress signals     - Google     |
-|  - keystroke counter           per task               Docs API   |
+|  - active window title       - text reasoning         Docs API   |
+|  - foreground time           - progress signals                  |
+|  - keystroke counter           per task                          |
 |                                                                  |
 |  Store: SQLite (goals, tasks, sessions, activity, summaries)     |
 +------------------------------------------------------------------+
@@ -127,7 +127,7 @@ Key contracts:
 - **Monitor** writes to `Activity` only. Never reads other tables.
 - **Inference** reads `Activity` + `Tasks`, writes `Summaries` + `progress_signal` events. Never schedules.
 - **NudgeEngine** reads `Tasks` + `Summaries`, writes notifications + overlay events. Never mutates tasks.
-- **Sync** is the only module that talks to Google APIs.
+- **Sync** is the only module that talks to Google APIs (Docs/Drive).
 
 This separation means a teammate can rebuild any module without touching the others.
 
@@ -137,7 +137,7 @@ This separation means a teammate can rebuild any module without touching the oth
 |---|---|
 | 1 | Electron shell + main window scaffold, SQLite store + repositories, settings page |
 | 2 | Gemini client wrapper + tool definitions, Planner v1 (text-only goal entry) |
-| 3 | Google Calendar OAuth + slot-finder + event write-back |
+| 3 | Google Docs OAuth + local slot-finder + revisions poller |
 | 4 | Daily / long-term todo views; end-to-end demo: type goal → see scheduled events |
 | 5 | Overlay window, global hotkey, quick-add UX |
 | 6 | macOS Monitor: screenshot loop + active-window-title via accessibility |
@@ -146,11 +146,11 @@ This separation means a teammate can rebuild any module without touching the oth
 | 9 | Voice input via whisper.cpp; Google Docs revisions poller |
 | 10 | Windows port — Monitor parity, installer |
 | 11 | Permissions wizard, blackout list, pause kill-switch, polish |
-| 12 | Hackathon demo: install → grant perms → speak goal → calendar fills → work → get nudge |
+| 12 | Hackathon demo: install → grant perms → speak goal → tasks schedule locally → work → get nudge |
 
 ## 8. Success metrics (demo-grade)
 
-- < 60s from "fresh install" to "first goal scheduled on calendar"
+- < 60s from "fresh install" to "first goal scheduled locally"
 - Subtask breakdowns rated useful by user in ≥ 70% of trials
 - Nudge precision ≥ 60% (user accepts the nudge or takes the suggested action)
 - Zero outbound traffic outside the allowed domain list (verified by network capture)

@@ -2,11 +2,11 @@ import { desktopCapturer, type NativeImage } from 'electron';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { ActivityRepo } from '../store/repos/activity.js';
-import { ActivityRow } from '../store/repos/activity-types.js';
+import { ActivityRepo, ActivityRow } from '../store/repos/activity.js';
 import { SettingsRepo } from '../store/repos/settings.js';
 import { getScreenRecordingStatus } from '../permissions/screen-recording.js';
 import { authedFetch } from '../http/authed-fetch.js';
+import { gate } from './shared/gate.js';
 
 const VISION_UPLOAD_MAX_WIDTH = 1024;
 const MIN_CAPTURE_INTERVAL_MINUTES = 1;
@@ -23,8 +23,13 @@ export interface ScreenCapturerDeps {
   now?: () => Date;
 }
 
+interface GrabbedScreen {
+  png: Buffer;
+  size: { width: number; height: number };
+  thumbnail: NativeImage;
+}
+
 export class ScreenCapturer {
-  private deps: ScreenCapturerDeps;
   private timeoutId: NodeJS.Timeout | null = null;
   private running = false;
   private now: () => Date;
@@ -35,28 +40,14 @@ export class ScreenCapturer {
   private currentIntervalMinutes: number | null = null;
   private lastSeenWindowKey: string | null = null;
 
-  constructor(deps: ScreenCapturerDeps) {
-    this.deps = deps;
+  constructor(private deps: ScreenCapturerDeps) {
     this.now = deps.now ?? (() => new Date());
   }
 
   start(): void {
     if (this.running) return;
     this.running = true;
-    // Recursive setTimeout instead of setInterval so captures never overlap
-    // and the interval setting is re-read each tick from settings.
-    const tick = async (): Promise<void> => {
-      try {
-        await this.captureOnce();
-      } catch (err) {
-        console.error('[ScreenCapturer] capture failed:', err);
-      }
-      if (!this.running) return;
-      const intervalMs = (this.currentIntervalMinutes ?? MIN_CAPTURE_INTERVAL_MINUTES) * 60 * 1000;
-      this.timeoutId = setTimeout(() => tick(), intervalMs);
-    };
-    const intervalMs = (this.currentIntervalMinutes ?? MIN_CAPTURE_INTERVAL_MINUTES) * 60 * 1000;
-    this.timeoutId = setTimeout(() => tick(), intervalMs);
+    this.scheduleNext();
   }
 
   stop(): void {
@@ -68,78 +59,103 @@ export class ScreenCapturer {
   }
 
   async captureOnce(): Promise<string | null> {
-    const settings = this.deps.settingsRepo.getAll();
-    if (!settings.screenCaptureEnabled) return null;
-    if (settings.pauseAllTracking) return null;
-    if (getScreenRecordingStatus() !== 'granted') return null;
+    if (!this.canCapture()) return null;
+    const grabbed = await this.grabPrimaryScreen();
+    if (!grabbed) return null;
+    const persisted = await this.persistScreenshot(grabbed.png, grabbed.size);
 
+    // Pass the most recent window_focus payload to the backend so Gemini Vision
+    // has the active app/title/URL as context, and use it to drive both the
+    // capture cadence and the vision-call gating below.
+    const lastFocus = this.deps.activityRepo.list({ kind: 'window_focus', limit: 1 })[0];
+    const windowKey = windowFocusKey(lastFocus);
+    this.updateCadence(windowKey);
+
+    await this.maybeRunInference(persisted.row, persisted.filePath, grabbed, lastFocus, windowKey);
+    return persisted.filePath;
+  }
+
+  private canCapture(): boolean {
+    if (!gate(this.deps.settingsRepo, 'screenCaptureEnabled')) return false;
+    if (getScreenRecordingStatus() !== 'granted') return false;
+    return true;
+  }
+
+  private async grabPrimaryScreen(): Promise<GrabbedScreen | null> {
     const sources = await desktopCapturer.getSources({
       types: ['screen'],
       thumbnailSize: { width: 1920, height: 1080 },
     });
     const primary = sources[0];
     if (!primary) return null;
-    const png = primary.thumbnail.toPNG();
-    const size = primary.thumbnail.getSize();
+    return {
+      png: primary.thumbnail.toPNG(),
+      size: primary.thumbnail.getSize(),
+      thumbnail: primary.thumbnail,
+    };
+  }
+
+  private async persistScreenshot(
+    png: Buffer,
+    size: { width: number; height: number },
+  ): Promise<{ filePath: string; row: ActivityRow }> {
     const now = this.now();
     const yyyy = String(now.getUTCFullYear());
     const mm = String(now.getUTCMonth() + 1).padStart(2, '0');
     const dd = String(now.getUTCDate()).padStart(2, '0');
     const dir = path.join(this.deps.userDataDir, 'screenshots', yyyy, mm, dd);
     await fs.mkdir(dir, { recursive: true });
-    const filename = `${crypto.randomUUID()}.png`;
-    const filePath = path.join(dir, filename);
+    const filePath = path.join(dir, `${crypto.randomUUID()}.png`);
     await fs.writeFile(filePath, png);
-    const captureRow = this.deps.activityRepo.insert({
+    const row = this.deps.activityRepo.insert({
       kind: 'screenshot_captured',
       payload: { filePath, width: size.width, height: size.height },
       ts: now.toISOString(),
     });
-    // Pass the most recent window_focus payload to the backend so Gemini Vision
-    // has the active app/title/URL as context instead of falling back to "no context".
-    const lastFocus = this.deps.activityRepo.list({ kind: 'window_focus', limit: 1 })[0];
-    const windowKey = windowFocusKey(lastFocus);
+    return { filePath, row };
+  }
 
-    // Adapt the capture pace: check often right after a genuine window change,
-    // back off (up to the screenCaptureIntervalMinutes ceiling) during idle
-    // stretches. Runs regardless of vision being enabled, since it also cuts
-    // local capture/disk overhead, not just the paid vision call.
+  // Adapt the capture pace: check often right after a genuine window change,
+  // back off (up to the screenCaptureIntervalMinutes ceiling) during idle
+  // stretches. Runs regardless of vision being enabled, since it also cuts
+  // local capture/disk overhead, not just the paid vision call.
+  private updateCadence(windowKey: string | null): void {
     if (windowKey !== null && windowKey === this.lastSeenWindowKey) {
       const previous = this.currentIntervalMinutes ?? MIN_CAPTURE_INTERVAL_MINUTES;
-      this.currentIntervalMinutes = Math.min(settings.screenCaptureIntervalMinutes, previous * 2);
+      const ceiling = this.deps.settingsRepo.getAll().screenCaptureIntervalMinutes;
+      this.currentIntervalMinutes = Math.min(ceiling, previous * 2);
     } else {
       this.currentIntervalMinutes = MIN_CAPTURE_INTERVAL_MINUTES;
     }
     this.lastSeenWindowKey = windowKey;
+  }
 
-    if (settings.screenVisionInferenceEnabled) {
-      // Skip the paid vision call when the active window hasn't changed since the
-      // last successful call — the expensive part of this loop is per-call, and a
-      // static window rarely warrants re-analysis. Unknown window context (no
-      // window_focus row yet, or an unsupported platform) always calls through,
-      // since we can't prove nothing changed.
-      const unchanged = windowKey !== null && windowKey === settings.lastVisionInferenceWindowKey;
-      if (!unchanged) {
-        await this.runInference(
-          captureRow.id,
-          filePath,
-          png,
-          primary.thumbnail,
-          size,
-          lastFocus,
-          windowKey,
-        ).catch((err) => console.error('[ScreenCapturer] infer failed:', err));
-      }
-    }
-    return filePath;
+  private async maybeRunInference(
+    row: ActivityRow,
+    filePath: string,
+    grabbed: GrabbedScreen,
+    lastFocus: ActivityRow | undefined,
+    windowKey: string | null,
+  ): Promise<void> {
+    if (!this.deps.settingsRepo.getAll().screenVisionInferenceEnabled) return;
+    // Skip the paid vision call when the active window hasn't changed since the
+    // last successful call — the expensive part of this loop is per-call, and a
+    // static window rarely warrants re-analysis. Unknown window context (no
+    // window_focus row yet, or an unsupported platform) always calls through,
+    // since we can't prove nothing changed.
+    const unchanged =
+      windowKey !== null &&
+      windowKey === this.deps.settingsRepo.getAll().lastVisionInferenceWindowKey;
+    if (unchanged) return;
+    await this.runInference(row.id, filePath, grabbed, lastFocus, windowKey).catch((err) =>
+      console.error('[ScreenCapturer] infer failed:', err),
+    );
   }
 
   private async runInference(
     screenshotId: number,
     filePath: string,
-    png: Buffer,
-    thumbnail: NativeImage,
-    size: { width: number; height: number },
+    grabbed: GrabbedScreen,
     lastFocus: ActivityRow | undefined,
     windowKey: string | null,
   ): Promise<void> {
@@ -156,10 +172,12 @@ export class ScreenCapturer {
     // upload to cut per-call cost. Both dimensions are computed explicitly
     // because NativeImage.resize does not guarantee proportional scaling when
     // only one dimension is supplied.
-    let uploadPng = png;
-    if (size.width > VISION_UPLOAD_MAX_WIDTH) {
-      const targetHeight = Math.round(size.height * (VISION_UPLOAD_MAX_WIDTH / size.width));
-      uploadPng = thumbnail
+    let uploadPng = grabbed.png;
+    if (grabbed.size.width > VISION_UPLOAD_MAX_WIDTH) {
+      const targetHeight = Math.round(
+        grabbed.size.height * (VISION_UPLOAD_MAX_WIDTH / grabbed.size.width),
+      );
+      uploadPng = grabbed.thumbnail
         .resize({ width: VISION_UPLOAD_MAX_WIDTH, height: targetHeight })
         .toPNG();
     }
@@ -190,5 +208,24 @@ export class ScreenCapturer {
     if (windowKey !== null) {
       this.deps.settingsRepo.update({ lastVisionInferenceWindowKey: windowKey });
     }
+  }
+
+  private scheduleNext(): void {
+    if (!this.running) return;
+    // Recursive setTimeout (re-scheduled by tick) instead of setInterval so
+    // captures never overlap and the interval is re-read each tick. The callback
+    // returns tick()'s promise rather than voiding it so fake-timer tests can
+    // await each tick's async work (see CLAUDE.md 2026-07-25).
+    const intervalMs = (this.currentIntervalMinutes ?? MIN_CAPTURE_INTERVAL_MINUTES) * 60 * 1000;
+    this.timeoutId = setTimeout(() => this.tick(), intervalMs);
+  }
+
+  private async tick(): Promise<void> {
+    try {
+      await this.captureOnce();
+    } catch (err) {
+      console.error('[ScreenCapturer] capture failed:', err);
+    }
+    this.scheduleNext();
   }
 }

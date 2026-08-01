@@ -1,9 +1,8 @@
-import { StatusIndicator } from '../components/StatusIndicator';
-import { ProgressLine } from '../components/ProgressLine';
-import { Button } from '../components/Button';
-import { StepRow } from '../components/StepRow';
-import { AppRow } from '../components/AppRow';
-import { Chip } from '../components/Chip';
+import { StatusIndicator } from '../components/StatusIndicator/StatusIndicator';
+import { ProgressLine } from '../components/ProgressLine/ProgressLine';
+import { Button } from '../components/Button/Button';
+import { StepRow } from '../components/StepRow/StepRow';
+import { Chip } from '../components/Chip/Chip';
 import './ComponentGallery.css';
 
 export function ComponentGallery() {
@@ -74,24 +73,6 @@ export function ComponentGallery() {
           </div>
           <div>
             <StepRow index={3} label="Pending step" state="pending" />
-          </div>
-        </div>
-      </section>
-
-      <section className="gallery-section">
-        <h2>AppRow</h2>
-        <div className="gallery-grid">
-          <div>
-            <AppRow
-              initial="G"
-              title="Gmail"
-              subtitle="john@example.com"
-              selected={false}
-              onWatch={() => console.log('watch clicked')}
-            />
-          </div>
-          <div>
-            <AppRow initial="N" title="Notion" subtitle="workspace" selected />
           </div>
         </div>
       </section>

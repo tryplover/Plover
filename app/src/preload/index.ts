@@ -32,6 +32,8 @@ export interface PloverApi {
   getSummaries: () => Promise<
     (SummaryRow & { task_title: string | null; goal_title: string | null })[]
   >;
+  undoSummary: (summaryId: number) => Promise<SummaryRow>;
+  reassignSummary: (summaryId: number, newTaskId: string) => Promise<SummaryRow>;
   updateTaskStatus: (id: string, status: Task['status']) => Promise<Task>;
   createTask: (input: {
     goal_id: string;
@@ -148,6 +150,9 @@ const api: PloverApi = {
   getTaskById: (id) => ipcRenderer.invoke('tasks:getById', id),
   getTasksByGoal: (goalId) => ipcRenderer.invoke('tasks:getByGoal', goalId),
   getSummaries: () => ipcRenderer.invoke('summaries:get'),
+  undoSummary: (summaryId) => ipcRenderer.invoke('summaries:undo', summaryId),
+  reassignSummary: (summaryId, newTaskId) =>
+    ipcRenderer.invoke('summaries:reassign', summaryId, newTaskId),
   updateTaskStatus: (id, status) => ipcRenderer.invoke('tasks:updateStatus', id, status),
   createTask: (input) => ipcRenderer.invoke('tasks:create', input),
   updateTask: (id, patch) => ipcRenderer.invoke('tasks:update', id, patch),

@@ -1245,6 +1245,75 @@ input:checked + .slider:before {
   }
 }
 
+/* Account modal (sidebar sign-in / sign-out) */
+.plover-account-modal__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 32px;
+}
+
+.plover-account-modal__title {
+  font-family: var(--plover-font-serif);
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--plover-text);
+  margin: 0 0 4px 0;
+}
+
+.plover-account-modal__google-btn {
+  width: 100%;
+}
+
+.plover-account-modal__cancel {
+  background: none;
+  border: none;
+  color: var(--plover-text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: center;
+  padding: 0;
+}
+
+.plover-account-modal__cancel:hover {
+  color: var(--plover-text);
+}
+
+.plover-account-modal__divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--plover-text-muted);
+  font-size: 12px;
+  margin: 4px 0;
+}
+
+.plover-account-modal__divider::before,
+.plover-account-modal__divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background-color: var(--plover-border);
+}
+
+.plover-account-modal__form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.plover-account-modal__status-msg {
+  font-size: 14px;
+  color: var(--plover-text-muted);
+  margin: 0;
+}
+
+.plover-account-modal__error {
+  font-size: 13px;
+  color: #d32f2f;
+  margin: 0;
+}
+
 /* AI Progress Timeline */
 .timeline-feed {
   position: relative;
@@ -1384,6 +1453,51 @@ input:checked + .slider:before {
   border-radius: var(--plover-radius-sm);
 }
 
+.timeline-feed-hit--corrected {
+  opacity: 0.55;
+}
+
+.timeline-feed-hit--corrected .timeline-feed-reasoning {
+  text-decoration: line-through;
+}
+
+.timeline-feed-corrected-label {
+  font-size: 11px;
+  color: var(--plover-text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.timeline-feed-hit-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.timeline-feed-action-btn {
+  font-size: 12px;
+  padding: 4px 10px;
+  background: transparent;
+  border: 1px solid var(--plover-border);
+  border-radius: var(--plover-radius-sm);
+  color: var(--plover-text-muted);
+  cursor: pointer;
+}
+
+.timeline-feed-action-btn:hover {
+  border-color: var(--plover-text-muted);
+  color: var(--plover-text);
+}
+
+.timeline-feed-reassign-select {
+  font-size: 12px;
+  padding: 4px 8px;
+  background: transparent;
+  border: 1px solid var(--plover-border);
+  border-radius: var(--plover-radius-sm);
+  color: var(--plover-text-muted);
+}
+
 .timeline-feed-hit-header {
   display: flex;
   justify-content: space-between;
@@ -1481,6 +1595,22 @@ input:checked + .slider:before {
   gap: 10px;
   padding: 10px 8px 0 8px;
   margin-top: 10px;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  border-radius: var(--plover-radius-sm);
+  transition: background-color var(--plover-duration-fast);
+}
+
+.plover-profile-row:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.plover-shell--dark .plover-profile-row:hover {
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
 .plover-profile-row__avatar {

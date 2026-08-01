@@ -1,8 +1,8 @@
 import { motion } from '../lib/motion';
 import { safeAsync } from '../lib/async';
-import { StatusIndicator } from '../components/StatusIndicator';
-import { StepRow } from '../components/StepRow';
-import { Button } from '../components/Button';
+import { StatusIndicator } from '../components/StatusIndicator/StatusIndicator';
+import { StepRow } from '../components/StepRow/StepRow';
+import { Button } from '../components/Button/Button';
 import './Expanded.css';
 import type { CompanionView } from './useCompanionState';
 

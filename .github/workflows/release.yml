@@ -68,6 +68,8 @@ jobs:
           PLOVER_BACKEND_URL: https://plover-server-562340206018.us-central1.run.app
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v7

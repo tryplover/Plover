@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import Home from './main/pages/Home';
-import AIProgress from './main/pages/AIProgress';
-import Settings from './main/pages/Settings';
-import { Onboarding } from './main/pages/Onboarding';
+import Home from './main/pages/Home/Home';
+import AIProgress from './main/pages/AIProgress/AIProgress';
+import Settings from './main/pages/Settings/Settings';
+import { Onboarding } from './main/pages/Onboarding/Onboarding';
+import { AccountModal } from './components/AccountModal';
 import { IconHome, IconGear, IconActivity } from './main/icons';
 import ploverLogo from './plover-logo.png';
 
@@ -14,6 +15,7 @@ export function App() {
     return localStorage.getItem('plover_onboarding_completed') === 'true';
   });
   const [accountEmail, setAccountEmail] = useState<string | null>(null);
+  const [showAccountModal, setShowAccountModal] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
@@ -43,8 +45,12 @@ export function App() {
         if (active) setAccountEmail(email);
       })
       .catch(() => undefined);
+    const unsubscribe = window.api.on('auth:status-changed', (status: unknown) => {
+      setAccountEmail((status as { signedIn: boolean; email: string | null }).email);
+    });
     return () => {
       active = false;
+      unsubscribe();
     };
   }, []);
 
@@ -92,12 +98,18 @@ export function App() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
-            <div className="plover-profile-row" style={{ marginTop: 0, padding: '0 8px' }}>
+            <button
+              type="button"
+              className="plover-profile-row"
+              style={{ marginTop: 0, padding: '0 8px' }}
+              onClick={() => setShowAccountModal(true)}
+              data-testid="btn-open-account-modal"
+            >
               <span className="plover-profile-row__avatar" aria-hidden>
                 {accountEmail ? accountEmail[0]?.toUpperCase() : '?'}
               </span>
               <span className="plover-profile-row__label">{accountEmail ?? 'Not signed in'}</span>
-            </div>
+            </button>
 
             <nav className="nav-links" style={{ marginTop: '8px' }}>
               <button
@@ -121,6 +133,14 @@ export function App() {
         {activeTab === 'progress' && <AIProgress data-testid="page-progress" />}
         {activeTab === 'settings' && <Settings data-testid="page-settings" />}
       </main>
+
+      {showAccountModal && (
+        <AccountModal
+          status={{ signedIn: !!accountEmail, email: accountEmail }}
+          onClose={() => setShowAccountModal(false)}
+          onStatusChange={(status) => setAccountEmail(status.email)}
+        />
+      )}
     </div>
   );
 }

@@ -1,11 +1,8 @@
 import './load-env.js';
 import { app, BrowserWindow, globalShortcut, nativeImage } from 'electron';
 import { join } from 'node:path';
-import { setupIpc, googleAuth } from './ipc.js';
-import { activityRepo, settingsRepo, tasksRepo, summariesRepo } from './store/index.js';
-import { FolderWatcher } from './activity/folder-watcher.js';
-import { InferenceEngine } from './activity/inference.js';
-import { GitCommitTracker } from './activity/git-commit-tracker.js';
+import { setupIpc, googleAuth } from './ipc/index.js';
+import { settingsRepo } from './store/index.js';
 import { GDocsPoller } from './sync/gdocs-poller.js';
 import { eventBus } from './events/bus.js';
 import { clearAllTimers } from './lifecycle/periodic.js';
@@ -43,9 +40,6 @@ app.on('open-url', (event, url) => {
 
 let mainWindow: BrowserWindow | null = null;
 let overlayWindow: BrowserWindow | null = null;
-let folderWatcher: FolderWatcher | null = null;
-let inferenceEngine: InferenceEngine | null = null;
-let gitCommitTracker: GitCommitTracker | null = null;
 let gdocsPoller: GDocsPoller | null = null;
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
@@ -159,23 +153,6 @@ if (!gotTheLock) {
       const url = bufferedProtocolUrls.shift();
       if (url) completeSignup(url);
     }
-    folderWatcher = new FolderWatcher(activityRepo, settingsRepo, eventBus);
-    const settings = settingsRepo.getAll();
-    if (settings.watchedFolders.length > 0) {
-      await folderWatcher.watch(settings.watchedFolders);
-    }
-
-    inferenceEngine = new InferenceEngine(
-      tasksRepo,
-      activityRepo,
-      summariesRepo,
-      settingsRepo,
-      eventBus,
-    );
-    inferenceEngine.start();
-
-    gitCommitTracker = new GitCommitTracker(tasksRepo, activityRepo, eventBus);
-    gitCommitTracker.start();
 
     gdocsPoller = new GDocsPoller(googleAuth, settingsRepo, eventBus);
     gdocsPoller.start();
@@ -183,8 +160,8 @@ if (!gotTheLock) {
     // Register all typed IPC handlers first
     const ensureCompanion = setupIpc(() => overlayWindow);
 
-    // Initialize passive activity monitoring system
-    initActivityMonitoring();
+    // Initialize all activity monitoring subsystems (trackers, retention)
+    await initActivityMonitoring();
 
     createMainWindow();
     overlayWindow = createOverlayWindow();
@@ -212,15 +189,6 @@ if (!gotTheLock) {
   });
 
   app.on('before-quit', () => {
-    if (folderWatcher) {
-      void folderWatcher.closeAllWatchers();
-    }
-    if (inferenceEngine) {
-      inferenceEngine.stop();
-    }
-    if (gitCommitTracker) {
-      gitCommitTracker.stop();
-    }
     if (gdocsPoller) {
       gdocsPoller.stop();
     }

@@ -55,7 +55,7 @@ implementation order. Do not jump ahead.
 .
 ├── CLAUDE.md                       # ← you are here
 ├── package.json                    # pnpm workspace root, husky/lint-staged
-├── pnpm-workspace.yaml             # packages: [app, server]
+├── pnpm-workspace.yaml             # packages: [app]
 ├── .nvmrc                          # Node 22 (LTS)
 ├── .husky/pre-commit               # runs lint-staged
 ├── .github/
@@ -72,13 +72,6 @@ implementation order. Do not jump ahead.
 └── app/                            # the Electron app (single workspace pkg)
     ├── package.json                # name: "plover"
     ├── electron.vite.config.ts
-    ...
-└── server/                         # secure backend proxy server for Gemini API
-    ├── package.json                # name: "plover-server"
-    ├── tsconfig.json
-    ├── .env.example
-    └── src/
-        └── index.ts                # Express app + Gemini API logic
     ├── tsconfig.json               # strict TS, path aliases
     ├── eslint.config.js            # flat config
     ├── vitest.config.ts            # v8 coverage, scoped 60% thresholds
@@ -106,8 +99,6 @@ via `pnpm --filter ./app`.
 | `pnpm test` | Vitest run (no coverage) |
 | `pnpm --filter ./app run test:coverage` | Vitest run + v8 coverage report |
 | `pnpm --filter ./app exec <tool>` | Run a tool binary inside the app workspace |
-| `pnpm --filter ./server dev` | Start the backend proxy server locally in watch mode |
-| `pnpm --filter ./server build` | Compile the backend server TypeScript code |
 
 **Always use path-based filters (`--filter ./app`)**, not name-based
 (`-F plover`). See lessons-learned #1.
@@ -115,7 +106,7 @@ via `pnpm --filter ./app`.
 **Always use `pnpm --filter ./app run <script>`** when the script name contains
 a colon (e.g. `test:coverage`). See lessons-learned #2.
 
-To run the app end-to-end locally (API keys, Google OAuth setup, manual test
+To run the app end-to-end locally (API keys, Google Docs/Drive OAuth setup, manual test
 walkthrough), see [docs/RUNNING.md](docs/RUNNING.md).
 
 ## Architecture rules (load-bearing)
@@ -607,5 +598,60 @@ other tests in the same file keep exercising real disk I/O. General lesson: any 
 code path under fake-timer test coverage must resolve exclusively through microtasks
 (mocked I/O, not real `fs`/network calls) for each simulated tick, or the fake-timer advance
 will silently "complete" one tick early relative to what the test expects.
+
+### 2026-07-28 — `tasks.created_at`/`updated_at` are not usable as a "when did work on this task begin" signal
+
+**Symptom:** While building an adaptive polling cadence for `InferenceEngine` (poll faster
+while a task is newly started), the first instinct was to key "newly started" off
+`tasks.created_at` or `tasks.updated_at`. Both are wrong for this purpose, for different
+reasons, and the bug wouldn't show up in a quick manual test — it only surfaces over time
+or across multiple tasks in the same goal.
+
+**Root cause:**
+1. `created_at` reflects when the **goal** was decomposed, not when this specific subtask's
+   work began. Planner bulk-creates all of a goal's subtasks in one pass
+   ([tasks.ts](app/src/main/store/repos/tasks.ts) `create()`), so every subtask in a goal
+   shares essentially the same `created_at` regardless of when the user actually starts
+   each one — a task started today could have a `created_at` from weeks ago if the goal was
+   planned early.
+2. `updated_at` looked like a better fit (it does change when a task moves to `in_progress`
+   via `.update()`), but `TasksRepo.incrementProgress()` **also** bumps `updated_at` on every
+   call — including calls made by the very inference pass that would be reading it. Using
+   `updated_at` as the "age" signal creates a self-refreshing loop: every fast-cadence pass
+   that increments progress resets the timestamp, so the task looks "freshly started" forever
+   and the cadence never backs off to baseline.
+
+**Fix:** Don't derive "task age" from any persisted task-table timestamp. Instead track it
+in memory: `InferenceEngine.firstSeenInProgressAt` (a `Map<taskId, timestampMs>`) records the
+moment each task is first observed with `status === 'in_progress'`, and entries are dropped
+once a task leaves that status. This avoids both pitfalls, at the cost of resetting on app
+restart — an accepted, simple tradeoff for in-memory pacing state. General lesson: before
+using any `*_at` column as an "age since X happened" signal, check what else writes to that
+column and whether rows for the same "unit of work" get bulk-created together — either can
+silently invalidate the assumption.
+
+### 2026-07-29 — a PR merged into a feature branch (not `main`) doesn't ship, even after that branch was already merged once
+
+**Symptom:** A user-reported bug (companion overlay not syncing its active task after reinstalling
+a fresh release build) traced back to PR #274 ("Sync companion overlay with active task + manual
+watch/expand model"), which looked merged on GitHub. `pnpm run` from `main` still didn't have the
+fix.
+
+**Root cause:** PR #273 merged branch `ui-fixes` into `main`. Branch `ui-fixes` kept living after
+that, and PR #274 was opened and merged *into `ui-fixes`*, not `main` — GitHub shows #274 as
+"merged" regardless of which branch it targeted, so it's easy to misread as "merged into main."
+Those post-#273 commits on `ui-fixes` never made it back to `main` through the normal PR flow (a
+direct, unreviewed `git merge branch 'ui-fixes' into main` several days later happened to pull
+them in — good luck, not process). The same branch picked up *more* unmerged work afterward (PR
+#285), which now conflicts with `main`'s independent refactor of the same files — same failure
+mode, still live as of this writing.
+
+**Fix / prevention:** Before treating a "merged" PR as shipped, check its **base branch**, not
+just its merged status: `gh pr view <n> --json baseRefName,mergeCommit` and
+`git merge-base --is-ancestor <mergeCommit.oid> origin/main`. A branch that was merged to `main`
+once is not safe to keep opening PRs against — either merge each follow-up PR to `main` directly,
+or delete the branch after its first merge so a second round of work can't silently accumulate
+off of it. Before cutting a release, spot-check recent PRs the same way (base branch + ancestor
+check) rather than trusting "Merged" badges at face value.
 
 

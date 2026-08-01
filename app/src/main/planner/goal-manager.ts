@@ -135,4 +135,8 @@ export function startEventForwarding(
   eventBus.on('summary.created', (summary: SummaryRow) => {
     broadcast('app-event', { type: 'summary.created', payload: summary });
   });
+
+  eventBus.on('summary.corrected', (summary: SummaryRow) => {
+    broadcast('app-event', { type: 'summary.corrected', payload: summary });
+  });
 }

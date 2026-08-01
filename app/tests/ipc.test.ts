@@ -235,4 +235,45 @@ describe('Event forwarding', () => {
 
     expect(mockWindowInstance.webContents.send).not.toHaveBeenCalled();
   });
+
+  it('forwards summary.corrected events to open BrowserWindow webContents', () => {
+    const broadcast = (channel: string, payload?: unknown) => {
+      for (const win of BrowserWindow.getAllWindows()) {
+        if (!win.isDestroyed()) {
+          if (payload === undefined) {
+            win.webContents.send(channel);
+          } else {
+            win.webContents.send(channel, payload);
+          }
+        }
+      }
+    };
+    startEventForwarding(broadcast);
+
+    const windows = BrowserWindow.getAllWindows();
+    const mockWindowInstance = windows[0];
+    if (!mockWindowInstance) {
+      throw new Error('mock window not found');
+    }
+    vi.mocked(mockWindowInstance.isDestroyed).mockReturnValue(false);
+
+    const mockSummary = {
+      id: 1,
+      task_id: 't1',
+      ts: '2026-01-01T00:00:00.000Z',
+      summary: 'e',
+      signal: 0.5,
+      source: 'inference' as const,
+      progress_delta: null,
+      previous_status: 'todo',
+      corrected: 1 as const,
+    };
+
+    eventBus.emit('summary.corrected', mockSummary);
+
+    expect(mockWindowInstance.webContents.send).toHaveBeenCalledWith('app-event', {
+      type: 'summary.corrected',
+      payload: mockSummary,
+    });
+  });
 });
