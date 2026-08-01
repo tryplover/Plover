@@ -87,4 +87,15 @@ describe('SettingsRepo — Phase 2 activity tracking keys', () => {
     expect(s.supabaseUserId).toBeNull();
     expect(s.supabaseUserEmail).toBeNull();
   });
+
+  it('defaults lastVisionInferenceWindowKey to null when nothing is stored', () => {
+    expect(repo.getAll().lastVisionInferenceWindowKey).toBeNull();
+  });
+
+  it('roundtrips and clears lastVisionInferenceWindowKey', () => {
+    repo.update({ lastVisionInferenceWindowKey: 'VS Code::auth-service.ts' });
+    expect(repo.getAll().lastVisionInferenceWindowKey).toBe('VS Code::auth-service.ts');
+    repo.update({ lastVisionInferenceWindowKey: null });
+    expect(repo.getAll().lastVisionInferenceWindowKey).toBeNull();
+  });
 });

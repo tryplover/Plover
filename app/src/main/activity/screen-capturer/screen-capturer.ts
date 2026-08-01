@@ -8,10 +8,23 @@ import { authedFetch } from '../../http/authed-fetch.js';
 import { gate } from '../shared/gate.js';
 import { VISION_UPLOAD_MAX_WIDTH, type ScreenCapturerDeps, type GrabbedScreen } from './types.js';
 
+const MIN_CAPTURE_INTERVAL_MINUTES = 1;
+
+function windowFocusKey(row: ActivityRow | undefined): string | null {
+  if (!row || row.kind !== 'window_focus') return null;
+  return `${row.payload.app}::${row.payload.title}`;
+}
+
 export class ScreenCapturer {
   private timeoutId: NodeJS.Timeout | null = null;
   private running = false;
   private now: () => Date;
+  // Pacing state, intentionally separate from settings.lastVisionInferenceWindowKey:
+  // that field answers "was vision already run for this window," this answers
+  // "has the window changed since the last tick," and conflating them would make
+  // both harder to reason about.
+  private currentIntervalMinutes: number | null = null;
+  private lastSeenWindowKey: string | null = null;
 
   constructor(private deps: ScreenCapturerDeps) {
     this.now = deps.now ?? (() => new Date());
@@ -36,7 +49,15 @@ export class ScreenCapturer {
     const grabbed = await this.grabPrimaryScreen();
     if (!grabbed) return null;
     const persisted = await this.persistScreenshot(grabbed.png, grabbed.size);
-    await this.maybeRunInference(persisted.row, persisted.filePath, grabbed);
+
+    // Pass the most recent window_focus payload to the backend so Gemini Vision
+    // has the active app/title/URL as context, and use it to drive both the
+    // capture cadence and the vision-call gating below.
+    const lastFocus = this.deps.activityRepo.list({ kind: 'window_focus', limit: 1 })[0];
+    const windowKey = windowFocusKey(lastFocus);
+    this.updateCadence(windowKey);
+
+    await this.maybeRunInference(persisted.row, persisted.filePath, grabbed, lastFocus, windowKey);
     return persisted.filePath;
   }
 
@@ -80,13 +101,39 @@ export class ScreenCapturer {
     return { filePath, row };
   }
 
+  // Adapt the capture pace: check often right after a genuine window change,
+  // back off (up to the screenCaptureIntervalMinutes ceiling) during idle
+  // stretches. Runs regardless of vision being enabled, since it also cuts
+  // local capture/disk overhead, not just the paid vision call.
+  private updateCadence(windowKey: string | null): void {
+    if (windowKey !== null && windowKey === this.lastSeenWindowKey) {
+      const previous = this.currentIntervalMinutes ?? MIN_CAPTURE_INTERVAL_MINUTES;
+      const ceiling = this.deps.settingsRepo.getAll().screenCaptureIntervalMinutes;
+      this.currentIntervalMinutes = Math.min(ceiling, previous * 2);
+    } else {
+      this.currentIntervalMinutes = MIN_CAPTURE_INTERVAL_MINUTES;
+    }
+    this.lastSeenWindowKey = windowKey;
+  }
+
   private async maybeRunInference(
     row: ActivityRow,
     filePath: string,
     grabbed: GrabbedScreen,
+    lastFocus: ActivityRow | undefined,
+    windowKey: string | null,
   ): Promise<void> {
     if (!this.deps.settingsRepo.getAll().screenVisionInferenceEnabled) return;
-    await this.runInference(row.id, filePath, grabbed).catch((err) =>
+    // Skip the paid vision call when the active window hasn't changed since the
+    // last successful call — the expensive part of this loop is per-call, and a
+    // static window rarely warrants re-analysis. Unknown window context (no
+    // window_focus row yet, or an unsupported platform) always calls through,
+    // since we can't prove nothing changed.
+    const unchanged =
+      windowKey !== null &&
+      windowKey === this.deps.settingsRepo.getAll().lastVisionInferenceWindowKey;
+    if (unchanged) return;
+    await this.runInference(row.id, filePath, grabbed, lastFocus, windowKey).catch((err) =>
       console.error('[ScreenCapturer] infer failed:', err),
     );
   }
@@ -95,8 +142,9 @@ export class ScreenCapturer {
     screenshotId: number,
     filePath: string,
     grabbed: GrabbedScreen,
+    lastFocus: ActivityRow | undefined,
+    windowKey: string | null,
   ): Promise<void> {
-    const lastFocus = this.deps.activityRepo.list({ kind: 'window_focus', limit: 1 })[0];
     const windowContext =
       lastFocus?.kind === 'window_focus'
         ? {
@@ -141,15 +189,21 @@ export class ScreenCapturer {
       currentTask: body.currentTask ?? null,
       confidence: Number(body.confidence ?? 0),
     });
+    // Only remember this window as "already analyzed" once we've successfully
+    // gotten a result for it — a failed call shouldn't cause a future skip.
+    if (windowKey !== null) {
+      this.deps.settingsRepo.update({ lastVisionInferenceWindowKey: windowKey });
+    }
   }
 
   private scheduleNext(): void {
     if (!this.running) return;
-    const intervalMs =
-      Math.max(1, this.deps.settingsRepo.getAll().screenCaptureIntervalMinutes) * 60 * 1000;
-    this.timeoutId = setTimeout(() => {
-      void this.tick();
-    }, intervalMs);
+    // Recursive setTimeout (re-scheduled by tick) instead of setInterval so
+    // captures never overlap and the interval is re-read each tick. The callback
+    // returns tick()'s promise rather than voiding it so fake-timer tests can
+    // await each tick's async work (see the plover-testing skill).
+    const intervalMs = (this.currentIntervalMinutes ?? MIN_CAPTURE_INTERVAL_MINUTES) * 60 * 1000;
+    this.timeoutId = setTimeout(() => this.tick(), intervalMs);
   }
 
   private async tick(): Promise<void> {

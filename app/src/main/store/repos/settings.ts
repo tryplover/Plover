@@ -20,6 +20,7 @@ export interface SettingsData {
   screenCaptureEnabled: boolean;
   screenCaptureIntervalMinutes: number;
   screenVisionInferenceEnabled: boolean;
+  lastVisionInferenceWindowKey: string | null;
   activityRetentionDays: number;
   planner_useRecentActivityContext: boolean;
 }
@@ -96,6 +97,7 @@ export class SettingsRepo {
       Math.max(1, Number.isFinite(rawInterval) ? Math.round(rawInterval) : 5),
     );
     const screenVisionInferenceEnabled = map.get('screenVisionInferenceEnabled') === 'true';
+    const lastVisionInferenceWindowKey = map.get('lastVisionInferenceWindowKey') ?? null;
     const rawRetention = Number(map.get('activityRetentionDays') ?? '30');
     const activityRetentionDays = Math.max(
       0,
@@ -122,6 +124,7 @@ export class SettingsRepo {
       screenCaptureEnabled,
       screenCaptureIntervalMinutes,
       screenVisionInferenceEnabled,
+      lastVisionInferenceWindowKey,
       activityRetentionDays,
       planner_useRecentActivityContext,
     };
@@ -191,6 +194,13 @@ export class SettingsRepo {
     }
     if (patch.screenVisionInferenceEnabled !== undefined) {
       this.set('screenVisionInferenceEnabled', String(patch.screenVisionInferenceEnabled));
+    }
+    if (patch.lastVisionInferenceWindowKey !== undefined) {
+      if (patch.lastVisionInferenceWindowKey === null) {
+        this.deleteStmt.run('lastVisionInferenceWindowKey');
+      } else {
+        this.set('lastVisionInferenceWindowKey', patch.lastVisionInferenceWindowKey);
+      }
     }
     if (patch.activityRetentionDays !== undefined) {
       this.set(
