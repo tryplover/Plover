@@ -33,6 +33,7 @@ export interface PloverAPI {
     screenVisionInferenceEnabled: boolean;
     activityRetentionDays: number;
     planner_useRecentActivityContext: boolean;
+    progressPopsEnabled: boolean;
   }>;
   updateSettings(
     settings: Partial<{
@@ -51,6 +52,7 @@ export interface PloverAPI {
       screenVisionInferenceEnabled: boolean;
       activityRetentionDays: number;
       planner_useRecentActivityContext: boolean;
+      progressPopsEnabled: boolean;
     }>,
   ): Promise<{
     googleConnected: boolean;
@@ -68,6 +70,7 @@ export interface PloverAPI {
     screenVisionInferenceEnabled: boolean;
     activityRetentionDays: number;
     planner_useRecentActivityContext: boolean;
+    progressPopsEnabled: boolean;
   }>;
   connectGoogle(): Promise<boolean>;
   disconnectGoogle(): Promise<void>;

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, act, fireEvent } from '@testing-library/react';
+import { render, screen, act, fireEvent, within } from '@testing-library/react';
 import Settings from './Settings.js';
 
 const mockUnsubscribe = vi.fn();
@@ -66,6 +66,20 @@ describe('Settings', () => {
       await Promise.resolve();
     });
     expect(window.api.updateSettings).toHaveBeenCalledWith({ theme: 'dark' });
+  });
+
+  it('toggles progress pops', async () => {
+    render(<Settings />);
+    expect(await screen.findByRole('heading', { name: 'Appearance' })).toBeTruthy();
+    const progressPopsLabel = screen.getByText('Progress pops');
+    const row = progressPopsLabel.parentElement?.parentElement;
+    expect(row).toBeTruthy();
+    const progressPopsChip = within(row as HTMLElement).getByRole('button');
+    await act(async () => {
+      fireEvent.click(progressPopsChip);
+      await Promise.resolve();
+    });
+    expect(window.api.updateSettings).toHaveBeenCalledWith({ progressPopsEnabled: true });
   });
 
   it('renders the Account section heading', async () => {

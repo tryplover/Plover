@@ -1,0 +1,16 @@
+.plover-percent-pop-host {
+  position: absolute;
+  top: 0;
+  right: 0;
+  pointer-events: none;
+}
+
+.plover-percent-pop {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--plover-mint);
+}
