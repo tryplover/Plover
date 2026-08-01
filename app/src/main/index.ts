@@ -189,6 +189,7 @@ if (!gotTheLock) {
   });
 
   app.on('before-quit', () => {
+    (app as typeof app & { isQuitting?: boolean }).isQuitting = true;
     if (gdocsPoller) {
       gdocsPoller.stop();
     }

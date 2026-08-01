@@ -186,6 +186,10 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
     void triggerAutoSave({ companionMode: newMode });
   };
 
+  const handleShowCompanion = () => {
+    void window.api.companion.show();
+  };
+
   const handleConnectGoogle = async () => {
     try {
       if (googleConnected) {
@@ -378,6 +382,36 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
                   Compact
                 </Chip>
               </div>
+            </div>
+
+            <div
+              style={{
+                height: '1px',
+                backgroundColor: 'var(--plover-border)',
+                marginTop: '20px',
+                marginBottom: '20px',
+                opacity: 0.5,
+              }}
+            />
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--plover-text)' }}>
+                  Companion Bar Visibility
+                </p>
+                <p
+                  style={{
+                    fontSize: '13px',
+                    color: 'var(--plover-text-muted)',
+                    marginTop: '4px',
+                  }}
+                >
+                  If the overlay got closed or hidden, bring it back here.
+                </p>
+              </div>
+              <Button variant="secondary" onClick={handleShowCompanion}>
+                Show overlay
+              </Button>
             </div>
           </div>
 

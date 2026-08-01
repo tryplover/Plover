@@ -75,7 +75,7 @@ export function Collapsed({ view, onExpand, companionMode = 'compact' }: Props) 
 function stateLabel(k: CompanionView['kind']) {
   switch (k) {
     case 'observing':
-      return 'observing';
+      return 'live';
     case 'paused':
       return 'paused';
     case 'done':

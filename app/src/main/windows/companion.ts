@@ -1,5 +1,7 @@
-import { BrowserWindow, screen } from 'electron';
+import { app, BrowserWindow, screen } from 'electron';
 import { join } from 'node:path';
+
+type QuittableApp = typeof app & { isQuitting?: boolean };
 
 const COLLAPSED_HEIGHT = 56;
 const COLLAPSED_WIDTH = 360;
@@ -53,6 +55,18 @@ export function createCompanionWindow(): BrowserWindow {
   // not just normal ones.
   win.setAlwaysOnTop(true, 'screen-saver');
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+
+  // Electron's default app menu binds CmdOrCtrl+W to closing the focused
+  // window, and this window can pick up focus (drag, grabber click). A real
+  // close destroys it permanently — nothing recreates it visibly afterward
+  // (setState/setActiveTask IPC calls recreate it via ensureCompanion() but
+  // hidden). Hide instead, and only allow the real close during app quit.
+  win.on('close', (event) => {
+    if (!(app as QuittableApp).isQuitting) {
+      event.preventDefault();
+      win.hide();
+    }
+  });
 
   return win;
 }
