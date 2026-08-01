@@ -1,13 +1,11 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { ActivityRepo } from '../store/repos/activity.js';
-import { TypedEventBus } from '../events/bus.js';
+import { ActivityRepo } from '../../store/repos/activity.js';
+import { TypedEventBus } from '../../events/bus.js';
 import { FolderEventPayload, GitCommitInfo } from '@shared/events.js';
-import { serializeAsync } from './shared/serialize-async.js';
+import { serializeAsync } from '../shared/serialize-async.js';
 
 const execFileAsync = promisify(execFile);
-
-export type { GitCommitInfo };
 
 export class GitCommitTracker {
   private seenHashes = new Set<string>();

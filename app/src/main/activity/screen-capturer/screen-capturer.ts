@@ -1,32 +1,18 @@
-import { desktopCapturer, type NativeImage } from 'electron';
+import { desktopCapturer } from 'electron';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { ActivityRepo, ActivityRow } from '../store/repos/activity.js';
-import { SettingsRepo } from '../store/repos/settings.js';
-import { getScreenRecordingStatus } from '../permissions/screen-recording.js';
-import { authedFetch } from '../http/authed-fetch.js';
-import { gate } from './shared/gate.js';
+import { ActivityRow } from '../../store/repos/activity.js';
+import { getScreenRecordingStatus } from '../../permissions/screen-recording.js';
+import { authedFetch } from '../../http/authed-fetch.js';
+import { gate } from '../shared/gate.js';
+import { VISION_UPLOAD_MAX_WIDTH, type ScreenCapturerDeps, type GrabbedScreen } from './types.js';
 
-const VISION_UPLOAD_MAX_WIDTH = 1024;
 const MIN_CAPTURE_INTERVAL_MINUTES = 1;
 
 function windowFocusKey(row: ActivityRow | undefined): string | null {
   if (!row || row.kind !== 'window_focus') return null;
   return `${row.payload.app}::${row.payload.title}`;
-}
-
-export interface ScreenCapturerDeps {
-  activityRepo: ActivityRepo;
-  settingsRepo: SettingsRepo;
-  userDataDir: string;
-  now?: () => Date;
-}
-
-interface GrabbedScreen {
-  png: Buffer;
-  size: { width: number; height: number };
-  thumbnail: NativeImage;
 }
 
 export class ScreenCapturer {
@@ -215,7 +201,7 @@ export class ScreenCapturer {
     // Recursive setTimeout (re-scheduled by tick) instead of setInterval so
     // captures never overlap and the interval is re-read each tick. The callback
     // returns tick()'s promise rather than voiding it so fake-timer tests can
-    // await each tick's async work (see CLAUDE.md 2026-07-25).
+    // await each tick's async work (see the plover-testing skill).
     const intervalMs = (this.currentIntervalMinutes ?? MIN_CAPTURE_INTERVAL_MINUTES) * 60 * 1000;
     this.timeoutId = setTimeout(() => this.tick(), intervalMs);
   }

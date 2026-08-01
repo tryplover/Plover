@@ -1,25 +1,10 @@
 import { activeWindow } from 'get-windows';
 import { execFile } from 'node:child_process';
-import { ActivityRepo } from '../store/repos/activity.js';
-import { SettingsRepo } from '../store/repos/settings.js';
-import { getScreenRecordingStatus } from '../permissions/screen-recording.js';
-import { gate } from './shared/gate.js';
-
-const BROWSER_BUNDLES: Record<string, string> = {
-  'com.google.Chrome': 'Google Chrome',
-  'com.apple.Safari': 'Safari',
-  'com.brave.Browser': 'Brave Browser',
-  'company.thebrowser.Browser': 'Arc',
-  'org.mozilla.firefox': 'Firefox',
-};
-
-interface WindowMeta {
-  app: string;
-  title: string;
-  bundleId?: string;
-  browserUrl?: string;
-  browserTabTitle?: string;
-}
+import { ActivityRepo } from '../../store/repos/activity.js';
+import { SettingsRepo } from '../../store/repos/settings.js';
+import { getScreenRecordingStatus } from '../../permissions/screen-recording.js';
+import { gate } from '../shared/gate.js';
+import { BROWSER_BUNDLES, type WindowMeta } from './types.js';
 
 export class WindowTracker {
   private intervalId: NodeJS.Timeout | null = null;
