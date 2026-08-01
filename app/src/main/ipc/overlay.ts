@@ -67,11 +67,15 @@ export function registerOverlayHandlers(
   ipcMain.handle('companion:hide', () => {
     companion?.hide();
   });
-  ipcMain.handle('companion:resize', (_e, height: number) => {
+  ipcMain.handle('companion:resize', (_e, height: number, width?: number) => {
     const w = ensureCompanion();
-    const [width] = w.getSize();
-    if (width !== undefined) {
-      w.setSize(width, Math.max(56, Math.min(640, Math.round(height))));
+    const bounds = w.getBounds();
+    const newHeight = Math.max(56, Math.min(640, Math.round(height)));
+    const newWidth = width !== undefined ? Math.round(width) : bounds.width;
+    if (bounds.height !== newHeight || bounds.width !== newWidth) {
+      const newX = bounds.x - Math.round((newWidth - bounds.width) / 2);
+      const newY = bounds.y - Math.round((newHeight - bounds.height) / 2);
+      w.setBounds({ x: newX, y: newY, width: newWidth, height: newHeight });
     }
   });
   ipcMain.handle('companion:setActiveTask', (_e, taskId: string | null) => {
