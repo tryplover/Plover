@@ -73,9 +73,15 @@ export function registerOverlayHandlers(
     const newHeight = Math.max(56, Math.min(640, Math.round(height)));
     const newWidth = width !== undefined ? Math.round(width) : bounds.width;
     if (bounds.height !== newHeight || bounds.width !== newWidth) {
+      // Recenter horizontally, but never recompute y from the height delta —
+      // the pill's width animates over ~220ms, so the ResizeObserver in
+      // Companion.tsx fires many times per expand/collapse, each computing a
+      // delta off the previous call's bounds. Symmetric vertical recentering
+      // accumulated rounding error across those calls, drifting the top edge
+      // away from where the user last placed it instead of returning to it.
+      // Anchoring y keeps the top edge fixed and grows/shrinks downward only.
       const newX = bounds.x - Math.round((newWidth - bounds.width) / 2);
-      const newY = bounds.y - Math.round((newHeight - bounds.height) / 2);
-      w.setBounds({ x: newX, y: newY, width: newWidth, height: newHeight });
+      w.setBounds({ x: newX, y: bounds.y, width: newWidth, height: newHeight });
     }
   });
   ipcMain.handle('companion:setActiveTask', (_e, taskId: string | null) => {
