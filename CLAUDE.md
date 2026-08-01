@@ -9,12 +9,13 @@ context, conventions, and known footguns.
 1. **Spec is authoritative.** The product spec and the Phase 1 specs under
    [docs/superpowers/specs/](docs/superpowers/specs/) define scope, constraints,
    and the file layout. Do not scope-creep beyond the current phase.
-2. **Lessons-learned is a contract.** If you hit an error, surprise, or
-   wrong-first-attempt that a future Claude could avoid by reading this file,
-   add a dated entry to the "Lessons learned" section at the bottom **before
-   reporting completion**. Be concrete: command/file, symptom, root cause, fix.
-   This rule applies even to small mistakes. The point is to make this file
-   smarter over time.
+2. **Footgun knowledge is a contract.** If you hit an error, surprise, or
+   wrong-first-attempt that a future Claude could avoid, capture it **before
+   reporting completion** — but NOT in this file. Add it to the most relevant
+   `plover-*` reference skill under `.claude/skills/` (Quick-reference table +
+   Details), or create a new one via the `superpowers:writing-skills` skill. Be
+   concrete: command/file, symptom, root cause, fix. See "Known footguns →
+   skills" at the bottom. This applies even to small mistakes.
 3. **Plan first, then delegate.** For any non-trivial code change, do not write
    the code yourself in this session. First write an implementation plan to
    `docs/plans/<short-kebab-name>.md` (use the `writing-plans` skill), then
@@ -101,10 +102,10 @@ via `pnpm --filter ./app`.
 | `pnpm --filter ./app exec <tool>` | Run a tool binary inside the app workspace |
 
 **Always use path-based filters (`--filter ./app`)**, not name-based
-(`-F plover`). See lessons-learned #1.
+(`-F plover`). See the `plover-pnpm-workspace` skill.
 
 **Always use `pnpm --filter ./app run <script>`** when the script name contains
-a colon (e.g. `test:coverage`). See lessons-learned #2.
+a colon (e.g. `test:coverage`). See the `plover-pnpm-workspace` skill.
 
 To run the app end-to-end locally (API keys, Google Docs/Drive OAuth setup, manual test
 walkthrough), see [docs/RUNNING.md](docs/RUNNING.md).
@@ -173,6 +174,10 @@ These are not style preferences. The core architecture doc calls them
 - **No backwards-compat shims** for code that hasn't shipped yet. Just change it.
 - **No new deps unless used.** Native modules (`better-sqlite3`, `keytar`) are
   added in the task that first imports them, not pre-emptively.
+- **Keep coupled deps in version lockstep.** `react`/`react-dom`/`@types/react-dom`
+  must share a major; a Dependabot bump to one and not the other renders a blank
+  white screen. Watch Dependabot PRs that touch `react*`, `electron`, or native
+  modules — see the `plover-electron-vite-build` / `plover-native-modules` skills.
 - **Tests:** TDD the parts the core architecture doc names (Planner, Scheduler,
   Store). Skip TDD for UI scaffolding.
 - **No real network in tests.** Use recorded fixtures with `nock`.
@@ -194,423 +199,29 @@ These are not style preferences. The core architecture doc calls them
 - **Dependabot** weekly PRs (npm root + npm app/ + github-actions), minor/patch
   grouped, max 5 open per ecosystem.
 
-## Lessons learned
-
-Add an entry here every time something in this repo behaves differently from
-what you first tried. Format: `### YYYY-MM-DD — short title`, then the
-symptom, root cause, and fix as separate paragraphs.
-
-### 2026-05-24 — pnpm filter must be path-based, not directory-name
-
-**Symptom:** `pnpm -F app typecheck` → `No projects matched the filters`.
-
-**Root cause:** `pnpm -F <name>` matches by **package name**, not directory.
-The package in `app/` is named `plover` (see `app/package.json`), so
-`-F app` matches nothing. `-F plover` works but couples scripts to the
-package name.
-
-**Fix:** Use path-based filter `pnpm --filter ./app <script>`. Refactor-safe
-and matches the workspace glob exactly. Root scripts and CI use this form.
-
-### 2026-05-24 — colon-named scripts need explicit `run` under `--filter`
-
-**Symptom:** `pnpm --filter ./app test:coverage` → `No projects matched the
-filters in <repo>`, even though `pnpm --filter ./app typecheck` works.
-
-**Root cause:** pnpm treats script names containing `:` as a special case
-(prefix-based dispatch across packages) and the matcher interacts oddly with
-`--filter`. The error message is misleading — the filter is fine; pnpm just
-won't run the colon-script through the filter shortcut.
-
-**Fix:** Use the explicit `run` keyword: `pnpm --filter ./app run test:coverage`.
-CI uses this form. Locally, either form works for non-colon scripts.
-
-### 2026-05-24 — `vitest` doesn't see `--coverage` when passed via pnpm `--`
-
-**Symptom:** `pnpm --filter ./app test -- --coverage` ran the tests but
-produced no coverage output. Looking at the resolved command, vitest saw
-`vitest run -- --coverage` — i.e. the flag arrived as a positional after `--`,
-not as a CLI flag.
-
-**Root cause:** With pnpm + workspace filter, the trailing `--` separator
-doesn't reliably forward subsequent args as flags to the underlying tool. The
-script becomes `vitest run -- --coverage` and vitest treats `--coverage` as
-a (nonexistent) positional spec.
-
-**Fix:** Add a dedicated `test:coverage` script in `app/package.json` that
-calls `vitest run --coverage` directly. CI and humans use that script. Don't
-try to forward flags through `pnpm run` for tooling that has its own CLI.
-
-### 2026-05-24 — Electron postinstall is gated by pnpm 10's `onlyBuiltDependencies`
-
-**Symptom:** After `pnpm install`, the `electron` and `esbuild` binaries
-weren't built; pnpm warned `Ignored build scripts`.
-
-**Root cause:** pnpm 10+ requires explicit allowlisting of packages whose
-postinstall scripts may run, via `pnpm.onlyBuiltDependencies` in the root
-`package.json`.
-
-**Fix:** Root `package.json` includes:
-```json
-"pnpm": { "onlyBuiltDependencies": ["electron", "esbuild"] }
-```
-Add new packages here as they're introduced (e.g. `better-sqlite3` when the
-Store milestone lands — it's a native module and will need this).
-
-### 2026-05-24 — @google/generative-ai response functionCalls is a method, not a property
-
-**Symptom:** `response.response.functionCalls[0]` causes TypeScript compiler error `Property '0' does not exist on type '() => FunctionCall[] | undefined'`.
-
-**Root cause:** In the `@google/generative-ai` legacy SDK, `functionCalls` on the `EnhancedGenerateContentResponse` object is a function (getter method) that returns the list of function calls, not a direct array property.
-
-**Fix:** Call `response.response.functionCalls()` as a function, e.g. `response.response.functionCalls()?.[0]`.
-
-### 2026-05-24 — file creation/edit tools fail on worktree paths outside conversation directory
-
-**Symptom:** `write_to_file`, `replace_file_content`, and `multi_replace_file_content` error with `files must be written to the correct artifact directory: <artifact-dir-of-subagent>`.
-
-**Root cause:** These tools enforce a security/scope policy requiring all paths to be inside the active subagent's conversation ID directory. Since git worktrees created for subagents are located under the main agent's conversation directory, any workspace paths violate this check.
-
-**Fix:** Use `run_command` with Unix tools (e.g. `cat << 'EOF' > file` or `sed`) to create or edit files in the workspace directory instead of using the custom file-handling tools.
-
-### 2026-05-24 — Vitest vi.mock hoisted variable ReferenceError
-
-**Symptom:** `ReferenceError: Cannot access 'mockVariable' before initialization` during Vitest runs.
-
-**Root cause:** `vi.mock` is hoisted to the top of the file before outer variables are defined.
-
-**Fix:** Use `vi.hoisted` to declare mock variables (e.g. `mockKeychain`, `mockOpenExternal`) so that they are declared and initialized before any hoisted `vi.mock` blocks run.
-
-### 2026-05-24 — EventEmitter.removeAllListeners(undefined) does not clear all events
-
-**Symptom:** In tests, calling a typed wrapper's `eventBus.removeAllListeners()` (which passed `event?: string` value of `undefined` to Node's `emitter.removeAllListeners(event)`) failed to clear listeners across tests, leading to tests running with multiple active listeners and failing.
-
-**Root cause:** Node's `EventEmitter.prototype.removeAllListeners` checks `arguments.length` to decide whether to clear all events or just one. When `undefined` is passed explicitly, it treats it as a single argument (event name `"undefined"`) rather than no arguments.
-
-**Fix:** Explicitly branch on `event !== undefined` and call `removeAllListeners()` with no arguments to clear all events.
-
-### 2026-05-30 — main-process secrets load from `app/.env` via a first-import side-effect module
-
-**Symptom:** Putting `process.loadEnvFile()` in the body of `app/src/main/index.ts` did not make `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` from `app/.env` available — OAuth still used the `mock-client-id` fallback.
-
-**Root cause:** `google-auth.ts` reads `process.env.GOOGLE_CLIENT_ID` at module-evaluation time, and ES module imports (`index.ts` → `ipc.ts` → `google-auth.ts`) are hoisted and evaluated *before* any statement in the `index.ts` body. So a body-level `process.loadEnvFile()` runs too late. (`gemini.ts` is unaffected because it reads the key lazily inside `getGeminiClient()`.)
-
-**Fix:** Load env in a dedicated side-effect module `app/src/main/load-env.ts` (guarded `try { process.loadEnvFile() } catch {}`) and import it as the **first** import in `index.ts` (`import './load-env.js';`). ESM evaluates imports in source order, so the env file loads before `google-auth.ts` is evaluated. Secrets live in `app/.env` (gitignored); see [docs/RUNNING.md](docs/RUNNING.md).
-
-### 2026-05-31 — electron-vite bundles dependencies under pnpm workspace
-
-**Symptom:** Running `pnpm dev` fails with `Error: Electron failed to install correctly. Please delete node_modules/electron...` and `getElectronPath` errors.
-
-**Root cause:** Under a pnpm workspace structure, `electron-vite`'s automatic dependency externalization fails to match dependency/path correctly because packages resolve through the symlinked `.pnpm` virtual store. This causes the main process to bundle packages like `electron` and native dependencies (e.g. `better-sqlite3`, `keytar`) inline. At runtime, the bundled `electron/index.js` wrapper attempts to run installer scripts using a relative path that doesn't exist in `out/main/`.
-
-**Fix:** Explicitly configure `build.rollupOptions.external` under `main` and `preload` in `app/electron.vite.config.ts` to keep `electron`, `better-sqlite3`, `keytar`, and other node modules external.
-
-### 2026-05-31 — duplicate `__dirname` declaration crash
-
-**Symptom:** Running `pnpm dev` fails with `SyntaxError: Identifier '__dirname' has already been declared`.
-
-**Root cause:** When bundling/compiling with Vite/Rolldown, the bundler injects a CommonJS-style global shim block containing `const __dirname = import.meta.dirname;` at the top of the bundle. If `src/main/index.ts` also declares its own `const __dirname = ...` at the top level of the ESM file, they clash under the same module scope, causing a duplicate declaration syntax error.
-
-**Fix:** Replace the manual declaration of `const __dirname` in source files with direct use of Node's native `import.meta.dirname` (which is fully supported in Node 20.11+).
-
-### 2026-05-31 — native module compilation crash on Electron 42 and target mismatches
-
-**Symptom:** Running `pnpm dev` fails to compile native modules (`better-sqlite3` fails with `too few arguments to function call... v8::External::New`), or runs into `was compiled against a different Node.js version` runtime crash.
-
-**Root cause:** Electron 42 (bumped by Dependabot) introduces V8 14.8 which contains breaking API changes in native bindings (`ExternalPointerTypeTag`), rendering older `better-sqlite3` versions incompatible. Furthermore, native modules must be compiled for the specific V8/ABI version of the running environment (Node.js 127 vs. Electron 33's 130). In a pnpm workspace, rebuilds run in subfolders fail to target the physically-hoisted native modules in the parent `.pnpm` store.
-
-**Fix:** 
-1. Downgrade `electron` to `^33.2.0` in `app/package.json` to ensure native compatibility.
-2. Automate environment-targeted recompilation in the root `package.json` scripts: prepend `npx @electron/rebuild -v 33.4.11 -f -w better-sqlite3,keytar` to the root `dev` script, and `pnpm --filter ./app rebuild better-sqlite3 keytar` to the root `test` script.
-
-### 2026-05-31 — react and react-dom version mismatch crash
-
-**Symptom:** The Electron application window opens but renders a completely blank white screen. The DevTools console shows `Uncaught TypeError: Cannot read properties of undefined (reading 'S')` at `react-dom_client.js`.
-
-**Root cause:** The `react` package was pinned to version `^18.3.1` while `react-dom` and `@types/react-dom` were bumped to version 19 by Dependabot. This mismatch causes React DOM 19's client initialization code to search for React 19-specific internal dispatcher symbols (like `S`) on the loaded React 18 instance, resulting in a TypeError that crashes the React rendering tree during mount.
-
-**Fix:** Downgrade `react-dom` and `@types/react-dom` back to `^18.3.1` in `app/package.json` to match the version of `react`, then run `pnpm install`.
-
-### 2026-05-31 — automated gemini model fallback for 429 quota exhaustion
-
-**Symptom:** API calls to decompose goals fail with a `429 Too Many Requests` or `Quota exceeded` exception when using the free tier key.
-
-**Root cause:** Free-tier Gemini keys have strict Rate Limits (15 RPM / 1500 RPD) or model-specific quotas.
-
-**Fix:** Implemented an automatic model recycling fallback loop in `app/src/main/planner/decompose.ts`. If the primary model (defined by `GEMINI_MODEL` or defaulting to `gemini-2.0-flash`) fails, the planner catches the exception, logs a console warning, and retries the request using fallback models (`gemini-1.5-flash`, `gemini-2.0-flash-lite-preview-02-05`, `gemini-1.5-pro`, and other 2.5/3.x generations in order). It only throws if all candidate models fail. (Note: Since refactoring to a client-server architecture, this fallback loop is now executed on the backend proxy server).
-
-### 2026-06-12 — tslib required by electron-builder under pnpm workspaces
-
-**Symptom:** Running `pnpm package` fails with `Error: Cannot find module 'tslib'` originating from `@peculiar/utils`.
-
-**Root cause:** Under a pnpm workspace structure, dependencies of `electron-builder` (such as `@peculiar/webcrypto` and `@peculiar/utils`) require the helper module `tslib`, but it was not resolved correctly due to pnpm's strict isolation.
-
-**Fix:** Install `tslib` as a development dependency at the root of the workspace (`pnpm add -D -w tslib`).
-
-### 2026-06-12 — `noUncheckedIndexedAccess` + ESLint `no-non-null-assertion` forces destructure + optional chaining in tests
-
-**Symptom:** Subagent-authored test files using `result[0].kind` fail typecheck with `TS2532: Object is possibly 'undefined'` because `tsconfig.json` enables `noUncheckedIndexedAccess`. Switching to `result[0]!.kind` then fails ESLint with `@typescript-eslint/no-non-null-assertion`.
-
-**Root cause:** Both rules are intentionally on. There is no escape hatch via non-null assertion; tests must be written so the type system can prove non-`undefined`.
-
-**Fix:** Use the destructure + optional-chaining pattern that the existing tests use:
-```ts
-const result = repo.listSomething();
-expect(result).toHaveLength(2);
-const [r0, r1] = result;
-expect(r0?.kind).toBe('file_added');
-```
-When `r0` is undefined, `r0?.kind` is `undefined` and the `toBe(...)` assertion fails — same semantics as `!.`, but lint-clean.
-
-### 2026-06-12 — `summaries.task_id` is a real FK; test fixtures must seed the parent task
-
-**Symptom:** Tests for `SummariesRepo.insert({ taskId: 'task-1', ... })` fail with `SqliteError: FOREIGN KEY constraint failed`.
-
-**Root cause:** `summaries.task_id TEXT REFERENCES tasks(id) ON DELETE SET NULL` is a real foreign key. The schema allows `task_id IS NULL` for "global" summaries, but any non-null value must reference an existing `tasks(id)` row. SQLite has foreign keys enabled in this app's migrations.
-
-**Fix:** Seed the parent goal + task before inserting a summary in any test that uses a non-null `taskId`. See the helper pattern in `app/tests/store/summaries-repo.test.ts` (`seedTask(db, taskId)` creates a goal via `GoalsRepo.create(...)` then a task via `TasksRepo.create(...)` with the desired id).
-
-### 2026-06-12 — corepack-based pnpm shim breaks behind corporate npm registry
-
-**Symptom:** `pnpm <anything>` fails with `Error when performing the request to https://registry.npmjs.org/pnpm/-/pnpm-10.26.0.tgz` / `ConnectTimeoutError`, even when `~/.npmrc` already points to an internal registry. Background subagents and the main session both hit the same wall.
-
-**Root cause:** The `pnpm` on `$PATH` (via Node/mise) is actually a corepack shim that ignores user `.npmrc` and unconditionally fetches the pinned `packageManager` version from `registry.npmjs.org`. On a network without direct access to `registry.npmjs.org` (VPN-only, corporate restriction), corepack times out before `.npmrc` is even consulted.
-
-**Fix:** Use the previously-installed global pnpm directly: `~/Library/pnpm/pnpm` (or wherever `pnpm setup` placed it). Prepend `~/Library/pnpm` to `PATH` so subprocesses (including scripts that re-shell out to `pnpm`) resolve to the global binary rather than the corepack shim:
-```sh
-export PATH=/Users/<user>/Library/pnpm:$PATH
-pnpm install   # now actually uses the internal registry from ~/.npmrc
-```
-Subagents that need to install deps will hit this same wall and report "network/corepack issue" — orchestrator must pre-install deps from the main session or pass the PATH override into the subagent prompt.
-
-### 2026-05-24 — Preload build output filename extension mismatch in ESM packages
-
-**Symptom:** The main process loads `../preload/index.js` but the built preload script is outputted as `index.mjs`, causing a runtime file-not-found error in Electron.
-
-**Root cause:** When `"type": "module"` is set in `package.json`, Vite/Rollup defaults to building outputs as ESM (using the `.mjs` extension) even when specifying `entryFileNames: '[name].js'`.
-
-**Fix:** Configure the preload config's Rollup output options in `electron.vite.config.ts` to build in CommonJS format (`format: 'cjs'`) and set `entryFileNames: '[name].js'`.
-
-### 2026-06-24 — Port 3000 occupied by other local servers causes 404 in goal decomposition
-
-**Symptom:** Invoking `goals:decompose` fails with `Goal decomposition failed: Server responded with status 404`.
-
-**Root cause:** The backend proxy server by default runs on port `3000`. If port `3000` is already occupied by another local service (e.g., a Next.js dev server), HTTP requests from the Electron client targeting `http://localhost:3000/api/decompose` will hit the other service instead, resulting in a 404.
-
-**Fix:** Create `server/.env` and assign `PORT=3001` (or another unused port), and create `app/.env` to configure `PLOVER_BACKEND_URL=http://localhost:3001`. Both processes must be restarted to load their respective environment files.
-
-- **Google API calls must live in Sync module**
-
-**Symptom:** Activity module had direct dependencies on `googleapis` and `GoogleAuth`.
-
-**Root cause:** This violated the architectural rule that only Sync talks to Google APIs, leading to logic duplication and OAuth scope creep.
-
-**Fix:** Move polling logic to `Sync` module. Use the event bus (`gdocs.revision` event) to notify the `Activity` module of updates. Refactor Activity tracker into a subscriber that only writes to `ActivityRepo`.
-
-### 2026-07-19 — `PLOVER_BACKEND_URL` from `app/.env` was silently overridden by a Vite build-time default
-
-**Symptom:** Clicking "Continue with Google" on the signup screen in `pnpm dev` opened a browser tab to `http://localhost:3000/signup?state=…` (connection refused) instead of the Cloud Run URL set in `app/.env`.
-
-**Root cause:** `electron.vite.config.ts` had `'import.meta.env.PLOVER_BACKEND_URL': JSON.stringify(process.env.PLOVER_BACKEND_URL ?? 'http://localhost:3000')`. `process.env.PLOVER_BACKEND_URL` is unset at Vite build time (only `app/.env` sets it, and that's loaded by `load-env.ts` at runtime in the main process). So Vite baked the literal `'http://localhost:3000'` into every consumer. The consumers (`signup-flow.ts`, `authed-fetch.ts`) check `import.meta.env.PLOVER_BACKEND_URL` first and only fall through to `process.env.PLOVER_BACKEND_URL` if the Vite value is falsy — but the bake made it always-truthy, so the runtime `app/.env` value never won.
-
-**Fix:** Default the Vite define to an empty string (`JSON.stringify(process.env.PLOVER_BACKEND_URL ?? '')`). Now if the env var is unset at build time, `if (fromVite)` in the consumers is falsy and they correctly fall through to the runtime `process.env` value. Packaged builds still work because CI sets `PLOVER_BACKEND_URL` in the release workflow env before `pnpm package`, so Vite bakes the real value.
-
-### 2026-07-18 — Calendar sync removed but `tasks.calendar_event_id` column intact
-
-**Symptom:** `store/db.ts` still defines `calendar_event_id TEXT` on the `tasks` table even though no application code reads or writes it after the Calendar-sync removal.
-
-**Root cause:** Dropping a column requires a new migration, and existing installs would fail if we altered v1 in place. We deliberately left the column so existing DBs stay usable.
-
-**Fix:** Do NOT re-add references. If you're touching the tasks schema for another reason, bundle a proper `ALTER TABLE tasks DROP COLUMN calendar_event_id` migration then (SQLite ≥3.35 supports it). Until then, treat the column as vestigial.
-
-### 2026-06-24 — Clicking "Open setup overlay" opens duplicate main window instead of setup flow
-
-**Symptom:** In the "Today" page empty state, clicking "Open setup overlay" opens a new window, but the window renders a duplicate of the main application (with sidebar/main tabs) rather than the setup/overlay flow.
-
-**Root cause:** The setup flow window is loaded with `?variant=window`. However, `main.tsx` determined whether to render `<Overlay />` (which renders the setup/overlay steps) or `<App />` (which renders the main application layout) by checking if `window.location.search` includes the literal string `"overlay"`. Since `variant=window` does not contain `"overlay"`, it incorrectly fell back to rendering `<App />`.
-
-**Fix:** Update `main.tsx` to parse the `variant` query parameter and match both `"overlay"` and `"window"` variants as the overlay/setup flow.
-
-### 2026-07-17 — Electron GUI can't be launched for visual verification via Bash/PowerShell tool on this Windows box
-
-**Symptom:** Ran `pnpm dev` (and, directly, `node_modules/electron/dist/electron.exe .`) via the Bash/PowerShell tools, in both foreground and background modes, to visually confirm a titlebar UI change. Each time, the wrapping shell command reports a clean exit code 0 within seconds and no Electron/`electron.exe` process is left running (`Get-Process` finds nothing), with zero stdout/stderr captured even when redirected to a log file — no crash message, nothing.
-
-**Root cause:** The Bash/PowerShell tool's shell runs in a sandboxed subprocess context that has no attached interactive Windows desktop/session. Electron is a GUI app that needs a real window station to create a `BrowserWindow`; without one it exits immediately and silently (no console output at all, since it never gets far enough to log anything). This is a different execution context from the one the `computer-use` MCP tools see and control (the user's actual visible desktop) — processes launched via Bash/PowerShell here are invisible to `computer-use`, and vice versa there's no way to attach `computer-use` to a process spawned this way.
-
-**Fix:** Don't try to visually verify Electron GUI changes by launching `pnpm dev`/the Electron binary through the Bash/PowerShell tool and then screenshotting via `computer-use` — it will silently fail with no diagnostic signal. For UI changes in this repo, verify via `pnpm typecheck && pnpm lint && pnpm test`, a careful manual read of the diff, and (if genuinely needed) ask the user to run `pnpm dev` themselves and confirm visually on their own desktop session.
-
-### 2026-07-18 — concurrent sessions in the same working directory silently swap out HEAD mid-task
-
-**Symptom:** Ran `git checkout -b <new-branch> origin/main` in the primary working directory, then did unrelated work (writing a plan file), then `git commit`. The commit landed on local `main` instead of the new branch. `git reflog` showed a `checkout: moving from <new-branch> to main` event between the branch creation and the commit that this session never issued.
-
-**Root cause:** The user (or another Claude Code session/tool) was actively working in the same primary checkout (`C:\Users\hhl_c\Documents\GitHub\Plover`) at the same time — switching branches and committing on their own branch. A single working directory has exactly one HEAD; whichever actor checks out last wins, and neither actor gets a warning. This is invisible from inside a session — there's no signal that another process touched HEAD except retroactively via `git reflog`.
-
-**Fix:** When there's any chance the user or another session is concurrently using the primary repo directory (ask if unsure — don't assume), do multi-step git work (branch + commits) in an isolated `git worktree` instead: `git worktree add <sibling-path> <branch>`, then run all further `Bash`/`Edit` calls with that path, never the primary directory. If a stray commit already landed on the wrong branch before noticing, recover it non-destructively — `git cherry-pick <sha>` onto the correct branch from the worktree — rather than resetting the branch the other actor is using, which they might be actively building on top of.
-
-### 2026-07-21 — `app/package.json` pins Electron `^42.7.0`, not `^33.2.0`
-
-The "native module compilation crash on Electron 42" lesson above (2026-05-31) describes
-downgrading to `electron ^33.2.0` to fix a `better-sqlite3`/V8 ABI mismatch. That downgrade
-has since been reverted/superseded — as of 2026-07-21 `app/package.json` pins `^42.7.0`.
-If you hit native-module ABI errors again, don't assume the fix is still in place; check
-the actual pinned version first (`grep '"electron"' app/package.json`) rather than trusting
-this file's older entries at face value.
-
-### 2026-07-21 — transparent `BrowserWindow` on Windows can render solid black instead of glass
-
-**Symptom:** A frameless, `transparent: true`, `alwaysOnTop: true` companion overlay window
-(`app/src/main/windows/companion.ts`) rendered as a solid black rectangle on a Windows 11
-machine instead of the intended frosted-glass translucent pill, and was positioned in the
-top-right corner instead of top-center.
-
-**Root cause (transparency):** This was the *first time* the companion window had ever
-actually been shown to a user — `window.api.companion.show()` had existed as dead IPC
-plumbing with no caller anywhere in the renderer until this session wired up an
-auto-show-at-launch call. So a pre-existing but never-exercised transparency setup hit a
-known Electron/Windows footgun: on some Windows systems, a `transparent: true`
-`BrowserWindow` created *without* an explicit `backgroundColor` falls back to an opaque
-black backing surface for the native win32 window class instead of a genuine per-pixel-alpha
-one (see [electron/electron#40515](https://github.com/electron/electron/issues/40515)).
-`resizable: true` is a separate known trigger for the same symptom (not the cause here —
-this window already had `resizable: false`). Disabling hardware acceleration app-wide is
-the other commonly-cited workaround but has too broad a blast radius (affects every
-window's rendering) to reach for by default.
-
-**Fix:** Set `backgroundColor: '#00000000'` explicitly on the transparent
-`BrowserWindow`'s constructor options — don't just omit `backgroundColor` and assume
-`transparent: true` alone is enough on Windows. If a transparent overlay window still
-renders opaque after that, the next things to check are (in order): whether `resizable` is
-accidentally `true`, whether the user is on a remote/virtualized session where DWM
-composition may be degraded, and only as a last resort whether
-`app.disableHardwareAcceleration()` is needed (accept the app-wide rendering-quality
-tradeoff explicitly with the user before adding it).
-
-**Fix (positioning):** Was hardcoded to the top-right corner
-(`workArea.x + workArea.width - COLLAPSED_WIDTH - 24`). Changed to horizontally centered at
-the top (`workArea.x + Math.round((workArea.width - COLLAPSED_WIDTH) / 2)`, `workArea.y +
-12`) per explicit user feedback that a top-right corner pill read as "not centered" /
-misplaced once actually visible on screen — this app's design intent for this overlay is a
-persistent top-center bar, not a corner toast.
-
-### 2026-07-21 — companion window's *dev-mode* URL didn't match its actual file path, so it silently loaded the main app instead
-
-**Symptom:** After fixing the black-box/preload issues above, the companion window
-stopped crashing but rendered the **entire main app window** (full Home Dashboard, sidebar
-nav, title bar) instead of the small collapsed pill — at full window size, not the
-56×360px pill dimensions.
-
-**Root cause:** `createCompanionWindow()`'s two load paths didn't agree with each other.
-The production path (`win.loadFile(join(..., '../renderer/companion/index.html'))`)
-correctly targets the file at its real location, `src/renderer/companion/index.html`. But
-the dev path (`win.loadURL(`${process.env.ELECTRON_RENDERER_URL}/companion.html`)`)
-requested `/companion.html` — flat, no subdirectory — which doesn't exist under Vite's dev
-server (root = `src/renderer`, so the file is actually served at `/companion/index.html`).
-Vite's dev server has no route for the flat path and falls back to serving the root
-`index.html` (the main app's entry), so `main.tsx`'s `?variant=` branching logic ran with
-no variant and mounted the default `<App />` shell — indistinguishable at a glance from
-"the overlay is now the main window." Same root story as the two lessons above this one:
-this window had never actually been shown to a user before this session, so this dev/prod
-URL divergence had never been exercised either.
-
-**Fix:** Make the dev URL match the production `loadFile` path's structure:
-`` `${process.env.ELECTRON_RENDERER_URL}/companion/index.html` ``, not `/companion.html`.
-General lesson: when a `BrowserWindow` has separate `loadURL` (dev) / `loadFile` (prod)
-branches for a non-root HTML entry, verify both branches resolve to the *same* file — Vite
-serves dev files at their real path relative to `root`, which is easy to get wrong by
-analogy with the production build's flattened-looking `entryFileNames` output naming.
-
-### 2026-07-22 — the user runs a *second, separate* local checkout of this repo, `D:\GitHub\Plover`, on its own branch (`ui-fixes`)
-
-**Symptom:** Implemented and verified (typecheck/lint/test all green) a fix for the
-companion pill not syncing its active task with Home, on a branch built off
-`wip/liquid-glass-overlay`. User tested by restarting `pnpm dev` and reported "still not
-synced up." Everything checked out statically — Home and the companion call the exact same
-shared `pickCurrentTask` against the exact same `window.api.getTasks()` IPC channel, so
-they logically *cannot* disagree if the same code is running for both.
-
-**Root cause:** The user's `pnpm dev` was running from `D:\GitHub\Plover` — a second,
-entirely separate local clone of the same GitHub remote (`tryplover/Plover`), sitting on
-branch `ui-fixes` (tracking `origin/ui-fixes`), not the `C:\Users\hhl_c\Documents\GitHub\Plover`
-checkout this session had been working in. `ui-fixes` has its own independent companion-overlay
-history (`e645e5e` "fix: restore companion overlay deleted by dead-code cleanup" plus later
-fixes) — a *third* parallel restoration of the feature, distinct from both `main`'s deletion
-and `wip/liquid-glass-overlay`'s rebuild (see the 2026-07-22 lesson above this one). The fix
-built against the wrong branch was 100% correct for that branch and 100% invisible to the
-user, since `pnpm dev` reads from whichever checkout's disk it's launched from — there is no
-cross-checkout code sharing short of git itself.
-
-Also notable: on `ui-fixes`, the bug's shape was slightly different from the
-`wip/liquid-glass-overlay` diagnosis — Home there never called `window.api.companion.setActiveTask(...)`
-at all (verified by grepping the whole `app/src` tree for `setActiveTask` and finding zero
-renderer callers), so it wasn't a mount-lifecycle race, it was dead wiring. The eventual fix
-(make the companion self-fetch tasks instead of waiting for a push) was the same either way,
-but don't assume a diagnosis from one branch's copy of a feature transfers exactly to
-another's — re-verify against the actual current file contents on whichever branch is real.
-
-**Fix:** Before trusting a bug report against a locally-running dev build, confirm which
-checkout/branch is actually being run — ask directly ("what folder/drive is `pnpm dev`
-running from?") rather than assuming the primary working directory this session started in
-is the only one. If a fix doesn't take effect despite a full app restart and the code
-logically can't produce the observed behavior, checkout-mismatch is a stronger hypothesis
-than a subtle runtime race — check `git remote -v` / `git rev-parse --abbrev-ref HEAD` in
-the other location before re-diagnosing the same bug from scratch. To move a fix between two
-local checkouts of the same repo without touching the shared GitHub remote, commit it in one
-and `git fetch <absolute-path-to-other-checkout> <branch>:<branch>` from the other — works
-entirely offline, no push permission needed.
-
-### 2026-07-28 — `tasks.created_at`/`updated_at` are not usable as a "when did work on this task begin" signal
-
-**Symptom:** While building an adaptive polling cadence for `InferenceEngine` (poll faster
-while a task is newly started), the first instinct was to key "newly started" off
-`tasks.created_at` or `tasks.updated_at`. Both are wrong for this purpose, for different
-reasons, and the bug wouldn't show up in a quick manual test — it only surfaces over time
-or across multiple tasks in the same goal.
-
-**Root cause:**
-1. `created_at` reflects when the **goal** was decomposed, not when this specific subtask's
-   work began. Planner bulk-creates all of a goal's subtasks in one pass
-   ([tasks.ts](app/src/main/store/repos/tasks.ts) `create()`), so every subtask in a goal
-   shares essentially the same `created_at` regardless of when the user actually starts
-   each one — a task started today could have a `created_at` from weeks ago if the goal was
-   planned early.
-2. `updated_at` looked like a better fit (it does change when a task moves to `in_progress`
-   via `.update()`), but `TasksRepo.incrementProgress()` **also** bumps `updated_at` on every
-   call — including calls made by the very inference pass that would be reading it. Using
-   `updated_at` as the "age" signal creates a self-refreshing loop: every fast-cadence pass
-   that increments progress resets the timestamp, so the task looks "freshly started" forever
-   and the cadence never backs off to baseline.
-
-**Fix:** Don't derive "task age" from any persisted task-table timestamp. Instead track it
-in memory: `InferenceEngine.firstSeenInProgressAt` (a `Map<taskId, timestampMs>`) records the
-moment each task is first observed with `status === 'in_progress'`, and entries are dropped
-once a task leaves that status. This avoids both pitfalls, at the cost of resetting on app
-restart — an accepted, simple tradeoff for in-memory pacing state. General lesson: before
-using any `*_at` column as an "age since X happened" signal, check what else writes to that
-column and whether rows for the same "unit of work" get bulk-created together — either can
-silently invalidate the assumption.
-
-### 2026-07-29 — a PR merged into a feature branch (not `main`) doesn't ship, even after that branch was already merged once
-
-**Symptom:** A user-reported bug (companion overlay not syncing its active task after reinstalling
-a fresh release build) traced back to PR #274 ("Sync companion overlay with active task + manual
-watch/expand model"), which looked merged on GitHub. `pnpm run` from `main` still didn't have the
-fix.
-
-**Root cause:** PR #273 merged branch `ui-fixes` into `main`. Branch `ui-fixes` kept living after
-that, and PR #274 was opened and merged *into `ui-fixes`*, not `main` — GitHub shows #274 as
-"merged" regardless of which branch it targeted, so it's easy to misread as "merged into main."
-Those post-#273 commits on `ui-fixes` never made it back to `main` through the normal PR flow (a
-direct, unreviewed `git merge branch 'ui-fixes' into main` several days later happened to pull
-them in — good luck, not process). The same branch picked up *more* unmerged work afterward (PR
-#285), which now conflicts with `main`'s independent refactor of the same files — same failure
-mode, still live as of this writing.
-
-**Fix / prevention:** Before treating a "merged" PR as shipped, check its **base branch**, not
-just its merged status: `gh pr view <n> --json baseRefName,mergeCommit` and
-`git merge-base --is-ancestor <mergeCommit.oid> origin/main`. A branch that was merged to `main`
-once is not safe to keep opening PRs against — either merge each follow-up PR to `main` directly,
-or delete the branch after its first merge so a second round of work can't silently accumulate
-off of it. Before cutting a release, spot-check recent PRs the same way (base branch + ancestor
-check) rather than trusting "Merged" badges at face value.
-
-
+## Known footguns → skills
+
+The old "Lessons learned" log lived here and grew to 30+ entries loaded into
+every session. Those domain-specific footguns now live as **on-demand reference
+skills** under [`.claude/skills/plover-*`](.claude/skills/). Claude Code surfaces
+each by its trigger `description`, so the relevant one loads only when you hit its
+symptom — grep an error string or symptom and invoke the matching skill:
+
+| Skill | Covers |
+|---|---|
+| `plover-pnpm-workspace` | pnpm `--filter` form, colon-scripts, `--coverage`, `onlyBuiltDependencies`, corepack-vs-corporate-registry |
+| `plover-native-modules` | better-sqlite3/keytar ABI, `@electron/rebuild`, electron version pin, tslib/electron-builder |
+| `plover-electron-vite-build` | dep externalization, `__dirname`, preload `.mjs`, react/react-dom mismatch, dev/prod window URL |
+| `plover-electron-windows-overlay` | overlay/setup window variant routing, transparent-window black-box, positioning |
+| `plover-env-and-backend` | `load-env` ordering, `PLOVER_BACKEND_URL` vite bake, backend port |
+| `plover-testing` | vitest `vi.hoisted`, FK fixtures, `noUncheckedIndexedAccess` pattern, rebuild-ABI-before-tests, GUI-verify limits, pre-existing renderer fails |
+| `plover-git-safety` | subagent-worktree file tools, concurrent-checkout HEAD swaps, second checkout, PR base-branch |
+| `plover-store-schema` | vestigial `calendar_event_id`, `created_at`/`updated_at` not an age signal |
+| `plover-gemini` | `functionCalls()` method, 429 model fallback |
+
+**Contract (replaces the old "add a lesson" rule):** when you hit an error,
+surprise, or wrong-first-attempt a future Claude could avoid, add it to the most
+relevant existing `plover-*` skill's Quick-reference table + Details (or create a
+new `plover-*` skill via the `superpowers:writing-skills` skill) **before
+reporting completion** — do NOT grow this file. If the footgun is actually an
+always-true rule, promote it into the relevant rules section above instead.

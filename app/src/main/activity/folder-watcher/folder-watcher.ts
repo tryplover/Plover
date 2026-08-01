@@ -1,10 +1,10 @@
 import { watch, FSWatcher } from 'chokidar';
-import { ActivityRepo } from '../store/repos/activity.js';
-import { SettingsRepo } from '../store/repos/settings.js';
-import { TypedEventBus } from '../events/bus.js';
+import { ActivityRepo } from '../../store/repos/activity.js';
+import { SettingsRepo } from '../../store/repos/settings.js';
+import { TypedEventBus } from '../../events/bus.js';
 import { FolderEventPayload } from '@shared/events.js';
-import { gate } from './shared/gate.js';
-import { serializeAsync } from './shared/serialize-async.js';
+import { gate } from '../shared/gate.js';
+import { serializeAsync } from '../shared/serialize-async.js';
 
 export class FolderWatcher {
   private watcher: FSWatcher | null = null;
