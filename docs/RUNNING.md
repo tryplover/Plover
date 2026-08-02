@@ -24,15 +24,17 @@ pnpm --filter ./app rebuild better-sqlite3 keytar
 
 ## 3. Sign in on first launch
 
-Plover uses a hosted backend (`plover-server`) for all Gemini calls. On first launch, the app boots into a small **signup window** with a **Continue with Google** button:
+Plover authenticates entirely against **Supabase** — the same project used by
+`plover-website` (see `SUPABASE_URL`/`SUPABASE_ANON_KEY` in `app/.env`). During
+onboarding (or from **Settings → Account** afterward), sign in or create an account
+with **Continue with Google** or email/password, via `app/src/main/auth/supabase-auth.ts`.
 
-1. Click the button. The default browser opens the plover-server signup page.
-2. Approve the Google consent screen (scopes: `openid email`).
-3. The server redirects to `plover://auth?token=…&state=…`.
-4. Electron catches the deep link, verifies the state nonce, and stores the token in the macOS Keychain (service `plover`, account `plover_token`).
-5. The main window opens.
-
-On subsequent launches, the token is found in the keychain and the signup window is skipped. The signup logic lives in `app/src/main/auth/signup-flow.ts`; the boot gate lives in `app/src/main/index.ts`.
+There is no separate signup flow, deep link, or opaque token to manage: the Electron
+app's Supabase session *is* the credential. `authedFetch`
+(`app/src/main/http/authed-fetch.ts`) sends the current session's access token as
+`Authorization: Bearer <token>` on every call to `plover-server`, which verifies it
+directly against Supabase (`src/auth/middleware.ts` in that repo) — no `plover://`
+protocol handler, no keychain-stored `plover_token`.
 
 ## 4. Run
 
@@ -48,11 +50,13 @@ At build time, `PLOVER_BACKEND_URL` is baked into the main-process bundle by `el
 PLOVER_BACKEND_URL=https://plover-server-562340206018.us-central1.run.app pnpm dev
 ```
 
-Sign in through the browser flow when the signup window appears. See the `plover://` caveat below — macOS may route the redirect to a different app bundle than the one you're running.
+Sign in with your Supabase account (Google or email/password) once the app launches.
 
 ### B. Run a local plover-server
 
-Clone the server repo alongside this one and follow its README to configure `.env` (Gemini API key, Google OAuth web-app client, Firestore project):
+Clone the server repo alongside this one and follow its README to configure `.env`
+(Gemini API key, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` — the **same** Supabase
+project as `app/.env`, but the service-role key, never the anon key):
 
 ```bash
 git clone https://github.com/tryplover/plover-server
@@ -62,22 +66,9 @@ pnpm install
 pnpm dev
 ```
 
-The server runs on `http://localhost:3000`. From this repo, `pnpm dev` picks that up as the default. Same `plover://` caveat applies.
+The server runs on `http://localhost:3000`. From this repo, `pnpm dev` picks that up as the default.
 
-## 5. The `plover://` protocol-handler caveat
-
-macOS routes custom URL schemes to the **last-launched app bundle** that registered them. If you've never packaged Plover locally, the OS may not have your dev instance registered — the browser will succeed but the `open-url` event never fires in your dev main process.
-
-Workaround: package the app once so macOS registers the bundle.
-
-```bash
-pnpm package
-open app/dist/*.dmg  # drag into /Applications, launch once
-```
-
-After that, `pnpm dev` iteration works normally — Electron re-registers on each dev launch since it's now the most recent handler. **Symptom to watch for:** signup window stays on the "waiting…" state after the browser redirect completes.
-
-## 6. Google Docs/Drive OAuth (for the app, not signup)
+## 5. Google Docs/Drive OAuth (for the app, not sign-in)
 
 This is separate from the plover-server signup OAuth. The app talks to Google Docs/Drive APIs directly on behalf of the user to poll for document modifications, using a **desktop-app** OAuth client.
 
@@ -89,15 +80,15 @@ This is separate from the plover-server signup OAuth. The app talks to Google Do
 
 Without these, the Google connection flow uses `mock-client-id` placeholders and fails; the rest of the app still runs.
 
-## 7. Manual E2E walkthrough
+## 6. Manual E2E walkthrough
 
-1. **First launch** — signup window appears. Click **Continue with Google**, approve consent in the browser, wait for the main window to open.
+1. **First launch** — onboarding appears. Sign in with **Continue with Google** or create an account with email/password, then finish onboarding.
 2. **Connect Google Docs/Drive** — **Settings → Connect Google Account**. Approve consent. The refresh token is stored under service `plover`, account `google-refresh-token`.
 3. **Capture and decompose a goal** — **Goals** tab, enter *"Write a 10-page research report by next Friday"*, **Decompose**. Verify Gemini returns an ordered subtask list with estimates and dependencies. **Schedule**, **Save**.
 4. **Today view** — confirm scheduled tasks appear; toggle one done.
 5. **Overlay quick-add** — press **Option + Space**, type a goal, **propose**, **commit**, confirm it shows up in Today.
 
-## 8. Building for release
+## 7. Building for release
 
 The `PLOVER_BACKEND_URL` env var is baked into the release bundle at build time:
 
@@ -167,34 +158,27 @@ Before running `pnpm package`, make sure the appropriate signing credentials are
 If none of these environment variables are set, the notarization script will print a warning and skip notarization, falling back to an ad-hoc signed build.
 
 
-## 9. Reset / inspect local state
+## 8. Reset / inspect local state
 
 - **Database:** `~/Library/Application Support/Plover/plover.db` (plus `-wal` and `-shm`). Delete to wipe goals/tasks; migrations re-run on next launch.
 - **Google Docs/Drive auth:** **Settings → Disconnect**, or `security delete-generic-password -s plover -a google-refresh-token`.
-- **Plover signup token:** force re-signup by clearing the keychain entry:
+- **Plover account (Supabase):** **Settings → Account → Sign out**, or `window.api.auth.signOut()`. There is no local token to clear — the session lives in Supabase.
 
-  ```bash
-  security delete-generic-password -s plover -a plover_token
-  ```
-
-  Next launch opens the signup window again.
-
-## 10. Troubleshooting
+## 9. Troubleshooting
 
 | Symptom | Likely cause / fix |
 |---|---|
-| Nothing happens when I click "Continue with Google" | `PLOVER_BACKEND_URL` doesn't resolve, or the renderer errored — check devtools console. |
-| Browser opened but app didn't catch the redirect | `plover://` handler is registered to another bundle. Run `pnpm package` once and launch the packaged app so macOS registers this build. See §5. |
-| 401 loop on API calls | Token was revoked server-side. Run `security delete-generic-password -s plover -a plover_token` and re-sign in. |
+| Nothing happens when I click "Continue with Google" | `SUPABASE_URL`/`SUPABASE_ANON_KEY` are missing in `app/.env`, or the renderer errored — check devtools console. |
+| 401 on API calls right after signing in | `PLOVER_BACKEND_URL` points at a `plover-server` that hasn't deployed the Supabase-auth middleware yet, or its `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` are misconfigured. |
 | 429 on decompose / infer | Per-user daily quota exhausted. Wait until UTC midnight, or bump the quota in `plover-server`. |
-| OAuth `redirect_uri_mismatch` (Google) | OAuth client isn't type **Desktop app** — recreate it. |
-| OAuth `access_denied` / "app not verified" (Google) | Your email isn't added as a **Test user** on the consent screen. |
+| OAuth `redirect_uri_mismatch` (Google, Docs/Drive connection) | OAuth client isn't type **Desktop app** — recreate it. |
+| OAuth `access_denied` / "app not verified" (Google, Docs/Drive connection) | Your email isn't added as a **Test user** on the consent screen. |
 | `Cannot find module 'better-sqlite3'` / keytar errors | Native build failed — `pnpm --filter ./app rebuild better-sqlite3 keytar`. |
 | Option+Space does nothing | Another app owns the hotkey — check the dev console for "Failed to register global shortcut". |
 
-## 11. Automated tests
+## 10. Automated tests
 
-Unit + mocked-integration tests (Planner, Scheduler, Store, Sync, IPC, signup flow) run with:
+Unit + mocked-integration tests (Planner, Scheduler, Store, Sync, IPC, Supabase auth) run with:
 
 ```bash
 pnpm test

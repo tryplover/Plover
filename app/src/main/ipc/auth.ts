@@ -1,17 +1,12 @@
 import { ipcMain } from 'electron';
 import { settingsRepo } from '../store/index.js';
 import { GoogleAuth } from '../sync/google-auth.js';
-import { startSignup } from '../auth/signup-flow.js';
 import * as supabaseAuth from '../auth/supabase-auth.js';
 import { broadcast } from './shared.js';
 
 export const googleAuth = new GoogleAuth();
 
 export function registerAuthHandlers(): void {
-  ipcMain.handle('signup:start', async () => {
-    await startSignup();
-  });
-
   ipcMain.handle('auth:signIn', async () => {
     try {
       await supabaseAuth.signIn();

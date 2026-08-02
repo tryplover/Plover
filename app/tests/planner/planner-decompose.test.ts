@@ -1,11 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import nock from 'nock';
 
-const mockGetPloverToken = vi.hoisted(() => vi.fn().mockResolvedValue('test-token-xyz'));
-vi.mock('../../src/main/auth/plover-token.js', () => ({
-  getPloverToken: mockGetPloverToken,
-  setPloverToken: vi.fn(),
-  clearPloverToken: vi.fn(),
+const mockGetAccessToken = vi.hoisted(() => vi.fn().mockResolvedValue('test-token-xyz'));
+vi.mock('../../src/main/auth/supabase-auth.js', () => ({
+  getAccessToken: mockGetAccessToken,
 }));
 
 import { decomposeGoal } from '../../src/main/planner/decompose';
@@ -85,12 +83,12 @@ describe('decomposeGoal', () => {
     });
   });
 
-  it('includes X-Plover-Auth-Token header from getPloverToken on every request', async () => {
-    mockGetPloverToken.mockResolvedValueOnce('secret-token');
+  it('includes an Authorization bearer header from the Supabase session on every request', async () => {
+    mockGetAccessToken.mockResolvedValueOnce('secret-token');
 
     nock(backendUrl)
       .post('/api/decompose')
-      .matchHeader('X-Plover-Auth-Token', 'secret-token')
+      .matchHeader('Authorization', 'Bearer secret-token')
       .reply(200, {
         goal: { title: 'Auth Goal' },
         subtasks: [{ title: 'Subtask 1', estimate_minutes: 60 }],
@@ -206,7 +204,9 @@ describe('decomposeGoal', () => {
       goalText: 'Finish doc',
       now: new Date('2026-06-25T12:00:00.000Z'),
       workingHours: { start: '09:00', end: '18:00' },
-      recentActivity: [{ kind: 'gdocs_revision', payload: { name: 'Q3 Roadmap' }, ts: '2026-06-25T11:00:00.000Z' }],
+      recentActivity: [
+        { kind: 'gdocs_revision', payload: { name: 'Q3 Roadmap' }, ts: '2026-06-25T11:00:00.000Z' },
+      ],
     });
     const [firstCall] = fetchMock.mock.calls;
     const body = JSON.parse(firstCall?.[1]?.body ?? '{}') as Record<string, unknown>;

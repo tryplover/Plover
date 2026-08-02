@@ -15,11 +15,9 @@ vi.mock('electron', () => ({
   app: { isPackaged: false },
 }));
 
-const mockGetPloverToken = vi.hoisted(() => vi.fn().mockResolvedValue('test-token-xyz'));
-vi.mock('../../src/main/auth/plover-token.js', () => ({
-  getPloverToken: mockGetPloverToken,
-  setPloverToken: vi.fn(),
-  clearPloverToken: vi.fn(),
+const mockGetAccessToken = vi.hoisted(() => vi.fn().mockResolvedValue('test-token-xyz'));
+vi.mock('../../src/main/auth/supabase-auth.js', () => ({
+  getAccessToken: mockGetAccessToken,
 }));
 
 import { ActivityRepo } from '../../src/main/store/repos/activity.js';

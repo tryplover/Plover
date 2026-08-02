@@ -1,14 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { authedFetch, UnauthorizedError } from '../../../src/main/http/authed-fetch';
 
-const { mockGetPloverToken, mockClearPloverToken } = vi.hoisted(() => ({
-  mockGetPloverToken: vi.fn(),
-  mockClearPloverToken: vi.fn(),
+const { mockGetAccessToken } = vi.hoisted(() => ({
+  mockGetAccessToken: vi.fn(),
 }));
 
-vi.mock('../../../src/main/auth/plover-token.js', () => ({
-  getPloverToken: mockGetPloverToken,
-  clearPloverToken: mockClearPloverToken,
+vi.mock('../../../src/main/auth/supabase-auth.js', () => ({
+  getAccessToken: mockGetAccessToken,
 }));
 
 describe('authedFetch', () => {
@@ -31,14 +29,14 @@ describe('authedFetch', () => {
     }
   });
 
-  it('throws UnauthorizedError before fetching when no token is present', async () => {
-    mockGetPloverToken.mockResolvedValueOnce(null);
+  it('throws UnauthorizedError before fetching when there is no Supabase session', async () => {
+    mockGetAccessToken.mockResolvedValueOnce(null);
     await expect(authedFetch('/api/decompose')).rejects.toBeInstanceOf(UnauthorizedError);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('attaches X-Plover-Auth-Token header and returns response on 200', async () => {
-    mockGetPloverToken.mockResolvedValueOnce('token-abc');
+  it('attaches an Authorization bearer header and returns response on 200', async () => {
+    mockGetAccessToken.mockResolvedValueOnce('token-abc');
     const okRes = new Response('{"ok":true}', { status: 200 });
     fetchMock.mockResolvedValueOnce(okRes);
 
@@ -49,32 +47,29 @@ describe('authedFetch', () => {
     const [urlArg, initArg] = fetchMock.mock.calls[0] ?? [];
     expect(urlArg).toBe('http://localhost:3000/api/decompose');
     const headers = (initArg as RequestInit).headers as Headers;
-    expect(headers.get('X-Plover-Auth-Token')).toBe('token-abc');
+    expect(headers.get('Authorization')).toBe('Bearer token-abc');
     expect((initArg as RequestInit).method).toBe('POST');
   });
 
-  it('clears the plover token and throws UnauthorizedError on 401', async () => {
-    mockGetPloverToken.mockResolvedValueOnce('bad-token');
-    mockClearPloverToken.mockResolvedValueOnce(undefined);
+  it('throws UnauthorizedError on 401 without touching the local session', async () => {
+    mockGetAccessToken.mockResolvedValueOnce('bad-token');
     fetchMock.mockResolvedValueOnce(new Response('unauthorized', { status: 401 }));
 
     await expect(authedFetch('/api/decompose')).rejects.toBeInstanceOf(UnauthorizedError);
-    expect(mockClearPloverToken).toHaveBeenCalledTimes(1);
   });
 
   it('returns response on 500 without throwing', async () => {
-    mockGetPloverToken.mockResolvedValueOnce('token-abc');
+    mockGetAccessToken.mockResolvedValueOnce('token-abc');
     const errRes = new Response('server error', { status: 500 });
     fetchMock.mockResolvedValueOnce(errRes);
 
     const res = await authedFetch('/api/decompose');
     expect(res).toBe(errRes);
     expect(res.status).toBe(500);
-    expect(mockClearPloverToken).not.toHaveBeenCalled();
   });
 
   it('does not double up slashes when joining relative paths', async () => {
-    mockGetPloverToken.mockResolvedValueOnce('token-abc');
+    mockGetAccessToken.mockResolvedValueOnce('token-abc');
     fetchMock.mockResolvedValueOnce(new Response('{}', { status: 200 }));
 
     await authedFetch('api/infer-progress');
@@ -84,7 +79,7 @@ describe('authedFetch', () => {
   });
 
   it('joins a leading-slash path against the backend URL with a single slash', async () => {
-    mockGetPloverToken.mockResolvedValueOnce('token-abc');
+    mockGetAccessToken.mockResolvedValueOnce('token-abc');
     fetchMock.mockResolvedValueOnce(new Response('{}', { status: 200 }));
 
     await authedFetch('/api/match-commit');
@@ -94,7 +89,7 @@ describe('authedFetch', () => {
   });
 
   it('passes through absolute URLs unchanged', async () => {
-    mockGetPloverToken.mockResolvedValueOnce('token-abc');
+    mockGetAccessToken.mockResolvedValueOnce('token-abc');
     fetchMock.mockResolvedValueOnce(new Response('{}', { status: 200 }));
 
     await authedFetch('https://example.com/api/thing');
@@ -105,7 +100,7 @@ describe('authedFetch', () => {
 
   it('strips a trailing slash from the backend URL', async () => {
     process.env.PLOVER_BACKEND_URL = 'http://localhost:3000/';
-    mockGetPloverToken.mockResolvedValueOnce('token-abc');
+    mockGetAccessToken.mockResolvedValueOnce('token-abc');
     fetchMock.mockResolvedValueOnce(new Response('{}', { status: 200 }));
 
     await authedFetch('/api/decompose');

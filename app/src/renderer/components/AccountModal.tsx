@@ -1,5 +1,6 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Button } from './Button/Button';
+import { AuthPanel } from './AuthPanel/AuthPanel';
 
 interface AccountStatus {
   signedIn: boolean;
@@ -13,45 +14,15 @@ interface AccountModalProps {
 }
 
 type AccountModalState =
-  | { kind: 'idle' }
-  | { kind: 'submitting' }
-  | { kind: 'opened-browser' }
-  | { kind: 'error'; message: string };
+  { kind: 'idle' } | { kind: 'submitting' } | { kind: 'error'; message: string };
 
 export function AccountModal({ status, onClose, onStatusChange }: AccountModalProps) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [state, setState] = useState<AccountModalState>({ kind: 'idle' });
-  const googleRequestIdRef = useRef(0);
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
 
-  const busy = state.kind === 'submitting' || state.kind === 'opened-browser';
-
-  const handleGoogle = () => {
-    const requestId = ++googleRequestIdRef.current;
-    setState({ kind: 'opened-browser' });
+  const handleAuthSuccess = () => {
     window.api.auth
-      .signIn()
-      .then((result) => {
-        if (googleRequestIdRef.current !== requestId) return;
-        onStatusChange(result);
-        onClose();
-      })
-      .catch((err: unknown) => {
-        if (googleRequestIdRef.current !== requestId) return;
-        setState({ kind: 'error', message: err instanceof Error ? err.message : String(err) });
-      });
-  };
-
-  const handleCancelGoogle = () => {
-    googleRequestIdRef.current += 1;
-    setState({ kind: 'idle' });
-  };
-
-  const handlePasswordSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
-    setState({ kind: 'submitting' });
-    window.api.auth
-      .signInWithPassword(email, password)
+      .getStatus()
       .then((result) => {
         onStatusChange(result);
         onClose();
@@ -102,64 +73,22 @@ export function AccountModal({ status, onClose, onStatusChange }: AccountModalPr
           </div>
         ) : (
           <div className="plover-account-modal__panel" data-testid="account-modal-signed-out">
-            <h2 className="plover-account-modal__title">Sign in to Plover</h2>
+            <h2 className="plover-account-modal__title">
+              {authMode === 'signup' ? 'Create your Plover account' : 'Sign in to Plover'}
+            </h2>
 
-            <Button
-              variant="secondary"
-              onClick={handleGoogle}
-              disabled={busy}
-              className="plover-account-modal__google-btn"
-              data-testid="btn-account-google"
+            <AuthPanel mode={authMode} onSuccess={handleAuthSuccess} />
+
+            <button
+              type="button"
+              className="plover-account-modal__mode-toggle"
+              onClick={() => setAuthMode((prev) => (prev === 'signup' ? 'signin' : 'signup'))}
+              data-testid="btn-account-toggle-mode"
             >
-              {state.kind === 'opened-browser' ? 'Waiting for browser…' : 'Sign In with Google'}
-            </Button>
-
-            {state.kind === 'opened-browser' && (
-              <button
-                type="button"
-                className="plover-account-modal__cancel"
-                onClick={handleCancelGoogle}
-                data-testid="btn-account-google-cancel"
-              >
-                Cancel sign-in
-              </button>
-            )}
-
-            <div className="plover-account-modal__divider">
-              <span>OR</span>
-            </div>
-
-            <form onSubmit={handlePasswordSubmit} className="plover-account-modal__form">
-              <input
-                type="email"
-                required
-                placeholder="Email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                disabled={busy}
-                className="plover-input"
-                data-testid="input-account-email"
-              />
-              <input
-                type="password"
-                required
-                minLength={6}
-                placeholder="Password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                disabled={busy}
-                className="plover-input"
-                data-testid="input-account-password"
-              />
-              <Button
-                type="submit"
-                variant="primary"
-                disabled={busy}
-                data-testid="btn-account-submit"
-              >
-                {state.kind === 'submitting' ? 'Signing in…' : 'Sign in'}
-              </Button>
-            </form>
+              {authMode === 'signup'
+                ? 'Already have an account? Sign in'
+                : 'Need an account? Sign up'}
+            </button>
 
             {state.kind === 'error' && (
               <p className="plover-account-modal__error">{state.message}</p>

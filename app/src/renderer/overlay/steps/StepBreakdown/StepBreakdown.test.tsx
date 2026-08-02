@@ -16,6 +16,13 @@ describe('StepBreakdown', () => {
           { title: 'Complete exercises', estimate_minutes: 60 },
         ],
       }),
+      auth: {
+        signIn: vi.fn(),
+        signInWithPassword: vi.fn(),
+        signUp: vi.fn(),
+        signOut: vi.fn(),
+        getStatus: vi.fn(),
+      },
     };
   });
 
@@ -110,5 +117,40 @@ describe('StepBreakdown', () => {
         { title: 'Complete exercises', estimate_minutes: 60 },
       ],
     });
+  });
+
+  it('shows an inline sign-in panel and retries after a not-signed-in error', async () => {
+    const proposeGoal = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('not signed in — user must sign in'))
+      .mockResolvedValueOnce({
+        goal: { title: 'Learn TypeScript' },
+        subtasks: [{ title: 'Read handbook', estimate_minutes: 120 }],
+      });
+    window.api.proposeGoal = proposeGoal;
+    const signInWithPassword = vi
+      .fn()
+      .mockResolvedValue({ signedIn: true, email: 'jordan@example.com' });
+    window.api.auth.signInWithPassword = signInWithPassword;
+
+    const draft = { text: 'Learn TypeScript', frequency: 'one-off' as const };
+    render(<StepBreakdown draft={draft} onBack={vi.fn()} onNext={vi.fn()} variant="overlay" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('btn-auth-submit')).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByTestId('input-auth-email'), {
+      target: { value: 'jordan@example.com' },
+    });
+    fireEvent.change(screen.getByTestId('input-auth-password'), {
+      target: { value: 'hunter2!' },
+    });
+    fireEvent.click(screen.getByTestId('btn-auth-submit'));
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('Read handbook')).toBeInTheDocument();
+    });
+    expect(proposeGoal).toHaveBeenCalledTimes(2);
   });
 });

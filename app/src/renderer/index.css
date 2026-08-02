@@ -1261,45 +1261,19 @@ input:checked + .slider:before {
   margin: 0 0 4px 0;
 }
 
-.plover-account-modal__google-btn {
-  width: 100%;
-}
-
-.plover-account-modal__cancel {
+.plover-account-modal__mode-toggle {
   background: none;
   border: none;
   color: var(--plover-text-muted);
   font-size: 13px;
   cursor: pointer;
   text-align: center;
-  padding: 0;
+  padding: 4px 0;
 }
 
-.plover-account-modal__cancel:hover {
+.plover-account-modal__mode-toggle:hover {
   color: var(--plover-text);
-}
-
-.plover-account-modal__divider {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: var(--plover-text-muted);
-  font-size: 12px;
-  margin: 4px 0;
-}
-
-.plover-account-modal__divider::before,
-.plover-account-modal__divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background-color: var(--plover-border);
-}
-
-.plover-account-modal__form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  text-decoration: underline;
 }
 
 .plover-account-modal__status-msg {

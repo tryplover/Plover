@@ -7,7 +7,6 @@ import { saveGoalAndTasks, deleteGoalAndTasks } from '../planner/goal-manager.js
 import { eventBus } from '../events/bus.js';
 import { ProposedPlan } from '../../preload/index.js';
 import { SettingsData } from '../store/repos/settings.js';
-import { withAuthRetry } from '../auth/with-auth-retry.js';
 
 function getRecentActivityContext(
   settings: SettingsData,
@@ -49,14 +48,12 @@ export function registerGoalsHandlers(getOverlayWindow: () => BrowserWindow | nu
   ipcMain.handle('goals:decompose', async (_, goalText: string) => {
     const settings = settingsRepo.getAll();
     const recentActivity = getRecentActivityContext(settings);
-    return withAuthRetry(() =>
-      decomposeGoal({
-        goalText,
-        now: new Date(),
-        workingHours: settings.workingHours,
-        ...(recentActivity ? { recentActivity } : {}),
-      }),
-    );
+    return decomposeGoal({
+      goalText,
+      now: new Date(),
+      workingHours: settings.workingHours,
+      ...(recentActivity ? { recentActivity } : {}),
+    });
   });
 
   ipcMain.handle(

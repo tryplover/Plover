@@ -7,36 +7,16 @@ import { GDocsPoller } from './sync/gdocs-poller.js';
 import { eventBus } from './events/bus.js';
 import { clearAllTimers } from './lifecycle/periodic.js';
 import { initActivityMonitoring, stopActivityMonitoring } from './activity/index.js';
-import { completeSignup } from './auth/signup-flow.js';
 
 if (!app.isPackaged) {
   app.commandLine.appendSwitch('enable-logging');
 }
-
-app.setAsDefaultProtocolClient('plover');
 
 const iconPath = join(import.meta.dirname, '../../build/icon.png');
 const appIcon = nativeImage.createFromPath(iconPath);
 if (!app.isPackaged && process.platform === 'darwin' && !appIcon.isEmpty()) {
   app.dock?.setIcon(appIcon);
 }
-
-const bufferedProtocolUrls: string[] = [];
-let appIsReady = false;
-
-function handleProtocolUrl(url: string): void {
-  if (!url.startsWith('plover://')) return;
-  if (!appIsReady) {
-    bufferedProtocolUrls.push(url);
-    return;
-  }
-  completeSignup(url);
-}
-
-app.on('open-url', (event, url) => {
-  event.preventDefault();
-  handleProtocolUrl(url);
-});
 
 let mainWindow: BrowserWindow | null = null;
 let overlayWindow: BrowserWindow | null = null;
@@ -45,12 +25,7 @@ const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();
 } else {
-  app.on('second-instance', (_event, argv) => {
-    for (const arg of argv) {
-      if (arg.startsWith('plover://')) {
-        handleProtocolUrl(arg);
-      }
-    }
+  app.on('second-instance', () => {
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
       mainWindow.focus();
@@ -148,12 +123,6 @@ if (!gotTheLock) {
   }
 
   void app.whenReady().then(async () => {
-    appIsReady = true;
-    while (bufferedProtocolUrls.length > 0) {
-      const url = bufferedProtocolUrls.shift();
-      if (url) completeSignup(url);
-    }
-
     gdocsPoller = new GDocsPoller(googleAuth, settingsRepo, eventBus);
     gdocsPoller.start();
 

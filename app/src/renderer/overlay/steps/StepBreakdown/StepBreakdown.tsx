@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { StatusIndicator } from '../../../components/StatusIndicator/StatusIndicator';
 import { StepRow } from '../../../components/StepRow/StepRow';
 import { Button } from '../../../components/Button/Button';
+import { AuthPanel } from '../../../components/AuthPanel/AuthPanel';
 import { Reorder, useDragControls } from '../../../lib/motion';
 import type { ProposedPlan } from '../../../../preload';
+import { isNotSignedInError } from '../../../../shared/auth-errors';
 import './StepBreakdown.css';
 
 interface Props {
@@ -23,18 +25,20 @@ interface EditableSubtask {
   scheduled_end?: string;
 }
 
+function toEditableSubtasks(plan: ProposedPlan): EditableSubtask[] {
+  return plan.subtasks.map((st, idx) => ({
+    ...st,
+    id: (st as { id?: string }).id || `step-${idx}-${Date.now()}`,
+  }));
+}
+
 export function StepBreakdown({ draft, plan, onBack, onNext, variant }: Props) {
   const [goalTitle, setGoalTitle] = useState<string>(() => plan?.goal.title || '');
-  const [subtasks, setSubtasks] = useState<EditableSubtask[]>(() => {
-    if (plan) {
-      return plan.subtasks.map((st, idx) => ({
-        ...st,
-        id: (st as { id?: string }).id || `step-${idx}-${Date.now()}`,
-      }));
-    }
-    return [];
-  });
+  const [subtasks, setSubtasks] = useState<EditableSubtask[]>(() =>
+    plan ? toEditableSubtasks(plan) : [],
+  );
   const [error, setError] = useState<string | null>(null);
+  const [needsSignIn, setNeedsSignIn] = useState(false);
   const [loading, setLoading] = useState(() => !plan);
   const [newlyAddedId, setNewlyAddedId] = useState<string | null>(null);
 
@@ -45,17 +49,16 @@ export function StepBreakdown({ draft, plan, onBack, onNext, variant }: Props) {
     (async () => {
       try {
         const result = await window.api.proposeGoal(draft.text);
-        if (!cancelled) {
-          setGoalTitle(result.goal.title);
-          setSubtasks(
-            result.subtasks.map((st, idx) => ({
-              ...st,
-              id: (st as { id?: string }).id || `step-${idx}-${Date.now()}`,
-            })),
-          );
-        }
+        if (cancelled) return;
+        setGoalTitle(result.goal.title);
+        setSubtasks(toEditableSubtasks(result));
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : 'Failed');
+        if (cancelled) return;
+        if (isNotSignedInError(e)) {
+          setNeedsSignIn(true);
+        } else {
+          setError(e instanceof Error ? e.message : 'Failed');
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -65,7 +68,36 @@ export function StepBreakdown({ draft, plan, onBack, onNext, variant }: Props) {
     };
   }, [draft.text, plan]);
 
+  const retryAfterSignIn = () => {
+    setLoading(true);
+    setError(null);
+    setNeedsSignIn(false);
+    (async () => {
+      try {
+        const result = await window.api.proposeGoal(draft.text);
+        setGoalTitle(result.goal.title);
+        setSubtasks(toEditableSubtasks(result));
+      } catch (e) {
+        if (isNotSignedInError(e)) {
+          setNeedsSignIn(true);
+        } else {
+          setError(e instanceof Error ? e.message : 'Failed');
+        }
+      } finally {
+        setLoading(false);
+      }
+    })();
+  };
+
   if (loading) return <p className="plover-step-breakdown__loading">Plover is planning…</p>;
+  if (needsSignIn) {
+    return (
+      <div className="plover-step-breakdown__auth">
+        <p className="plover-step-breakdown__auth-prompt">Sign in to Plover to continue.</p>
+        <AuthPanel mode="signin" onSuccess={retryAfterSignIn} />
+      </div>
+    );
+  }
   if (error) return <p className="plover-step-breakdown__error">{error}</p>;
 
   const addStep = () => {
