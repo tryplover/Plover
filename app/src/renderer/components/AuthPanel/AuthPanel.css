@@ -1,0 +1,141 @@
+.plover-auth-panel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.plover-auth-panel__btn-google {
+  padding: 12px 20px;
+  border-radius: 9999px;
+  background: #18191a;
+  color: #f4efe6;
+  border: none;
+  font-family: var(--plover-font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform var(--plover-duration-fast) var(--plover-easing-soft),
+    opacity var(--plover-duration-fast) var(--plover-easing-soft);
+  text-align: center;
+  width: 100%;
+}
+
+.plover-auth-panel__btn-google:hover:not(:disabled) {
+  transform: translateY(-1px);
+  opacity: 0.92;
+}
+
+.plover-auth-panel__btn-google:active:not(:disabled) {
+  transform: translateY(0) scale(0.99);
+}
+
+.plover-auth-panel__btn-google:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.plover-auth-panel__btn-cancel {
+  background: none;
+  border: none;
+  color: #d32f2f;
+  font-family: var(--plover-font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 0;
+  transition: color var(--plover-duration-fast) var(--plover-easing-soft);
+}
+
+.plover-auth-panel__btn-cancel:hover {
+  color: #c62828;
+  text-decoration: underline;
+}
+
+.plover-auth-panel__status-msg {
+  font-size: 13px;
+  color: rgba(24, 25, 26, 0.6);
+  margin-top: 12px;
+  text-align: left;
+}
+
+.plover-auth-panel__status-msg--error {
+  color: #d32f2f;
+}
+
+.plover-auth-panel__divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+  color: rgba(24, 25, 26, 0.4);
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.plover-auth-panel__divider::before,
+.plover-auth-panel__divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background-color: rgba(24, 25, 26, 0.1);
+}
+
+.plover-auth-panel__form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.plover-auth-panel__input {
+  width: 100%;
+  background-color: white;
+  border: 1px solid rgba(24, 25, 26, 0.12);
+  border-radius: 12px;
+  padding: 12px 16px;
+  color: #18191a;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color var(--plover-duration-fast) var(--plover-easing-soft);
+}
+
+.plover-auth-panel__input:focus {
+  border-color: rgba(46, 125, 50, 0.5);
+}
+
+.plover-auth-panel__input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.plover-auth-panel__submit {
+  padding: 12px 20px;
+  border-radius: 9999px;
+  background: transparent;
+  color: #18191a;
+  border: 1px solid rgba(24, 25, 26, 0.15);
+  font-family: var(--plover-font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform var(--plover-duration-fast) var(--plover-easing-soft),
+    background-color var(--plover-duration-fast) var(--plover-easing-soft);
+  width: 100%;
+}
+
+.plover-auth-panel__submit:hover:not(:disabled) {
+  background-color: rgba(24, 25, 26, 0.03);
+}
+
+.plover-auth-panel__submit:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.plover-auth-panel__submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

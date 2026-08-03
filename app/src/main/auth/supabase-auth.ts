@@ -194,6 +194,16 @@ export function startAutoRefresh(): void {
   }
 }
 
+export async function getAccessToken(): Promise<string | null> {
+  try {
+    const { data } = await getSupabaseClient().auth.getSession();
+    return data?.session?.access_token ?? null;
+  } catch (err) {
+    console.error('[Auth] Failed to read Supabase session:', err);
+    return null;
+  }
+}
+
 export async function getCurrentUser(): Promise<{ id: string; email: string | null } | null> {
   try {
     const { data } = await getSupabaseClient().auth.getUser();

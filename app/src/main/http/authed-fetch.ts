@@ -1,6 +1,7 @@
-import { getPloverToken, clearPloverToken } from '../auth/plover-token.js';
+import { getAccessToken } from '../auth/supabase-auth.js';
 import { resolveRequiredEnv } from '../config/env.js';
 import { readViteEnv } from '../config/vite-env.js';
+import { NOT_SIGNED_IN_MESSAGE } from '../../shared/auth-errors.js';
 
 function resolveBackendUrl(): string {
   const fromVite = readViteEnv('PLOVER_BACKEND_URL');
@@ -18,22 +19,19 @@ export class UnauthorizedError extends Error {
 }
 
 export async function authedFetch(path: string, init: RequestInit = {}): Promise<Response> {
-  const token = await getPloverToken();
+  const token = await getAccessToken();
   if (!token) {
-    throw new UnauthorizedError('no plover token — user must sign in');
+    throw new UnauthorizedError(NOT_SIGNED_IN_MESSAGE);
   }
   const headers = new Headers(init.headers);
-  headers.set('X-Plover-Auth-Token', token);
+  headers.set('Authorization', `Bearer ${token}`);
   const backendUrl = resolveBackendUrl();
   const url = path.startsWith('http')
     ? path
     : `${backendUrl}${path.startsWith('/') ? '' : '/'}${path}`;
   const res = await fetch(url, { ...init, headers });
   if (res.status === 401) {
-    await clearPloverToken().catch((err: unknown) => {
-      console.error('[authedFetch] Failed to clear token:', err);
-    });
-    throw new UnauthorizedError('plover token invalid or revoked');
+    throw new UnauthorizedError(`Plover session expired — ${NOT_SIGNED_IN_MESSAGE}`);
   }
   return res;
 }

@@ -28,6 +28,7 @@ vi.mock('../../../src/main/auth/supabase-client.js', () => ({
 }));
 
 import {
+  getAccessToken,
   getCurrentUser,
   restoreSession,
   signIn,
@@ -259,6 +260,32 @@ describe('supabase-auth', () => {
         throw new Error('supabaseUrl is required.');
       });
       await expect(restoreSession()).resolves.toBe(false);
+    });
+  });
+
+  describe('getAccessToken', () => {
+    it('returns the current session access token', async () => {
+      mockSupabaseAuth.getSession.mockResolvedValue({
+        data: { session: { access_token: 'tok-1' } },
+      });
+      await expect(getAccessToken()).resolves.toBe('tok-1');
+    });
+
+    it('returns null when there is no session', async () => {
+      mockSupabaseAuth.getSession.mockResolvedValue({ data: { session: null } });
+      await expect(getAccessToken()).resolves.toBeNull();
+    });
+
+    it('returns null when data is null', async () => {
+      mockSupabaseAuth.getSession.mockResolvedValue({ data: null });
+      await expect(getAccessToken()).resolves.toBeNull();
+    });
+
+    it('resolves null instead of rejecting when the client cannot be created', async () => {
+      mockGetSupabaseClient.mockImplementation(() => {
+        throw new Error('supabaseUrl is required.');
+      });
+      await expect(getAccessToken()).resolves.toBeNull();
     });
   });
 
