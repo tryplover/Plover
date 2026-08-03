@@ -196,8 +196,8 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
         </Button>
 
         {showSetupModal && (
-          <div className="plover-modal-backdrop" onClick={() => setShowSetupModal(false)}>
-            <div className="plover-modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="plover-modal-backdrop">
+            <div className="plover-modal-content">
               <button
                 className="plover-modal-close"
                 onClick={() => setShowSetupModal(false)}
@@ -251,7 +251,6 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
                 <div className="plover-home-task-row__title-line">
                   {isActive && <span className="plover-home-dot" aria-hidden />}
                   <span className="plover-home-task-row__title">{goal.title}</span>
-                  {isActive && <span className="plover-home-task-row__watching">WATCHING NOW</span>}
                 </div>
                 {goal.description && (
                   <span className="plover-home-task-row__subtitle">{goal.description}</span>
@@ -381,7 +380,7 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
       </div>
 
       {showSetupModal && (
-        <div className="plover-modal-backdrop" onClick={() => setShowSetupModal(false)}>
+        <div className="plover-modal-backdrop">
           <button
             className="plover-modal-backdrop-close"
             onClick={() => setShowSetupModal(false)}
@@ -389,7 +388,7 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
           >
             ✕
           </button>
-          <div className="plover-modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="plover-modal-content">
             <SetupFlow
               variant="window"
               onClose={() => {

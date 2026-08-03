@@ -399,8 +399,8 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
 
       {/* Goal Creation Setup Flow Modal Overlay */}
       {showSetupModal && (
-        <div className="plover-modal-backdrop" onClick={() => setShowSetupModal(false)}>
-          <div className="plover-modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="plover-modal-backdrop">
+          <div className="plover-modal-content">
             <button
               className="plover-modal-close"
               onClick={() => setShowSetupModal(false)}

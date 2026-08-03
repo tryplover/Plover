@@ -101,15 +101,6 @@
   color: var(--plover-mint);
 }
 
-.plover-home-task-row__watching {
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.6px;
-  color: var(--plover-mint);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
 .plover-home-task-row__subtitle {
   font-size: 11.5px;
   color: var(--plover-text-muted);
