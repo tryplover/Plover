@@ -320,6 +320,24 @@
   background: rgba(255, 107, 107, 0.12);
 }
 
+.plover-home-task-row__finish {
+  background: rgba(183, 228, 199, 0.16);
+  color: var(--plover-mint);
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+  transition: background-color var(--plover-duration-fast);
+}
+
+.plover-home-task-row__finish:hover {
+  background: rgba(183, 228, 199, 0.3);
+}
+
 .plover-home-task-row__switch {
   background: rgba(183, 228, 199, 0.16);
   color: var(--plover-mint);
@@ -355,6 +373,14 @@
 .plover-shell--light .plover-home-task-row__delete:hover {
   color: #d93838;
   background: rgba(217, 56, 56, 0.08);
+}
+
+.plover-shell--light .plover-home-task-row__finish {
+  background: rgba(183, 228, 199, 0.2);
+}
+
+.plover-shell--light .plover-home-task-row__finish:hover {
+  background: rgba(183, 228, 199, 0.3);
 }
 
 .plover-shell--light .plover-home-task-row__switch {

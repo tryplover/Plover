@@ -64,6 +64,33 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
     void fetchData();
   });
 
+  // Predicts (from current, pre-update state) whether completing `excludeTaskId`
+  // would leave no other pending task in its goal — checked before the status
+  // update so callers aren't reading stale closure state after `fetchData()`.
+  const isLastPendingTask = useCallback(
+    (goalId: string, excludeTaskId: string) => {
+      const goalTasks = tasksByGoal[goalId] ?? [];
+      return !goalTasks.some(
+        (t) => t.id !== excludeTaskId && t.status !== 'done' && t.status !== 'skipped',
+      );
+    },
+    [tasksByGoal],
+  );
+
+  const confirmAndDeleteGoal = useCallback(
+    async (goal: Goal) => {
+      if (!confirm(`"${goal.title}" looks complete. Delete it?`)) return;
+      try {
+        await window.api.deleteGoal(goal.id);
+        if (expandedGoalId === goal.id) setExpandedGoalId(null);
+        await fetchData();
+      } catch (err) {
+        console.error('Failed to delete completed goal:', err);
+      }
+    },
+    [expandedGoalId, fetchData],
+  );
+
   const selectAsActiveTask = useCallback(
     async (taskId: string) => {
       const others = tasks.filter((t) => t.status === 'in_progress' && t.id !== taskId);
@@ -84,32 +111,59 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
 
   const toggleTaskDone = useCallback(
     async (task: Task) => {
+      const completingTask = task.status !== 'done';
+      const willFinishGoal = completingTask && isLastPendingTask(task.goal_id, task.id);
       try {
         const nextStatus =
           task.status === 'done' ? (task.scheduled_start ? 'scheduled' : 'todo') : 'done';
         await window.api.updateTaskStatus(task.id, nextStatus);
         await fetchData();
+        if (willFinishGoal) {
+          const goal = goals.find((g) => g.id === task.goal_id);
+          if (goal) await confirmAndDeleteGoal(goal);
+        }
       } catch (err) {
         console.error('Failed to toggle task completion:', err);
       }
     },
-    [fetchData],
+    [fetchData, isLastPendingTask, goals, confirmAndDeleteGoal],
   );
 
   const watchGoal = useCallback(
     async (goal: Goal) => {
       const goalTasks = tasksByGoal[goal.id] ?? [];
-      const target = pickCurrentTask(goalTasks) ?? goalTasks[0];
-      if (!target) return;
+      const target = pickCurrentTask(goalTasks);
+      if (!target) {
+        // Every task in this goal is already done/skipped — there's nothing to
+        // reactivate. Falling back to an arbitrary already-done task here used
+        // to silently un-complete it; offer to clean up the goal instead.
+        if (goalTasks.length > 0) await confirmAndDeleteGoal(goal);
+        return;
+      }
       setExpandedGoalId(goal.id);
       setStepsExpanded(true);
       await selectAsActiveTask(target.id);
     },
-    [tasksByGoal, selectAsActiveTask],
+    [tasksByGoal, selectAsActiveTask, confirmAndDeleteGoal],
   );
 
   const defaultCurrentTask = useMemo(() => pickCurrentTask(tasks), [tasks]);
   const defaultActiveGoalId = defaultCurrentTask?.goal_id ?? null;
+
+  const finishActiveTask = useCallback(async () => {
+    if (!defaultCurrentTask) return;
+    const willFinishGoal = isLastPendingTask(defaultCurrentTask.goal_id, defaultCurrentTask.id);
+    try {
+      await window.api.updateTaskStatus(defaultCurrentTask.id, 'done');
+      await fetchData();
+      if (willFinishGoal) {
+        const goal = goals.find((g) => g.id === defaultCurrentTask.goal_id);
+        if (goal) await confirmAndDeleteGoal(goal);
+      }
+    } catch (err) {
+      console.error('Failed to finish task:', err);
+    }
+  }, [defaultCurrentTask, fetchData, isLastPendingTask, goals, confirmAndDeleteGoal]);
 
   const activeGoalId = defaultActiveGoalId;
 
@@ -281,6 +335,36 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
                   aria-label="Switch to this task"
                 >
                   Switch
+                </button>
+              )}
+              {isActive && (
+                <button
+                  type="button"
+                  className="plover-home-task-row__finish"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.currentTarget.blur();
+                    void finishActiveTask();
+                  }}
+                  title={
+                    defaultCurrentTask
+                      ? `Finish "${defaultCurrentTask.title}"`
+                      : 'Finish current task'
+                  }
+                  aria-label="Finish current task"
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
                 </button>
               )}
               <button
