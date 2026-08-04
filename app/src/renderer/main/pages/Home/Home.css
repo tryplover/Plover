@@ -267,14 +267,38 @@
   background: var(--plover-bg);
 }
 
-/* Fade inactive task rows when there's an active task row to match Figma H6 */
-.plover-home__list:has(.plover-home-task-row--active)
-  .plover-home-task-row:not(.plover-home-task-row--active) {
+/* Fade inactive cards (row + its own steps panel, as one unit) when there's an
+   active task, to match Figma H6. Blur is scoped to the whole card-group, not
+   just the row, so an expanded steps panel fades along with its row instead
+   of staying sharp underneath a blurred title. */
+.plover-home__list:has(.plover-home-card-group--active)
+  .plover-home-card-group:not(.plover-home-card-group--active) {
   opacity: 0.42;
   filter: blur(0.8px);
   transition:
     opacity 0.25s ease,
     filter 0.25s ease;
+}
+
+/* Hovering (or focusing) anywhere in a non-active card — its row OR its own
+   expanded steps panel, they count as one unit — previews the whole card:
+   bring it into focus and push the active card back instead, so exactly one
+   card is ever sharp at a time. `:hover`/`:focus-within` on the card-group
+   itself already covers descendants, so no need to single out the row. */
+.plover-home__list:has(.plover-home-card-group--active)
+  .plover-home-card-group:not(.plover-home-card-group--active):hover,
+.plover-home__list:has(.plover-home-card-group--active)
+  .plover-home-card-group:not(.plover-home-card-group--active):focus-within {
+  opacity: 1;
+  filter: none;
+}
+
+.plover-home__list:has(.plover-home-card-group:not(.plover-home-card-group--active):hover)
+  .plover-home-card-group--active,
+.plover-home__list:has(.plover-home-card-group:not(.plover-home-card-group--active):focus-within)
+  .plover-home-card-group--active {
+  opacity: 0.42;
+  filter: blur(0.8px);
 }
 
 .plover-home-task-row__delete {
@@ -296,20 +320,31 @@
   background: rgba(255, 107, 107, 0.12);
 }
 
-.plover-home-task-row__watch {
+.plover-home-task-row__switch {
   background: rgba(183, 228, 199, 0.16);
   color: var(--plover-mint);
   border: none;
   cursor: pointer;
-  padding: 8px;
+  padding: 8px 14px;
   border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color var(--plover-duration-fast);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity var(--plover-duration-fast),
+    background-color var(--plover-duration-fast);
 }
 
-.plover-home-task-row__watch:hover {
+.plover-home-task-row:hover .plover-home-task-row__switch,
+.plover-home-task-row:focus-within .plover-home-task-row__switch {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.plover-home-task-row__switch:hover {
   background: rgba(183, 228, 199, 0.3);
 }
 
@@ -322,10 +357,15 @@
   background: rgba(217, 56, 56, 0.08);
 }
 
-.plover-shell--light .plover-home-task-row__watch {
+.plover-shell--light .plover-home-task-row__switch {
   background: rgba(183, 228, 199, 0.2);
 }
 
-.plover-shell--light .plover-home-task-row__watch:hover {
+.plover-shell--light .plover-home-task-row__switch:hover {
   background: rgba(183, 228, 199, 0.3);
+}
+
+.plover-shell--light .plover-home-task-row:hover {
+  background: rgba(36, 33, 28, 0.03);
+  border-color: rgba(36, 33, 28, 0.14);
 }
