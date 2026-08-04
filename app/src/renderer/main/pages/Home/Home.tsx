@@ -111,6 +111,16 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
   const defaultCurrentTask = useMemo(() => pickCurrentTask(tasks), [tasks]);
   const defaultActiveGoalId = defaultCurrentTask?.goal_id ?? null;
 
+  const finishActiveTask = useCallback(async () => {
+    if (!defaultCurrentTask) return;
+    try {
+      await window.api.updateTaskStatus(defaultCurrentTask.id, 'done');
+      await fetchData();
+    } catch (err) {
+      console.error('Failed to finish task:', err);
+    }
+  }, [defaultCurrentTask, fetchData]);
+
   const activeGoalId = defaultActiveGoalId;
 
   const currentTask = useMemo(() => {
@@ -281,6 +291,36 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
                   aria-label="Switch to this task"
                 >
                   Switch
+                </button>
+              )}
+              {isActive && (
+                <button
+                  type="button"
+                  className="plover-home-task-row__finish"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.currentTarget.blur();
+                    void finishActiveTask();
+                  }}
+                  title={
+                    defaultCurrentTask
+                      ? `Finish "${defaultCurrentTask.title}"`
+                      : 'Finish current task'
+                  }
+                  aria-label="Finish current task"
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
                 </button>
               )}
               <button
