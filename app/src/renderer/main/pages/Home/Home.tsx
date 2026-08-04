@@ -196,8 +196,8 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
         </Button>
 
         {showSetupModal && (
-          <div className="plover-modal-backdrop" onClick={() => setShowSetupModal(false)}>
-            <div className="plover-modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="plover-modal-backdrop">
+            <div className="plover-modal-content">
               <button
                 className="plover-modal-close"
                 onClick={() => setShowSetupModal(false)}
@@ -233,10 +233,18 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
 
       <div className="plover-home__list">
         {goalCards.map(({ goal, progress, isActive }) => (
-          <div key={goal.id} className="plover-home-card-group">
+          <div
+            key={goal.id}
+            className={`plover-home-card-group ${isActive ? 'plover-home-card-group--active' : ''}`}
+          >
             <div
               className={`plover-home-task-row ${isActive ? 'plover-home-task-row--active' : ''}`}
-              onClick={() => {
+              onClick={(e) => {
+                // Clicking (unlike deliberate Tab navigation) shouldn't leave this
+                // row visually "in focus" — :focus-within drives the same
+                // hover-preview swap as :hover in Home.css, and a row you merely
+                // clicked to expand isn't necessarily the active/watched goal.
+                (e.currentTarget as HTMLElement).blur();
                 if (expandedGoalId === goal.id) {
                   setStepsExpanded((v) => !v);
                 } else {
@@ -251,7 +259,6 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
                 <div className="plover-home-task-row__title-line">
                   {isActive && <span className="plover-home-dot" aria-hidden />}
                   <span className="plover-home-task-row__title">{goal.title}</span>
-                  {isActive && <span className="plover-home-task-row__watching">WATCHING NOW</span>}
                 </div>
                 {goal.description && (
                   <span className="plover-home-task-row__subtitle">{goal.description}</span>
@@ -264,27 +271,16 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
               {!isActive && (tasksByGoal[goal.id] ?? []).length > 0 && (
                 <button
                   type="button"
-                  className="plover-home-task-row__watch"
+                  className="plover-home-task-row__switch"
                   onClick={(e) => {
                     e.stopPropagation();
+                    e.currentTarget.blur();
                     void watchGoal(goal);
                   }}
-                  title="Watch this"
-                  aria-label="Watch this"
+                  title="Switch to this task"
+                  aria-label="Switch to this task"
                 >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <circle cx="12" cy="12" r="9"></circle>
-                    <circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"></circle>
-                  </svg>
+                  Switch
                 </button>
               )}
               <button
@@ -292,6 +288,7 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
                 className="plover-home-task-row__delete"
                 onClick={async (e) => {
                   e.stopPropagation();
+                  e.currentTarget.blur();
                   if (
                     confirm(
                       `Are you sure you want to delete the goal "${goal.title}" and all its subtasks?`,
@@ -367,7 +364,10 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
                 <button
                   type="button"
                   className="plover-home-steps-toggle"
-                  onClick={() => setStepsExpanded(false)}
+                  onClick={(e) => {
+                    e.currentTarget.blur();
+                    setStepsExpanded(false);
+                  }}
                 >
                   Hide steps ⌃
                 </button>
@@ -381,7 +381,7 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
       </div>
 
       {showSetupModal && (
-        <div className="plover-modal-backdrop" onClick={() => setShowSetupModal(false)}>
+        <div className="plover-modal-backdrop">
           <button
             className="plover-modal-backdrop-close"
             onClick={() => setShowSetupModal(false)}
@@ -389,7 +389,7 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
           >
             ✕
           </button>
-          <div className="plover-modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="plover-modal-content">
             <SetupFlow
               variant="window"
               onClose={() => {
