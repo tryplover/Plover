@@ -11,6 +11,7 @@ import {
   FileEventSchema,
   GitCommitSchema,
   GitHubCommitSchema,
+  GitHubPrSchema,
 } from './activity-types.js';
 
 export type { ActivityRow };
@@ -135,6 +136,13 @@ export class ActivityRepo {
         const result = GitHubCommitSchema.safeParse(payload);
         if (result.success) {
           return { id: row.id, ts: row.ts, kind: 'github_commit', payload: result.data };
+        }
+        break;
+      }
+      case 'github_pr': {
+        const result = GitHubPrSchema.safeParse(payload);
+        if (result.success) {
+          return { id: row.id, ts: row.ts, kind: 'github_pr', payload: result.data };
         }
         break;
       }

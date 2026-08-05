@@ -56,6 +56,16 @@ export interface GitHubCommitPayload {
   committedAt: string;
 }
 
+export interface GitHubPrPayload {
+  repo: string;
+  number: number;
+  title: string;
+  state: string;
+  action: string;
+  url: string;
+  updatedAt: string;
+}
+
 export interface EventPayloads {
   'goal.created': Goal;
   'goal.updated': Goal;
@@ -76,4 +86,5 @@ export interface EventPayloads {
   'summary.corrected': SummaryRow;
   'activity.git_commit': GitCommitInfo;
   'github.commit': GitHubCommitPayload;
+  'github.pr': GitHubPrPayload;
 }
