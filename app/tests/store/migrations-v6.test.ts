@@ -34,6 +34,6 @@ describe('migration v6 — summaries attribution columns', () => {
     const maxVersionRow = db.prepare('SELECT MAX(version) as v FROM _migrations').get() as
       | { v: number }
       | undefined;
-    expect(maxVersionRow?.v).toBe(6);
+    expect(maxVersionRow?.v).toBe(7);
   });
 });
