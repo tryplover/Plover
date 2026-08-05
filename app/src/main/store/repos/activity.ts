@@ -12,6 +12,7 @@ import {
   GitCommitSchema,
   GitHubCommitSchema,
   GitHubPrSchema,
+  GitHubReviewSchema,
 } from './activity-types.js';
 
 export type { ActivityRow };
@@ -143,6 +144,13 @@ export class ActivityRepo {
         const result = GitHubPrSchema.safeParse(payload);
         if (result.success) {
           return { id: row.id, ts: row.ts, kind: 'github_pr', payload: result.data };
+        }
+        break;
+      }
+      case 'github_review': {
+        const result = GitHubReviewSchema.safeParse(payload);
+        if (result.success) {
+          return { id: row.id, ts: row.ts, kind: 'github_review', payload: result.data };
         }
         break;
       }

@@ -66,6 +66,14 @@ export interface GitHubPrPayload {
   updatedAt: string;
 }
 
+export interface GitHubReviewPayload {
+  repo: string;
+  prNumber: number;
+  kind: 'requested' | 'reviewed' | 'commented' | 'mentioned';
+  url: string;
+  updatedAt: string;
+}
+
 export interface EventPayloads {
   'goal.created': Goal;
   'goal.updated': Goal;
@@ -87,4 +95,5 @@ export interface EventPayloads {
   'activity.git_commit': GitCommitInfo;
   'github.commit': GitHubCommitPayload;
   'github.pr': GitHubPrPayload;
+  'github.review': GitHubReviewPayload;
 }

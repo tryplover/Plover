@@ -89,6 +89,14 @@ export const GitHubPrSchema = z.object({
   updatedAt: z.string(),
 });
 
+export const GitHubReviewSchema = z.object({
+  repo: z.string(),
+  prNumber: z.number(),
+  kind: z.enum(['requested', 'reviewed', 'commented', 'mentioned']),
+  url: z.string(),
+  updatedAt: z.string(),
+});
+
 export type WindowFocusPayload = z.infer<typeof WindowFocusSchema>;
 export type GDocsRevisionPayload = z.infer<typeof GDocsRevisionSchema>;
 export type GmailMessagePayload = z.infer<typeof GmailMessageSchema>;
@@ -100,6 +108,7 @@ export type FileEventPayload = z.infer<typeof FileEventSchema>;
 export type GitCommitPayload = z.infer<typeof GitCommitSchema>;
 export type GitHubCommitPayload = z.infer<typeof GitHubCommitSchema>;
 export type GitHubPrPayload = z.infer<typeof GitHubPrSchema>;
+export type GitHubReviewPayload = z.infer<typeof GitHubReviewSchema>;
 
 export type ActivityRow =
   | { id: number; ts: string; kind: 'window_focus'; payload: WindowFocusPayload }
@@ -114,4 +123,5 @@ export type ActivityRow =
   | { id: number; ts: string; kind: 'git_commit'; payload: GitCommitPayload }
   | { id: number; ts: string; kind: 'github_commit'; payload: GitHubCommitPayload }
   | { id: number; ts: string; kind: 'github_pr'; payload: GitHubPrPayload }
+  | { id: number; ts: string; kind: 'github_review'; payload: GitHubReviewPayload }
   | { id: number; ts: string; kind: string; payload: Record<string, unknown> };
