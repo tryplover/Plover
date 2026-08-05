@@ -7,6 +7,7 @@ import { SettingsRepo } from './repos/settings.js';
 import { SessionsRepo } from './repos/sessions.js';
 import { ActivityRepo } from './repos/activity.js';
 import { SummariesRepo } from './repos/summaries.js';
+import { SyncCursorsRepo } from './repos/sync-cursors.js';
 
 let userDataDir = '.';
 try {
@@ -23,3 +24,4 @@ export const settingsRepo = new SettingsRepo(db);
 export const sessionsRepo = new SessionsRepo(db);
 export const activityRepo = new ActivityRepo(db);
 export const summariesRepo = new SummariesRepo(db);
+export const syncCursors = new SyncCursorsRepo(db);

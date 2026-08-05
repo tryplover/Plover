@@ -1,5 +1,5 @@
 import { ipcMain } from 'electron';
-import { settingsRepo } from '../store/index.js';
+import { settingsRepo, syncCursors } from '../store/index.js';
 import { GoogleAuth } from '../sync/google-auth.js';
 import * as supabaseAuth from '../auth/supabase-auth.js';
 import { broadcast } from './shared.js';
@@ -86,6 +86,7 @@ export function registerAuthHandlers(): void {
     try {
       await googleAuth.authorize();
       settingsRepo.update({ googleConnected: true });
+      syncCursors.clear('google');
       return true;
     } catch (err) {
       console.error('[OAuth] Connection failed:', err);
@@ -96,5 +97,6 @@ export function registerAuthHandlers(): void {
   ipcMain.handle('google:disconnect', async () => {
     await googleAuth.disconnect();
     settingsRepo.update({ googleConnected: false });
+    syncCursors.clear('google');
   });
 }

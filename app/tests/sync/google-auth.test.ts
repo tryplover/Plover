@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import nock from 'nock';
 import http from 'http';
-import { GoogleAuth, AuthenticationError } from '../../src/main/sync/google-auth';
+import { GoogleAuth, AuthenticationError, GOOGLE_API_SCOPES } from '../../src/main/sync/google-auth';
 
 const { mockKeychain, mockOpenExternal } = vi.hoisted(() => {
   return {
@@ -174,5 +174,20 @@ describe('GoogleAuth', () => {
 
     await auth.authorize();
     expect(auth.client.credentials.refresh_token).toBe('new-refresh-token');
+  });
+});
+
+describe('GOOGLE_API_SCOPES', () => {
+  it('requests all Phase-1 surfaces in one consent', () => {
+    expect(GOOGLE_API_SCOPES).toEqual(
+      expect.arrayContaining([
+        'https://www.googleapis.com/auth/gmail.readonly',
+        'https://www.googleapis.com/auth/drive.metadata.readonly',
+        'https://www.googleapis.com/auth/documents.readonly',
+        'https://www.googleapis.com/auth/calendar.readonly',
+        'https://www.googleapis.com/auth/classroom.courses.readonly',
+        'https://www.googleapis.com/auth/classroom.coursework.me.readonly',
+      ]),
+    );
   });
 });
