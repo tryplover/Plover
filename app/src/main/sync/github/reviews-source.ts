@@ -57,13 +57,16 @@ export class GitHubReviewsSource implements ContextSource {
     let maxUpdatedAt = cursor;
 
     const emitReview = (payload: GitHubReviewPayload): void => {
+      if (payload.updatedAt > maxUpdatedAt) {
+        maxUpdatedAt = payload.updatedAt;
+      }
+
+      if (payload.updatedAt <= cursor) return;
+
       const dedupeKey = `${payload.repo}#${payload.prNumber}:${payload.kind}@${payload.updatedAt}`;
       if (seen.has(dedupeKey)) return;
       seen.add(dedupeKey);
       this.eventBus.emit('github.review', payload);
-      if (payload.updatedAt > maxUpdatedAt) {
-        maxUpdatedAt = payload.updatedAt;
-      }
     };
 
     const searchQuery = `is:pr review-requested:@me updated:>=${cursor}`;

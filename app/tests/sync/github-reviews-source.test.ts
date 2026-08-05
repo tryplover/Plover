@@ -111,6 +111,70 @@ describe('GitHubReviewsSource', () => {
     expect(next).toBe('2026-02-05T00:00:00.000Z');
   });
 
+  it('does not re-emit items exactly at the cursor boundary in either call, but emits newer ones', async () => {
+    const cursor = '2026-01-01T00:00:00.000Z';
+    (fakeClient.request as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({
+        status: 200,
+        etag: null,
+        data: {
+          items: [
+            {
+              repository_url: 'https://api.github.com/repos/o/r',
+              number: 1,
+              html_url: 'https://github.com/o/r/pull/1',
+              updated_at: cursor,
+            },
+            {
+              repository_url: 'https://api.github.com/repos/o/r3',
+              number: 3,
+              html_url: 'https://github.com/o/r3/pull/3',
+              updated_at: '2026-02-03T00:00:00.000Z',
+            },
+          ],
+        },
+      })
+      .mockResolvedValueOnce({
+        status: 200,
+        etag: null,
+        data: [
+          {
+            reason: 'mention',
+            subject: { type: 'PullRequest', url: 'https://api.github.com/repos/o/r2/pulls/42' },
+            repository: { full_name: 'o/r2' },
+            updated_at: cursor,
+          },
+          {
+            reason: 'mention',
+            subject: { type: 'PullRequest', url: 'https://api.github.com/repos/o/r4/pulls/7' },
+            repository: { full_name: 'o/r4' },
+            updated_at: '2026-02-05T00:00:00.000Z',
+          },
+        ],
+      });
+    const events: GitHubReviewPayload[] = [];
+    bus.on('github.review', (p) => events.push(p));
+
+    const next = await source.poll(cursor);
+
+    expect(events).toHaveLength(2);
+    expect(events[0]).toEqual({
+      repo: 'o/r3',
+      prNumber: 3,
+      kind: 'requested',
+      url: 'https://github.com/o/r3/pull/3',
+      updatedAt: '2026-02-03T00:00:00.000Z',
+    });
+    expect(events[1]).toEqual({
+      repo: 'o/r4',
+      prNumber: 7,
+      kind: 'mentioned',
+      url: 'https://api.github.com/repos/o/r4/pulls/7',
+      updatedAt: '2026-02-05T00:00:00.000Z',
+    });
+    expect(next).toBe('2026-02-05T00:00:00.000Z');
+  });
+
   it('returns the cursor unchanged when both calls are empty', async () => {
     (fakeClient.request as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce({ status: 200, etag: null, data: { items: [] } })

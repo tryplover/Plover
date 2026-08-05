@@ -104,6 +104,50 @@ describe('GitHubPrsSource', () => {
     expect(next).toBe('2026-02-02T00:00:00.000Z');
   });
 
+  it('does not re-emit the item exactly at the cursor boundary, but emits newer items', async () => {
+    const cursor = '2026-01-01T00:00:00.000Z';
+    (fakeClient.request as ReturnType<typeof vi.fn>).mockResolvedValue({
+      status: 200,
+      etag: null,
+      data: {
+        items: [
+          {
+            repository_url: 'https://api.github.com/repos/o/r',
+            number: 1,
+            title: 'At boundary',
+            state: 'open',
+            html_url: 'https://github.com/o/r/pull/1',
+            updated_at: cursor,
+          },
+          {
+            repository_url: 'https://api.github.com/repos/o/r2',
+            number: 2,
+            title: 'Newer PR',
+            state: 'open',
+            html_url: 'https://github.com/o/r2/pull/2',
+            updated_at: '2026-02-02T00:00:00.000Z',
+          },
+        ],
+      },
+    });
+    const events: GitHubPrPayload[] = [];
+    bus.on('github.pr', (p) => events.push(p));
+
+    const next = await source.poll(cursor);
+
+    expect(events).toHaveLength(1);
+    expect(events[0]).toEqual({
+      repo: 'o/r2',
+      number: 2,
+      title: 'Newer PR',
+      state: 'open',
+      action: 'updated',
+      url: 'https://github.com/o/r2/pull/2',
+      updatedAt: '2026-02-02T00:00:00.000Z',
+    });
+    expect(next).toBe('2026-02-02T00:00:00.000Z');
+  });
+
   it('returns the cursor unchanged when there are no items', async () => {
     (fakeClient.request as ReturnType<typeof vi.fn>).mockResolvedValue({
       status: 200,

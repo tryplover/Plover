@@ -47,6 +47,12 @@ export class GitHubPrsSource implements ContextSource {
     const seen = new Set<string>();
     let maxUpdatedAt = cursor;
     for (const item of items) {
+      if (item.updated_at > maxUpdatedAt) {
+        maxUpdatedAt = item.updated_at;
+      }
+
+      if (item.updated_at <= cursor) continue;
+
       const repo = repoFromRepositoryUrl(item.repository_url);
       const dedupeKey = `${repo}#${item.number}@${item.updated_at}`;
       if (seen.has(dedupeKey)) continue;
@@ -67,10 +73,6 @@ export class GitHubPrsSource implements ContextSource {
         url: item.html_url,
         updatedAt: item.updated_at,
       });
-
-      if (item.updated_at > maxUpdatedAt) {
-        maxUpdatedAt = item.updated_at;
-      }
     }
 
     return maxUpdatedAt;
