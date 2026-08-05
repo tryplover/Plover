@@ -11,6 +11,16 @@ export interface GDocsRevisionPayload {
   modifiedTime: string;
 }
 
+export interface GmailMessagePayload {
+  id: string;
+  threadId: string;
+  from: string;
+  subject: string;
+  snippet: string;
+  labels: string[];
+  receivedAt: string;
+}
+
 export interface GitCommitInfo {
   repoPath: string;
   hash: string;
@@ -30,6 +40,7 @@ export interface EventPayloads {
   'folder.file_changed': FolderEventPayload;
   'folder.file_added': FolderEventPayload;
   'gdocs.revision': GDocsRevisionPayload;
+  'gmail.message': GmailMessagePayload;
   'summary.created': SummaryRow;
   'summary.corrected': SummaryRow;
   'activity.git_commit': GitCommitInfo;

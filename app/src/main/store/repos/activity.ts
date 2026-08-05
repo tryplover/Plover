@@ -3,6 +3,7 @@ import {
   ActivityRow,
   WindowFocusSchema,
   GDocsRevisionSchema,
+  GmailMessageSchema,
   ScreenshotCapturedSchema,
   ScreenshotInferredSchema,
   FileEventSchema,
@@ -68,6 +69,13 @@ export class ActivityRepo {
         const result = GDocsRevisionSchema.safeParse(payload);
         if (result.success) {
           return { id: row.id, ts: row.ts, kind: 'gdocs_revision', payload: result.data };
+        }
+        break;
+      }
+      case 'gmail_message': {
+        const result = GmailMessageSchema.safeParse(payload);
+        if (result.success) {
+          return { id: row.id, ts: row.ts, kind: 'gmail_message', payload: result.data };
         }
         break;
       }
