@@ -210,6 +210,15 @@
   margin: 0;
 }
 
+.plover-expanded__task-progress {
+  position: relative;
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(183, 228, 199, 0.9);
+  margin-top: 2px;
+}
+
 .plover-expanded__pct {
   font-family: var(--plover-font-serif);
   font-size: 34px;

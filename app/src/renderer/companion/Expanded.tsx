@@ -3,15 +3,19 @@ import { safeAsync } from '../lib/async';
 import { StatusIndicator } from '../components/StatusIndicator/StatusIndicator';
 import { StepRow } from '../components/StepRow/StepRow';
 import { Button } from '../components/Button/Button';
+import { PercentPop } from '../components/PercentPop/PercentPop';
+import { useProgressPops } from '../hooks/useProgressPops';
 import './Expanded.css';
 import type { CompanionView } from './useCompanionState';
 
 interface Props {
   view: CompanionView;
   onCollapse: () => void;
+  progressPopsEnabled: boolean;
 }
 
-export function Expanded({ view, onCollapse }: Props) {
+export function Expanded({ view, onCollapse, progressPopsEnabled }: Props) {
+  const pops = useProgressPops(view.task?.id ?? null, progressPopsEnabled);
   return (
     <motion.section
       className="plover-expanded"
@@ -57,6 +61,11 @@ export function Expanded({ view, onCollapse }: Props) {
           <div className="plover-expanded__titlecol">
             <h1 className="plover-expanded__title">{view.task?.title ?? 'No active task'}</h1>
             <p className="plover-expanded__meta">Today · one-off task</p>
+            {view.task && (
+              <span className="plover-expanded__task-progress">
+                {Math.round(view.task.progress)}%{progressPopsEnabled && <PercentPop pops={pops} />}
+              </span>
+            )}
           </div>
           <span className="plover-expanded__pct">{Math.round(view.progress * 100)}%</span>
         </div>

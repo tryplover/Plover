@@ -124,6 +124,19 @@
   text-align: right;
 }
 
+.plover-home-step-momentum {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.plover-home-step-momentum__pct {
+  font-size: 11px;
+  color: var(--plover-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
 .plover-home-steps-panel {
   display: flex;
   flex-direction: column;

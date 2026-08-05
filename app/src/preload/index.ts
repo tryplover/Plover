@@ -61,6 +61,7 @@ export interface PloverApi {
     screenVisionInferenceEnabled: boolean;
     activityRetentionDays: number;
     planner_useRecentActivityContext: boolean;
+    progressPopsEnabled: boolean;
   }>;
   updateSettings: (
     settings: Partial<{
@@ -79,6 +80,7 @@ export interface PloverApi {
       screenVisionInferenceEnabled: boolean;
       activityRetentionDays: number;
       planner_useRecentActivityContext: boolean;
+      progressPopsEnabled: boolean;
     }>,
   ) => Promise<{
     googleConnected: boolean;
@@ -96,6 +98,7 @@ export interface PloverApi {
     screenVisionInferenceEnabled: boolean;
     activityRetentionDays: number;
     planner_useRecentActivityContext: boolean;
+    progressPopsEnabled: boolean;
   }>;
 
   // Google OAuth (for Docs tracking)

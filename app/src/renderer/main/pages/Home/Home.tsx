@@ -6,6 +6,8 @@ import { ProgressLine } from '../../../components/ProgressLine/ProgressLine';
 import { Button } from '../../../components/Button/Button';
 import { SetupFlow } from '../../../overlay/SetupFlow/SetupFlow';
 import { useAppEvents } from '../../../hooks/useAppEvents';
+import { useProgressPops } from '../../../hooks/useProgressPops';
+import { PercentPop } from '../../../components/PercentPop/PercentPop';
 import './Home.css';
 
 interface HomeProps {
@@ -26,6 +28,7 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
   const [stepsExpanded, setStepsExpanded] = useState(false);
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [expandedGoalId, setExpandedGoalId] = useState<string | null>(null);
+  const [progressPopsEnabled, setProgressPopsEnabled] = useState(false);
 
   const tasksByGoal = useMemo(() => {
     const map: Record<string, Task[]> = {};
@@ -42,12 +45,14 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
 
   const fetchData = useCallback(async () => {
     try {
-      const [allGoals, allTasks] = await Promise.all([
+      const [allGoals, allTasks, settings] = await Promise.all([
         window.api.getGoals(),
         window.api.getTasks(),
+        window.api.getSettings(),
       ]);
       setGoals(allGoals);
       setTasks(allTasks);
+      setProgressPopsEnabled(settings.progressPopsEnabled ?? false);
     } catch (err) {
       console.error('Failed to load goals & tasks:', err);
     } finally {
@@ -173,6 +178,8 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
   }, [expandedGoalId, activeGoalId, defaultCurrentTask]);
 
   const activeTaskId = currentTask?.id ?? null;
+
+  const pops = useProgressPops(activeTaskId, progressPopsEnabled);
 
   const activeGoalSteps = useMemo(() => {
     if (!expandedGoalId) return [];
@@ -427,7 +434,17 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
                               ? 'current'
                               : 'pending'
                         }
-                        trailing={step.id === activeTaskId ? 'now' : undefined}
+                        trailing={
+                          step.id === activeTaskId ? (
+                            <span className="plover-home-step-momentum">
+                              <span>now</span>
+                              <span className="plover-home-step-momentum__pct">
+                                {Math.round(step.progress)}%
+                              </span>
+                              {progressPopsEnabled && <PercentPop pops={pops} />}
+                            </span>
+                          ) : undefined
+                        }
                         onToggleDone={() => void toggleTaskDone(step)}
                         onDelete={async () => {
                           if (

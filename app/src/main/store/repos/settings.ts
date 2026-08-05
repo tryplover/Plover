@@ -23,6 +23,7 @@ export interface SettingsData {
   lastVisionInferenceWindowKey: string | null;
   activityRetentionDays: number;
   planner_useRecentActivityContext: boolean;
+  progressPopsEnabled: boolean;
 }
 
 export class SettingsRepo {
@@ -105,6 +106,7 @@ export class SettingsRepo {
     );
     const planner_useRecentActivityContext =
       map.get('planner_useRecentActivityContext') !== 'false';
+    const progressPopsEnabled = map.get('progressPopsEnabled') === 'true';
 
     return {
       googleConnected,
@@ -127,6 +129,7 @@ export class SettingsRepo {
       lastVisionInferenceWindowKey,
       activityRetentionDays,
       planner_useRecentActivityContext,
+      progressPopsEnabled,
     };
   }
 
@@ -210,6 +213,9 @@ export class SettingsRepo {
     }
     if (patch.planner_useRecentActivityContext !== undefined) {
       this.set('planner_useRecentActivityContext', String(patch.planner_useRecentActivityContext));
+    }
+    if (patch.progressPopsEnabled !== undefined) {
+      this.set('progressPopsEnabled', String(patch.progressPopsEnabled));
     }
   }
 }

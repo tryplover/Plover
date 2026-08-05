@@ -11,6 +11,7 @@ export function Companion() {
   // Matches SettingsRepo.getAll()'s default so there's no flash of the
   // larger "Full" layout before the async getSettings() call resolves.
   const [companionMode, setCompanionMode] = useState<'full' | 'compact'>('compact');
+  const [progressPopsEnabled, setProgressPopsEnabled] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -24,6 +25,9 @@ export function Companion() {
       .then((settings) => {
         if (active && settings.companionMode) {
           setCompanionMode(settings.companionMode);
+        }
+        if (active) {
+          setProgressPopsEnabled(settings.progressPopsEnabled ?? false);
         }
       })
       .catch(() => undefined);
@@ -58,7 +62,12 @@ export function Companion() {
     >
       <AnimatePresence mode="wait">
         {expanded ? (
-          <Expanded key="exp" view={view} onCollapse={() => setExpanded(false)} />
+          <Expanded
+            key="exp"
+            view={view}
+            onCollapse={() => setExpanded(false)}
+            progressPopsEnabled={progressPopsEnabled}
+          />
         ) : (
           <Collapsed
             key="col"

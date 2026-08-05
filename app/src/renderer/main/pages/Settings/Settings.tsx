@@ -41,6 +41,7 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
   // Matches SettingsRepo.getAll()'s default (compact) so the toggle doesn't
   // flash "Full" selected before the async getSettings() call resolves.
   const [companionMode, setCompanionMode] = useState<'full' | 'compact'>('compact');
+  const [progressPopsEnabled, setProgressPopsEnabled] = useState(false);
   const [authStatus, setAuthStatus] = useState<AuthStatus>({ signedIn: false, email: null });
   const [workingHours, setWorkingHours] = useState({ start: '09:00', end: '18:00' });
   const [horizonDays, setHorizonDays] = useState(14);
@@ -56,6 +57,7 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
       const settings = await window.api.getSettings();
       setTheme(settings.theme || 'light');
       setCompanionMode(settings.companionMode || 'compact');
+      setProgressPopsEnabled(settings.progressPopsEnabled ?? false);
       setGoogleConnected(settings.googleConnected);
       setWorkingHours(settings.workingHours || { start: '09:00', end: '18:00' });
       setHorizonDays(settings.horizonDays || 14);
@@ -163,6 +165,7 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
       pauseScheduling: boolean;
       theme: 'light' | 'dark';
       companionMode: 'full' | 'compact';
+      progressPopsEnabled?: boolean;
     }>,
   ) => {
     setSaveStatus('saving');
@@ -184,6 +187,12 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
   const handleCompanionModeChange = (newMode: 'full' | 'compact') => {
     setCompanionMode(newMode);
     void triggerAutoSave({ companionMode: newMode });
+  };
+
+  const handleProgressPopsToggle = () => {
+    const next = !progressPopsEnabled;
+    setProgressPopsEnabled(next);
+    void triggerAutoSave({ progressPopsEnabled: next });
   };
 
   const handleShowCompanion = () => {
@@ -412,6 +421,33 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
               <Button variant="secondary" onClick={handleShowCompanion}>
                 Show overlay
               </Button>
+            </div>
+
+            <div
+              style={{
+                height: '1px',
+                backgroundColor: 'var(--plover-border)',
+                marginTop: '20px',
+                marginBottom: '20px',
+                opacity: 0.5,
+              }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--plover-text)' }}>
+                  Progress pops
+                </p>
+                <p
+                  style={{ fontSize: '13px', color: 'var(--plover-text-muted)', marginTop: '4px' }}
+                >
+                  Show a floating &quot;+X%&quot; when Plover adds progress to your active task in
+                  the background. Experimental — deltas may be chunky until tracking accuracy
+                  improves.
+                </p>
+              </div>
+              <Chip selected={progressPopsEnabled} onClick={handleProgressPopsToggle}>
+                {progressPopsEnabled ? 'On' : 'Off'}
+              </Chip>
             </div>
           </div>
 
