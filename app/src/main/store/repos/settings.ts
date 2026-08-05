@@ -24,6 +24,9 @@ export interface SettingsData {
   activityRetentionDays: number;
   planner_useRecentActivityContext: boolean;
   progressPopsEnabled: boolean;
+  gmailEnabled: boolean;
+  calendarEnabled: boolean;
+  classroomEnabled: boolean;
 }
 
 export class SettingsRepo {
@@ -107,6 +110,9 @@ export class SettingsRepo {
     const planner_useRecentActivityContext =
       map.get('planner_useRecentActivityContext') !== 'false';
     const progressPopsEnabled = map.get('progressPopsEnabled') === 'true';
+    const gmailEnabled = map.get('gmailEnabled') !== 'false';
+    const calendarEnabled = map.get('calendarEnabled') !== 'false';
+    const classroomEnabled = map.get('classroomEnabled') !== 'false';
 
     return {
       googleConnected,
@@ -130,6 +136,9 @@ export class SettingsRepo {
       activityRetentionDays,
       planner_useRecentActivityContext,
       progressPopsEnabled,
+      gmailEnabled,
+      calendarEnabled,
+      classroomEnabled,
     };
   }
 
@@ -216,6 +225,15 @@ export class SettingsRepo {
     }
     if (patch.progressPopsEnabled !== undefined) {
       this.set('progressPopsEnabled', String(patch.progressPopsEnabled));
+    }
+    if (patch.gmailEnabled !== undefined) {
+      this.set('gmailEnabled', String(patch.gmailEnabled));
+    }
+    if (patch.calendarEnabled !== undefined) {
+      this.set('calendarEnabled', String(patch.calendarEnabled));
+    }
+    if (patch.classroomEnabled !== undefined) {
+      this.set('classroomEnabled', String(patch.classroomEnabled));
     }
   }
 }
