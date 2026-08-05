@@ -1,13 +1,17 @@
 import './load-env.js';
 import { app, BrowserWindow, globalShortcut, nativeImage } from 'electron';
 import { join } from 'node:path';
-import { setupIpc, googleAuth } from './ipc/index.js';
+import { setupIpc, googleAuth, githubAuth } from './ipc/index.js';
 import { settingsRepo, syncCursors } from './store/index.js';
 import { GDocsPoller } from './sync/gdocs-poller.js';
 import { SourcePoller } from './sync/source-poller.js';
 import { GmailSource } from './sync/google/gmail-source.js';
 import { CalendarSource } from './sync/google/calendar-source.js';
 import { ClassroomSource } from './sync/google/classroom-source.js';
+import { GitHubClient } from './sync/github/github-client.js';
+import { GitHubCommitsSource } from './sync/github/commits-source.js';
+import { GitHubPrsSource } from './sync/github/prs-source.js';
+import { GitHubReviewsSource } from './sync/github/reviews-source.js';
 import { eventBus } from './events/bus.js';
 import { clearAllTimers } from './lifecycle/periodic.js';
 import { initActivityMonitoring, stopActivityMonitoring } from './activity/index.js';
@@ -26,6 +30,7 @@ let mainWindow: BrowserWindow | null = null;
 let overlayWindow: BrowserWindow | null = null;
 let gdocsPoller: GDocsPoller | null = null;
 let googlePollers: SourcePoller[] = [];
+let githubPollers: SourcePoller[] = [];
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();
@@ -139,6 +144,37 @@ if (!gotTheLock) {
     ];
     googlePollers.forEach((p) => p.start());
 
+    const githubClient = new GitHubClient({
+      get token() {
+        return githubAuth.token;
+      },
+    });
+    const githubPreflight = () => githubAuth.isAuthorized();
+    githubPollers = [
+      new SourcePoller(
+        new GitHubCommitsSource(githubClient, settingsRepo, eventBus),
+        syncCursors,
+        settingsRepo,
+        5 * 60 * 1000,
+        githubPreflight,
+      ),
+      new SourcePoller(
+        new GitHubPrsSource(githubClient, settingsRepo, eventBus),
+        syncCursors,
+        settingsRepo,
+        5 * 60 * 1000,
+        githubPreflight,
+      ),
+      new SourcePoller(
+        new GitHubReviewsSource(githubClient, settingsRepo, eventBus),
+        syncCursors,
+        settingsRepo,
+        5 * 60 * 1000,
+        githubPreflight,
+      ),
+    ];
+    githubPollers.forEach((p) => p.start());
+
     // Register all typed IPC handlers first
     const ensureCompanion = setupIpc(() => overlayWindow);
 
@@ -177,6 +213,8 @@ if (!gotTheLock) {
     }
     googlePollers.forEach((p) => p.stop());
     googlePollers = [];
+    githubPollers.forEach((p) => p.stop());
+    githubPollers = [];
     clearAllTimers();
   });
 

@@ -4,6 +4,9 @@ import { GDocsActivitySubscriber } from './gdocs-subscriber/index.js';
 import { GmailActivitySubscriber } from './gmail-subscriber/gmail-subscriber.js';
 import { CalendarActivitySubscriber } from './calendar-subscriber/calendar-subscriber.js';
 import { ClassroomActivitySubscriber } from './classroom-subscriber/classroom-subscriber.js';
+import { GitHubCommitActivitySubscriber } from './github-commit-subscriber/github-commit-subscriber.js';
+import { GitHubPrActivitySubscriber } from './github-pr-subscriber/github-pr-subscriber.js';
+import { GitHubReviewActivitySubscriber } from './github-review-subscriber/github-review-subscriber.js';
 import { ScreenCapturer } from './screen-capturer/index.js';
 import { FolderWatcher } from './folder-watcher/index.js';
 import { InferenceEngine } from './inference/index.js';
@@ -18,6 +21,9 @@ let gdocsSubscriber: GDocsActivitySubscriber | null = null;
 let gmailSubscriber: GmailActivitySubscriber | null = null;
 let calendarSubscriber: CalendarActivitySubscriber | null = null;
 let classroomSubscriber: ClassroomActivitySubscriber | null = null;
+let githubCommitSubscriber: GitHubCommitActivitySubscriber | null = null;
+let githubPrSubscriber: GitHubPrActivitySubscriber | null = null;
+let githubReviewSubscriber: GitHubReviewActivitySubscriber | null = null;
 let screenCapturer: ScreenCapturer | null = null;
 let folderWatcher: FolderWatcher | null = null;
 let inferenceEngine: InferenceEngine | null = null;
@@ -55,6 +61,21 @@ export async function initActivityMonitoring(): Promise<void> {
   if (!classroomSubscriber) {
     classroomSubscriber = new ClassroomActivitySubscriber(activityRepo, settingsRepo, eventBus);
     classroomSubscriber.start();
+  }
+
+  if (!githubCommitSubscriber) {
+    githubCommitSubscriber = new GitHubCommitActivitySubscriber(activityRepo, settingsRepo, eventBus);
+    githubCommitSubscriber.start();
+  }
+
+  if (!githubPrSubscriber) {
+    githubPrSubscriber = new GitHubPrActivitySubscriber(activityRepo, settingsRepo, eventBus);
+    githubPrSubscriber.start();
+  }
+
+  if (!githubReviewSubscriber) {
+    githubReviewSubscriber = new GitHubReviewActivitySubscriber(activityRepo, settingsRepo, eventBus);
+    githubReviewSubscriber.start();
   }
 
   if ((process.platform === 'darwin' || process.platform === 'win32') && !screenCapturer) {
@@ -147,6 +168,18 @@ export function stopActivityMonitoring(): void {
   if (classroomSubscriber) {
     classroomSubscriber.stop();
     classroomSubscriber = null;
+  }
+  if (githubCommitSubscriber) {
+    githubCommitSubscriber.stop();
+    githubCommitSubscriber = null;
+  }
+  if (githubPrSubscriber) {
+    githubPrSubscriber.stop();
+    githubPrSubscriber = null;
+  }
+  if (githubReviewSubscriber) {
+    githubReviewSubscriber.stop();
+    githubReviewSubscriber = null;
   }
   if (screenCapturer) {
     screenCapturer.stop();
