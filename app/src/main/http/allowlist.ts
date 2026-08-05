@@ -6,6 +6,7 @@ export const ALLOWED_HOSTS = Object.freeze([
   'classroom.googleapis.com',
   'oauth2.googleapis.com',
   'accounts.google.com',
+  'api.github.com',
 ]);
 
 export function assertAllowedHost(urlOrHost: string): void {
