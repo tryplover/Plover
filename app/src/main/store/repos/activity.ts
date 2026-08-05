@@ -4,6 +4,7 @@ import {
   WindowFocusSchema,
   GDocsRevisionSchema,
   GmailMessageSchema,
+  CalendarEventSchema,
   ScreenshotCapturedSchema,
   ScreenshotInferredSchema,
   FileEventSchema,
@@ -76,6 +77,13 @@ export class ActivityRepo {
         const result = GmailMessageSchema.safeParse(payload);
         if (result.success) {
           return { id: row.id, ts: row.ts, kind: 'gmail_message', payload: result.data };
+        }
+        break;
+      }
+      case 'calendar_event': {
+        const result = CalendarEventSchema.safeParse(payload);
+        if (result.success) {
+          return { id: row.id, ts: row.ts, kind: 'calendar_event', payload: result.data };
         }
         break;
       }

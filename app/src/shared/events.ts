@@ -21,6 +21,16 @@ export interface GmailMessagePayload {
   receivedAt: string;
 }
 
+export interface CalendarEventPayload {
+  id: string;
+  title: string;
+  start: string;
+  end: string;
+  status: string;
+  attendeeCount: number;
+  location: string | null;
+}
+
 export interface GitCommitInfo {
   repoPath: string;
   hash: string;
@@ -41,6 +51,7 @@ export interface EventPayloads {
   'folder.file_added': FolderEventPayload;
   'gdocs.revision': GDocsRevisionPayload;
   'gmail.message': GmailMessagePayload;
+  'calendar.event': CalendarEventPayload;
   'summary.created': SummaryRow;
   'summary.corrected': SummaryRow;
   'activity.git_commit': GitCommitInfo;
