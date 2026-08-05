@@ -107,6 +107,18 @@ export const MIGRATIONS: { version: number; sql: string }[] = [
       ALTER TABLE summaries ADD COLUMN corrected INTEGER NOT NULL DEFAULT 0;
     `,
   },
+  {
+    version: 7,
+    sql: `
+      CREATE TABLE sync_cursors (
+        provider TEXT NOT NULL,
+        source TEXT NOT NULL,
+        cursor TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        PRIMARY KEY (provider, source)
+      );
+    `,
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {
