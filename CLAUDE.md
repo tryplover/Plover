@@ -133,9 +133,10 @@ These are not style preferences. The core architecture doc calls them
 - **Local-only data.** SQLite + local filesystem. User data is strictly stored locally. No cloud sync.
 - **Backend API Proxy.** Outbound Gemini API calls are proxied through a secure backend server to protect developer API keys in production.
 
-- **Outbound HTTP allowlist:** `generativelanguage.googleapis.com` (Gemini),
-  `www.googleapis.com` (Docs), Google OAuth endpoints. Enforced at the
-  HTTP client.
+- **Outbound HTTP allowlist:** `generativelanguage.googleapis.com`,
+  `www.googleapis.com`, `gmail.googleapis.com`, `calendar.googleapis.com`,
+  `classroom.googleapis.com`, `oauth2.googleapis.com`, `accounts.google.com`.
+  Enforced by `app/src/main/http/allowlist.ts`.
 - **Never capture keystroke content.** Counts only.
 - **Never upload screenshots** anywhere except (later) Gemini Vision with
   explicit user consent surfaced in Settings.
