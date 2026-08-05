@@ -2,8 +2,12 @@ import './load-env.js';
 import { app, BrowserWindow, globalShortcut, nativeImage } from 'electron';
 import { join } from 'node:path';
 import { setupIpc, googleAuth } from './ipc/index.js';
-import { settingsRepo } from './store/index.js';
+import { settingsRepo, syncCursors } from './store/index.js';
 import { GDocsPoller } from './sync/gdocs-poller.js';
+import { SourcePoller } from './sync/source-poller.js';
+import { GmailSource } from './sync/google/gmail-source.js';
+import { CalendarSource } from './sync/google/calendar-source.js';
+import { ClassroomSource } from './sync/google/classroom-source.js';
 import { eventBus } from './events/bus.js';
 import { clearAllTimers } from './lifecycle/periodic.js';
 import { initActivityMonitoring, stopActivityMonitoring } from './activity/index.js';
@@ -21,6 +25,7 @@ if (!app.isPackaged && process.platform === 'darwin' && !appIcon.isEmpty()) {
 let mainWindow: BrowserWindow | null = null;
 let overlayWindow: BrowserWindow | null = null;
 let gdocsPoller: GDocsPoller | null = null;
+let googlePollers: SourcePoller[] = [];
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();
@@ -126,6 +131,14 @@ if (!gotTheLock) {
     gdocsPoller = new GDocsPoller(googleAuth, settingsRepo, eventBus);
     gdocsPoller.start();
 
+    const preflight = () => googleAuth.isAuthorized();
+    googlePollers = [
+      new SourcePoller(new GmailSource(googleAuth, eventBus), syncCursors, settingsRepo, 5 * 60 * 1000, preflight),
+      new SourcePoller(new CalendarSource(googleAuth, eventBus), syncCursors, settingsRepo, 5 * 60 * 1000, preflight),
+      new SourcePoller(new ClassroomSource(googleAuth, eventBus), syncCursors, settingsRepo, 30 * 60 * 1000, preflight),
+    ];
+    googlePollers.forEach((p) => p.start());
+
     // Register all typed IPC handlers first
     const ensureCompanion = setupIpc(() => overlayWindow);
 
@@ -162,6 +175,8 @@ if (!gotTheLock) {
     if (gdocsPoller) {
       gdocsPoller.stop();
     }
+    googlePollers.forEach((p) => p.stop());
+    googlePollers = [];
     clearAllTimers();
   });
 

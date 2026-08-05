@@ -1,6 +1,9 @@
 import { app } from 'electron';
 import { WindowTracker } from './window-tracker/index.js';
 import { GDocsActivitySubscriber } from './gdocs-subscriber/index.js';
+import { GmailActivitySubscriber } from './gmail-subscriber/gmail-subscriber.js';
+import { CalendarActivitySubscriber } from './calendar-subscriber/calendar-subscriber.js';
+import { ClassroomActivitySubscriber } from './classroom-subscriber/classroom-subscriber.js';
 import { ScreenCapturer } from './screen-capturer/index.js';
 import { FolderWatcher } from './folder-watcher/index.js';
 import { InferenceEngine } from './inference/index.js';
@@ -12,6 +15,9 @@ import { eventBus } from '../events/bus.js';
 
 let windowTracker: WindowTracker | null = null;
 let gdocsSubscriber: GDocsActivitySubscriber | null = null;
+let gmailSubscriber: GmailActivitySubscriber | null = null;
+let calendarSubscriber: CalendarActivitySubscriber | null = null;
+let classroomSubscriber: ClassroomActivitySubscriber | null = null;
 let screenCapturer: ScreenCapturer | null = null;
 let folderWatcher: FolderWatcher | null = null;
 let inferenceEngine: InferenceEngine | null = null;
@@ -34,6 +40,21 @@ export async function initActivityMonitoring(): Promise<void> {
   if (!gdocsSubscriber) {
     gdocsSubscriber = new GDocsActivitySubscriber(activityRepo, settingsRepo, eventBus);
     gdocsSubscriber.start();
+  }
+
+  if (!gmailSubscriber) {
+    gmailSubscriber = new GmailActivitySubscriber(activityRepo, settingsRepo, eventBus);
+    gmailSubscriber.start();
+  }
+
+  if (!calendarSubscriber) {
+    calendarSubscriber = new CalendarActivitySubscriber(activityRepo, settingsRepo, eventBus);
+    calendarSubscriber.start();
+  }
+
+  if (!classroomSubscriber) {
+    classroomSubscriber = new ClassroomActivitySubscriber(activityRepo, settingsRepo, eventBus);
+    classroomSubscriber.start();
   }
 
   if ((process.platform === 'darwin' || process.platform === 'win32') && !screenCapturer) {
@@ -114,6 +135,18 @@ export function stopActivityMonitoring(): void {
   if (gdocsSubscriber) {
     gdocsSubscriber.stop();
     gdocsSubscriber = null;
+  }
+  if (gmailSubscriber) {
+    gmailSubscriber.stop();
+    gmailSubscriber = null;
+  }
+  if (calendarSubscriber) {
+    calendarSubscriber.stop();
+    calendarSubscriber = null;
+  }
+  if (classroomSubscriber) {
+    classroomSubscriber.stop();
+    classroomSubscriber = null;
   }
   if (screenCapturer) {
     screenCapturer.stop();
