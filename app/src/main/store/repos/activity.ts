@@ -10,6 +10,7 @@ import {
   ScreenshotInferredSchema,
   FileEventSchema,
   GitCommitSchema,
+  GitHubCommitSchema,
 } from './activity-types.js';
 
 export type { ActivityRow };
@@ -127,6 +128,13 @@ export class ActivityRepo {
         const result = GitCommitSchema.safeParse(payload);
         if (result.success) {
           return { id: row.id, ts: row.ts, kind: 'git_commit', payload: result.data };
+        }
+        break;
+      }
+      case 'github_commit': {
+        const result = GitHubCommitSchema.safeParse(payload);
+        if (result.success) {
+          return { id: row.id, ts: row.ts, kind: 'github_commit', payload: result.data };
         }
         break;
       }

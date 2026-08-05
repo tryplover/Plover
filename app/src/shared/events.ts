@@ -47,6 +47,15 @@ export interface GitCommitInfo {
   message: string;
 }
 
+export interface GitHubCommitPayload {
+  repo: string;
+  sha: string;
+  message: string;
+  author: string;
+  url: string;
+  committedAt: string;
+}
+
 export interface EventPayloads {
   'goal.created': Goal;
   'goal.updated': Goal;
@@ -66,4 +75,5 @@ export interface EventPayloads {
   'summary.created': SummaryRow;
   'summary.corrected': SummaryRow;
   'activity.git_commit': GitCommitInfo;
+  'github.commit': GitHubCommitPayload;
 }

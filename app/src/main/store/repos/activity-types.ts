@@ -70,6 +70,15 @@ export const GitCommitSchema = z.object({
   message: z.string(),
 });
 
+export const GitHubCommitSchema = z.object({
+  repo: z.string(),
+  sha: z.string(),
+  message: z.string(),
+  author: z.string(),
+  url: z.string(),
+  committedAt: z.string(),
+});
+
 export type WindowFocusPayload = z.infer<typeof WindowFocusSchema>;
 export type GDocsRevisionPayload = z.infer<typeof GDocsRevisionSchema>;
 export type GmailMessagePayload = z.infer<typeof GmailMessageSchema>;
@@ -79,6 +88,7 @@ export type ScreenshotCapturedPayload = z.infer<typeof ScreenshotCapturedSchema>
 export type ScreenshotInferredPayload = z.infer<typeof ScreenshotInferredSchema>;
 export type FileEventPayload = z.infer<typeof FileEventSchema>;
 export type GitCommitPayload = z.infer<typeof GitCommitSchema>;
+export type GitHubCommitPayload = z.infer<typeof GitHubCommitSchema>;
 
 export type ActivityRow =
   | { id: number; ts: string; kind: 'window_focus'; payload: WindowFocusPayload }
@@ -91,4 +101,5 @@ export type ActivityRow =
   | { id: number; ts: string; kind: 'file_added'; payload: FileEventPayload }
   | { id: number; ts: string; kind: 'file_modified'; payload: FileEventPayload }
   | { id: number; ts: string; kind: 'git_commit'; payload: GitCommitPayload }
+  | { id: number; ts: string; kind: 'github_commit'; payload: GitHubCommitPayload }
   | { id: number; ts: string; kind: string; payload: Record<string, unknown> };
