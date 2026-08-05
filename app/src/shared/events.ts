@@ -31,6 +31,15 @@ export interface CalendarEventPayload {
   location: string | null;
 }
 
+export interface ClassroomCourseworkPayload {
+  courseId: string;
+  courseName: string;
+  id: string;
+  title: string;
+  dueDate: string | null;
+  state: string;
+}
+
 export interface GitCommitInfo {
   repoPath: string;
   hash: string;
@@ -52,6 +61,7 @@ export interface EventPayloads {
   'gdocs.revision': GDocsRevisionPayload;
   'gmail.message': GmailMessagePayload;
   'calendar.event': CalendarEventPayload;
+  'classroom.coursework': ClassroomCourseworkPayload;
   'summary.created': SummaryRow;
   'summary.corrected': SummaryRow;
   'activity.git_commit': GitCommitInfo;

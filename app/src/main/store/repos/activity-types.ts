@@ -34,6 +34,15 @@ export const CalendarEventSchema = z.object({
   location: z.string().nullable(),
 });
 
+export const ClassroomCourseworkSchema = z.object({
+  courseId: z.string(),
+  courseName: z.string(),
+  id: z.string(),
+  title: z.string(),
+  dueDate: z.string().nullable(),
+  state: z.string(),
+});
+
 export const ScreenshotCapturedSchema = z.object({
   filePath: z.string(),
   width: z.number(),
@@ -64,6 +73,7 @@ export type WindowFocusPayload = z.infer<typeof WindowFocusSchema>;
 export type GDocsRevisionPayload = z.infer<typeof GDocsRevisionSchema>;
 export type GmailMessagePayload = z.infer<typeof GmailMessageSchema>;
 export type CalendarEventPayload = z.infer<typeof CalendarEventSchema>;
+export type ClassroomCourseworkPayload = z.infer<typeof ClassroomCourseworkSchema>;
 export type ScreenshotCapturedPayload = z.infer<typeof ScreenshotCapturedSchema>;
 export type ScreenshotInferredPayload = z.infer<typeof ScreenshotInferredSchema>;
 export type FileEventPayload = z.infer<typeof FileEventSchema>;
@@ -74,6 +84,7 @@ export type ActivityRow =
   | { id: number; ts: string; kind: 'gdocs_revision'; payload: GDocsRevisionPayload }
   | { id: number; ts: string; kind: 'gmail_message'; payload: GmailMessagePayload }
   | { id: number; ts: string; kind: 'calendar_event'; payload: CalendarEventPayload }
+  | { id: number; ts: string; kind: 'classroom_coursework'; payload: ClassroomCourseworkPayload }
   | { id: number; ts: string; kind: 'screenshot_captured'; payload: ScreenshotCapturedPayload }
   | { id: number; ts: string; kind: 'screenshot_inferred'; payload: ScreenshotInferredPayload }
   | { id: number; ts: string; kind: 'file_added'; payload: FileEventPayload }
