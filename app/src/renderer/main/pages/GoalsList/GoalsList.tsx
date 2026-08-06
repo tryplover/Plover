@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Goal, Task } from '../../../../shared/types';
+import { useState, useEffect } from 'react';
+import { Task } from '../../../../shared/types';
 import { StepRow } from '../../../components/StepRow/StepRow.js';
 import { ProgressLine } from '../../../components/ProgressLine/ProgressLine.js';
 import { Button } from '../../../components/Button/Button.js';
 import { SetupFlow } from '../../../overlay/SetupFlow/SetupFlow.js';
-import { useAppEvents } from '../../../hooks/useAppEvents.js';
+import { useGoalsAndTasks } from '../../hooks/useGoalsAndTasks.js';
 
 interface GoalsListProps {
   'data-testid'?: string;
@@ -12,70 +12,26 @@ interface GoalsListProps {
 }
 
 export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }: GoalsListProps) {
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { goals, loading, tasksByGoal, fetchData, setTasks } = useGoalsAndTasks(onTasksUpdated);
 
   // Modal State
   const [showSetupModal, setShowSetupModal] = useState(false);
 
   const [expandedGoals, setExpandedGoals] = useState<Record<string, boolean>>({});
 
-  // Memoize task grouping to avoid O(Goals * Tasks) filtering in the render loop
-  const tasksByGoal = useMemo(() => {
-    const map: Record<string, Task[]> = {};
-    for (const task of tasks) {
-      const list = map[task.goal_id];
-      if (list) {
-        list.push(task);
-      } else {
-        map[task.goal_id] = [task];
-      }
-    }
-    return map;
-  }, [tasks]);
-
-  const fetchData = useCallback(async () => {
-    try {
-      // Parallelize fetching goals and tasks to reduce cumulative latency.
-      // Savings: min(latency(getGoals), latency(getTasks)).
-      const [allGoals, allTasks] = await Promise.all([
-        window.api.getGoals(),
-        window.api.getTasks(),
-      ]);
-      setGoals(allGoals);
-      setTasks(allTasks);
-
-      // Auto expand the first goal if present
-      if (allGoals.length > 0) {
-        const firstGoal = allGoals[0];
-        if (firstGoal) {
-          setExpandedGoals((prev) => {
-            if (Object.keys(prev).length === 0) {
-              return { [firstGoal.id]: true };
-            }
-            return prev;
-          });
-        }
-      }
-    } catch (err) {
-      console.error('Failed to load goals & tasks:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  // Auto expand the first goal if present
   useEffect(() => {
+    if (goals.length === 0) return;
+    const firstGoal = goals[0];
+    if (!firstGoal) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    void fetchData();
-  }, [fetchData]);
-
-  useAppEvents(() => {
-    void fetchData();
-    if (onTasksUpdated) {
-      onTasksUpdated();
-    }
-  });
+    setExpandedGoals((prev) => {
+      if (Object.keys(prev).length === 0) {
+        return { [firstGoal.id]: true };
+      }
+      return prev;
+    });
+  }, [goals]);
 
   const toggleExpandGoal = (goalId: string) => {
     setExpandedGoals((prev) => ({
