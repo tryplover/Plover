@@ -80,26 +80,6 @@ export function Expanded({ view, onCollapse }: Props) {
         ))}
       </ul>
 
-      {view.watching && (
-        <div className="plover-expanded__footer-holder">
-          <footer className="plover-expanded__watching">
-            <div className="plover-expanded__watching-row">
-              <EyeIcon />
-              <span>Watching this window only</span>
-            </div>
-            <p className="plover-expanded__watching-doc">
-              {view.watching.app} — {view.watching.doc}
-            </p>
-            <div className="plover-expanded__watching-meta">
-              <span>Last look {view.watching.lastLookAgoSec}s ago · never saved</span>
-              <Button variant="secondary" className="plover-expanded__change">
-                Change
-              </Button>
-            </div>
-          </footer>
-        </div>
-      )}
-
       {view.kind === 'paused' && (
         <Button
           variant="secondary"
@@ -163,27 +143,6 @@ function PlayIcon() {
       aria-hidden
     >
       <path d="M1 1L9 5.5L1 10Z" fill="currentColor" />
-    </svg>
-  );
-}
-
-function EyeIcon() {
-  return (
-    <svg
-      className="plover-expanded__eye"
-      width="13"
-      height="13"
-      viewBox="0 0 13 13"
-      fill="none"
-      aria-hidden
-    >
-      <path
-        d="M1 6.5C1.9 4 4 2.5 6.5 2.5S11.1 4 12 6.5c-.9 2.5-3 4-5.5 4S1.9 9 1 6.5Z"
-        stroke="currentColor"
-        strokeWidth="1.1"
-        strokeLinejoin="round"
-      />
-      <circle cx="6.5" cy="6.5" r="1.6" stroke="currentColor" strokeWidth="1.1" />
     </svg>
   );
 }

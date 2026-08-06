@@ -68,5 +68,20 @@ export function createCompanionWindow(): BrowserWindow {
     }
   });
 
+  const recenter = (): void => {
+    if (win.isDestroyed()) return;
+    const { workArea: area } = screen.getPrimaryDisplay();
+    const { width } = win.getBounds();
+    win.setPosition(area.x + Math.round((area.width - width) / 2), area.y + 12);
+  };
+  screen.on('display-metrics-changed', recenter);
+  screen.on('display-added', recenter);
+  screen.on('display-removed', recenter);
+  win.on('closed', () => {
+    screen.removeListener('display-metrics-changed', recenter);
+    screen.removeListener('display-added', recenter);
+    screen.removeListener('display-removed', recenter);
+  });
+
   return win;
 }
