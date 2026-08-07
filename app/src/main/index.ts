@@ -1,4 +1,7 @@
 import './load-env.js';
+import { initErrorHandler } from './error-handler.js';
+
+initErrorHandler();
 import { app, BrowserWindow, globalShortcut } from 'electron';
 import { join } from 'node:path';
 import { setupIpc, calendarSync, googleAuth } from './ipc.js';

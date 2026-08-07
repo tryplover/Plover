@@ -6,6 +6,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { Overlay } from './overlay/Overlay';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import './index.css';
 
 const container = document.getElementById('root');
@@ -26,10 +27,16 @@ if (showGallery) {
   import('./dev/ComponentGallery').then(({ ComponentGallery }) => {
     createRoot(container).render(
       <StrictMode>
-        <ComponentGallery />
+        <ErrorBoundary>
+          <ComponentGallery />
+        </ErrorBoundary>
       </StrictMode>,
     );
   });
 } else {
-  createRoot(container).render(<StrictMode>{isOverlay ? <Overlay /> : <App />}</StrictMode>);
+  createRoot(container).render(
+    <StrictMode>
+      <ErrorBoundary>{isOverlay ? <Overlay /> : <App />}</ErrorBoundary>
+    </StrictMode>,
+  );
 }
