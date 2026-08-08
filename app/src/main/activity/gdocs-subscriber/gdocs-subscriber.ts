@@ -25,6 +25,7 @@ export class GDocsActivitySubscriber {
       fileId: payload.fileId,
       name: payload.name,
       modifiedTime: payload.modifiedTime,
+      revisionId: payload.revisionId,
     });
   };
 }

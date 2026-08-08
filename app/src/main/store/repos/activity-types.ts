@@ -12,6 +12,7 @@ export const GDocsRevisionSchema = z.object({
   fileId: z.string(),
   name: z.string(),
   modifiedTime: z.string(),
+  revisionId: z.string().optional(),
 });
 
 export const GmailMessageSchema = z.object({

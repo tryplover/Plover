@@ -9,6 +9,7 @@ export interface GDocsRevisionPayload {
   fileId: string;
   name: string;
   modifiedTime: string;
+  revisionId?: string;
 }
 
 export interface GmailMessagePayload {

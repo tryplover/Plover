@@ -67,7 +67,7 @@ export class GDocsPoller {
       const drive = google.drive({ version: 'v3', auth: this.googleAuth.client });
       const response = await drive.files.list({
         q: `mimeType = 'application/vnd.google-apps.document' and modifiedTime > '${this.lastPollTime.toISOString()}' and trashed = false`,
-        fields: 'files(id, name, modifiedTime)',
+        fields: 'files(id, name, modifiedTime, headRevisionId)',
         orderBy: 'modifiedTime asc',
       });
 
@@ -82,6 +82,7 @@ export class GDocsPoller {
             fileId,
             name,
             modifiedTime,
+            revisionId: file.headRevisionId ?? undefined,
           });
 
           const fileTime = new Date(modifiedTime);
