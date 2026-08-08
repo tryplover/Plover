@@ -3,6 +3,9 @@ import {
   ActivityRow,
   WindowFocusSchema,
   GDocsRevisionSchema,
+  GmailMessageSchema,
+  CalendarEventSchema,
+  ClassroomCourseworkSchema,
   ScreenshotCapturedSchema,
   ScreenshotInferredSchema,
   FileEventSchema,
@@ -68,6 +71,27 @@ export class ActivityRepo {
         const result = GDocsRevisionSchema.safeParse(payload);
         if (result.success) {
           return { id: row.id, ts: row.ts, kind: 'gdocs_revision', payload: result.data };
+        }
+        break;
+      }
+      case 'gmail_message': {
+        const result = GmailMessageSchema.safeParse(payload);
+        if (result.success) {
+          return { id: row.id, ts: row.ts, kind: 'gmail_message', payload: result.data };
+        }
+        break;
+      }
+      case 'calendar_event': {
+        const result = CalendarEventSchema.safeParse(payload);
+        if (result.success) {
+          return { id: row.id, ts: row.ts, kind: 'calendar_event', payload: result.data };
+        }
+        break;
+      }
+      case 'classroom_coursework': {
+        const result = ClassroomCourseworkSchema.safeParse(payload);
+        if (result.success) {
+          return { id: row.id, ts: row.ts, kind: 'classroom_coursework', payload: result.data };
         }
         break;
       }
