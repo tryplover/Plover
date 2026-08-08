@@ -1,6 +1,6 @@
 ---
 name: plover-auth
-description: Use when a user who is signed in (Google or email/password, via the in-app Sign In / Account UI) still hits "UnauthorizedError: not signed in — user must sign in" or "no plover token" when creating a goal/task, when deciding where new sign-in/sign-up UI should live, or when touching app/src/main/auth/*, app/src/main/http/authed-fetch.ts, or the plover-server auth middleware.
+description: Use when a user who is signed in (Google or email/password, via the in-app Sign In / Account UI) still hits "UnauthorizedError: not signed in — user must sign in" or "no plover token" when creating a goal/task, when deciding where new sign-in/sign-up UI should live, when touching app/src/main/auth/*, app/src/main/http/authed-fetch.ts, or the plover-server auth middleware, or when the Google Sync (Gmail/Calendar/Drive/Classroom) OAuth token exchange fails with `invalid_client`/`invalid_request`/"client_secret is missing" after the browser consent screen.
 ---
 
 # Plover auth: unified on Supabase
@@ -30,6 +30,7 @@ no separate token, no deep link, no keychain-stored `plover_token`.
 | Need a "not signed in, please sign in" UI on any new call site that hits `authedFetch`/`decomposeGoal` | Import `isNotSignedInError` from `app/src/shared/auth-errors.ts` and render the shared `AuthPanel` (`app/src/renderer/components/AuthPanel/AuthPanel.tsx`) inline on catch — see `StepBreakdown.tsx` for the pattern (retry the original call from `AuthPanel`'s `onSuccess`). |
 | Tempted to add a second/parallel sign-in mechanism (deep link, separate token, separate OAuth client) | Don't — Supabase is the single identity system across the Electron app, `plover-website`, and `plover-server`. Add to `supabase-auth.ts` / reuse `AuthPanel`, not a new flow. |
 | Adding a new backend endpoint that needs the caller's identity | It arrives as `req.userId` (a Supabase UUID) once `authMiddleware` runs — same id space as `plover-website`'s `profiles.id` / Stripe `client_reference_id`. |
+| Google Sync OAuth (`app/src/main/sync/google-auth.ts`) token exchange fails with `invalid_client` / `invalid_request` / "client_secret is missing", right after the user approves consent in the browser | GCP OAuth client is type **Web application**, not **Desktop app**. PKCE mode sends no `client_secret`; Google's `/token` endpoint only accepts a secret-less exchange for a Desktop-app-type client. Recreate the OAuth client in GCP Console as **Desktop app** and update `GOOGLE_CLIENT_ID` in `app/.env`. |
 
 ## Details
 
@@ -89,3 +90,27 @@ instance still runs the old middleware (expects `X-Plover-Auth-Token`, doesn't k
 about Supabase) — every call 401s until that backend PR is merged and deployed with
 `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` configured in its environment/Secret
 Manager. Check which side is stale before assuming the app-side fix regressed.
+
+### Google Sync OAuth requires a "Desktop app" GCP client after the PKCE switch
+**Symptom:** The separate Google Sync OAuth flow (Gmail/Calendar/Drive/Classroom
+data access, distinct from the Supabase sign-in above — see
+`app/src/main/sync/google-auth.ts`) completes the browser consent screen
+successfully, but the loopback server's code-for-token exchange fails. Google's
+`/token` endpoint returns `invalid_client`, `invalid_request`, or an error body
+containing "client_secret is missing".
+
+**Root cause:** This app's Google OAuth flow was converted to PKCE (authorization
+code + `code_verifier`, no shipped client secret — see
+`tests/sync/google-auth.test.ts`'s "requests a PKCE code_challenge and exchanges
+the code_verifier without a client secret" test). Google's token endpoint only
+accepts a **secret-less** PKCE exchange when the OAuth client registered in GCP
+Console is of type **Desktop app**. If the client is still type **Web
+application** (the type used before the PKCE migration, which expects a
+`client_secret` on every exchange), Google rejects the request — no code change
+can fix this, since it's purely a GCP console configuration mismatch, not an app
+bug.
+
+**Fix:** In Google Cloud Console → APIs & Services → Credentials, create a new
+OAuth client (or edit the existing one) with type **Desktop app**, then update
+`GOOGLE_CLIENT_ID` in `app/.env` to the new client's ID. No `GOOGLE_CLIENT_SECRET`
+is needed or read by the app post-PKCE.
