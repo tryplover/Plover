@@ -76,7 +76,7 @@ This is separate from the plover-server signup OAuth. The app talks to Google Do
 2. **Enable the Google Drive API** for that project.
 3. **OAuth consent screen** → User type **External** → add your own email as a **Test user**. Required while the app is unverified because `drive.metadata.readonly` is requested.
 4. **Credentials → Create credentials → OAuth client ID → Application type "Desktop app"**. The app uses a loopback redirect (`http://localhost:{port}`, a random port per attempt).
-5. Copy the client ID and secret into `app/.env` as `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
+5. Copy the client ID into `app/.env` as `GOOGLE_CLIENT_ID`. Plover uses PKCE for the desktop OAuth flow, so no client secret is embedded in the app.
 
 Without these, the Google connection flow uses `mock-client-id` placeholders and fails; the rest of the app still runs.
 
