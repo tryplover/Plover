@@ -88,14 +88,34 @@ describe('authedFetch', () => {
     expect(urlArg).toBe('http://localhost:3000/api/match-commit');
   });
 
-  it('passes through absolute URLs unchanged', async () => {
+  it('passes through absolute URLs to allowlisted hosts unchanged', async () => {
     mockGetAccessToken.mockResolvedValueOnce('token-abc');
     fetchMock.mockResolvedValueOnce(new Response('{}', { status: 200 }));
 
-    await authedFetch('https://example.com/api/thing');
+    await authedFetch('https://www.googleapis.com/drive/v3/files');
 
     const [urlArg] = fetchMock.mock.calls[0] ?? [];
-    expect(urlArg).toBe('https://example.com/api/thing');
+    expect(urlArg).toBe('https://www.googleapis.com/drive/v3/files');
+  });
+
+  it('blocks an absolute URL to a non-allowlisted host before fetching', async () => {
+    mockGetAccessToken.mockResolvedValueOnce('token-abc');
+
+    await expect(authedFetch('https://evil.example.com/exfil')).rejects.toThrow(
+      /Outbound host not allowed/,
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('allows the runtime-resolved backend host even though it is not in ALLOWED_HOSTS', async () => {
+    process.env.PLOVER_BACKEND_URL = 'https://plover-backend.example.run.app';
+    mockGetAccessToken.mockResolvedValueOnce('token-abc');
+    fetchMock.mockResolvedValueOnce(new Response('{}', { status: 200 }));
+
+    await authedFetch('/api/decompose');
+
+    const [urlArg] = fetchMock.mock.calls[0] ?? [];
+    expect(urlArg).toBe('https://plover-backend.example.run.app/api/decompose');
   });
 
   it('strips a trailing slash from the backend URL', async () => {
