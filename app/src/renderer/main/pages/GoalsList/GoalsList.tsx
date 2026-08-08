@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 import { Goal, Task } from '../../../../shared/types';
 import { StepRow } from '../../../components/StepRow/StepRow.js';
 import { ProgressLine } from '../../../components/ProgressLine/ProgressLine.js';
 import { Button } from '../../../components/Button/Button.js';
 import { SetupFlow } from '../../../overlay/SetupFlow/SetupFlow.js';
-import { useAppEvents } from '../../../hooks/useAppEvents.js';
+import { useGoalsAndTasks } from '../../hooks/useGoalsAndTasks.js';
 
 interface GoalsListProps {
   'data-testid'?: string;
@@ -12,69 +12,29 @@ interface GoalsListProps {
 }
 
 export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }: GoalsListProps) {
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // Modal State
   const [showSetupModal, setShowSetupModal] = useState(false);
-
   const [expandedGoals, setExpandedGoals] = useState<Record<string, boolean>>({});
 
-  // Memoize task grouping to avoid O(Goals * Tasks) filtering in the render loop
-  const tasksByGoal = useMemo(() => {
-    const map: Record<string, Task[]> = {};
-    for (const task of tasks) {
-      const list = map[task.goal_id];
-      if (list) {
-        list.push(task);
-      } else {
-        map[task.goal_id] = [task];
+  const expandFirstGoal = useCallback((allGoals: Goal[]) => {
+    const firstGoal = allGoals[0];
+    if (!firstGoal) return;
+    setExpandedGoals((prev) => {
+      if (Object.keys(prev).length === 0) {
+        return { [firstGoal.id]: true };
       }
-    }
-    return map;
-  }, [tasks]);
-
-  const fetchData = useCallback(async () => {
-    try {
-      // Parallelize fetching goals and tasks to reduce cumulative latency.
-      // Savings: min(latency(getGoals), latency(getTasks)).
-      const [allGoals, allTasks] = await Promise.all([
-        window.api.getGoals(),
-        window.api.getTasks(),
-      ]);
-      setGoals(allGoals);
-      setTasks(allTasks);
-
-      // Auto expand the first goal if present
-      if (allGoals.length > 0) {
-        const firstGoal = allGoals[0];
-        if (firstGoal) {
-          setExpandedGoals((prev) => {
-            if (Object.keys(prev).length === 0) {
-              return { [firstGoal.id]: true };
-            }
-            return prev;
-          });
-        }
-      }
-    } catch (err) {
-      console.error('Failed to load goals & tasks:', err);
-    } finally {
-      setLoading(false);
-    }
+      return prev;
+    });
   }, []);
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void fetchData();
-  }, [fetchData]);
-
-  useAppEvents(() => {
-    void fetchData();
+  const notifyTasksUpdated = useCallback(() => {
     if (onTasksUpdated) {
       onTasksUpdated();
     }
+  }, [onTasksUpdated]);
+
+  const { goals, setTasks, tasksByGoal, loading, fetchData } = useGoalsAndTasks({
+    onLoaded: expandFirstGoal,
+    onAppEvent: notifyTasksUpdated,
   });
 
   const toggleExpandGoal = (goalId: string) => {
@@ -93,9 +53,7 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
           t.id === taskId ? { ...t, status: newStatus, updated_at: new Date().toISOString() } : t,
         ),
       );
-      if (onTasksUpdated) {
-        onTasksUpdated();
-      }
+      notifyTasksUpdated();
     } catch (err) {
       console.error('Failed to update task status:', err);
     }
@@ -110,9 +68,7 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
     try {
       await window.api.deleteGoal(goalId);
       void fetchData();
-      if (onTasksUpdated) {
-        onTasksUpdated();
-      }
+      notifyTasksUpdated();
     } catch (err) {
       console.error('Failed to delete goal:', err);
     }
@@ -145,7 +101,6 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
         position: 'relative',
       }}
     >
-      {/* Header */}
       <div
         style={{
           display: 'flex',
@@ -170,9 +125,7 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
         </Button>
       </div>
 
-      {/* Main Content Area */}
       <div style={{ flex: 1, overflowY: 'auto', paddingRight: '40px', paddingBottom: '24px' }}>
-        {/* All Goals Section */}
         <div>
           <h2
             style={{
@@ -397,7 +350,6 @@ export default function GoalsList({ 'data-testid': dataTestId, onTasksUpdated }:
         </div>
       </div>
 
-      {/* Goal Creation Setup Flow Modal Overlay */}
       {showSetupModal && (
         <div className="plover-modal-backdrop">
           <div className="plover-modal-content">
