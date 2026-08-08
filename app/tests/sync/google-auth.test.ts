@@ -101,6 +101,46 @@ describe('GoogleAuth', () => {
     expect(mockKeychain.get('plover:google-refresh-token')).toBe('new-refresh-token');
   });
 
+  it('requests a PKCE code_challenge and exchanges the code_verifier without a client secret', async () => {
+    let capturedTokenRequestBody = '';
+    const scope = nock('https://oauth2.googleapis.com')
+      .post('/token')
+      .reply(200, {
+        access_token: 'new-access-token',
+        refresh_token: 'new-refresh-token',
+        expires_in: 3600,
+      });
+    scope.on('request', (_req, _interceptor, body: string) => {
+      capturedTokenRequestBody = body;
+    });
+
+    const auth = new GoogleAuth();
+
+    mockOpenExternal.mockImplementationOnce(async (urlStr: string) => {
+      const parsedUrl = new URL(urlStr);
+      const redirectUri = parsedUrl.searchParams.get('redirect_uri');
+      const state = parsedUrl.searchParams.get('state');
+      expect(parsedUrl.searchParams.get('code_challenge_method')).toBe('S256');
+      expect(parsedUrl.searchParams.get('code_challenge')).toBeTruthy();
+
+      const callbackUrl = `${redirectUri}?code=test-auth-code&state=${state}`;
+      await new Promise<void>((resolve, reject) => {
+        http
+          .get(callbackUrl, (res) => {
+            expect(res.statusCode).toBe(200);
+            resolve();
+          })
+          .on('error', reject);
+      });
+      return true;
+    });
+
+    await auth.authorize();
+
+    expect(capturedTokenRequestBody).toContain('code_verifier=');
+    expect(capturedTokenRequestBody).not.toContain('client_secret');
+  });
+
   it('should reject when callback state does not match expected state', async () => {
     const auth = new GoogleAuth();
 
