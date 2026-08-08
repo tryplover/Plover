@@ -98,4 +98,16 @@ describe('SettingsRepo — Phase 2 activity tracking keys', () => {
     repo.update({ lastVisionInferenceWindowKey: null });
     expect(repo.getAll().lastVisionInferenceWindowKey).toBeNull();
   });
+
+  it('defaults the new Google source toggles to on', () => {
+    const s = repo.getAll();
+    expect(s.gmailEnabled).toBe(true);
+    expect(s.calendarEnabled).toBe(true);
+    expect(s.classroomEnabled).toBe(true);
+  });
+
+  it('persists a false toggle', () => {
+    repo.update({ gmailEnabled: false });
+    expect(repo.getAll().gmailEnabled).toBe(false);
+  });
 });
