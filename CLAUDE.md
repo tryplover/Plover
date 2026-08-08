@@ -135,8 +135,8 @@ These are not style preferences. The core architecture doc calls them
 
 - **Outbound HTTP allowlist:** `generativelanguage.googleapis.com`,
   `www.googleapis.com`, `gmail.googleapis.com`, `calendar.googleapis.com`,
-  `classroom.googleapis.com`, `oauth2.googleapis.com`, `accounts.google.com`.
-  An allowlist helper lives in `app/src/main/http/allowlist.ts`
+  `classroom.googleapis.com`, `oauth2.googleapis.com`, `accounts.google.com`,
+  `api.github.com`. An allowlist helper lives in `app/src/main/http/allowlist.ts`
   (`assertAllowedHost`); it is not yet wired into the HTTP client, so this
   remains a documented constraint rather than a runtime-enforced gate.
 - **Never capture keystroke content.** Counts only.

@@ -27,6 +27,10 @@ export interface SettingsData {
   gmailEnabled: boolean;
   calendarEnabled: boolean;
   classroomEnabled: boolean;
+
+  githubConnected: boolean;
+  githubTrackingEnabled: boolean;
+  githubWatchedRepos: string[];
 }
 
 export class SettingsRepo {
@@ -114,6 +118,11 @@ export class SettingsRepo {
     const calendarEnabled = map.get('calendarEnabled') !== 'false';
     const classroomEnabled = map.get('classroomEnabled') !== 'false';
 
+    const githubConnected = map.get('githubConnected') === 'true';
+    const githubTrackingEnabled = map.get('githubTrackingEnabled') !== 'false';
+    const githubWatchedReposRaw = map.get('githubWatchedRepos');
+    const githubWatchedRepos = githubWatchedReposRaw ? JSON.parse(githubWatchedReposRaw) : [];
+
     return {
       googleConnected,
       workingHours,
@@ -139,6 +148,9 @@ export class SettingsRepo {
       gmailEnabled,
       calendarEnabled,
       classroomEnabled,
+      githubConnected,
+      githubTrackingEnabled,
+      githubWatchedRepos,
     };
   }
 
@@ -234,6 +246,15 @@ export class SettingsRepo {
     }
     if (patch.classroomEnabled !== undefined) {
       this.set('classroomEnabled', String(patch.classroomEnabled));
+    }
+    if (patch.githubConnected !== undefined) {
+      this.set('githubConnected', String(patch.githubConnected));
+    }
+    if (patch.githubTrackingEnabled !== undefined) {
+      this.set('githubTrackingEnabled', String(patch.githubTrackingEnabled));
+    }
+    if (patch.githubWatchedRepos !== undefined) {
+      this.set('githubWatchedRepos', JSON.stringify(patch.githubWatchedRepos));
     }
   }
 }

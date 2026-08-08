@@ -47,6 +47,33 @@ export interface GitCommitInfo {
   message: string;
 }
 
+export interface GitHubCommitPayload {
+  repo: string;
+  sha: string;
+  message: string;
+  author: string;
+  url: string;
+  committedAt: string;
+}
+
+export interface GitHubPrPayload {
+  repo: string;
+  number: number;
+  title: string;
+  state: string;
+  action: string;
+  url: string;
+  updatedAt: string;
+}
+
+export interface GitHubReviewPayload {
+  repo: string;
+  prNumber: number;
+  kind: 'requested' | 'reviewed' | 'commented' | 'mentioned';
+  url: string;
+  updatedAt: string;
+}
+
 export interface EventPayloads {
   'goal.created': Goal;
   'goal.updated': Goal;
@@ -66,4 +93,7 @@ export interface EventPayloads {
   'summary.created': SummaryRow;
   'summary.corrected': SummaryRow;
   'activity.git_commit': GitCommitInfo;
+  'github.commit': GitHubCommitPayload;
+  'github.pr': GitHubPrPayload;
+  'github.review': GitHubReviewPayload;
 }
