@@ -28,13 +28,6 @@ export class AuthenticationError extends Error {
   }
 }
 
-export class PermissionError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'PermissionError';
-  }
-}
-
 export class GoogleAuth {
   private oauth2Client: OAuth2Client;
 
