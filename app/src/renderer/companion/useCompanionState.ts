@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Task } from '../../shared/types';
 import { pickCurrentTask } from '../../shared/current-task';
+import { goalProgress } from '../../shared/goal-progress';
 import { useAppEvents } from '../hooks/useAppEvents';
 
 export type StateKind = 'observing' | 'paused' | 'done' | 'not-sure';
@@ -34,7 +35,7 @@ export function useCompanionState(): CompanionView {
     const siblings = await window.api.getTasksByGoal(task.goal_id);
     if (!mounted.current) return;
     const steps = buildSteps(task, siblings);
-    setView((v) => ({ ...v, task, steps, progress: stepsProgress(steps) }));
+    setView((v) => ({ ...v, task, steps, progress: goalProgress(siblings, task.id) }));
   }, []);
 
   useEffect(() => {
@@ -66,11 +67,6 @@ export function useCompanionState(): CompanionView {
   });
 
   return view;
-}
-
-function stepsProgress(steps: CompanionView['steps']): number {
-  if (steps.length === 0) return 0;
-  return steps.filter((s) => s.done).length / steps.length;
 }
 
 function buildSteps(task: Task | null, all: Task[]): CompanionView['steps'] {

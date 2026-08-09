@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Goal, Task } from '../../../../shared/types';
 import { pickCurrentTask, sortByScheduledStart } from '../../../../shared/current-task';
+import { goalProgress } from '../../../../shared/goal-progress';
 import { StepRow } from '../../../components/StepRow/StepRow';
 import { ProgressLine } from '../../../components/ProgressLine/ProgressLine';
 import { Button } from '../../../components/Button/Button';
@@ -193,11 +194,13 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
   const goalCards = useMemo(() => {
     return goals.map((goal) => {
       const goalTasks = tasksByGoal[goal.id] ?? [];
-      const doneTasks = goalTasks.filter((t) => t.status === 'done');
-      const progress = goalTasks.length > 0 ? doneTasks.length / goalTasks.length : 0;
+      // Deliberately not `activeTaskId`: that one is null unless the card is
+      // expanded, so using it would make a goal's progress shift as you open it.
+      const currentId = defaultCurrentTask?.goal_id === goal.id ? defaultCurrentTask.id : null;
+      const progress = goalProgress(goalTasks, currentId);
       return { goal, progress, isActive: goal.id === activeGoalId };
     });
-  }, [goals, tasksByGoal, activeGoalId]);
+  }, [goals, tasksByGoal, activeGoalId, defaultCurrentTask]);
 
   const inMotionCount = useMemo(
     () => tasks.filter((t) => t.status !== 'done' && t.status !== 'skipped').length,
