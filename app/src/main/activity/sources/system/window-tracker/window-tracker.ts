@@ -1,9 +1,9 @@
 import { activeWindow } from 'get-windows';
 import { execFile } from 'node:child_process';
-import { ActivityRepo } from '../../../../store/repos/activity.js';
-import { SettingsRepo } from '../../../../store/repos/settings.js';
-import { getScreenRecordingStatus } from '../../../../permissions/screen-recording.js';
-import { gate } from '../../../shared/gate.js';
+import { ActivityRepo } from '@main/store/repos/activity.js';
+import { SettingsRepo } from '@main/store/repos/settings.js';
+import { getScreenRecordingStatus } from '@main/permissions/screen-recording.js';
+import { gate } from '@main/activity/shared/gate.js';
 import { BROWSER_BUNDLES, type WindowMeta } from './types.js';
 
 export class WindowTracker {
