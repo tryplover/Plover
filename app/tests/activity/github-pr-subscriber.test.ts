@@ -12,7 +12,7 @@ import { runMigrations } from '../../src/main/store/db';
 import { ActivityRepo } from '../../src/main/store/repos/activity';
 import { SettingsRepo } from '../../src/main/store/repos/settings';
 import { TypedEventBus } from '../../src/main/events/bus';
-import { GitHubPrActivitySubscriber } from '../../src/main/activity/github-pr-subscriber/github-pr-subscriber';
+import { GitHubPrActivitySubscriber } from '../../src/main/activity/sources/github/github-pr-subscriber/github-pr-subscriber';
 
 describe('GitHubPrActivitySubscriber', () => {
   let db: Database.Database;

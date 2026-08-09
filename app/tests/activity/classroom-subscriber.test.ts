@@ -12,7 +12,7 @@ import { runMigrations } from '../../src/main/store/db';
 import { ActivityRepo } from '../../src/main/store/repos/activity';
 import { SettingsRepo } from '../../src/main/store/repos/settings';
 import { TypedEventBus } from '../../src/main/events/bus';
-import { ClassroomActivitySubscriber } from '../../src/main/activity/classroom-subscriber/classroom-subscriber';
+import { ClassroomActivitySubscriber } from '../../src/main/activity/sources/google/classroom-subscriber/classroom-subscriber';
 
 describe('ClassroomActivitySubscriber', () => {
   let db: Database.Database;
