@@ -1,7 +1,6 @@
 import { ipcMain } from 'electron';
 import { Task } from '../../shared/types.js';
 import { tasksRepo } from '../store/index.js';
-import { scheduleTasks } from '../planner/schedule.js';
 import { eventBus } from '../events/bus.js';
 
 export function registerTasksHandlers(): void {
@@ -58,48 +57,4 @@ export function registerTasksHandlers(): void {
     tasksRepo.reorder(goal_id, orderedIds);
     return { ok: true as const };
   });
-
-  ipcMain.handle(
-    'tasks:schedule',
-    async (
-      _,
-      tasksInput: Omit<
-        Task,
-        | 'id'
-        | 'goal_id'
-        | 'status'
-        | 'created_at'
-        | 'updated_at'
-        | 'scheduled_start'
-        | 'scheduled_end'
-      >[],
-      workingHours: { start: string; end: string },
-      horizonDays: number,
-    ) => {
-      const mockTasks: Task[] = tasksInput.map((t, idx) => ({
-        id: `temp-${idx}`,
-        goal_id: 'temp-goal',
-        title: t.title,
-        estimate_minutes: t.estimate_minutes,
-        depends_on: t.depends_on,
-        status: 'todo',
-        sort_index: idx,
-        progress: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }));
-
-      const slots = await scheduleTasks({
-        tasks: mockTasks,
-        workingHours,
-        horizonDays,
-      });
-
-      return slots.map((s) => ({
-        taskId: s.taskId,
-        start: s.start.toISOString(),
-        end: s.end.toISOString(),
-      }));
-    },
-  );
 }
