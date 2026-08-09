@@ -10,7 +10,6 @@ export interface CompanionView {
   task: Task | null;
   progress: number;
   steps: { id: string; label: string; done: boolean; current: boolean }[];
-  watching: { app: string; doc: string; lastLookAgoSec: number } | null;
 }
 
 export function useCompanionState(): CompanionView {
@@ -19,7 +18,6 @@ export function useCompanionState(): CompanionView {
     task: null,
     progress: 0,
     steps: [],
-    watching: null,
   });
   const mounted = useRef(true);
 

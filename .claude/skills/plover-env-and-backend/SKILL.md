@@ -1,6 +1,6 @@
 ---
 name: plover-env-and-backend
-description: Use when OAuth uses "mock-client-id" fallback instead of real GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET from app/.env, when goal decomposition fails with "Server responded with status 404" or the backend hits the wrong local port, when a browser tab opens to "http://localhost:3000/signup" with connection refused instead of the configured PLOVER_BACKEND_URL, or when adding/moving env var reads in app/src/main or electron.vite.config.ts.
+description: Use when OAuth uses "mock-client-id" fallback instead of real GOOGLE_CLIENT_ID from app/.env, when goal decomposition fails with "Server responded with status 404" or the backend hits the wrong local port, when a browser tab opens to "http://localhost:3000/signup" with connection refused instead of the configured PLOVER_BACKEND_URL, or when adding/moving env var reads in app/src/main or electron.vite.config.ts.
 ---
 
 # Plover env loading and backend URL wiring
@@ -11,14 +11,14 @@ Covers two related footguns: how main-process secrets get loaded from `app/.env`
 ## Quick reference
 | Symptom / error | Fix |
 |---|---|
-| OAuth falls back to `mock-client-id`; `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` not picked up from `app/.env` | Load env via a dedicated first-import side-effect module, not a body-level call in `index.ts` |
+| OAuth falls back to `mock-client-id`; `GOOGLE_CLIENT_ID` not picked up from `app/.env` | Load env via a dedicated first-import side-effect module, not a body-level call in `index.ts` |
 | `goals:decompose` fails: `Goal decomposition failed: Server responded with status 404` | Port 3000 is occupied by another local service; move the backend to another port |
 | Clicking "Continue with Google" opens `http://localhost:3000/signup?...` (connection refused) instead of the real `app/.env` `PLOVER_BACKEND_URL` | Vite `define` defaulted the value to the literal `'http://localhost:3000'`, always-truthy — default it to `''` instead |
 
 ## Details
 
 ### `load-env.ts` must be the first import
-**Symptom:** Putting `process.loadEnvFile()` in the body of `app/src/main/index.ts` did not make `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` from `app/.env` available — OAuth still used the `mock-client-id` fallback.
+**Symptom:** Putting `process.loadEnvFile()` in the body of `app/src/main/index.ts` did not make `GOOGLE_CLIENT_ID` from `app/.env` available — OAuth still used the `mock-client-id` fallback.
 
 **Root cause:** `google-auth.ts` reads `process.env.GOOGLE_CLIENT_ID` at module-evaluation time, and ES module imports (`index.ts` → `ipc.ts` → `google-auth.ts`) are hoisted and evaluated *before* any statement in the `index.ts` body. A body-level `process.loadEnvFile()` runs too late. (`gemini.ts` is unaffected because it reads the key lazily inside `getGeminiClient()`.)
 

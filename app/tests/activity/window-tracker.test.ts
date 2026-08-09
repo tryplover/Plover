@@ -3,7 +3,7 @@ import Database from 'better-sqlite3';
 import { runMigrations } from '@main/store/db.js';
 import { ActivityRepo } from '@main/store/repos/activity.js';
 import { SettingsRepo } from '@main/store/repos/settings.js';
-import { WindowTracker } from '@main/activity/window-tracker/index.js';
+import { WindowTracker } from '@main/activity/sources/system/window-tracker/index.js';
 
 // Setup electron mock
 const { getMediaAccessStatus } = vi.hoisted(() => ({

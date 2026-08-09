@@ -23,7 +23,7 @@ vi.mock('../../src/main/auth/supabase-auth.js', () => ({
 import { ActivityRepo } from '../../src/main/store/repos/activity.js';
 import { SettingsRepo } from '../../src/main/store/repos/settings.js';
 import { runMigrations } from '../../src/main/store/db.js';
-import { ScreenCapturer } from '../../src/main/activity/screen-capturer/index.js';
+import { ScreenCapturer } from '../../src/main/activity/sources/system/screen-capturer/index.js';
 
 describe('ScreenCapturer', () => {
   let userDataDir: string;

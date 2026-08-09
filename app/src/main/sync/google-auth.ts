@@ -2,15 +2,12 @@ import http from 'http';
 import { randomBytes } from 'node:crypto';
 import { AddressInfo } from 'net';
 import { google } from 'googleapis';
-import { OAuth2Client } from 'google-auth-library';
+import { OAuth2Client, CodeChallengeMethod } from 'google-auth-library';
 import keytar from 'keytar';
 import { shell } from 'electron';
 import { resolveRequiredEnv } from '../config/env.js';
 
 const CLIENT_ID = resolveRequiredEnv('GOOGLE_CLIENT_ID', { devFallback: 'mock-client-id' });
-const CLIENT_SECRET = resolveRequiredEnv('GOOGLE_CLIENT_SECRET', {
-  devFallback: 'mock-client-secret',
-});
 const KEYCHAIN_SERVICE = 'plover';
 const KEYCHAIN_ACCOUNT = 'google-refresh-token';
 const AUTHORIZE_TIMEOUT_MS = 5 * 60 * 1000;
@@ -31,18 +28,11 @@ export class AuthenticationError extends Error {
   }
 }
 
-export class PermissionError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'PermissionError';
-  }
-}
-
 export class GoogleAuth {
   private oauth2Client: OAuth2Client;
 
   constructor() {
-    this.oauth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, 'http://localhost');
+    this.oauth2Client = new google.auth.OAuth2(CLIENT_ID, undefined, 'http://localhost');
   }
 
   get client(): OAuth2Client {
@@ -89,13 +79,16 @@ export class GoogleAuth {
         const port = address.port;
         const redirectUri = `http://localhost:${port}`;
 
-        const client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, redirectUri);
+        const client = new google.auth.OAuth2(CLIENT_ID, undefined, redirectUri);
+        const { codeVerifier, codeChallenge } = await client.generateCodeVerifierAsync();
 
         const authUrl = client.generateAuthUrl({
           access_type: 'offline',
           scope: GOOGLE_API_SCOPES,
           prompt: 'consent',
           state: expectedState,
+          code_challenge_method: CodeChallengeMethod.S256,
+          code_challenge: codeChallenge,
         });
 
         server.on('request', async (req, res) => {
@@ -143,7 +136,7 @@ export class GoogleAuth {
               return;
             }
 
-            const { tokens } = await client.getToken(code);
+            const { tokens } = await client.getToken({ code, codeVerifier });
             client.setCredentials(tokens);
             this.oauth2Client = client;
 

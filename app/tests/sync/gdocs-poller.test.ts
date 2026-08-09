@@ -96,11 +96,13 @@ describe('GDocsPoller', () => {
           id: 'doc-1',
           name: 'Google Doc 1',
           modifiedTime: doc1Time,
+          headRevisionId: 'rev-1',
         },
         {
           id: 'doc-2',
           name: 'Google Doc 2',
           modifiedTime: doc2Time,
+          headRevisionId: 'rev-2',
         },
       ],
     };
@@ -111,7 +113,7 @@ describe('GDocsPoller', () => {
         expect(q.q).toContain("mimeType = 'application/vnd.google-apps.document'");
         expect(q.q).toContain(`modifiedTime > '${initialPollTime}'`);
         expect(q.orderBy).toBe('modifiedTime asc');
-        expect(q.fields).toBe('files(id, name, modifiedTime)');
+        expect(q.fields).toBe('files(id, name, modifiedTime, headRevisionId)');
         return true;
       })
       .reply(200, mockFilesResponse)
@@ -129,11 +131,13 @@ describe('GDocsPoller', () => {
       fileId: 'doc-1',
       name: 'Google Doc 1',
       modifiedTime: doc1Time,
+      revisionId: 'rev-1',
     });
     expect(events).toContainEqual({
       fileId: 'doc-2',
       name: 'Google Doc 2',
       modifiedTime: doc2Time,
+      revisionId: 'rev-2',
     });
 
     expect(poller.lastPollTime.toISOString()).toBe(doc2Time);

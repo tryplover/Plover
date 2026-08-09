@@ -32,7 +32,7 @@ Authoritative specs:
 - **Setup script:** `./setup.sh` at the repo root does the whole install + native-module rebuild.
 - **What agents can run:** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm --filter ./app run test:coverage`, `pnpm build`.
 - **What agents cannot run:** `pnpm dev` and `pnpm package`. Both require a GUI and either Electron-launchable env or code-signing tooling. Don't try.
-- **No secrets available.** `GEMINI_API_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` are all absent in the sandbox. Any code path that hits the real network in a test is a bug — see the "no real network" convention below.
+- **No secrets available.** `GEMINI_API_KEY`, `GOOGLE_CLIENT_ID` are absent in the sandbox. Any code path that hits the real network in a test is a bug — see the "no real network" convention below.
 
 ## Commands cheat-sheet
 

@@ -2,7 +2,7 @@ import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { writeFileSync, mkdirSync } from 'node:fs';
-import { FolderWatcher } from '@main/activity/folder-watcher/index.js';
+import { FolderWatcher } from '@main/activity/sources/system/folder-watcher/index.js';
 import { ActivityRepo } from '@main/store/repos/activity.js';
 import { SettingsRepo } from '@main/store/repos/settings.js';
 import { TypedEventBus } from '@main/events/bus.js';

@@ -3,10 +3,16 @@ import {
   ActivityRow,
   WindowFocusSchema,
   GDocsRevisionSchema,
+  GmailMessageSchema,
+  CalendarEventSchema,
+  ClassroomCourseworkSchema,
   ScreenshotCapturedSchema,
   ScreenshotInferredSchema,
   FileEventSchema,
   GitCommitSchema,
+  GitHubCommitSchema,
+  GitHubPrSchema,
+  GitHubReviewSchema,
 } from './activity-types.js';
 
 export type { ActivityRow };
@@ -71,6 +77,27 @@ export class ActivityRepo {
         }
         break;
       }
+      case 'gmail_message': {
+        const result = GmailMessageSchema.safeParse(payload);
+        if (result.success) {
+          return { id: row.id, ts: row.ts, kind: 'gmail_message', payload: result.data };
+        }
+        break;
+      }
+      case 'calendar_event': {
+        const result = CalendarEventSchema.safeParse(payload);
+        if (result.success) {
+          return { id: row.id, ts: row.ts, kind: 'calendar_event', payload: result.data };
+        }
+        break;
+      }
+      case 'classroom_coursework': {
+        const result = ClassroomCourseworkSchema.safeParse(payload);
+        if (result.success) {
+          return { id: row.id, ts: row.ts, kind: 'classroom_coursework', payload: result.data };
+        }
+        break;
+      }
       case 'screenshot_captured': {
         const result = ScreenshotCapturedSchema.safeParse(payload);
         if (result.success) {
@@ -103,6 +130,27 @@ export class ActivityRepo {
         const result = GitCommitSchema.safeParse(payload);
         if (result.success) {
           return { id: row.id, ts: row.ts, kind: 'git_commit', payload: result.data };
+        }
+        break;
+      }
+      case 'github_commit': {
+        const result = GitHubCommitSchema.safeParse(payload);
+        if (result.success) {
+          return { id: row.id, ts: row.ts, kind: 'github_commit', payload: result.data };
+        }
+        break;
+      }
+      case 'github_pr': {
+        const result = GitHubPrSchema.safeParse(payload);
+        if (result.success) {
+          return { id: row.id, ts: row.ts, kind: 'github_pr', payload: result.data };
+        }
+        break;
+      }
+      case 'github_review': {
+        const result = GitHubReviewSchema.safeParse(payload);
+        if (result.success) {
+          return { id: row.id, ts: row.ts, kind: 'github_review', payload: result.data };
         }
         break;
       }

@@ -1,6 +1,6 @@
 ---
 name: plover-pnpm-workspace
-description: Use when pnpm commands in this repo fail or behave unexpectedly — "No projects matched the filters", a colon-named script (e.g. test:coverage) not running under --filter, vitest --coverage producing no coverage output when passed after a trailing --, "Ignored build scripts" / native binaries (electron, esbuild) not built after pnpm install, or pnpm hanging/erroring with "ConnectTimeoutError" or a fetch to registry.npmjs.org/pnpm on a corporate/VPN-restricted network.
+description: Use when pnpm commands in this repo fail or behave unexpectedly — "No projects matched the filters", a colon-named script (e.g. test:coverage) not running under --filter, vitest --coverage producing no coverage output when passed after a trailing --, "Ignored build scripts" / native binaries (electron, esbuild) not built after pnpm install, pnpm hanging/erroring with "ConnectTimeoutError" or a fetch to registry.npmjs.org/pnpm on a corporate/VPN-restricted network, or `pnpm test`/`pnpm --filter ./app rebuild` failing with "ERR_PNPM_UNEXPECTED_STORE".
 ---
 
 # Plover pnpm workspace footguns
@@ -16,6 +16,7 @@ Footguns specific to running pnpm in this repo's workspace (`app/` package named
 | `pnpm --filter ./app test -- --coverage` runs tests but produces no coverage output | Don't forward flags through `--`; use the dedicated `test:coverage` script in `app/package.json` (`vitest run --coverage` directly) |
 | `pnpm install` warns `Ignored build scripts`; `electron`/`esbuild` binaries not built | Add package to `pnpm.onlyBuiltDependencies` in root `package.json` |
 | `pnpm <anything>` → `Error when performing the request to https://registry.npmjs.org/pnpm/-/pnpm-10.26.0.tgz`, `ConnectTimeoutError` | Use global pnpm directly, not the corepack shim: `export PATH=~/Library/pnpm:$PATH` then `pnpm install` |
+| `pnpm test` (root, runs the `rebuild better-sqlite3 keytar` step first) fails with `ERR_PNPM_UNEXPECTED_STORE` | A non-corepack `pnpm` (e.g. Homebrew's, earlier on `$PATH`) shadows the pinned `packageManager` version; run `export PATH=~/Library/pnpm:$PATH` first so the correct pnpm (matching `packageManager` in root `package.json`) is used |
 
 ## Details
 
@@ -52,3 +53,8 @@ export PATH=/Users/<user>/Library/pnpm:$PATH
 pnpm install   # now actually uses the internal registry from ~/.npmrc
 ```
 Subagents that need to install deps will hit this same wall and report "network/corepack issue" — orchestrator must pre-install deps from the main session or pass the PATH override into the subagent prompt.
+
+### A stray Homebrew `pnpm` on `$PATH` breaks the root `pnpm test` rebuild step with `ERR_PNPM_UNEXPECTED_STORE`
+**Symptom:** `pnpm test` from repo root fails before running any tests: `ERR_PNPM_UNEXPECTED_STORE — The dependencies at ".../app/node_modules" are currently linked from the store at ".../pnpm/store/v10" ... pnpm now wants to use the store at ".../pnpm/store/v3"`. Running `pnpm --filter ./app exec vitest run <file>` directly (skipping the root `test` script's `rebuild` step) works fine, masking the issue.
+**Root cause:** Root `package.json` pins `"packageManager": "pnpm@10.26.0"`, but if a separately-installed `pnpm` (e.g. Homebrew's, `/opt/homebrew/bin/pnpm`, often an older major like 9.x) appears earlier on `$PATH` than the corepack shim, that older binary runs instead. It defaults to a different on-disk store format/version than the one `node_modules` was actually linked against, so its very first store-touching command (`rebuild`) refuses to proceed.
+**Fix:** Same fix as the corepack-network footgun above — put the correct global pnpm first on `$PATH`: `export PATH=/Users/<user>/Library/pnpm:$PATH` before running `pnpm test`/`pnpm install`/`pnpm --filter ./app rebuild ...`. Verify with `pnpm --version` (should print the version in `packageManager`) before trusting a green/red result from the root `test` script.
