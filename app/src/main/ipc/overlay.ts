@@ -3,7 +3,6 @@ import { createCompanionWindow } from '../windows/companion.js';
 
 export function registerOverlayHandlers(
   getOverlayWindow: () => BrowserWindow | null,
-  createOverlayWindow?: (variant: 'overlay' | 'window') => BrowserWindow,
 ): () => BrowserWindow {
   ipcMain.handle('overlay:close', async () => {
     const overlayWin = getOverlayWindow();
@@ -30,26 +29,10 @@ export function registerOverlayHandlers(
     }
   });
 
-  let setupWindow: BrowserWindow | null = null;
-
-  ipcMain.handle('overlay:openWindow', async () => {
-    if (setupWindow && !setupWindow.isDestroyed()) {
-      setupWindow.focus();
-      return;
-    }
-    if (createOverlayWindow) {
-      setupWindow = createOverlayWindow('window');
-      setupWindow.on('closed', () => {
-        setupWindow = null;
-      });
-      setupWindow.show();
-    }
-  });
-
   // Companion
   let companion: BrowserWindow | null = null;
   let companionKind = 'observing';
-  let companionActiveTaskId: string | null = null;
+  const companionActiveTaskId: string | null = null;
 
   function ensureCompanion(): BrowserWindow {
     if (!companion || companion.isDestroyed()) {
@@ -84,10 +67,6 @@ export function registerOverlayHandlers(
       w.setBounds({ x: newX, y: bounds.y, width: newWidth, height: newHeight });
     }
   });
-  ipcMain.handle('companion:setActiveTask', (_e, taskId: string | null) => {
-    companionActiveTaskId = taskId;
-    ensureCompanion().webContents.send('companion:activeTask', taskId);
-  });
   ipcMain.handle('companion:setState', (_e, kind: string) => {
     companionKind = kind;
     ensureCompanion().webContents.send('companion:state', kind);
@@ -96,20 +75,6 @@ export function registerOverlayHandlers(
     kind: companionKind,
     activeTaskId: companionActiveTaskId,
   }));
-
-  ipcMain.handle('overlay:set-ignore-mouse-events', async (_event, ignore: boolean) => {
-    const overlayWin = getOverlayWindow();
-    if (overlayWin) {
-      overlayWin.setIgnoreMouseEvents(ignore, { forward: true });
-    }
-  });
-
-  ipcMain.handle('overlay:set-tracking', async (_event, tracking: boolean) => {
-    const overlayWin = getOverlayWindow();
-    if (overlayWin) {
-      (overlayWin as BrowserWindow & { isTracking?: boolean }).isTracking = tracking;
-    }
-  });
 
   return ensureCompanion;
 }

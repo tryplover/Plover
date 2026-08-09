@@ -14,8 +14,6 @@ export { googleAuth, githubAuth };
 
 export function setupIpcHandlers(
   getOverlayWindow: () => BrowserWindow | null,
-  onWatchedFoldersChange?: (folders: string[]) => Promise<void> | void,
-  createOverlayWindow?: (variant: 'overlay' | 'window') => BrowserWindow,
 ): () => BrowserWindow {
   void googleAuth.loadSavedCredentials();
   void githubAuth.loadSavedCredentials();
@@ -26,8 +24,8 @@ export function setupIpcHandlers(
   registerGoalsHandlers(getOverlayWindow);
   registerTasksHandlers();
   registerAuthHandlers();
-  registerSettingsHandlers(onWatchedFoldersChange);
-  const ensureCompanion = registerOverlayHandlers(getOverlayWindow, createOverlayWindow);
+  registerSettingsHandlers();
+  const ensureCompanion = registerOverlayHandlers(getOverlayWindow);
   registerSystemHandlers();
   registerSummariesHandlers();
   return ensureCompanion;
@@ -35,10 +33,8 @@ export function setupIpcHandlers(
 
 export function setupIpc(
   getOverlayWindow: () => BrowserWindow | null,
-  onWatchedFoldersChange?: (folders: string[]) => Promise<void> | void,
-  createOverlayWindow?: (variant: 'overlay' | 'window') => BrowserWindow,
 ): () => BrowserWindow {
-  const ensureCompanion = setupIpcHandlers(getOverlayWindow, onWatchedFoldersChange, createOverlayWindow);
+  const ensureCompanion = setupIpcHandlers(getOverlayWindow);
   startEventForwarding(broadcast);
   return ensureCompanion;
 }
