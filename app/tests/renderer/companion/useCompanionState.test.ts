@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import { useCompanionState } from '../../../src/renderer/companion/useCompanionState';
 import type { Task } from '../../../src/shared/types';
 
@@ -105,7 +105,9 @@ describe('useCompanionState', () => {
       expect(result.current.kind).toBe('observing');
     });
 
-    mockWindowApi.triggerEvent('companion:state', 'paused');
+    act(() => {
+      mockWindowApi.triggerEvent('companion:state', 'paused');
+    });
 
     await waitFor(() => {
       expect(result.current.kind).toBe('paused');
@@ -133,7 +135,9 @@ describe('useCompanionState', () => {
     mockWindowApi.api.getTasks.mockResolvedValue(tasks);
     mockWindowApi.api.getTasksByGoal.mockResolvedValue(tasks);
 
-    mockWindowApi.triggerEvent('app-event', { type: 'task.completed' });
+    act(() => {
+      mockWindowApi.triggerEvent('app-event', { type: 'task.completed' });
+    });
 
     await waitFor(() => {
       expect(result.current.task?.id).toBe('task-3');
@@ -161,7 +165,9 @@ describe('useCompanionState', () => {
     mockWindowApi.api.getTasks.mockResolvedValue(tasks);
     mockWindowApi.api.getTasksByGoal.mockResolvedValue(tasks);
 
-    mockWindowApi.triggerEvent('app-event', { type: 'task.deleted' });
+    act(() => {
+      mockWindowApi.triggerEvent('app-event', { type: 'task.deleted' });
+    });
 
     await waitFor(() => {
       expect(result.current.task?.id).toBe('task-4');
