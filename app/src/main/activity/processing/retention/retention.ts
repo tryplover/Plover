@@ -1,6 +1,6 @@
 import { promises as fs } from 'node:fs';
-import { ActivityRepo } from '../../../store/repos/activity.js';
-import { SettingsRepo } from '../../../store/repos/settings.js';
+import { ActivityRepo } from '@main/store/repos/activity.js';
+import { SettingsRepo } from '@main/store/repos/settings.js';
 
 export async function runRetention(args: {
   activityRepo: ActivityRepo;

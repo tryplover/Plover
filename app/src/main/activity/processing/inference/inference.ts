@@ -1,11 +1,12 @@
-import { Task } from '../../../../shared/types.js';
-import { TasksRepo } from '../../../store/repos/tasks.js';
-import { ActivityRepo, ActivityRow } from '../../../store/repos/activity.js';
-import { SummariesRepo } from '../../../store/repos/summaries.js';
-import { SettingsRepo } from '../../../store/repos/settings.js';
-import { schedulePeriodic } from '../../../lifecycle/periodic.js';
-import { TypedEventBus } from '../../../events/bus.js';
-import { authedFetch, UnauthorizedError } from '../../../http/authed-fetch.js';
+import Database from 'better-sqlite3';
+import { Task } from '@shared/types.js';
+import { TasksRepo } from '@main/store/repos/tasks.js';
+import { ActivityRepo, ActivityRow } from '@main/store/repos/activity.js';
+import { SummariesRepo } from '@main/store/repos/summaries.js';
+import { SettingsRepo } from '@main/store/repos/settings.js';
+import { schedulePeriodic } from '@main/lifecycle/periodic.js';
+import { TypedEventBus } from '@main/events/bus.js';
+import { authedFetch, UnauthorizedError } from '@main/http/authed-fetch.js';
 import {
   BASELINE_INFERENCE_INTERVAL_MS,
   FAST_INFERENCE_INTERVAL_MS,
@@ -28,6 +29,7 @@ export class InferenceEngine {
     private summariesRepo: SummariesRepo,
     private settingsRepo: SettingsRepo,
     private bus: TypedEventBus,
+    private db: Database.Database,
     now?: () => Date,
   ) {
     this.now = now ?? (() => new Date());
@@ -162,26 +164,36 @@ export class InferenceEngine {
     for (const entry of entries) {
       if (!validIds.has(entry.taskId)) continue;
 
-      const increment = entry.progress_increment ?? 0;
-      const updated = this.tasksRepo.incrementProgress(entry.taskId, increment);
-      const previousStatus = updated.status;
+      try {
+        const { done, inserted } = this.db.transaction(() => {
+          const increment = entry.progress_increment ?? 0;
+          const updated = this.tasksRepo.incrementProgress(entry.taskId, increment);
+          const previousStatus = updated.status;
 
-      const shouldComplete = entry.completed || updated.progress >= 100;
-      if (shouldComplete && updated.status !== 'done') {
-        const done = this.tasksRepo.update(entry.taskId, { status: 'done' });
-        this.bus.emit('task.completed', done);
+          const shouldComplete = entry.completed || updated.progress >= 100;
+          const done =
+            shouldComplete && updated.status !== 'done'
+              ? this.tasksRepo.update(entry.taskId, { status: 'done' })
+              : null;
+
+          const inserted = this.summariesRepo.insert({
+            taskId: entry.taskId,
+            summary: entry.reasoning,
+            signal: Math.min(1, Math.max(0, increment / 100)),
+            source: 'inference',
+            progressDelta: increment,
+            previousStatus,
+            ts: nowTs,
+          });
+
+          return { done, inserted };
+        })();
+
+        if (done) this.bus.emit('task.completed', done);
+        this.bus.emit('summary.created', inserted);
+      } catch (err) {
+        console.error('[InferenceEngine] Failed to apply progress for task', entry.taskId, err);
       }
-
-      const inserted = this.summariesRepo.insert({
-        taskId: entry.taskId,
-        summary: entry.reasoning,
-        signal: Math.min(1, Math.max(0, increment / 100)),
-        source: 'inference',
-        progressDelta: increment,
-        previousStatus,
-        ts: nowTs,
-      });
-      this.bus.emit('summary.created', inserted);
     }
   }
 }

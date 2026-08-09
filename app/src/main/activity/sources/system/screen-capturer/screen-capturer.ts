@@ -2,10 +2,10 @@ import { desktopCapturer } from 'electron';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { ActivityRow } from '../../../../store/repos/activity.js';
-import { getScreenRecordingStatus } from '../../../../permissions/screen-recording.js';
-import { authedFetch } from '../../../../http/authed-fetch.js';
-import { gate } from '../../../shared/gate.js';
+import { ActivityRow } from '@main/store/repos/activity.js';
+import { getScreenRecordingStatus } from '@main/permissions/screen-recording.js';
+import { authedFetch } from '@main/http/authed-fetch.js';
+import { gate } from '@main/activity/shared/gate.js';
 import { VISION_UPLOAD_MAX_WIDTH, type ScreenCapturerDeps, type GrabbedScreen } from './types.js';
 
 const MIN_CAPTURE_INTERVAL_MINUTES = 1;

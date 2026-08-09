@@ -41,6 +41,7 @@ function freshHarness(now?: () => Date): {
     summariesRepo,
     settingsRepo,
     bus,
+    db,
     now,
   );
   return { db, tasksRepo, goalsRepo, activityRepo, summariesRepo, settingsRepo, bus, engine };
@@ -278,6 +279,62 @@ describe('InferenceEngine', () => {
     expect(s0?.progress_delta).toBe(40);
     expect(s0?.previous_status).toBe('todo');
     expect(tasksRepo.get(taskId)?.status).toBe('todo');
+  });
+
+  it('isolates a per-entry failure: other entries still apply and the failing entry has no orphaned progress', async () => {
+    const { tasksRepo, goalsRepo, activityRepo, summariesRepo, settingsRepo, engine } =
+      freshHarness();
+    const { taskId: goodTaskId } = seedGoalAndTask(goalsRepo, tasksRepo, 'Good task');
+    const { taskId: badTaskId } = seedGoalAndTask(goalsRepo, tasksRepo, 'Bad task');
+    activityRepo.insert({
+      kind: 'file_modified',
+      payload: { path: '/src/a.ts' },
+      ts: '2026-06-12T10:00:00.000Z',
+    });
+
+    fetchSpy.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          task_progress: [
+            { taskId: badTaskId, progress_increment: 30, completed: false, reasoning: 'bad entry' },
+            {
+              taskId: goodTaskId,
+              progress_increment: 25,
+              completed: false,
+              reasoning: 'good entry',
+            },
+          ],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+
+    const originalInsert = summariesRepo.insert.bind(summariesRepo);
+    const insertSpy = vi
+      .spyOn(summariesRepo, 'insert')
+      .mockImplementation((row: Parameters<typeof originalInsert>[0]) => {
+        if (row.taskId === badTaskId) {
+          throw new Error('boom - summary insert failed');
+        }
+        return originalInsert(row);
+      });
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    await expect(engine.runInferencePass()).resolves.toBeUndefined();
+
+    expect(tasksRepo.get(badTaskId)?.progress).toBe(0);
+    expect(summariesRepo.listForTask(badTaskId)).toHaveLength(0);
+
+    expect(tasksRepo.get(goodTaskId)?.progress).toBe(25);
+    const goodSummaries = summariesRepo.listForTask(goodTaskId);
+    expect(goodSummaries).toHaveLength(1);
+    expect(goodSummaries[0]?.progress_delta).toBe(25);
+
+    expect(consoleErrorSpy).toHaveBeenCalled();
+    expect(settingsRepo.getAll().lastInferenceTs).not.toBeNull();
+
+    insertSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
   });
 
   describe('adaptive fast-tick pacing', () => {
