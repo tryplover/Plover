@@ -13,7 +13,7 @@ import { InferenceEngine } from './processing/inference/index.js';
 import { GitCommitTracker } from './sources/git/git-commit-tracker/index.js';
 import { CommitTaskMatcher } from './processing/commit-task-matcher/index.js';
 import { runRetention } from './processing/retention/index.js';
-import { settingsRepo, activityRepo, tasksRepo, summariesRepo } from '../store/index.js';
+import { settingsRepo, activityRepo, tasksRepo, summariesRepo, db } from '../store/index.js';
 import { eventBus } from '../events/bus.js';
 
 let windowTracker: WindowTracker | null = null;
@@ -102,6 +102,7 @@ export async function initActivityMonitoring(): Promise<void> {
       summariesRepo,
       settingsRepo,
       eventBus,
+      db,
     );
     inferenceEngine.start();
   }
