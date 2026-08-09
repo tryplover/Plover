@@ -1,10 +1,12 @@
 import { ipcMain } from 'electron';
 import { settingsRepo, syncCursors } from '../store/index.js';
 import { GoogleAuth } from '../sync/google-auth.js';
+import { GitHubAuth } from '../sync/github-auth.js';
 import * as supabaseAuth from '../auth/supabase-auth.js';
 import { broadcast } from './shared.js';
 
 export const googleAuth = new GoogleAuth();
+export const githubAuth = new GitHubAuth();
 
 export function registerAuthHandlers(): void {
   ipcMain.handle('auth:signIn', async () => {
@@ -98,5 +100,24 @@ export function registerAuthHandlers(): void {
     await googleAuth.disconnect();
     settingsRepo.update({ googleConnected: false });
     syncCursors.clear('google');
+  });
+
+  // GitHub OAuth (for commits/PRs/reviews tracking)
+  ipcMain.handle('github:connect', async () => {
+    try {
+      await githubAuth.authorizeDeviceFlow();
+      settingsRepo.update({ githubConnected: true });
+      syncCursors.clear('github');
+      return true;
+    } catch (err) {
+      console.error('[OAuth] GitHub connection failed:', err);
+      return false;
+    }
+  });
+
+  ipcMain.handle('github:disconnect', async () => {
+    await githubAuth.disconnect();
+    settingsRepo.update({ githubConnected: false });
+    syncCursors.clear('github');
   });
 }

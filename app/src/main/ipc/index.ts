@@ -3,14 +3,14 @@ import * as supabaseAuth from '../auth/supabase-auth.js';
 import { startEventForwarding } from '../planner/goal-manager.js';
 import { registerGoalsHandlers } from './goals.js';
 import { registerTasksHandlers } from './tasks.js';
-import { registerAuthHandlers, googleAuth } from './auth.js';
+import { registerAuthHandlers, googleAuth, githubAuth } from './auth.js';
 import { registerSettingsHandlers } from './settings.js';
 import { registerOverlayHandlers } from './overlay.js';
 import { registerSystemHandlers } from './system.js';
 import { registerSummariesHandlers } from './summaries.js';
 import { broadcast } from './shared.js';
 
-export { googleAuth };
+export { googleAuth, githubAuth };
 
 export function setupIpcHandlers(
   getOverlayWindow: () => BrowserWindow | null,
@@ -18,6 +18,7 @@ export function setupIpcHandlers(
   createOverlayWindow?: (variant: 'overlay' | 'window') => BrowserWindow,
 ): () => BrowserWindow {
   void googleAuth.loadSavedCredentials();
+  void githubAuth.loadSavedCredentials();
   void supabaseAuth.restoreSession().then((hasSession) => {
     if (hasSession) supabaseAuth.startAutoRefresh();
   });

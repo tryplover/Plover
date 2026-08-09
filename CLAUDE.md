@@ -40,6 +40,23 @@ For any non-trivial changes, follow this structured cycle:
 
 Note: `docs/plans/` contains *generated implementation plans* used as input to subagents. It is distinct from `docs/superpowers/specs/`, which remains the authoritative product and phase specification.
 
+## Prefer stacked PRs
+
+Whenever you make a change, **always consider splitting it into a stack of PRs**
+rather than one large PR. If a change spans multiple independent or sequential
+concerns (e.g. schema → repo → planner → UI), decompose it into a stack where
+each PR is small, individually reviewable, and builds on its parent. Land the
+base of the stack first and let reviewers move up.
+
+- Default to a stack for any change that touches more than one load-bearing
+  module boundary (see "Architecture rules") or that mixes refactor + feature.
+- Keep each PR green on its own: `pnpm typecheck && pnpm lint && pnpm test` must
+  pass at every level of the stack.
+- Only skip stacking when the change is genuinely atomic (a single small,
+  self-contained edit that cannot be meaningfully split).
+- For stack mechanics and the GitHub-native async-merge requirement, use the
+  `restack` skill and see the `plover-git-safety` skill.
+
 ## Project
 
 **Plover** is a local-first Electron desktop agent for productivity. It turns vague goals into a structured plan of subtasks and shepherds the user toward finishing them. Privacy-by-design: user data is strictly local, but outbound Gemini API calls are proxied securely through a backend server to protect the developer API key in production.
@@ -135,8 +152,10 @@ These are not style preferences. The core architecture doc calls them
 
 - **Outbound HTTP allowlist:** `generativelanguage.googleapis.com`,
   `www.googleapis.com`, `gmail.googleapis.com`, `calendar.googleapis.com`,
-  `classroom.googleapis.com`, `oauth2.googleapis.com`, `accounts.google.com`.
-  Enforced by `app/src/main/http/allowlist.ts`.
+  `classroom.googleapis.com`, `oauth2.googleapis.com`, `accounts.google.com`,
+  `api.github.com`. An allowlist helper lives in `app/src/main/http/allowlist.ts`
+  (`assertAllowedHost`); it is not yet wired into the HTTP client, so this
+  remains a documented constraint rather than a runtime-enforced gate.
 - **Never capture keystroke content.** Counts only.
 - **Never upload screenshots** anywhere except (later) Gemini Vision with
   explicit user consent surfaced in Settings.

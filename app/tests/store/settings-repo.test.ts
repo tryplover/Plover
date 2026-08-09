@@ -98,4 +98,35 @@ describe('SettingsRepo — Phase 2 activity tracking keys', () => {
     repo.update({ lastVisionInferenceWindowKey: null });
     expect(repo.getAll().lastVisionInferenceWindowKey).toBeNull();
   });
+
+  it('defaults the new Google source toggles to on', () => {
+    const s = repo.getAll();
+    expect(s.gmailEnabled).toBe(true);
+    expect(s.calendarEnabled).toBe(true);
+    expect(s.classroomEnabled).toBe(true);
+  });
+
+  it('persists a false toggle', () => {
+    repo.update({ gmailEnabled: false });
+    expect(repo.getAll().gmailEnabled).toBe(false);
+  });
+
+  it('defaults GitHub settings to documented values', () => {
+    const s = repo.getAll();
+    expect(s.githubConnected).toBe(false);
+    expect(s.githubTrackingEnabled).toBe(true);
+    expect(s.githubWatchedRepos).toEqual([]);
+  });
+
+  it('persists GitHub connection status, tracking toggle, and watched repos list', () => {
+    repo.update({
+      githubConnected: true,
+      githubTrackingEnabled: false,
+      githubWatchedRepos: ['o/r1', 'o/r2'],
+    });
+    const s = repo.getAll();
+    expect(s.githubConnected).toBe(true);
+    expect(s.githubTrackingEnabled).toBe(false);
+    expect(s.githubWatchedRepos).toEqual(['o/r1', 'o/r2']);
+  });
 });

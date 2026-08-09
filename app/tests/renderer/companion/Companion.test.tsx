@@ -21,7 +21,6 @@ describe('Companion', () => {
       task: null,
       progress: 0.65,
       steps: [],
-      watching: null,
     };
     expect(view.kind).toBe('observing');
     expect(view.task).toBeNull();
@@ -33,7 +32,6 @@ describe('Companion', () => {
       task: null,
       progress: 0.65,
       steps: [],
-      watching: null,
     };
     expect(view.kind).toBe('paused');
   });
@@ -44,7 +42,6 @@ describe('Companion', () => {
       task: null,
       progress: 1.0,
       steps: [],
-      watching: null,
     };
     expect(view.kind).toBe('done');
     expect(view.progress).toBe(1.0);
@@ -56,26 +53,8 @@ describe('Companion', () => {
       task: null,
       progress: 0.5,
       steps: [],
-      watching: null,
     };
     expect(view.kind).toBe('not-sure');
-  });
-
-  it('supports watching data in view', () => {
-    const view: CompanionView = {
-      kind: 'observing',
-      task: null,
-      progress: 0.65,
-      steps: [],
-      watching: {
-        app: 'Xcode',
-        doc: 'main.swift',
-        lastLookAgoSec: 12,
-      },
-    };
-    expect(view.watching?.app).toBe('Xcode');
-    expect(view.watching?.doc).toBe('main.swift');
-    expect(view.watching?.lastLookAgoSec).toBe(12);
   });
 
   describe('state transitions', () => {
@@ -85,7 +64,6 @@ describe('Companion', () => {
         task: null,
         progress: 0.65,
         steps: [],
-        watching: null,
       };
       expect(view.kind).toBe('observing');
       expect(view.progress).toBe(0.65);
@@ -97,7 +75,6 @@ describe('Companion', () => {
         task: null,
         progress: 0.4,
         steps: [],
-        watching: null,
       };
       expect(view.kind).toBe('paused');
       expect(view.progress).toBe(0.4);
@@ -109,7 +86,6 @@ describe('Companion', () => {
         task: null,
         progress: 1.0,
         steps: [],
-        watching: null,
       };
       expect(view.kind).toBe('done');
       expect(view.progress).toBe(1.0);
@@ -121,7 +97,6 @@ describe('Companion', () => {
         task: null,
         progress: 0.5,
         steps: [],
-        watching: null,
       };
       expect(view.kind).toBe('not-sure');
     });
@@ -135,7 +110,6 @@ describe('Companion', () => {
           { id: 's1', label: 'Step 1', done: false, current: false },
           { id: 's2', label: 'Step 2', done: false, current: false },
         ],
-        watching: null,
       };
       expect(view.steps).toHaveLength(2);
       const [s0, s1] = view.steps;
@@ -153,7 +127,6 @@ describe('Companion', () => {
           { id: 's2', label: 'Step 2', done: false, current: true },
           { id: 's3', label: 'Step 3', done: false, current: false },
         ],
-        watching: null,
       };
       const [s0, s1, s2] = view.steps;
       expect(s0?.current).toBe(false);
@@ -171,7 +144,6 @@ describe('Companion', () => {
           { id: 's2', label: 'Step 2', done: true, current: false },
           { id: 's3', label: 'Step 3', done: true, current: false },
         ],
-        watching: null,
       };
       const [s0, s1, s2] = view.steps;
       expect(s0?.done).toBe(true);

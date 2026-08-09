@@ -12,7 +12,7 @@ import { GoalsRepo } from '@main/store/repos/goals.js';
 import { ActivityRepo } from '@main/store/repos/activity.js';
 import { SummariesRepo } from '@main/store/repos/summaries.js';
 import { SettingsRepo } from '@main/store/repos/settings.js';
-import { InferenceEngine } from '@main/activity/inference/index.js';
+import { InferenceEngine } from '@main/activity/processing/inference/index.js';
 import { Task } from '@shared/types.js';
 
 import { TypedEventBus } from '@main/events/bus.js';

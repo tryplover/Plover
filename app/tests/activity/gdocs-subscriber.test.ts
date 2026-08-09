@@ -4,7 +4,7 @@ import { runMigrations } from '../../src/main/store/db';
 import { ActivityRepo } from '../../src/main/store/repos/activity';
 import { SettingsRepo } from '../../src/main/store/repos/settings';
 import { TypedEventBus } from '../../src/main/events/bus';
-import { GDocsActivitySubscriber } from '../../src/main/activity/gdocs-subscriber';
+import { GDocsActivitySubscriber } from '../../src/main/activity/sources/google/gdocs-subscriber';
 
 describe('GDocsActivitySubscriber', () => {
   let db: Database.Database;

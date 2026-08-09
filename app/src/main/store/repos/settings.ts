@@ -24,6 +24,13 @@ export interface SettingsData {
   activityRetentionDays: number;
   planner_useRecentActivityContext: boolean;
   progressPopsEnabled: boolean;
+  gmailEnabled: boolean;
+  calendarEnabled: boolean;
+  classroomEnabled: boolean;
+
+  githubConnected: boolean;
+  githubTrackingEnabled: boolean;
+  githubWatchedRepos: string[];
 }
 
 export class SettingsRepo {
@@ -107,6 +114,14 @@ export class SettingsRepo {
     const planner_useRecentActivityContext =
       map.get('planner_useRecentActivityContext') !== 'false';
     const progressPopsEnabled = map.get('progressPopsEnabled') === 'true';
+    const gmailEnabled = map.get('gmailEnabled') !== 'false';
+    const calendarEnabled = map.get('calendarEnabled') !== 'false';
+    const classroomEnabled = map.get('classroomEnabled') !== 'false';
+
+    const githubConnected = map.get('githubConnected') === 'true';
+    const githubTrackingEnabled = map.get('githubTrackingEnabled') !== 'false';
+    const githubWatchedReposRaw = map.get('githubWatchedRepos');
+    const githubWatchedRepos = githubWatchedReposRaw ? JSON.parse(githubWatchedReposRaw) : [];
 
     return {
       googleConnected,
@@ -130,6 +145,12 @@ export class SettingsRepo {
       activityRetentionDays,
       planner_useRecentActivityContext,
       progressPopsEnabled,
+      gmailEnabled,
+      calendarEnabled,
+      classroomEnabled,
+      githubConnected,
+      githubTrackingEnabled,
+      githubWatchedRepos,
     };
   }
 
@@ -216,6 +237,24 @@ export class SettingsRepo {
     }
     if (patch.progressPopsEnabled !== undefined) {
       this.set('progressPopsEnabled', String(patch.progressPopsEnabled));
+    }
+    if (patch.gmailEnabled !== undefined) {
+      this.set('gmailEnabled', String(patch.gmailEnabled));
+    }
+    if (patch.calendarEnabled !== undefined) {
+      this.set('calendarEnabled', String(patch.calendarEnabled));
+    }
+    if (patch.classroomEnabled !== undefined) {
+      this.set('classroomEnabled', String(patch.classroomEnabled));
+    }
+    if (patch.githubConnected !== undefined) {
+      this.set('githubConnected', String(patch.githubConnected));
+    }
+    if (patch.githubTrackingEnabled !== undefined) {
+      this.set('githubTrackingEnabled', String(patch.githubTrackingEnabled));
+    }
+    if (patch.githubWatchedRepos !== undefined) {
+      this.set('githubWatchedRepos', JSON.stringify(patch.githubWatchedRepos));
     }
   }
 }
