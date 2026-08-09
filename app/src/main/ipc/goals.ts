@@ -1,5 +1,5 @@
 import { ipcMain, BrowserWindow } from 'electron';
-import { Goal, Task } from '@shared/types.js';
+import { Task } from '@shared/types.js';
 import { goalsRepo, settingsRepo, activityRepo } from '../store/index.js';
 import { decomposeGoal } from '../planner/decompose.js';
 import { scheduleTasks } from '../planner/schedule.js';
