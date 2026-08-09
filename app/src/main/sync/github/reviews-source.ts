@@ -1,8 +1,8 @@
 import { GitHubClient } from './github-client.js';
-import { SettingsRepo, SettingsData } from '../../store/repos/settings.js';
-import { TypedEventBus } from '../../events/bus.js';
+import { SettingsRepo, SettingsData } from '@main/store/repos/settings.js';
+import { TypedEventBus } from '@main/events/bus.js';
 import { ContextSource } from '../source-poller.js';
-import { GitHubReviewPayload } from '../../../shared/events.js';
+import { GitHubReviewPayload } from '@shared/events.js';
 
 interface GitHubSearchIssueEntry {
   repository_url: string;

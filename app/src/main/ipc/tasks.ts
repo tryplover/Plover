@@ -1,5 +1,5 @@
 import { ipcMain } from 'electron';
-import { Task } from '../../shared/types.js';
+import { Task } from '@shared/types.js';
 import { tasksRepo } from '../store/index.js';
 import { scheduleTasks } from '../planner/schedule.js';
 import { eventBus } from '../events/bus.js';

@@ -1,12 +1,12 @@
 import Database from 'better-sqlite3';
-import { Task } from '../../../../shared/types.js';
-import { TasksRepo } from '../../../store/repos/tasks.js';
-import { ActivityRepo, ActivityRow } from '../../../store/repos/activity.js';
-import { SummariesRepo } from '../../../store/repos/summaries.js';
-import { SettingsRepo } from '../../../store/repos/settings.js';
-import { schedulePeriodic } from '../../../lifecycle/periodic.js';
-import { TypedEventBus } from '../../../events/bus.js';
-import { authedFetch, UnauthorizedError } from '../../../http/authed-fetch.js';
+import { Task } from '@shared/types.js';
+import { TasksRepo } from '@main/store/repos/tasks.js';
+import { ActivityRepo, ActivityRow } from '@main/store/repos/activity.js';
+import { SummariesRepo } from '@main/store/repos/summaries.js';
+import { SettingsRepo } from '@main/store/repos/settings.js';
+import { schedulePeriodic } from '@main/lifecycle/periodic.js';
+import { TypedEventBus } from '@main/events/bus.js';
+import { authedFetch, UnauthorizedError } from '@main/http/authed-fetch.js';
 import {
   BASELINE_INFERENCE_INTERVAL_MS,
   FAST_INFERENCE_INTERVAL_MS,

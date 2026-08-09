@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { Goal, Task, SummaryRow } from '../../shared/types.js';
+import { Goal, Task, SummaryRow } from '@shared/types.js';
 import { db, goalsRepo, tasksRepo } from '../store/index.js';
 import { eventBus } from '../events/bus.js';
 

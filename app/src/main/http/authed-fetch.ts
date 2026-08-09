@@ -1,7 +1,7 @@
 import { getAccessToken } from '../auth/supabase-auth.js';
 import { resolveRequiredEnv } from '../config/env.js';
 import { readViteEnv } from '../config/vite-env.js';
-import { NOT_SIGNED_IN_MESSAGE } from '../../shared/auth-errors.js';
+import { NOT_SIGNED_IN_MESSAGE } from '@shared/auth-errors.js';
 
 function resolveBackendUrl(): string {
   const fromVite = readViteEnv('PLOVER_BACKEND_URL');

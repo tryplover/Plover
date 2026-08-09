@@ -1,4 +1,4 @@
-import { Task, SummaryRow } from '../../shared/types.js';
+import { Task, SummaryRow } from '@shared/types.js';
 import { TasksRepo } from './repos/tasks.js';
 import { SummariesRepo } from './repos/summaries.js';
 import { TypedEventBus } from '../events/bus.js';

@@ -1,8 +1,8 @@
-import { ActivityRepo } from '../../../../store/repos/activity.js';
-import { SettingsRepo } from '../../../../store/repos/settings.js';
-import { TypedEventBus } from '../../../../events/bus.js';
-import { GitHubCommitPayload } from '../../../../../shared/events.js';
-import { gate } from '../../../shared/gate.js';
+import { ActivityRepo } from '@main/store/repos/activity.js';
+import { SettingsRepo } from '@main/store/repos/settings.js';
+import { TypedEventBus } from '@main/events/bus.js';
+import { GitHubCommitPayload } from '@shared/events.js';
+import { gate } from '@main/activity/shared/gate.js';
 
 export class GitHubCommitActivitySubscriber {
   constructor(
