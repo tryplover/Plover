@@ -12,7 +12,7 @@ import { runMigrations } from '../../src/main/store/db';
 import { ActivityRepo } from '../../src/main/store/repos/activity';
 import { SettingsRepo } from '../../src/main/store/repos/settings';
 import { TypedEventBus } from '../../src/main/events/bus';
-import { CalendarActivitySubscriber } from '../../src/main/activity/calendar-subscriber/calendar-subscriber';
+import { CalendarActivitySubscriber } from '../../src/main/activity/sources/google/calendar-subscriber/calendar-subscriber';
 
 describe('CalendarActivitySubscriber', () => {
   let db: Database.Database;

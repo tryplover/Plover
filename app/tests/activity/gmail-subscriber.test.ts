@@ -12,7 +12,7 @@ import { runMigrations } from '../../src/main/store/db';
 import { ActivityRepo } from '../../src/main/store/repos/activity';
 import { SettingsRepo } from '../../src/main/store/repos/settings';
 import { TypedEventBus } from '../../src/main/events/bus';
-import { GmailActivitySubscriber } from '../../src/main/activity/gmail-subscriber/gmail-subscriber';
+import { GmailActivitySubscriber } from '../../src/main/activity/sources/google/gmail-subscriber/gmail-subscriber';
 
 describe('GmailActivitySubscriber', () => {
   let db: Database.Database;
