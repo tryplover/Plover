@@ -40,6 +40,7 @@ export default defineConfig({
     alias: {
       '@main': resolve('src/main'),
       '@shared': resolve('src/shared'),
+      electron: resolve('tests/stubs/electron.ts'),
     },
   },
 });
