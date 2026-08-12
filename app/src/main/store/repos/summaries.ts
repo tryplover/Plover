@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3';
-import { SummaryRow } from '../../../shared/types.js';
+import { SummaryRow } from '@shared/types.js';
 
 export type { SummaryRow };
 

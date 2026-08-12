@@ -301,68 +301,6 @@
   color: rgba(159, 225, 203, 0.8);
 }
 
-.plover-expanded__footer-holder {
-  padding: 2px 12px 12px;
-}
-
-.plover-expanded__watching {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-  padding: 11px 13px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.07);
-}
-
-.plover-expanded__watching-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.plover-expanded__watching-row span {
-  font-size: 11px;
-  font-weight: 500;
-  color: rgba(246, 242, 235, 0.8);
-}
-
-.plover-expanded__eye {
-  color: rgba(246, 242, 235, 0.7);
-  flex-shrink: 0;
-}
-
-.plover-expanded__watching-doc {
-  margin: 0;
-  font-size: 11.5px;
-  color: rgba(246, 242, 235, 0.6);
-}
-
-.plover-expanded__watching-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.plover-expanded__watching-meta span {
-  font-size: 10.5px;
-  color: rgba(246, 242, 235, 0.4);
-}
-
-.plover-expanded__change {
-  padding: 0;
-  background: none;
-  font-size: 10.5px;
-  font-weight: 500;
-  color: rgba(159, 225, 203, 0.7);
-}
-
-.plover-expanded__change:hover {
-  background: none;
-  opacity: 0.85;
-}
-
 .plover-expanded__resume {
   width: calc(100% - 34px);
   margin: 6px 17px 13px;

@@ -3,7 +3,7 @@ import Database from 'better-sqlite3';
 import { ActivityRepo } from '@main/store/repos/activity.js';
 import { SettingsRepo } from '@main/store/repos/settings.js';
 import { runMigrations } from '@main/store/db.js';
-import { runRetention } from '@main/activity/retention/index.js';
+import { runRetention } from '@main/activity/processing/retention/index.js';
 import { promises as fs } from 'node:fs';
 
 describe('runRetention', () => {

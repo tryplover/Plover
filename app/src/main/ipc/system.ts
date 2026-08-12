@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow } from 'electron';
+import { ipcMain } from 'electron';
 import { openWindows } from 'get-windows';
 import {
   getScreenRecordingStatus,
@@ -12,21 +12,6 @@ export function registerSystemHandlers(): void {
   ipcMain.handle('permissions:screenRecording:openSettings', async () =>
     openScreenRecordingSettings(),
   );
-
-  ipcMain.handle('window:minimize', (_event) => {
-    BrowserWindow.fromWebContents(_event.sender)?.minimize();
-  });
-  ipcMain.handle('window:maximize', (_event) => {
-    const win = BrowserWindow.fromWebContents(_event.sender);
-    if (win?.isMaximized()) {
-      win.unmaximize();
-    } else {
-      win?.maximize();
-    }
-  });
-  ipcMain.handle('window:close', (_event) => {
-    BrowserWindow.fromWebContents(_event.sender)?.close();
-  });
 
   ipcMain.handle('window:list-active', async () => {
     if (process.platform !== 'darwin' && process.platform !== 'win32') return [];

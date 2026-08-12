@@ -1,4 +1,4 @@
-import { assertAllowedHost } from '../../http/allowlist.js';
+import { assertAllowedHost } from '@main/http/allowlist.js';
 
 export class RateLimitError extends Error {
   resetEpoch: number;

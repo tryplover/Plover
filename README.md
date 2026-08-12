@@ -6,10 +6,11 @@ shepherds you toward finishing them. Built for the 3-month Gemini hackathon.
 You tell Plover what you want to get done — by voice or text. It decomposes
 the goal with Gemini, schedules tasks locally within your working-hours windows,
 watches your screen and files in the background, and tells you when you're on or
-off track. Nothing leaves your machine except calls to Gemini and Google APIs
-(Google Drive/Docs).
+off track. Nothing leaves your machine except Gemini calls (proxied through the
+hosted backend) and calls to the Google/GitHub APIs you connect (Drive/Docs,
+Gmail, Calendar, Classroom, GitHub).
 
-> **Status:** Phase 1 — Scaffold and tooling complete. The backend server is hosted on Google Cloud Run (source in the standalone repository [plover-server](https://github.com/tryplover/plover-server)). Feature work (goal capture → planner → local scheduling → overlay) is ongoing.
+> **Status:** Goal capture, Gemini decomposition, local working-hours scheduling, the Today/Goals/Settings views, and the overlay quick-add have shipped; activity monitoring, inference, and Google/GitHub context sources are landing incrementally. The Gemini backend proxy lives in the standalone repository [plover-server](https://github.com/tryplover/plover-server), hosted on Google Cloud Run.
 > See [docs/superpowers/specs/](docs/superpowers/specs/) for the product specs, and the [GCP & GitHub Setup Details](docs/plans/gcp-setup-details.md) for details on the hosted infrastructure.
 
 ## Quickstart
@@ -27,8 +28,9 @@ pnpm install        # one-time setup + git hooks
 pnpm dev            # launches the Electron app in dev mode
 ```
 
-You'll see a window with a "Plover" placeholder — the scaffold renders, the
-toolchain works, and you can start building features against it.
+The app launches into onboarding and then the Today / Goals / Settings views. To
+exercise goal decomposition and the Google/GitHub connectors you'll need
+Gemini/Google credentials — see [docs/RUNNING.md](docs/RUNNING.md).
 
 ## Common commands
 
@@ -85,10 +87,14 @@ and "What NOT to do" sections set the scope rules for the current phase.
 
 Plover is local-first by design:
 
-- All persistent data lives on disk (SQLite + local files). No cloud backend.
-- Outbound HTTP is allowlisted to `generativelanguage.googleapis.com`,
-  `www.googleapis.com` (Google Docs/Drive), and Google OAuth endpoints. The HTTP client enforces
-  the allowlist at runtime.
+- All persistent user data lives on disk (SQLite + local files); no user data is
+  synced to a cloud backend. Gemini calls are proxied through the hosted
+  `plover-server`, which holds only the developer API key — never user data.
+- Outbound HTTP is scoped to an allowlist: `generativelanguage.googleapis.com`,
+  `www.googleapis.com`, `gmail.googleapis.com`, `calendar.googleapis.com`,
+  `classroom.googleapis.com`, `api.github.com`, and Google OAuth endpoints
+  (`oauth2.googleapis.com`, `accounts.google.com`). The `assertAllowedHost` helper
+  in `app/src/main/http/allowlist.ts` documents this set.
 - Keystroke **counts only** — never key content.
 - Screenshots are never uploaded anywhere except (later, Phase 2+) Gemini
   Vision with explicit user consent surfaced in Settings.
@@ -98,8 +104,9 @@ Plover is local-first by design:
 ## Tech stack
 
 Electron · TypeScript (strict) · React · Vite (electron-vite) · better-sqlite3 ·
-`googleapis` SDK (Drive/Docs) · `@google/generative-ai` (on hosted proxy) · `keytar` (OAuth
-token storage) · Vitest · ESLint · Prettier · pnpm workspaces · GitHub Actions.
+`googleapis` SDK (Drive/Docs/Gmail/Calendar/Classroom) · `keytar` (OAuth token
+storage) · Vitest · ESLint · Prettier · pnpm workspace · GitHub Actions. Gemini
+access runs through the standalone `plover-server` proxy, not bundled in `app/`.
 
 (Native modules like `better-sqlite3` and `keytar` are added when the
 milestone that uses them lands, not pre-emptively.)

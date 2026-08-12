@@ -12,7 +12,7 @@ import { GoalsRepo } from '@main/store/repos/goals.js';
 import { ActivityRepo } from '@main/store/repos/activity.js';
 import { SummariesRepo } from '@main/store/repos/summaries.js';
 import { SettingsRepo } from '@main/store/repos/settings.js';
-import { InferenceEngine } from '@main/activity/inference/index.js';
+import { InferenceEngine } from '@main/activity/processing/inference/index.js';
 import { Task } from '@shared/types.js';
 
 import { TypedEventBus } from '@main/events/bus.js';
@@ -41,6 +41,7 @@ function freshHarness(now?: () => Date): {
     summariesRepo,
     settingsRepo,
     bus,
+    db,
     now,
   );
   return { db, tasksRepo, goalsRepo, activityRepo, summariesRepo, settingsRepo, bus, engine };
@@ -80,9 +81,13 @@ function seedInProgressTask(
 
 function fetchBodyOf(fetchSpy: ReturnType<typeof vi.spyOn>): {
   activity: { kind: string }[];
+  tasks: { id: string }[];
 } {
   const [, init] = fetchSpy.mock.calls[0] as [string, { body: string }];
-  return JSON.parse(init.body) as { activity: { kind: string }[] };
+  return JSON.parse(init.body) as {
+    activity: { kind: string }[];
+    tasks: { id: string }[];
+  };
 }
 
 describe('InferenceEngine', () => {
@@ -278,6 +283,135 @@ describe('InferenceEngine', () => {
     expect(s0?.progress_delta).toBe(40);
     expect(s0?.previous_status).toBe('todo');
     expect(tasksRepo.get(taskId)?.status).toBe('todo');
+  });
+
+  it('grades in_progress tasks: they reach the server and receive their increment', async () => {
+    const { tasksRepo, goalsRepo, activityRepo, summariesRepo, engine } = freshHarness();
+    const { goalId } = seedGoalAndTask(goalsRepo, tasksRepo, 'Untouched todo');
+    const startedId = seedInProgressTask(goalsRepo, tasksRepo, goalId, 'Task the user started');
+    activityRepo.insert({
+      kind: 'file_modified',
+      payload: { path: '/src/a.ts' },
+      ts: '2026-06-12T10:00:00.000Z',
+    });
+
+    fetchSpy.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          task_progress: [
+            {
+              taskId: startedId,
+              progress_increment: 15,
+              completed: false,
+              reasoning: 'edited a.ts',
+            },
+          ],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+
+    await engine.runInferencePass();
+
+    expect(fetchBodyOf(fetchSpy).tasks.map((t) => t.id)).toContain(startedId);
+    expect(tasksRepo.get(startedId)?.progress).toBe(15);
+    const [s0] = summariesRepo.listForTask(startedId);
+    expect(s0?.progress_delta).toBe(15);
+    expect(s0?.previous_status).toBe('in_progress');
+  });
+
+  it('leaves done and skipped tasks out of the server payload', async () => {
+    const { tasksRepo, goalsRepo, activityRepo, engine } = freshHarness();
+    const { taskId: openId, goalId } = seedGoalAndTask(goalsRepo, tasksRepo, 'Still open');
+    const done = tasksRepo.create({
+      goal_id: goalId,
+      title: 'Already finished',
+      estimate_minutes: 30,
+      status: 'done',
+      depends_on: [],
+    });
+    const skipped = tasksRepo.create({
+      goal_id: goalId,
+      title: 'Not doing this one',
+      estimate_minutes: 30,
+      status: 'skipped',
+      depends_on: [],
+    });
+    activityRepo.insert({
+      kind: 'file_modified',
+      payload: { path: '/src/a.ts' },
+      ts: '2026-06-12T10:00:00.000Z',
+    });
+
+    fetchSpy.mockResolvedValue(
+      new Response(JSON.stringify({ task_progress: [] }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+
+    await engine.runInferencePass();
+
+    const sent = fetchBodyOf(fetchSpy).tasks.map((t) => t.id);
+    expect(sent).toContain(openId);
+    expect(sent).not.toContain(done.id);
+    expect(sent).not.toContain(skipped.id);
+  });
+
+  it('isolates a per-entry failure: other entries still apply and the failing entry has no orphaned progress', async () => {
+    const { tasksRepo, goalsRepo, activityRepo, summariesRepo, settingsRepo, engine } =
+      freshHarness();
+    const { taskId: goodTaskId } = seedGoalAndTask(goalsRepo, tasksRepo, 'Good task');
+    const { taskId: badTaskId } = seedGoalAndTask(goalsRepo, tasksRepo, 'Bad task');
+    activityRepo.insert({
+      kind: 'file_modified',
+      payload: { path: '/src/a.ts' },
+      ts: '2026-06-12T10:00:00.000Z',
+    });
+
+    fetchSpy.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          task_progress: [
+            { taskId: badTaskId, progress_increment: 30, completed: false, reasoning: 'bad entry' },
+            {
+              taskId: goodTaskId,
+              progress_increment: 25,
+              completed: false,
+              reasoning: 'good entry',
+            },
+          ],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+
+    const originalInsert = summariesRepo.insert.bind(summariesRepo);
+    const insertSpy = vi
+      .spyOn(summariesRepo, 'insert')
+      .mockImplementation((row: Parameters<typeof originalInsert>[0]) => {
+        if (row.taskId === badTaskId) {
+          throw new Error('boom - summary insert failed');
+        }
+        return originalInsert(row);
+      });
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    await expect(engine.runInferencePass()).resolves.toBeUndefined();
+
+    expect(tasksRepo.get(badTaskId)?.progress).toBe(0);
+    expect(summariesRepo.listForTask(badTaskId)).toHaveLength(0);
+
+    expect(tasksRepo.get(goodTaskId)?.progress).toBe(25);
+    const goodSummaries = summariesRepo.listForTask(goodTaskId);
+    expect(goodSummaries).toHaveLength(1);
+    expect(goodSummaries[0]?.progress_delta).toBe(25);
+
+    expect(consoleErrorSpy).toHaveBeenCalled();
+    expect(settingsRepo.getAll().lastInferenceTs).not.toBeNull();
+
+    insertSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
   });
 
   describe('adaptive fast-tick pacing', () => {

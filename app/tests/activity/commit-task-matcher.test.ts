@@ -10,7 +10,7 @@ import {
   CommitTaskMatcher,
   type CommitMatcher,
   type MatchCommitResponse,
-} from '@main/activity/commit-task-matcher/index.js';
+} from '@main/activity/processing/commit-task-matcher/index.js';
 import type { GitCommitInfo } from '@shared/events.js';
 
 function makeCommit(overrides: Partial<GitCommitInfo> = {}): GitCommitInfo {

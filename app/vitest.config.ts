@@ -6,6 +6,7 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx', 'src/**/*.test.ts', 'src/**/*.test.tsx'],
+    setupFiles: ['./tests/setup.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov', 'html'],
@@ -38,7 +39,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@main': resolve('src/main'),
-      '@renderer': resolve('src/renderer'),
       '@shared': resolve('src/shared'),
     },
   },

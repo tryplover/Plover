@@ -11,9 +11,9 @@
     "prepare": "husky",
     "typecheck": "pnpm --filter ./app typecheck",
     "lint": "pnpm --filter ./app lint",
-    "test": "pnpm --filter ./app rebuild better-sqlite3 keytar && pnpm --filter ./app test",
-    "test:coverage": "pnpm --filter ./app rebuild better-sqlite3 keytar && pnpm --filter ./app run test:coverage",
-    "dev": "npx @electron/rebuild -v 42.5.1 -f -w better-sqlite3,keytar && pnpm --filter ./app dev",
+    "test": "pnpm --filter ./app test",
+    "test:coverage": "pnpm --filter ./app run test:coverage",
+    "dev": "pnpm --filter ./app dev",
     "build": "pnpm --filter ./app build",
     "package": "pnpm build && pnpm --filter ./app run dist"
   },

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { Goal, Task, SummaryRow } from '../../shared/types.js';
-import { goalsRepo, tasksRepo } from '../store/index.js';
+import { Goal, Task, SummaryRow } from '@shared/types.js';
+import { db, goalsRepo, tasksRepo } from '../store/index.js';
 import { eventBus } from '../events/bus.js';
 
 export async function saveGoalAndTasks(
@@ -19,53 +19,56 @@ export async function saveGoalAndTasks(
   >[],
   scheduledSlots: { tempIndex: number; start: string; end: string }[],
 ) {
-  const goal = goalsRepo.create({
-    title: goalInput.title,
-    description: goalInput.description || '',
-    deadline: goalInput.deadline,
-    status: 'active',
-  });
+  const { goal, newTasks } = db.transaction(() => {
+    const goal = goalsRepo.create({
+      title: goalInput.title,
+      description: goalInput.description || '',
+      deadline: goalInput.deadline,
+      status: 'active',
+    });
 
-  const taskIds: string[] = subtaskInputs.map(() => randomUUID());
+    const taskIds: string[] = subtaskInputs.map(() => randomUUID());
 
-  const prepared = subtaskInputs.map((taskInput, index) => {
-    const taskId = taskIds[index] ?? randomUUID();
-    const slot = scheduledSlots.find((s) => s.tempIndex === index);
+    const prepared = subtaskInputs.map((taskInput, index) => {
+      const taskId = taskIds[index] ?? randomUUID();
+      const slot = scheduledSlots.find((s) => s.tempIndex === index);
 
-    const depends_on: string[] = [];
-    if (Array.isArray(taskInput.depends_on)) {
-      for (const depStr of taskInput.depends_on) {
-        const depIdx = parseInt(depStr, 10);
-        if (isNaN(depIdx) || depIdx < 0 || depIdx >= index) {
-          continue;
-        }
-        const depId = taskIds[depIdx];
-        if (depId) {
-          depends_on.push(depId);
+      const depends_on: string[] = [];
+      if (Array.isArray(taskInput.depends_on)) {
+        for (const depStr of taskInput.depends_on) {
+          const depIdx = parseInt(depStr, 10);
+          if (isNaN(depIdx) || depIdx < 0 || depIdx >= index) {
+            continue;
+          }
+          const depId = taskIds[depIdx];
+          if (depId) {
+            depends_on.push(depId);
+          }
         }
       }
-    }
 
-    return { taskInput, taskId, slot, depends_on };
-  });
+      return { taskInput, taskId, slot, depends_on };
+    });
 
-  const created = prepared.map((p) => ({
-    ...p,
-    task: tasksRepo.create({
-      id: p.taskId,
-      goal_id: goal.id,
-      title: p.taskInput.title,
-      estimate_minutes: p.taskInput.estimate_minutes,
-      depends_on: p.depends_on,
-      scheduled_start: p.slot?.start || undefined,
-      scheduled_end: p.slot?.end || undefined,
-      status: p.slot && p.slot.start ? 'scheduled' : 'todo',
-    }),
-  }));
+    const created = prepared.map((p) => ({
+      ...p,
+      task: tasksRepo.create({
+        id: p.taskId,
+        goal_id: goal.id,
+        title: p.taskInput.title,
+        estimate_minutes: p.taskInput.estimate_minutes,
+        depends_on: p.depends_on,
+        scheduled_start: p.slot?.start || undefined,
+        scheduled_end: p.slot?.end || undefined,
+        status: p.slot && p.slot.start ? 'scheduled' : 'todo',
+      }),
+    }));
 
-  const newTasks: Task[] = created.map(({ task }) => task);
+    const newTasks: Task[] = created.map(({ task }) => task);
 
-  // Emit eventBus events
+    return { goal, newTasks };
+  })();
+
   eventBus.emit('goal.created', goal);
   for (const t of newTasks) {
     if (t.scheduled_start) {
@@ -77,8 +80,10 @@ export async function saveGoalAndTasks(
 }
 
 export async function deleteGoalAndTasks(goalId: string): Promise<void> {
-  tasksRepo.deleteByGoal(goalId);
-  goalsRepo.delete(goalId);
+  db.transaction(() => {
+    tasksRepo.deleteByGoal(goalId);
+    goalsRepo.delete(goalId);
+  })();
 
   eventBus.emit('goal.deleted', goalId);
 }

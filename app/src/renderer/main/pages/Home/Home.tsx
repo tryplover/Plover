@@ -1,14 +1,12 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Goal, Task } from '../../../../shared/types';
 import { pickCurrentTask, sortByScheduledStart } from '../../../../shared/current-task';
 import { goalProgress } from '../../../../shared/goal-progress';
-import { StepRow } from '../../../components/StepRow/StepRow';
-import { ProgressLine } from '../../../components/ProgressLine/ProgressLine';
 import { Button } from '../../../components/Button/Button';
-import { SetupFlow } from '../../../overlay/SetupFlow/SetupFlow';
-import { useAppEvents } from '../../../hooks/useAppEvents';
 import { useProgressPops } from '../../../hooks/useProgressPops';
-import { PercentPop } from '../../../components/PercentPop/PercentPop';
+import { useGoalsAndTasks } from '../../hooks/useGoalsAndTasks';
+import { GoalCard } from './GoalCard/GoalCard';
+import { SetupModal } from './SetupModal/SetupModal';
 import './Home.css';
 
 interface HomeProps {
@@ -23,51 +21,18 @@ function greetingForNow(): string {
 }
 
 export default function Home({ 'data-testid': dataTestId }: HomeProps) {
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
   const [stepsExpanded, setStepsExpanded] = useState(false);
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [expandedGoalId, setExpandedGoalId] = useState<string | null>(null);
   const [progressPopsEnabled, setProgressPopsEnabled] = useState(false);
 
-  const tasksByGoal = useMemo(() => {
-    const map: Record<string, Task[]> = {};
-    for (const task of tasks) {
-      const list = map[task.goal_id];
-      if (list) {
-        list.push(task);
-      } else {
-        map[task.goal_id] = [task];
-      }
-    }
-    return map;
-  }, [tasks]);
-
-  const fetchData = useCallback(async () => {
-    try {
-      const [allGoals, allTasks, settings] = await Promise.all([
-        window.api.getGoals(),
-        window.api.getTasks(),
-        window.api.getSettings(),
-      ]);
-      setGoals(allGoals);
-      setTasks(allTasks);
-      setProgressPopsEnabled(settings.progressPopsEnabled ?? false);
-    } catch (err) {
-      console.error('Failed to load goals & tasks:', err);
-    } finally {
-      setLoading(false);
-    }
+  const loadProgressPopsSetting = useCallback(async () => {
+    const settings = await window.api.getSettings();
+    setProgressPopsEnabled(settings.progressPopsEnabled ?? false);
   }, []);
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void fetchData();
-  }, [fetchData]);
-
-  useAppEvents(() => {
-    void fetchData();
+  const { goals, tasks, tasksByGoal, loading, fetchData } = useGoalsAndTasks({
+    loadExtra: loadProgressPopsSetting,
   });
 
   // Predicts (from current, pre-update state) whether completing `excludeTaskId`
@@ -171,6 +136,39 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
     }
   }, [defaultCurrentTask, fetchData, isLastPendingTask, goals, confirmAndDeleteGoal]);
 
+  const deleteGoal = useCallback(
+    async (goal: Goal) => {
+      if (
+        !confirm(`Are you sure you want to delete the goal "${goal.title}" and all its subtasks?`)
+      ) {
+        return;
+      }
+      try {
+        await window.api.deleteGoal(goal.id);
+        if (expandedGoalId === goal.id) {
+          setExpandedGoalId(null);
+        }
+        await fetchData();
+      } catch (err) {
+        console.error('Failed to delete goal:', err);
+      }
+    },
+    [expandedGoalId, fetchData],
+  );
+
+  const deleteStep = useCallback(
+    async (step: Task) => {
+      if (!confirm(`Are you sure you want to delete the subtask "${step.title}"?`)) return;
+      try {
+        await window.api.deleteTask(step.id);
+        await fetchData();
+      } catch (err) {
+        console.error('Failed to delete subtask:', err);
+      }
+    },
+    [fetchData],
+  );
+
   const activeGoalId = defaultActiveGoalId;
 
   const currentTask = useMemo(() => {
@@ -194,8 +192,6 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
   const goalCards = useMemo(() => {
     return goals.map((goal) => {
       const goalTasks = tasksByGoal[goal.id] ?? [];
-      // Deliberately not `activeTaskId`: that one is null unless the card is
-      // expanded, so using it would make a goal's progress shift as you open it.
       const currentId = defaultCurrentTask?.goal_id === goal.id ? defaultCurrentTask.id : null;
       const progress = goalProgress(goalTasks, currentId);
       return { goal, progress, isActive: goal.id === activeGoalId };
@@ -226,6 +222,12 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
     }
     return `${inMotionCount} ${taskWord} in motion today.`;
   }, [inMotionCount, closestGoal]);
+
+  const closeSetupModal = () => setShowSetupModal(false);
+  const finishSetupFlow = () => {
+    setShowSetupModal(false);
+    void fetchData();
+  };
 
   if (loading) {
     return (
@@ -260,24 +262,11 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
         </Button>
 
         {showSetupModal && (
-          <div className="plover-modal-backdrop">
-            <div className="plover-modal-content">
-              <button
-                className="plover-modal-close"
-                onClick={() => setShowSetupModal(false)}
-                aria-label="Close modal"
-              >
-                ✕
-              </button>
-              <SetupFlow
-                variant="window"
-                onClose={() => {
-                  setShowSetupModal(false);
-                  void fetchData();
-                }}
-              />
-            </div>
-          </div>
+          <SetupModal
+            closeButtonPlacement="content"
+            onDismiss={closeSetupModal}
+            onFlowClose={finishSetupFlow}
+          />
         )}
       </div>
     );
@@ -297,212 +286,45 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
 
       <div className="plover-home__list">
         {goalCards.map(({ goal, progress, isActive }) => (
-          <div
+          <GoalCard
             key={goal.id}
-            className={`plover-home-card-group ${isActive ? 'plover-home-card-group--active' : ''}`}
-          >
-            <div
-              className={`plover-home-task-row ${isActive ? 'plover-home-task-row--active' : ''}`}
-              onClick={(e) => {
-                // Clicking (unlike deliberate Tab navigation) shouldn't leave this
-                // row visually "in focus" — :focus-within drives the same
-                // hover-preview swap as :hover in Home.css, and a row you merely
-                // clicked to expand isn't necessarily the active/watched goal.
-                (e.currentTarget as HTMLElement).blur();
-                if (expandedGoalId === goal.id) {
-                  setStepsExpanded((v) => !v);
-                } else {
-                  setExpandedGoalId(goal.id);
-                  setStepsExpanded(true);
-                }
-              }}
-              role="button"
-              tabIndex={0}
-            >
-              <div className="plover-home-task-row__info">
-                <div className="plover-home-task-row__title-line">
-                  {isActive && <span className="plover-home-dot" aria-hidden />}
-                  <span className="plover-home-task-row__title">{goal.title}</span>
-                </div>
-                {goal.description && (
-                  <span className="plover-home-task-row__subtitle">{goal.description}</span>
-                )}
-              </div>
-              <div className="plover-home-task-row__progress">
-                <ProgressLine value={progress} />
-              </div>
-              <span className="plover-home-task-row__pct">{Math.round(progress * 100)}%</span>
-              {!isActive && (tasksByGoal[goal.id] ?? []).length > 0 && (
-                <button
-                  type="button"
-                  className="plover-home-task-row__switch"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    e.currentTarget.blur();
-                    void watchGoal(goal);
-                  }}
-                  title="Switch to this task"
-                  aria-label="Switch to this task"
-                >
-                  Switch
-                </button>
-              )}
-              {isActive && (
-                <button
-                  type="button"
-                  className="plover-home-task-row__finish"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    e.currentTarget.blur();
-                    void finishActiveTask();
-                  }}
-                  title={
-                    defaultCurrentTask
-                      ? `Finish "${defaultCurrentTask.title}"`
-                      : 'Finish current task'
-                  }
-                  aria-label="Finish current task"
-                >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                  </svg>
-                </button>
-              )}
-              <button
-                type="button"
-                className="plover-home-task-row__delete"
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  e.currentTarget.blur();
-                  if (
-                    confirm(
-                      `Are you sure you want to delete the goal "${goal.title}" and all its subtasks?`,
-                    )
-                  ) {
-                    try {
-                      await window.api.deleteGoal(goal.id);
-                      if (expandedGoalId === goal.id) {
-                        setExpandedGoalId(null);
-                      }
-                      await fetchData();
-                    } catch (err) {
-                      console.error('Failed to delete goal:', err);
-                    }
-                  }
-                }}
-                title="Delete goal"
-                aria-label="Delete goal"
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <polyline points="3 6 5 6 21 6"></polyline>
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                  <line x1="10" y1="11" x2="10" y2="17"></line>
-                  <line x1="14" y1="11" x2="14" y2="17"></line>
-                </svg>
-              </button>
-            </div>
-
-            {expandedGoalId === goal.id && stepsExpanded && (
-              <div className="plover-home-steps-panel">
-                <div className="plover-home-steps-list">
-                  {activeGoalSteps.length === 0 ? (
-                    <p className="plover-home-steps-empty">No subtasks yet for this goal.</p>
-                  ) : (
-                    activeGoalSteps.map((step) => (
-                      <StepRow
-                        key={step.id}
-                        label={step.title}
-                        state={
-                          step.status === 'done'
-                            ? 'done'
-                            : step.id === activeTaskId
-                              ? 'current'
-                              : 'pending'
-                        }
-                        trailing={
-                          step.id === activeTaskId ? (
-                            <span className="plover-home-step-momentum">
-                              <span>now</span>
-                              <span className="plover-home-step-momentum__pct">
-                                {Math.round(step.progress)}%
-                              </span>
-                              {progressPopsEnabled && <PercentPop pops={pops} />}
-                            </span>
-                          ) : undefined
-                        }
-                        onToggleDone={() => void toggleTaskDone(step)}
-                        onDelete={async () => {
-                          if (
-                            confirm(`Are you sure you want to delete the subtask "${step.title}"?`)
-                          ) {
-                            try {
-                              await window.api.deleteTask(step.id);
-                              await fetchData();
-                            } catch (err) {
-                              console.error('Failed to delete subtask:', err);
-                            }
-                          }
-                        }}
-                      />
-                    ))
-                  )}
-                </div>
-                <button
-                  type="button"
-                  className="plover-home-steps-toggle"
-                  onClick={(e) => {
-                    e.currentTarget.blur();
-                    setStepsExpanded(false);
-                  }}
-                >
-                  Hide steps ⌃
-                </button>
-                <p className="plover-home-steps-caption">
-                  Only this window is watched — nothing is saved.
-                </p>
-              </div>
-            )}
-          </div>
+            goal={goal}
+            progress={progress}
+            isActive={isActive}
+            isExpanded={expandedGoalId === goal.id}
+            stepsExpanded={stepsExpanded}
+            hasTasks={(tasksByGoal[goal.id] ?? []).length > 0}
+            steps={activeGoalSteps}
+            activeTaskId={activeTaskId}
+            progressPopsEnabled={progressPopsEnabled}
+            pops={pops}
+            finishTitle={
+              defaultCurrentTask ? `Finish "${defaultCurrentTask.title}"` : 'Finish current task'
+            }
+            onToggleExpand={() => {
+              if (expandedGoalId === goal.id) {
+                setStepsExpanded((v) => !v);
+              } else {
+                setExpandedGoalId(goal.id);
+                setStepsExpanded(true);
+              }
+            }}
+            onSwitch={() => void watchGoal(goal)}
+            onFinish={() => void finishActiveTask()}
+            onDelete={() => void deleteGoal(goal)}
+            onHideSteps={() => setStepsExpanded(false)}
+            onToggleStepDone={(step) => void toggleTaskDone(step)}
+            onDeleteStep={(step) => void deleteStep(step)}
+          />
         ))}
       </div>
 
       {showSetupModal && (
-        <div className="plover-modal-backdrop">
-          <button
-            className="plover-modal-backdrop-close"
-            onClick={() => setShowSetupModal(false)}
-            aria-label="Close modal"
-          >
-            ✕
-          </button>
-          <div className="plover-modal-content">
-            <SetupFlow
-              variant="window"
-              onClose={() => {
-                setShowSetupModal(false);
-                void fetchData();
-              }}
-            />
-          </div>
-        </div>
+        <SetupModal
+          closeButtonPlacement="backdrop"
+          onDismiss={closeSetupModal}
+          onFlowClose={finishSetupFlow}
+        />
       )}
     </div>
   );

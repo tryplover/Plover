@@ -13,13 +13,14 @@ pnpm workspace with one package:
 
 The backend Express proxy server (`plover-server`) that fronts the Gemini API is now maintained in a standalone repository and hosted on Google Cloud Run.
 
-Phase 1 (current) covers: typed goal capture, Gemini-powered subtask
-decomposition, local subtask scheduling into working-hours windows, local
-Today/Goals/Settings views, and an overlay quick-add hotkey. (Google Calendar
-sync was removed; the Sync module now only polls Google Docs.)
+The core covers: typed goal capture, Gemini-powered subtask decomposition, local
+subtask scheduling into working-hours windows, the Today/Goals/Settings views,
+and an overlay quick-add hotkey. The Sync module polls connected context sources
+— Google (Docs/Drive, Gmail, Calendar, Classroom) and GitHub. Activity
+monitoring and inference/progress signals have also landed.
 
-Deferred (do **not** add): activity monitoring, voice input, inference /
-progress signals, nudge engine, Windows port, multi-account/plugins/sync.
+Deferred (do **not** add): voice input, nudge engine, Windows port,
+multi-account/plugins/multi-device sync.
 
 Authoritative specs:
 - Product spec: [docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md](docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md)
@@ -68,7 +69,7 @@ The core-architecture doc calls these "load-bearing" module boundaries. Crossing
 
 - **Local-only user data.** SQLite + local filesystem. No cloud sync.
 - **Backend proxy for Gemini.** Outbound Gemini calls go through the standalone `plover-server` backend proxy so the API key isn't shipped in the Electron bundle. Do not inline API keys into `app/`.
-- **HTTP allowlist:** `generativelanguage.googleapis.com`, `www.googleapis.com` (Google Docs/Drive), Google OAuth endpoints. Enforced at the HTTP client.
+- **HTTP allowlist:** `generativelanguage.googleapis.com`, `www.googleapis.com`, `gmail.googleapis.com`, `calendar.googleapis.com`, `classroom.googleapis.com`, `api.github.com`, and Google OAuth (`oauth2.googleapis.com`, `accounts.google.com`). Documented in `app/src/main/http/allowlist.ts` (`assertAllowedHost`); not yet wired into the HTTP client.
 - **Never capture keystroke content.** Counts only.
 - **Never upload screenshots** anywhere (Vision integration is future work and gated on explicit user consent).
 - **Phase 1 does not request Screen Recording / Accessibility.** Don't add those entitlements.
@@ -110,7 +111,7 @@ These are the subset an automated agent is most likely to trip on:
 
 - **pnpm filter must be path-based** (`--filter ./app`), not name-based.
 - **Colon-named scripts** require the explicit `run` keyword under `--filter`.
-- **Native modules must be rebuilt** for the running V8/Electron ABI — `setup.sh` does this. Electron is pinned to `^42.5.1` in `app/package.json`; keep that in sync with the version in root `dev` and setup rebuild flags.
+- **Native modules must be rebuilt** for the running V8/Electron ABI — `setup.sh` does this. Electron is pinned to `^43.2.0` in `app/package.json`; the `@electron/rebuild -v` flag in the root `dev` script and `setup.sh` MUST match that version, or better-sqlite3/keytar load with an ABI mismatch at dev runtime.
 - **`pnpm.onlyBuiltDependencies`** gates postinstall for `electron`, `esbuild`, `better-sqlite3`, `keytar`, `get-windows`. Adding a new native dep? Add it here too or its postinstall will silently skip.
 - **`process.loadEnvFile()` in the body of `index.ts` is too late** — ESM imports evaluate first. Use `app/src/main/load-env.ts` as the first import.
 - **Preload output must be `.js`, not `.mjs`.** `electron.vite.config.ts` configures preload as `format: 'cjs'` with `entryFileNames: '[name].js'`.
