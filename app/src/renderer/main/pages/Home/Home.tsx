@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { Goal, Task } from '../../../../shared/types';
 import { pickCurrentTask, sortByScheduledStart } from '../../../../shared/current-task';
+import { goalProgress } from '../../../../shared/goal-progress';
 import { Button } from '../../../components/Button/Button';
 import { useProgressPops } from '../../../hooks/useProgressPops';
 import { useGoalsAndTasks } from '../../hooks/useGoalsAndTasks';
@@ -191,11 +192,11 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
   const goalCards = useMemo(() => {
     return goals.map((goal) => {
       const goalTasks = tasksByGoal[goal.id] ?? [];
-      const doneTasks = goalTasks.filter((t) => t.status === 'done');
-      const progress = goalTasks.length > 0 ? doneTasks.length / goalTasks.length : 0;
+      const currentId = defaultCurrentTask?.goal_id === goal.id ? defaultCurrentTask.id : null;
+      const progress = goalProgress(goalTasks, currentId);
       return { goal, progress, isActive: goal.id === activeGoalId };
     });
-  }, [goals, tasksByGoal, activeGoalId]);
+  }, [goals, tasksByGoal, activeGoalId, defaultCurrentTask]);
 
   const inMotionCount = useMemo(
     () => tasks.filter((t) => t.status !== 'done' && t.status !== 'skipped').length,
