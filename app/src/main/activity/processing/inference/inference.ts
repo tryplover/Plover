@@ -100,7 +100,11 @@ export class InferenceEngine {
     nowMs: number,
   ): { activeTasks: Task[]; activity: ActivityRow[] } {
     const allTasks = this.tasksRepo.list();
-    const activeTasks = allTasks.filter((t) => t.status === 'todo' || t.status === 'scheduled');
+    // Grades everything unfinished, `in_progress` included: pickCurrentTask
+    // ranks that status first when choosing the task the companion displays,
+    // so excluding it would freeze the progress number on exactly the task
+    // the user is watching.
+    const activeTasks = allTasks.filter((t) => t.status !== 'done' && t.status !== 'skipped');
 
     const isFastTick = this.updatePacing(allTasks, nowMs);
     this.currentIntervalMs = isFastTick
