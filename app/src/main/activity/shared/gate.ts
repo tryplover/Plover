@@ -1,4 +1,4 @@
-import { SettingsRepo, SettingsData } from '../../store/repos/settings.js';
+import { SettingsRepo, SettingsData } from '@main/store/repos/settings.js';
 
 type BoolKeyOf<T> = {
   [K in keyof T]: T[K] extends boolean ? K : never;

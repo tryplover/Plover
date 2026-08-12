@@ -1,7 +1,7 @@
 import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
-import { TypedEventBus } from '../../events/bus.js';
-import { SettingsData } from '../../store/repos/settings.js';
+import { TypedEventBus } from '@main/events/bus.js';
+import { SettingsData } from '@main/store/repos/settings.js';
 import { ContextSource } from '../source-poller.js';
 
 function header(headers: { name?: string | null; value?: string | null }[] | undefined, name: string): string {
