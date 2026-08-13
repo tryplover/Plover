@@ -178,7 +178,11 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
 
   const activeTaskId = currentTask?.id ?? null;
 
-  const pops = useProgressPops(activeTaskId, progressPopsEnabled);
+  const activeGoalStepCount = defaultCurrentTask
+    ? (tasksByGoal[defaultCurrentTask.goal_id]?.length ?? 0)
+    : 0;
+
+  const pop = useProgressPops(activeTaskId, progressPopsEnabled, activeGoalStepCount);
 
   const activeGoalSteps = useMemo(() => {
     if (!expandedGoalId) return [];
@@ -297,7 +301,7 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
             steps={activeGoalSteps}
             activeTaskId={activeTaskId}
             progressPopsEnabled={progressPopsEnabled}
-            pops={pops}
+            pop={pop}
             finishTitle={
               defaultCurrentTask ? `Finish "${defaultCurrentTask.title}"` : 'Finish current task'
             }

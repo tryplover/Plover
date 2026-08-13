@@ -7,16 +7,25 @@ export interface ProgressPop {
 
 const POP_LIFETIME_MS = 1400;
 
-export function useProgressPops(taskId: string | null, enabled: boolean): ProgressPop[] {
-  const [pops, setPops] = useState<ProgressPop[]>([]);
+export function useProgressPops(
+  taskId: string | null,
+  enabled: boolean,
+  totalSteps: number,
+): ProgressPop | null {
+  const [pop, setPop] = useState<ProgressPop | null>(null);
   const nextKey = useRef(0);
+  // Sub-1% goal deltas are carried rather than dropped: on a long goal a real
+  // subtask move can be worth a fraction of a point, and rounding each one to
+  // zero would hide progress exactly where the bar already feels most static.
+  const carried = useRef(0);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPops([]);
-    if (!enabled || !taskId) return;
+    setPop(null);
+    carried.current = 0;
+    if (!enabled || !taskId || totalSteps < 1) return;
 
-    const timeouts = new Set<ReturnType<typeof setTimeout>>();
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
     const unsubscribe = window.api.on('app-event', (event: unknown) => {
       const appEvent = event as {
@@ -25,23 +34,31 @@ export function useProgressPops(taskId: string | null, enabled: boolean): Progre
       };
       if (appEvent.type !== 'summary.created') return;
       if (appEvent.payload?.task_id !== taskId) return;
-      const delta = appEvent.payload?.progress_delta;
-      if (typeof delta !== 'number' || delta <= 0) return;
+      const taskDelta = appEvent.payload?.progress_delta;
+      if (typeof taskDelta !== 'number' || taskDelta <= 0) return;
 
-      const key = nextKey.current++;
-      setPops((prev) => [...prev, { key, delta }]);
-      const timeoutId = setTimeout(() => {
-        setPops((prev) => prev.filter((p) => p.key !== key));
-        timeouts.delete(timeoutId);
-      }, POP_LIFETIME_MS);
-      timeouts.add(timeoutId);
+      carried.current += taskDelta / totalSteps;
+      const whole = Math.floor(carried.current);
+      if (whole < 1) return;
+      carried.current -= whole;
+
+      if (timeoutId) clearTimeout(timeoutId);
+      // A second delta landing mid-flight folds into the live chip instead of
+      // stacking a new one, so the number always converges on the current
+      // value rather than replaying a stale one.
+      setPop((prev) =>
+        prev
+          ? { key: prev.key, delta: prev.delta + whole }
+          : { key: nextKey.current++, delta: whole },
+      );
+      timeoutId = setTimeout(() => setPop(null), POP_LIFETIME_MS);
     });
 
     return () => {
       unsubscribe();
-      timeouts.forEach(clearTimeout);
+      if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [taskId, enabled]);
+  }, [taskId, enabled, totalSteps]);
 
-  return pops;
+  return pop;
 }

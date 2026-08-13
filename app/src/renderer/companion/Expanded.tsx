@@ -15,7 +15,7 @@ interface Props {
 }
 
 export function Expanded({ view, onCollapse, progressPopsEnabled }: Props) {
-  const pops = useProgressPops(view.task?.id ?? null, progressPopsEnabled);
+  const pop = useProgressPops(view.task?.id ?? null, progressPopsEnabled, view.steps.length);
   return (
     <motion.section
       className="plover-expanded"
@@ -63,7 +63,7 @@ export function Expanded({ view, onCollapse, progressPopsEnabled }: Props) {
             <p className="plover-expanded__meta">Today · one-off task</p>
             {view.task && (
               <span className="plover-expanded__task-progress">
-                {Math.round(view.task.progress)}%{progressPopsEnabled && <PercentPop pops={pops} />}
+                {Math.round(view.task.progress)}%{progressPopsEnabled && <PercentPop pop={pop} />}
               </span>
             )}
           </div>
