@@ -14,7 +14,7 @@ interface GoalCardProps {
   steps: Task[];
   activeTaskId: string | null;
   progressPopsEnabled: boolean;
-  pops: ProgressPop[];
+  pop: ProgressPop | null;
   finishTitle: string;
   onToggleExpand: () => void;
   onSwitch: () => void;
@@ -35,7 +35,7 @@ export function GoalCard({
   steps,
   activeTaskId,
   progressPopsEnabled,
-  pops,
+  pop,
   finishTitle,
   onToggleExpand,
   onSwitch,
@@ -167,7 +167,7 @@ export function GoalCard({
                         <span className="plover-home-step-momentum__pct">
                           {Math.round(step.progress)}%
                         </span>
-                        {progressPopsEnabled && <PercentPop pops={pops} />}
+                        {progressPopsEnabled && <PercentPop pop={pop} />}
                       </span>
                     ) : undefined
                   }

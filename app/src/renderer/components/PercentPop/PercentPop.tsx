@@ -3,14 +3,14 @@ import type { ProgressPop } from '../../hooks/useProgressPops';
 import './PercentPop.css';
 
 export interface PercentPopProps {
-  pops: ProgressPop[];
+  pop: ProgressPop | null;
 }
 
-export function PercentPop({ pops }: PercentPopProps) {
+export function PercentPop({ pop }: PercentPopProps) {
   return (
     <span className="plover-percent-pop-host" aria-hidden>
       <AnimatePresence>
-        {pops.map((pop) => (
+        {pop && (
           <motion.span
             key={pop.key}
             className="plover-percent-pop"
@@ -19,9 +19,9 @@ export function PercentPop({ pops }: PercentPopProps) {
             exit={{ opacity: 0, y: -28 }}
             transition={{ duration: ploverDuration.slow, ease: ploverEasing.spring }}
           >
-            +{Math.round(pop.delta)}%
+            +{pop.delta}%
           </motion.span>
-        ))}
+        )}
       </AnimatePresence>
     </span>
   );
