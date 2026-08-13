@@ -1,0 +1,23 @@
+.plover-delta-chip {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  border-radius: 20px;
+  background: var(--plover-mint-soft);
+  color: var(--plover-mint);
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.plover-collapsed:not(.plover-collapsed--compact) .plover-delta-chip {
+  padding-top: 3px;
+  padding-bottom: 3px;
+  font-size: 12px;
+}

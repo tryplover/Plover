@@ -300,3 +300,29 @@
   letter-spacing: -0.4px;
   margin-top: -2px;
 }
+
+/* Detected beat — the number, dot, status and border warm to mint while a
+   delta chip is live, then cool back. Wording never changes (the medium bar
+   keeps "observing" throughout), so the colour shift is the whole signal. */
+.plover-collapsed[data-detected='true'] {
+  border-color: rgba(159, 225, 203, 0.35);
+}
+
+.plover-collapsed[data-detected='true'] .plover-collapsed__pct {
+  color: var(--plover-mint);
+}
+
+.plover-collapsed[data-detected='true'] .plover-status__label {
+  color: var(--plover-mint);
+}
+
+.plover-collapsed__pct,
+.plover-collapsed__row,
+.plover-collapsed__compact-row {
+  transition: color 0.4s ease;
+}
+
+.plover-collapsed__row,
+.plover-collapsed__compact-row {
+  gap: 8px;
+}

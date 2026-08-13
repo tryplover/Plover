@@ -74,6 +74,7 @@ export function Companion() {
             view={view}
             onExpand={() => setExpanded(true)}
             companionMode={companionMode}
+            progressPopsEnabled={progressPopsEnabled}
           />
         )}
       </AnimatePresence>
