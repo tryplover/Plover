@@ -5,7 +5,9 @@ export interface ProgressPop {
   delta: number;
 }
 
-const POP_LIFETIME_MS = 1400;
+// Matches the motion spec: the number counts for ~1.1s, then the beat holds
+// ~3s before cooling. The chip's exit animation runs after this window closes.
+const POP_LIFETIME_MS = 4100;
 
 export function useProgressPops(
   taskId: string | null,
