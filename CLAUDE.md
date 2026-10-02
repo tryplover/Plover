@@ -6,9 +6,11 @@ context, conventions, and known footguns.
 
 ## How to work in this repo (read this first)
 
-1. **Spec is authoritative.** The product spec and the Phase 1 specs under
-   [docs/superpowers/specs/](docs/superpowers/specs/) define scope, constraints,
-   and the file layout. Do not scope-creep beyond the current phase.
+1. **Spec is authoritative.** The
+   [desktop buddy pivot spec](docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md)
+   defines current product scope; the Phase 1 specs under
+   [docs/superpowers/specs/](docs/superpowers/specs/) still define module
+   boundaries and file layout. Do not scope-creep beyond the pivot's v1.
 2. **Footgun knowledge is a contract.** If you hit an error, surprise, or
    wrong-first-attempt that a future Claude could avoid, capture it **before
    reporting completion** — but NOT in this file. Add it to the most relevant
@@ -59,13 +61,21 @@ base of the stack first and let reviewers move up.
 
 ## Project
 
-**Plover** is a local-first Electron desktop agent for productivity. It turns vague goals into a structured plan of subtasks and shepherds the user toward finishing them. Privacy-by-design: user data is strictly local, but outbound Gemini API calls are proxied securely through a backend server to protect the developer API key in production.
+**Plover is pivoting** to a cute desktop work buddy: a minimalist character with
+clean animations that lives in a small always-on-top window, breaks the task
+you're about to do into steps (Gemini), runs a focus timer, gives lock-in
+reminders, and asks self-reported check-ins. It's still a local-first Electron
+app; user data stays local and Gemini calls are proxied through a backend server
+to protect the developer API key. Launch is waitlist-only.
 
-- **Product spec:** [docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md](docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md)
-- **Phase 1 core architecture:** [docs/superpowers/specs/phase-1/core-architecture.md](docs/superpowers/specs/phase-1/core-architecture.md)
+- **Pivot spec (current direction):** [docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md](docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md)
+- **Original product spec (superseded):** [docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md](docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md)
+- **Phase 1 core architecture (module boundaries):** [docs/superpowers/specs/phase-1/core-architecture.md](docs/superpowers/specs/phase-1/core-architecture.md)
+- **Background research:** [reports/](reports/) and [research_notes/](research_notes/)
 
-The core architecture doc's "Implementation order" section (steps 1–7) is the
-implementation order. Do not jump ahead.
+The character design and animations are being designed separately and are
+**not** specified yet — build against an animation-state interface, don't
+invent art.
 
 ## Workspace layout
 
@@ -82,11 +92,13 @@ implementation order. Do not jump ahead.
 │   └── PULL_REQUEST_TEMPLATE.md
 ├── docs/
 │   ├── plans/                      # generated implementation plans (input to subagents)
-│   └── superpowers/specs/          # PRD + Phase 1 specs (authoritative)
-│       ├── 2026-05-24-task-tracker-agent-product-spec.md
+│   └── superpowers/specs/          # pivot spec + phase specs (authoritative)
+│       ├── 2026-10-02-desktop-buddy-pivot-spec.md   # current direction
+│       ├── 2026-05-24-task-tracker-agent-product-spec.md  # superseded
 │       └── phase-1/
 │           ├── core-architecture.md
 │           └── store-layer.md
+├── reports/, research_notes/       # background research (progress visibility, competitors)
 └── app/                            # the Electron app (single workspace pkg)
     ├── package.json                # name: "plover"
     ├── electron.vite.config.ts
@@ -164,22 +176,27 @@ These are not style preferences. The core architecture doc calls them
 - **No Wispr Flow / Cluely / third-party overlay deps.** Build the overlay with
   Electron `BrowserWindow` primitives.
 
-## Phase scope (current: Phase 1)
+## Scope (current: desktop buddy pivot, v1)
 
-**In Phase 1:**
-- Typed goal capture (text)
-- Gemini-powered subtask decomposition
-- Local subtask scheduling (working-hours aware, no external calendar)
-- Local Today / Goals / Settings views
-- Overlay quick-add (global hotkey)
+**In v1:**
+- Desktop buddy window (always-on-top, frameless) with an animation-state
+  interface; placeholder art until the design lands
+- Typed task entry → Gemini step breakdown → accept/edit (reuses the Planner)
+- Focus timer with work/break cycles
+- Time-based lock-in reminders
+- Self-reported check-ins that update step status
 
-**Deferred to later phases — do not add yet:**
-- Activity monitoring (screenshots, window titles, keystroke counts)
+**Frozen — leave in place, don't extend, don't build on, don't delete yet:**
+- Activity monitoring (`app/src/main/activity/`)
+- Inference / progress signals, `+X%` pops, blended goal bar (the
+  `progress-signal-rewire` plan is paused)
+- Google / GitHub sync connectors
+- Working-hours scheduler and the Today / Goals views
+
+**Not in v1:**
+- Screen-based distraction detection
 - Voice input (`whisper.cpp`)
-- Inference / progress signals
-- Nudge engine
-- Windows port
-- Multi-account, plugins, multi-device sync
+- Multi-account, plugins, multi-device sync, mobile
 
 ## Code conventions
 

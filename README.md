@@ -1,17 +1,14 @@
 # Plover
 
-A local-first desktop agent that turns vague goals into a schedule and
-shepherds you toward finishing them. Built for the 3-month Gemini hackathon.
+A cute little work buddy that lives on your desktop.
 
-You tell Plover what you want to get done — by voice or text. It decomposes
-the goal with Gemini, schedules tasks locally within your working-hours windows,
-watches your screen and files in the background, and tells you when you're on or
-off track. Nothing leaves your machine except Gemini calls (proxied through the
-hosted backend) and calls to the Google/GitHub APIs you connect (Drive/Docs,
-Gmail, Calendar, Classroom, GitHub).
+Tell Plover what you're about to work on. It breaks the task into steps with
+Gemini, runs a focus timer, reminds you to stay locked in, and checks in on how
+it's going — a small, minimalist character with clean animations that keeps you
+company while you work. Your data stays on your machine; only Gemini calls leave
+it, proxied through the hosted backend.
 
-> **Status:** Goal capture, Gemini decomposition, local working-hours scheduling, the Today/Goals/Settings views, and the overlay quick-add have shipped; activity monitoring, inference, and Google/GitHub context sources are landing incrementally. The Gemini backend proxy lives in the standalone repository [plover-server](https://github.com/tryplover/plover-server), hosted on Google Cloud Run.
-> See [docs/superpowers/specs/](docs/superpowers/specs/) for the product specs, and the [GCP & GitHub Setup Details](docs/plans/gcp-setup-details.md) for details on the hosted infrastructure.
+> **Status: pivoting.** Plover is moving from AI progress tracking to the desktop buddy described in the [pivot spec](docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md). The existing app (goal decomposition, scheduling, Today/Goals/Settings views, overlay) still builds and runs; activity monitoring, progress inference and the Google/GitHub connectors are frozen. Launch is waitlist-only on tryplover.com. The Gemini proxy lives in the standalone [plover-server](https://github.com/tryplover/plover-server) repo on Google Cloud Run — see [GCP & GitHub Setup Details](docs/plans/gcp-setup-details.md).
 
 ## Quickstart
 
@@ -55,7 +52,8 @@ eslint+prettier on staged files at commit time.
 .
 ├── CLAUDE.md                       # context for Claude sessions
 ├── README.md                       # ← you are here
-├── docs/superpowers/specs/         # product spec + Phase 1 architecture
+├── docs/superpowers/specs/         # pivot spec, original spec, phase architecture
+├── reports/, research_notes/       # background research
 ├── .github/                        # CI workflow, Dependabot, PR template
 └── app/                            # the Electron app
     ├── src/
@@ -70,8 +68,13 @@ The `app/` directory is a pnpm workspace package named `plover`.
 
 ## Documentation
 
-- **[Product spec (PRD)](docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md)** —
-  vision, user flows, feature scope, architecture, milestones
+- **[Desktop buddy pivot spec](docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md)** —
+  current product direction: the character, flows, v1 scope, and what's kept
+  vs. frozen from the existing app
+- **[Original product spec](docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md)** —
+  superseded; kept for history
+- **[Research](reports/)** — progress-visibility motivation evidence and the
+  competitive landscape ([notes](research_notes/))
 - **[Phase 1 core architecture](docs/superpowers/specs/phase-1/core-architecture.md)** —
   hard constraints, tech stack, file layout, module contracts, implementation
   order, cross-cutting acceptance criteria
@@ -80,12 +83,14 @@ The `app/` directory is a pnpm workspace package named `plover`.
 - **[CLAUDE.md](CLAUDE.md)** — conventions and footguns; useful for humans too,
   not just Claude
 
-Read the core architecture doc before opening a PR — its "Implementation order"
-and "What NOT to do" sections set the scope rules for the current phase.
+Read the pivot spec before opening a PR — its scope and "what carries over"
+table set what to build and what not to touch. The Phase 1 architecture doc
+still describes the module boundaries the code follows.
 
 ## Privacy posture
 
-Plover is local-first by design:
+Plover is local-first by design. (Activity monitoring and the connectors are
+frozen for the pivot, but these rules still apply to the code that exists.)
 
 - All persistent user data lives on disk (SQLite + local files); no user data is
   synced to a cloud backend. Gemini calls are proxied through the hosted
