@@ -2,7 +2,7 @@
 
 **Working name:** Plover
 **Date:** 2026-05-24
-**Status:** Draft v1
+**Status:** Superseded by the [desktop buddy pivot spec](2026-10-02-desktop-buddy-pivot-spec.md) (2026-10-02). Kept for history.
 **Timeline:** 3-month Gemini hackathon
 
 ## 1. Vision
