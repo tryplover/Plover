@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <mask id="m">
+      <rect width="256" height="256" fill="#fff"/>
+      <circle cx="96" cy="150" r="12" fill="#000"/>
+      <circle cx="160" cy="150" r="12" fill="#000"/>
+      <path d="M116 168 H140 L128 184 Z" fill="#000" stroke="#000" stroke-width="4" stroke-linejoin="round"/>
+      <ellipse cx="78" cy="208" rx="34" ry="30" fill="#000"/>
+      <ellipse cx="178" cy="208" rx="34" ry="30" fill="#000"/>
+    </mask>
+  </defs>
+  <path mask="url(#m)" d="M43.3 208 A88 88 0 1 1 212.7 208 Z"/>
+  <path d="M52 208 A26 22 0 0 1 104 208 Z"/>
+  <path d="M152 208 A26 22 0 0 1 204 208 Z"/>
+</svg>

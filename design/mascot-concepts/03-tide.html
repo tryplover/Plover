@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plover Tide Concepts</title>
+<style>
+  :root{
+    --page:#EFE8DE; --ink:#2B2520; --muted:#6F655B; --card:#FBF8F3; --line:#E0D5C7;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--page);color:var(--ink);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  main{max-width:1320px;margin:0 auto;padding:32px 16px 64px}
+  h1{font-size:28px;margin:0 0 4px;font-weight:600;letter-spacing:-.01em}
+  h2{font-size:20px;margin:0 0 6px;font-weight:600}
+  .kicker{color:var(--muted);margin:0 0 18px}
+  .intro{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-bottom:28px}
+  .intro p{margin:0 0 14px;max-width:78ch}
+  .palette{display:flex;flex-wrap:wrap;gap:10px;margin:0;padding:0;list-style:none}
+  .palette li{display:flex;align-items:center;gap:8px;font-size:13px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px 12px 4px 4px}
+  .palette i{width:22px;height:22px;border-radius:50%;display:inline-block;border:1px solid rgba(0,0,0,.08)}
+  .palette code{color:var(--muted)}
+  .controls{display:flex;gap:16px;align-items:center;margin-top:14px;font-size:14px;color:var(--muted)}
+  section.variant{margin:0 0 40px}
+  .variant ul.notes{margin:4px 0 14px;padding-left:18px;color:var(--muted);max-width:90ch}
+  .swatch{border-radius:16px;padding:16px;margin-bottom:14px}
+  .swatch h3{margin:0 0 10px;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;opacity:.65}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+  .cell{border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:6px}
+  .pair{display:flex;align-items:flex-end;gap:14px}
+  .pair .small{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;opacity:.6}
+  .cell .label{font-size:13px;font-weight:600}
+  .cell .hint{font-size:12px;opacity:.65;text-align:center;max-width:220px}
+  .bird{display:block;overflow:visible}
+  .bird.big{width:200px;height:200px;max-width:100%}
+  .bird.tiny{width:32px;height:32px}
+
+  /* ---------- themes ---------- */
+  .light{background:#F4EDE3;color:#3B2F25}
+  .light .cell{background:#FBF7F1}
+  .light{
+    --body:#8C5A33; --belly:#F7ECDF; --band:#5A3213; --beak:#6B3F1C; --leg:#8C5A33;
+    --eye:#3B2412; --ripple:#7FB2AD; --face:#FBF4EA; --track:#E5D8C8; --water:#A6D0CA;
+    --g-idle:#BFE3DC; --g-work:#86C7C0; --g-prog:#F7B87C; --g-nudge:#CDB9F0;
+    --a-idle:#9FCBC4; --a-work:#4E9C95; --a-prog:#EE9A4E; --a-nudge:#9C86D4;
+    --mote:#E8954A; --shine:#FFFFFF;
+  }
+  .dark{background:#1D2430;color:#E9E2D8}
+  .dark .cell{background:#232C3A}
+  .dark{
+    --body:#C89A72; --belly:#F3E3CF; --band:#7A4718; --beak:#E0B48C; --leg:#B88A64;
+    --eye:#2A1E14; --ripple:#5E9E99; --face:#F6E8D6; --track:#323E4E; --water:#3F6F72;
+    --g-idle:#4F8F88; --g-work:#5FB3AA; --g-prog:#F2A65E; --g-nudge:#9F86D9;
+    --a-idle:#6FA8A1; --a-work:#7FD0C6; --a-prog:#F6B171; --a-nudge:#BBA6EE;
+    --mote:#FFD49A; --shine:#FFF5E6;
+  }
+
+  /* ---------- shared parts ---------- */
+  .bird .glow{fill:var(--glow);opacity:var(--glow-o);transform-box:fill-box;transform-origin:center}
+  .bird .breath{transform-box:fill-box;transform-origin:50% 100%}
+  .bird.v-c .breath{transform-origin:center}
+  .bird .head{transform-box:fill-box;transform-origin:30% 85%;transition:transform .9s ease}
+  .bird .ripple{fill:none;stroke:var(--ripple);stroke-width:1.6;stroke-linecap:round;transform-box:fill-box;transform-origin:center}
+  .bird .ripple.two{opacity:.45;stroke-width:1.3}
+  .bird .flat{fill:none;stroke:var(--ripple);stroke-width:1.4;stroke-linecap:round;stroke-dasharray:2 4;opacity:0}
+  .bird .eye-closed{fill:none;stroke:var(--eye);stroke-width:1.5;stroke-linecap:round;opacity:0}
+  .bird.v-c .eye-closed{stroke-width:1.2}
+  .bird .eye-open{fill:var(--eye);transform-box:fill-box;transform-origin:center}
+  .bird .motes circle{fill:var(--mote);opacity:0;transform-box:fill-box;transform-origin:center}
+  .bird .sweep{opacity:0}
+  .bird .core{fill:var(--glow);opacity:calc(var(--glow-o) + .1)}
+  .bird .ring{fill:none;stroke:var(--track);stroke-width:5}
+  .bird .arc{fill:none;stroke:var(--arc);stroke-width:5;stroke-linecap:round;stroke-dasharray:251.3;stroke-dashoffset:95.5}
+  .bird .orbit{fill:none;stroke:var(--shine);stroke-width:5;stroke-linecap:round;stroke-dasharray:12 239.3;opacity:0}
+  .bird .wave{fill:var(--water);opacity:.55}
+  .bird .still{fill:var(--water);opacity:0}
+
+  /* ---------- state tokens ---------- */
+  .s-idle{--glow:var(--g-idle);--glow-o:.5;--arc:var(--a-idle)}
+  .s-working{--glow:var(--g-work);--glow-o:.62;--arc:var(--a-work)}
+  .s-progress{--glow:var(--g-prog);--glow-o:.85;--arc:var(--a-prog)}
+  .s-nudge{--glow:var(--g-nudge);--glow-o:.6;--arc:var(--a-nudge)}
+  .s-paused{--glow:transparent;--glow-o:0;--arc:transparent}
+
+  /* ---------- static state looks (also the reduced-motion frames) ---------- */
+  .s-working .ripple{stroke-dasharray:8 5}
+  .s-progress .glow{transform:scale(1.15)}
+  .s-progress .motes circle{opacity:.9;transform:translateY(-4px)}
+  .s-progress .arc{stroke-dashoffset:65.3}
+  .s-nudge .sweep{opacity:1;transform:translateX(60px)}
+  .s-nudge .orbit{opacity:.95}
+  .s-paused{opacity:.62;filter:saturate(.2)}
+  .s-paused .head{transform:translate(-7px,7px) rotate(-14deg)}
+  .v-c.s-paused .head{transform:translate(-4px,5px) rotate(-16deg)}
+  .s-paused .eye-closed{opacity:1}
+  .s-paused .eye-open,.s-paused .ripple,.s-paused .core,.s-paused .arc,.s-paused .wave{opacity:0}
+  .s-paused .flat{opacity:.9}
+  .s-paused .still{opacity:.35}
+  .s-paused .ring{stroke-dasharray:1.5 5}
+
+  /* ---------- motion ---------- */
+  .s-idle .breath{animation:breathe 6s ease-in-out infinite}
+  .s-idle .glow{animation:glowBreathe 6s ease-in-out infinite}
+  .s-idle .ripple{animation:drift 6s ease-in-out infinite}
+  .s-idle .eye-open{animation:blink 7s ease-in-out infinite}
+  .s-idle .wave{animation:tide 9s linear infinite}
+
+  .s-working .breath{animation:pulse 2.4s ease-in-out infinite}
+  .s-working .glow{animation:glowPulse 2.4s ease-in-out infinite}
+  .s-working .ripple{animation:flow 3s linear infinite}
+  .s-working .wave{animation:tide 3s linear infinite}
+  .s-working .arc{animation:arcPulse 2.4s ease-in-out infinite}
+
+  .s-progress .glow{animation:bloom 3.6s ease-out infinite}
+  .s-progress .breath{animation:lift 3.6s ease-out infinite}
+  .s-progress .motes circle{animation:mote 3.6s ease-out infinite}
+  .s-progress .motes circle:nth-child(2){animation-delay:.25s}
+  .s-progress .motes circle:nth-child(3){animation-delay:.5s}
+  .s-progress .ripple{animation:spread 3.6s ease-out infinite}
+  .s-progress .arc{animation:fillArc 3.6s ease-out infinite}
+  .s-progress .wave{animation:tide 4s linear infinite}
+
+  .s-nudge .sweep{animation:sweep 4.5s ease-in-out infinite}
+  .s-nudge .head{animation:look 4.5s ease-in-out infinite}
+  .s-nudge .glow{animation:shimmerGlow 4.5s ease-in-out infinite}
+  .s-nudge .breath{animation:bob 4.5s ease-in-out infinite}
+  .s-nudge .orbit{animation:orbit 4.5s ease-in-out infinite}
+  .s-nudge .wave{animation:tide 6s linear infinite}
+
+  .s-paused .breath{animation:sleep 10s ease-in-out infinite}
+
+  @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.035)}}
+  @keyframes glowBreathe{0%,100%{opacity:calc(var(--glow-o) * .55);transform:scale(.94)}50%{opacity:var(--glow-o);transform:scale(1.06)}}
+  @keyframes drift{0%,100%{transform:scaleX(.92);opacity:.55}50%{transform:scaleX(1.04);opacity:1}}
+  @keyframes blink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.022)}}
+  @keyframes glowPulse{0%,100%{opacity:.4;transform:scale(.97)}50%{opacity:.78;transform:scale(1.04)}}
+  @keyframes flow{to{stroke-dashoffset:-26}}
+  @keyframes arcPulse{0%,100%{opacity:.72}50%{opacity:1}}
+  @keyframes bloom{0%{transform:scale(.85);opacity:.35}22%{transform:scale(1.3);opacity:1}65%{transform:scale(1.12);opacity:.7}100%{transform:scale(.85);opacity:.35}}
+  @keyframes lift{0%{transform:translateY(0) scale(1)}18%{transform:translateY(-3px) scale(1.04)}40%,100%{transform:translateY(0) scale(1)}}
+  @keyframes mote{0%{opacity:0;transform:translateY(4px)}25%{opacity:1}70%,100%{opacity:0;transform:translateY(-14px)}}
+  @keyframes spread{0%{transform:scaleX(.9);opacity:.6}30%{transform:scaleX(1.25);opacity:1}100%{transform:scaleX(1);opacity:.6}}
+  @keyframes fillArc{0%{stroke-dashoffset:95.5}30%,100%{stroke-dashoffset:65.3}}
+  @keyframes sweep{0%{transform:translateX(0);opacity:0}10%{opacity:1}55%{transform:translateX(130px);opacity:1}60%,100%{transform:translateX(130px);opacity:0}}
+  @keyframes look{0%,15%,60%,100%{transform:rotate(0)}25%,45%{transform:rotate(-9deg)}}
+  @keyframes shimmerGlow{0%,100%{opacity:.35}30%{opacity:.8}}
+  @keyframes bob{0%,20%,40%,100%{transform:translateY(0)}28%{transform:translateY(-2px)}}
+  @keyframes orbit{from{stroke-dashoffset:0}to{stroke-dashoffset:-251.3}}
+  @keyframes tide{from{transform:translateX(0)}to{transform:translateX(-50px)}}
+  @keyframes sleep{0%,100%{transform:scale(1)}50%{transform:scale(1.012)}}
+
+  @media (prefers-reduced-motion: reduce){
+    .bird,.bird *{animation:none !important;transition:none !important}
+  }
+  body.rm .bird,body.rm .bird *{animation:none !important;transition:none !important}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="7"/></filter>
+    <filter id="soft-sm" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3"/></filter>
+    <radialGradient id="sheen" cx=".35" cy=".3" r=".8">
+      <stop offset="0" stop-color="#fff" stop-opacity=".38"/>
+      <stop offset=".55" stop-color="#fff" stop-opacity=".06"/>
+      <stop offset="1" stop-color="#000" stop-opacity=".14"/>
+    </radialGradient>
+    <linearGradient id="sweepGrad" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#fff" stop-opacity="0"/>
+      <stop offset=".5" stop-color="#fff" stop-opacity=".75"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="clipA">
+      <path d="M12,60 C20,52 34,45 50,46 C64,47 74,54 74,64 C74,74 64,79 50,79 C38,79 26,72 20,66 C17,63 14,62 12,60 Z"/>
+      <circle cx="68" cy="42" r="13"/>
+    </clipPath>
+    <clipPath id="clipABody">
+      <path d="M12,60 C20,52 34,45 50,46 C64,47 74,54 74,64 C74,74 64,79 50,79 C38,79 26,72 20,66 C17,63 14,62 12,60 Z"/>
+    </clipPath>
+    <clipPath id="clipB">
+      <path d="M16,49 C24,48 30,44 36,39 C42,33 48,32 51,29 C53,23 57,20 63,20 C69,20 73,24 75,29 L84,34 C85,35 84,36 83,36 L76,37 C74,40 74,43 74,46 C74,56 68,64 58,67 C48,70 36,64 28,57 C24,54 20,53 18,52 Z"/>
+    </clipPath>
+    <clipPath id="clipBelly">
+      <path d="M30,57 C38,61 46,59 52,55 C56,52 58,48 60,46 C64,47.5 69,47.5 73.5,46.5 C73,56 67,63 58,65.5 C48,68 38,63 30,57 Z"/>
+    </clipPath>
+    <clipPath id="clipC">
+      <path d="M30,57 C34,51 41,48 49,48.5 C56,49 61,52 62,57.5 C62.5,62 57,65.5 49,65.5 C42,65.5 36,62.5 33,60 C31.5,59 30.5,58 30,57 Z"/>
+      <circle cx="60" cy="45" r="7"/>
+    </clipPath>
+    <clipPath id="clipWater"><circle cx="50" cy="50" r="35.5"/></clipPath>
+  </defs>
+</svg>
+
+<main>
+  <h1>Plover mascot: "Tide"</h1>
+  <p class="kicker">Concept 03, a calm, breathing, nearly faceless shorebird</p>
+
+  <div class="intro">
+    <p>Tide treats Plover like a wellness companion rather than a watcher. The bird has no face while it is awake, so it never seems to be staring at you. It reads through rhythm, warmth and soft light: a slow breath when idle, a steady pulse while you work, a warm amber bloom when a subtask moves, and a cool lavender shimmer for a nudge. The only time a facial feature appears is <strong>paused</strong>, when a closed-eye crescent, a tucked head, desaturated color and a flat, dotted shoreline make "not watching" unmistakable at 32px. The ripple line borrows the plover's shoreline, so progress feels like a tide coming in rather than a task ticking over.</p>
+    <ul class="palette">
+      <li><i style="background:#7A4718"></i>Driftwood (brand) <code>#7A4718</code></li>
+      <li><i style="background:#8C5A33"></i>Clay body <code>#8C5A33</code></li>
+      <li><i style="background:#C89A72"></i>Sand body (dark) <code>#C89A72</code></li>
+      <li><i style="background:#F7ECDF"></i>Foam belly <code>#F7ECDF</code></li>
+      <li><i style="background:#BFE3DC"></i>Sea glass (idle) <code>#BFE3DC</code></li>
+      <li><i style="background:#4E9C95"></i>Tide teal (working) <code>#4E9C95</code></li>
+      <li><i style="background:#F7B87C"></i>Apricot bloom (progress) <code>#F7B87C</code></li>
+      <li><i style="background:#CDB9F0"></i>Dusk lavender (nudge) <code>#CDB9F0</code></li>
+      <li><i style="background:#F4EDE3"></i>Shore light bg <code>#F4EDE3</code></li>
+      <li><i style="background:#1D2430"></i>Night shore bg <code>#1D2430</code></li>
+    </ul>
+    <div class="controls">
+      <label><input type="checkbox" id="rm"> Preview reduced motion (static frames)</label>
+    </div>
+  </div>
+
+  <div id="variants"></div>
+</main>
+
+<script>
+(function(){
+  var STATES = [
+    ['idle','Idle','Slow 6s breath; sea-glass glow swells and recedes.'],
+    ['working','Working / on track','Steady 2.4s pulse; teal glow; ripple flows like a current.'],
+    ['progress','Progress moment','Warm apricot bloom, a small lift, motes rise like spray.'],
+    ['nudge','Gentle nudge','A soft lavender shimmer passes over; a single bob.'],
+    ['paused','Paused / not watching','Head tucked, eye closed, colour drained, shoreline flat and dotted.']
+  ];
+
+  var A_BODY = 'M12,60 C20,52 34,45 50,46 C64,47 74,54 74,64 C74,74 64,79 50,79 C38,79 26,72 20,66 C17,63 14,62 12,60 Z';
+  var B_SIL = 'M16,49 C24,48 30,44 36,39 C42,33 48,32 51,29 C53,23 57,20 63,20 C69,20 73,24 75,29 L84,34 C85,35 84,36 83,36 L76,37 C74,40 74,43 74,46 C74,56 68,64 58,67 C48,70 36,64 28,57 C24,54 20,53 18,52 Z';
+  var B_BELLY = 'M30,57 C38,61 46,59 52,55 C56,52 58,48 60,46 C64,47.5 69,47.5 73.5,46.5 C73,56 67,63 58,65.5 C48,68 38,63 30,57 Z';
+  var C_BODY = 'M30,57 C34,51 41,48 49,48.5 C56,49 61,52 62,57.5 C62.5,62 57,65.5 49,65.5 C42,65.5 36,62.5 33,60 C31.5,59 30.5,58 30,57 Z';
+
+  function wavePath(){
+    var d = 'M-100,68', x;
+    for (x = -100; x < 150; x += 50) d += ' C' + (x+12.5) + ',64 ' + (x+37.5) + ',72 ' + (x+50) + ',68';
+    return d + ' L150,100 L-100,100 Z';
+  }
+
+  var VARIANTS = [
+    {
+      id:'a', name:'A. Pebble',
+      notes:[
+        'A faceless river-stone bird: two soft shapes (body and head), a breast-band, and a light sheen. There is no face at all while awake.',
+        'All feeling comes from the halo behind it and the ripple below. Breath, pulse, bloom and shimmer change only light and tempo.',
+        'Paused tucks the head into the body and shows the only facial mark: a closed-eye crescent. It is the most "meditation app" option.'
+      ],
+      svg:
+        '<ellipse class="glow" cx="50" cy="58" rx="34" ry="26" filter="url(#soft)"/>' +
+        '<path class="ripple" d="M8,87 C22,84 34,90 50,87 S78,84 92,87"/>' +
+        '<path class="ripple two" d="M22,93 C32,91 42,95 50,93 S68,91 78,93"/>' +
+        '<path class="flat" d="M12,87 L88,87"/>' +
+        '<g class="breath">' +
+          '<g stroke="var(--leg)" stroke-width="2" stroke-linecap="round"><line x1="46" y1="77" x2="45" y2="86"/><line x1="57" y1="77" x2="58" y2="86"/></g>' +
+          '<path d="' + A_BODY + '" fill="var(--body)"/>' +
+          '<ellipse cx="54" cy="72" rx="19" ry="8.5" fill="var(--belly)" clip-path="url(#clipABody)"/>' +
+          '<path d="' + A_BODY + '" fill="url(#sheen)"/>' +
+          '<path d="M57,50 Q66,57 77,50" fill="none" stroke="var(--band)" stroke-width="3.2" stroke-linecap="round"/>' +
+          '<g class="head">' +
+            '<path d="M79.5,39.5 L89,43 L79.5,46 Z" fill="var(--beak)"/>' +
+            '<circle cx="68" cy="42" r="13" fill="var(--body)"/>' +
+            '<circle cx="68" cy="42" r="13" fill="url(#sheen)"/>' +
+            '<path class="eye-closed" d="M66,41.5 q3,2.4 6,0"/>' +
+          '</g>' +
+          '<g clip-path="url(#clipA)"><g transform="skewX(-18)"><rect class="sweep" x="-10" y="0" width="20" height="100" fill="url(#sweepGrad)"/></g></g>' +
+        '</g>' +
+        '<g class="motes"><circle cx="40" cy="38" r="1.8"/><circle cx="52" cy="30" r="1.5"/><circle cx="30" cy="44" r="1.3"/></g>'
+    },
+    {
+      id:'b', name:'B. Lantern',
+      notes:[
+        'Keeps the brand logo silhouette (face patch, wedge beak, collar) so it is the closest to the existing mark.',
+        'The white belly becomes a lantern: an inner light that breathes, and changes temperature from sea-glass to teal to apricot to lavender.',
+        'Nearly faceless: one soft eye dot that blinks rarely. Paused closes the eye, puts out the lantern and flattens the shoreline.'
+      ],
+      svg:
+        '<ellipse class="glow" cx="52" cy="52" rx="34" ry="28" filter="url(#soft)"/>' +
+        '<path class="ripple" d="M10,84 C24,81 36,87 50,84 S76,81 90,84"/>' +
+        '<path class="ripple two" d="M24,90 C34,88 42,92 50,90 S66,88 76,90"/>' +
+        '<path class="flat" d="M14,84 L86,84"/>' +
+        '<g class="breath">' +
+          '<g stroke="var(--leg)" stroke-width="2.2" stroke-linecap="round"><path d="M52,66 L50.5,80 L54,80" fill="none"/><path d="M60,65.5 L62,80 L65.5,80" fill="none"/></g>' +
+          '<path d="' + B_SIL + '" fill="var(--body)"/>' +
+          '<path d="' + B_SIL + '" fill="url(#sheen)"/>' +
+          '<path d="' + B_BELLY + '" fill="var(--belly)"/>' +
+          '<ellipse class="core glow" cx="58" cy="57" rx="13" ry="8" filter="url(#soft-sm)" clip-path="url(#clipBelly)"/>' +
+          '<ellipse cx="66.5" cy="29.5" rx="6" ry="5" fill="var(--face)"/>' +
+          '<path d="M60,45.5 Q67,50.5 74,46" fill="none" stroke="var(--band)" stroke-width="3" stroke-linecap="round"/>' +
+          '<circle class="eye-open" cx="69.5" cy="28.8" r="1.5"/>' +
+          '<path class="eye-closed" d="M67.3,29 q2.2,1.8 4.4,0"/>' +
+          '<g clip-path="url(#clipB)"><g transform="skewX(-18)"><rect class="sweep" x="-10" y="0" width="20" height="100" fill="url(#sweepGrad)"/></g></g>' +
+        '</g>' +
+        '<g class="motes"><circle cx="40" cy="28" r="1.8"/><circle cx="50" cy="20" r="1.5"/><circle cx="30" cy="36" r="1.3"/></g>'
+    },
+    {
+      id:'c', name:'C. Tide Ring',
+      notes:[
+        'A tiny pebble-plover wading inside a ring, where the ring is the shoreline and the water inside rises and falls like a tide.',
+        'The arc is the "fitness ring for knowledge work". Progress warms it and fills it a notch, and a nudge sends one soft light around the ring.',
+        'This is the most legible option at 32px, because the ring carries the state when the bird is only about 10px. Paused breaks the ring into dots and stills the water.'
+      ],
+      svg:
+        '<circle class="glow" cx="50" cy="50" r="44" filter="url(#soft-sm)"/>' +
+        '<g class="breath">' +
+          '<circle class="ring" cx="50" cy="50" r="40"/>' +
+          '<circle class="arc" cx="50" cy="50" r="40" transform="rotate(-90 50 50)"/>' +
+          '<circle class="orbit" cx="50" cy="50" r="40" transform="rotate(-90 50 50)"/>' +
+          '<g stroke="var(--leg)" stroke-width="1.6" stroke-linecap="round"><line x1="45" y1="64" x2="44.5" y2="72"/><line x1="52" y1="64" x2="52.5" y2="72"/></g>' +
+          '<g clip-path="url(#clipWater)">' +
+            '<path class="wave" d="' + wavePath() + '"/>' +
+            '<rect class="still" x="0" y="68" width="100" height="40"/>' +
+          '</g>' +
+          '<path d="' + C_BODY + '" fill="var(--body)"/>' +
+          '<path d="' + C_BODY + '" fill="url(#sheen)"/>' +
+          '<path d="M55,51 Q60,54.5 65,50.5" fill="none" stroke="var(--band)" stroke-width="2" stroke-linecap="round"/>' +
+          '<g class="head">' +
+            '<path d="M66.2,43.3 L71.5,45.2 L66.2,47 Z" fill="var(--beak)"/>' +
+            '<circle cx="60" cy="45" r="7" fill="var(--body)"/>' +
+            '<circle cx="60" cy="45" r="7" fill="url(#sheen)"/>' +
+            '<path class="eye-closed" d="M58.5,44.5 q2,1.6 4,0"/>' +
+          '</g>' +
+          '<g clip-path="url(#clipC)"><g transform="skewX(-18)"><rect class="sweep" x="-6" y="0" width="16" height="100" fill="url(#sweepGrad)"/></g></g>' +
+        '</g>' +
+        '<g class="motes"><circle cx="42" cy="34" r="1.6"/><circle cx="51" cy="28" r="1.4"/><circle cx="35" cy="40" r="1.2"/></g>'
+    }
+  ];
+
+  function bird(v, s, cls, label){
+    return '<svg class="bird ' + cls + ' v-' + v.id + ' s-' + s + '" viewBox="0 0 100 100" role="img" aria-label="' + label + '">' + v.svg + '</svg>';
+  }
+
+  var html = '';
+  VARIANTS.forEach(function(v){
+    html += '<section class="variant"><h2>' + v.name + '</h2><ul class="notes">';
+    v.notes.forEach(function(n){ html += '<li>' + n + '</li>'; });
+    html += '</ul>';
+    [['light','Light swatch'],['dark','Dark swatch']].forEach(function(t){
+      html += '<div class="swatch ' + t[0] + '"><h3>' + t[1] + '</h3><div class="grid">';
+      STATES.forEach(function(s){
+        var label = v.name + ', ' + s[1];
+        html += '<div class="cell"><div class="pair">' +
+          bird(v, s[0], 'big', label + ', 200px') +
+          '<div class="small">' + bird(v, s[0], 'tiny', label + ', 32px') + '32px</div>' +
+          '</div><div class="label">' + s[1] + '</div><div class="hint">' + s[2] + '</div></div>';
+      });
+      html += '</div></div>';
+    });
+    html += '</section>';
+  });
+  document.getElementById('variants').innerHTML = html;
+
+  document.getElementById('rm').addEventListener('change', function(e){
+    document.body.classList.toggle('rm', e.target.checked);
+  });
+})();
+</script>
+</body>
+</html>

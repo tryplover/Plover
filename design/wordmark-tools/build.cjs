@@ -1,0 +1,51 @@
+﻿const fs = require('node:fs');
+const path = require('node:path');
+const fontkit = require('fontkit');
+const { decompress } = require('wawoff2');
+const root = path.resolve(__dirname, '../..');
+const out = path.join(root, 'design/logo-concepts/wordmark-draft');
+const fmt = n => Number(n.toFixed(4));
+(async () => {
+  const buffer = await decompress(fs.readFileSync(path.join(root, 'design/brand/fonts/nunito.woff2')));
+  const font = fontkit.create(Buffer.from(buffer)).getVariation({ wght: 700 });
+  const run = font.layout('plover');
+  const pairAdjust = [-16, -20, -18, -20, -12, 0];
+  let x = 0;
+  const letters = run.glyphs.map((glyph, i) => {
+    const pos = run.positions[i];
+    const item = { d: glyph.path.toSVG(), x: x + pos.xOffset, y: pos.yOffset, b: glyph.bbox };
+    x += pos.xAdvance + pairAdjust[i];
+    return item;
+  });
+  const minX = Math.min(...letters.map(g => g.x + g.b.minX));
+  const maxX = Math.max(...letters.map(g => g.x + g.b.maxX));
+  const minY = Math.min(...letters.map(g => g.y + g.b.minY));
+  const maxY = Math.max(...letters.map(g => g.y + g.b.maxY));
+  const width = maxX - minX;
+  const height = maxY - minY;
+  const paths = letters.map(g => `<path transform="translate(${fmt(g.x)},${fmt(g.y)})" d="${g.d}"/>`).join('\n');
+  const word = `<g fill="#2F4236" transform="translate(${-minX},${maxY}) scale(1,-1)">${paths}</g>`;
+  const symbol = fs.readFileSync(path.join(root, 'design/logo-concepts/final/plover-peek-sage.svg'), 'utf8').replace(/<svg[^>]*>|<\/svg>/g, '');
+  const svg = (w, h, body, label) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${fmt(w)} ${fmt(h)}" role="img" aria-label="${label}"><title>${label}</title>${body}</svg>`;
+  const scale = 104 / height;
+  const wordWidth = width * scale;
+  const horizontal = svg(152 + wordWidth, 128, `<g transform="scale(.5)">${symbol}</g><g transform="translate(152,12) scale(${fmt(scale)})">${word}</g>`, 'Plover horizontal logo, Nunito 700');
+  const stackScale = 248 / width;
+  const stackHeight = height * stackScale;
+  const stacked = svg(248, 152 + stackHeight, `<g transform="translate(60,0) scale(.5)">${symbol}</g><g transform="translate(0,152) scale(${fmt(stackScale)})">${word}</g>`, 'Plover stacked logo, Nunito 700');
+  fs.mkdirSync(out, { recursive: true });
+  fs.writeFileSync(path.join(out, 'plover-horizontal.svg'), horizontal);
+  fs.writeFileSync(path.join(out, 'plover-stacked.svg'), stacked);
+  fs.writeFileSync(path.join(out, 'plover-wordmark.svg'), svg(width, height, word, 'Plover wordmark, Nunito 700'));
+  fs.copyFileSync(path.join(root, 'design/logo-concepts/final/plover-peek-sage.svg'), path.join(out, 'plover-symbol.svg'));
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Plover — wordmark lockups</title><style>
+@font-face{font-family:Lexend;src:url(../../brand/fonts/lexend.woff2);font-weight:100 900}*{box-sizing:border-box}body{margin:0;width:1400px;background:#F3EEE1;color:#2F4236;font-family:Lexend,sans-serif;padding:52px 56px}h1{font-size:32px;font-weight:600;margin:0 0 12px}p{line-height:1.6;margin:0;font-size:16px}.intro{max-width:930px}.label{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:#5E7F6B;margin-bottom:26px;font-weight:600}.row{display:grid;grid-template-columns:1.6fr 1fr;gap:24px;margin-top:30px}.card{background:#FBF8F1;border:1px solid #D9CFB4;border-radius:28px;padding:30px}.stage{height:210px;display:flex;align-items:center;justify-content:center}.horizontal{width:510px;max-width:100%;height:auto}.stacked{width:220px;height:auto}.note{font-size:13px;color:#2F4236cc;margin-top:22px}.sizes{display:flex;align-items:center;gap:40px;min-height:120px;flex-wrap:wrap}.sizes img{height:auto}.website{padding:30px;border-radius:22px;background:#F3EEE1}.nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:35px;font-size:13px}.nav img{width:150px}.nav span{display:flex;gap:18px}h2{font-size:38px;font-weight:600;line-height:1.2;margin:0 0 16px}.website p{max-width:440px;font-size:15px}.button{display:inline-block;background:#5E7F6B;color:#F3EEE1;font-size:18px;font-weight:600;border-radius:14px;padding:13px 22px;margin-top:22px}.app{border:1px solid #D9CFB4;border-radius:22px;padding:24px;background:#F3EEE1}.app img{width:122px}.app h3{font-size:20px;font-weight:500;margin:25px 0 8px}.timer{font-size:28px;font-weight:600;margin:22px 0}.steps{padding:0;list-style:none;margin:20px 0 0;font-size:14px}.steps li{padding:10px 0;display:flex;gap:12px;align-items:center}.check{width:19px;height:19px;border:2px solid #5E7F6B;border-radius:50%;flex:none}.foot{margin-top:28px;font-size:13px;line-height:1.6}
+</style></head><body><h1>plover · wordmark lockups</h1><p class="intro">Nunito 700 for the name. Lexend for everything else. The letters are outlined vector shapes with adjusted spacing. Proposed proportions below, ready for review.</p>
+<div class="row"><div class="card"><div class="label">01 · Horizontal</div><div class="stage"><img class="horizontal" src="plover-horizontal.svg" alt="Horizontal Plover logo"></div><p class="note">Word height: 81% of the symbol. Gap: 19% of the symbol width.<br>The complete word silhouette, including the p descender, is centred beside the bird.</p></div><div class="card"><div class="label">02 · Stacked</div><div class="stage"><img class="stacked" src="plover-stacked.svg" alt="Stacked Plover logo"></div><p class="note">The symbol is just over half the word’s width.<br>Same generous gap, with the name centred below.</p></div></div>
+<div class="card" style="margin-top:24px"><div class="label">03 · At everyday sizes</div><div class="sizes"><img src="plover-horizontal.svg" width="240" alt="240 pixel lockup"><img src="plover-horizontal.svg" width="160" alt="160 pixel lockup"><img src="plover-horizontal.svg" width="120" alt="120 pixel lockup"><img src="plover-symbol.svg" width="48" alt="48 pixel symbol"><img src="plover-symbol.svg" width="32" alt="32 pixel symbol"></div><p class="note">Horizontal: 240 / 160 / 120 px wide. Symbol: 48 / 32 px. The dedicated 16 px drawing is still a separate step.</p></div>
+<div class="row"><div class="card"><div class="label">04 · Website header</div><div class="website"><div class="nav"><img src="plover-horizontal.svg" alt="Plover"><span><span>How it works</span><span>FAQ</span></span></div><h2>One step at a time.</h2><p>A calm little bird that sits at the edge of your screen, breaks your task into steps and keeps you company.</p><span class="button">Join the waitlist</span></div></div><div class="card"><div class="label">05 · App header</div><div class="app"><img src="plover-horizontal.svg" alt="Plover"><h3>Just the next small step.</h3><p style="font-size:14px">Draft the intro</p><div class="timer">18:42</div><ul class="steps"><li><span class="check"></span>Reread the essay prompt</li><li><span class="check"></span>Write one opening sentence</li><li><span class="check"></span>List three points to cover</li></ul></div></div></div>
+<p class="foot">Draft proportions · Sage / Cream / Ink / Sand · Amber stays on the beak · Symbol artwork preserved from the approved SVG</p></body></html>`;
+  fs.writeFileSync(path.join(out, 'index.html'), html);
+  fs.writeFileSync(path.join(out, 'README.md'), `# Wordmark lockups — draft for review\n\nLowercase plover, outlined from the local Nunito variable font at weight 700.\nLexend remains the text face. No font installation is required to use the SVGs.\n\nHorizontal: symbol 128 units; word silhouette 104 units high; gap 24 units.\nStacked: word width 248 units; symbol 128 units; gap 24 units.\nLetter spacing uses font kerning, then additional pair adjustments in font units:\np–l −16, l–o −20, o–v −18, v–e −20, e–r −12. Glyph shapes are unmodified.\n\nThese proportions are proposed, not yet founder-approved.\nRebuild with: node design/wordmark-tools/build.cjs\n`);
+  console.log(JSON.stringify({ out, unitsPerEm: font.unitsPerEm, wordWidth: width, wordHeight: height, horizontalWidth: 152 + wordWidth, stackHeight: 152 + stackHeight }));
+})();

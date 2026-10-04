@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Plover Peek B - Corner three-quarter</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--tile:#5E7F6B;--bird:#F3EEE1;--wing:#D9CFB4;--ink:#2F4236;--beak:#E3B55B;--bg:#F6F3EA}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;padding:36px 48px 60px}
+h1{font-size:26px;margin:0 0 6px;font-weight:600}
+.tag{font-size:13px;color:#5E7F6B;margin-bottom:14px;font-weight:500}
+p.r{max-width:880px;font-size:14.5px;line-height:1.6;margin:0 0 30px}
+h2{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:#5E7F6B;margin:30px 0 14px;font-weight:600}
+.row{display:flex;gap:36px;align-items:flex-end;flex-wrap:wrap}
+.cap{font-size:12px;margin-top:8px;color:#4a5d51}
+.sb{display:grid;grid-template-columns:repeat(6,1fr);gap:16px}
+.card{background:#fff;border:1px solid #E6E0CE;border-radius:16px;padding:14px 12px 14px;text-align:center}
+.card svg{width:100%;max-width:168px;height:auto}
+.card b{display:block;font-size:14px;margin-top:8px}
+.card span{display:block;font-size:11.5px;line-height:1.4;color:#4a5d51;margin-top:3px}
+.anim{display:flex;gap:30px;align-items:center}
+.dark{background:#1f2a23;padding:14px;border-radius:14px}
+
+/* ---- animation (9s loop) ---- */
+#A .head{animation:head 9s infinite both}
+#A .eyes{transform-origin:114px 148px;animation:eyes 9s infinite both}
+#A .wingg{transform-origin:100px 262px;animation:wing 9s infinite both}
+@keyframes head{
+ 0%{transform:translate(-84px,84px) rotate(14deg);animation-timing-function:cubic-bezier(.3,0,.2,1)}
+ 13%{transform:translate(0,0) rotate(14deg);animation-timing-function:cubic-bezier(.45,0,.3,1)}
+ 25%{transform:translate(0,0) rotate(-1deg)}
+ 46%{transform:translate(0,0) rotate(-1deg);animation-timing-function:cubic-bezier(.45,0,.3,1)}
+ 56%{transform:translate(2px,-2px) rotate(-9deg)}
+ 64%{transform:translate(2px,-2px) rotate(-9deg);animation-timing-function:cubic-bezier(.45,0,.3,1)}
+ 70%{transform:translate(0,0) rotate(-1deg);animation-timing-function:cubic-bezier(.3,0,.4,1)}
+ 73%{transform:translate(2px,-9px) rotate(-4deg);animation-timing-function:cubic-bezier(.6,0,.4,1)}
+ 77%{transform:translate(0,0) rotate(0deg)}
+ 90%{transform:translate(0,0) rotate(0deg);animation-timing-function:cubic-bezier(.6,0,.8,.4)}
+ 100%{transform:translate(-84px,84px) rotate(14deg)}
+}
+@keyframes eyes{
+ 0%,34%{transform:translate(0,0) scaleY(1)}
+ 36.5%{transform:translate(0,0) scaleY(.08)}
+ 39%{transform:translate(0,0) scaleY(1)}
+ 50%{transform:translate(0,0) scaleY(1);animation-timing-function:ease-in-out}
+ 56%,64%{transform:translate(4px,-4px) scaleY(1)}
+ 70%{transform:translate(0,0) scaleY(1)}
+ 83%{transform:translate(0,0) scaleY(1)}
+ 85.5%{transform:translate(0,0) scaleY(.08)}
+ 88%,100%{transform:translate(0,0) scaleY(1)}
+}
+@keyframes wing{0%,70%{transform:rotate(0)}73%{transform:rotate(-5deg)}78%,100%{transform:rotate(0)}}
+@media (prefers-reduced-motion:reduce){#A .head,#A .eyes,#A .wingg{animation:none}}
+</style></head><body>
+<h1>B &middot; Corner three-quarter peek</h1>
+<div class="tag">Plover Peek &middot; round 2</div>
+<p class="r">The bird looks around the bottom-left corner of the tile instead of over an edge: a round cream head, turned three-quarter toward you, rises out of the corner with its beak aiming up-right into the empty tile space, where the user's task would sit. Two soft ink eyes sit along the turn of the face, the far one smaller and tucked against the beak base so the head reads as rotated, not flat. The diagonal gives the mark a built-in sense of motion and direction (toward the work) while the round head stays calm, and the tile's own rounded corner cradles the bird like a nook. The motion language is a slow, curious head-tilt, never a bounce.</p>
+
+<h2>Static icon</h2>
+<div class="row">
+ <div><div id="s220"></div><div class="cap">220 px</div></div>
+ <div><div id="s64"></div><div class="cap">64 px</div></div>
+ <div><div id="s32"></div><div class="cap">32 px</div></div>
+ <div><div id="s16"></div><div class="cap">16 px</div></div>
+ <div class="dark"><div style="display:flex;gap:14px;align-items:flex-end"><span id="d64"></span><span id="d32"></span><span id="d16"></span></div></div>
+</div>
+
+<h2>Animated loop &middot; 9 s</h2>
+<div class="anim">
+ <div id="anim"></div>
+ <div style="font-size:13px;line-height:1.7;max-width:420px">
+ 0.0 s rises in from the corner, head tilted<br>
+ 1.2 s tilts upright to look at you<br>
+ 3.2 s slow blink<br>
+ 4.2 s glances up-right (toward "your task")<br>
+ 6.4 s small hop of the head<br>
+ 7.0 s settles, one more blink, holds<br>
+ 8.1 s sinks back into the corner, loops</div>
+</div>
+
+<h2>Storyboard &middot; poses mapped to app states</h2>
+<div class="sb" id="sb"></div>
+
+<script>
+const C={tile:'#5E7F6B',bird:'#F3EEE1',wing:'#D9CFB4',ink:'#2F4236',beak:'#E3B55B'};
+let uid=0;
+function bird(size,p={}){
+  const id='c'+(uid++);const a=p.anim;
+  const tx=p.tx||0,ty=p.ty||0,r=p.r||0,gx=p.gx||0,gy=p.gy||0,wr=p.wr||0;
+  const headT=a?'':` transform="translate(${tx} ${ty}) rotate(${r} 80 190)"`;
+  const wingT=a?'':` transform="rotate(${wr} 100 262)"`;
+  let eyes='';
+  const e=p.eye||'open';
+  if(e==='open'||e==='half'){
+    const k=e==='half'?.45:1;
+    eyes=`<g class="eyes" ${a?'':`transform="translate(${gx} ${gy})"`}>
+      <ellipse cx="102" cy="138" rx="10" ry="${10*k}" fill="${C.ink}"/>
+      <ellipse cx="134" cy="159" rx="8" ry="${8.4*k}" fill="${C.ink}"/></g>`;
+  }else if(e==='closed'){
+    eyes=`<g fill="none" stroke="${C.ink}" stroke-width="6.5" stroke-linecap="round"><path d="M87 139 Q98 150 109 139"/><path d="M121 160 Q130 168 139 160"/></g>`;
+  }else if(e==='happy'){
+    eyes=`<g fill="none" stroke="${C.ink}" stroke-width="6.5" stroke-linecap="round"><path d="M87 143 Q98 130 109 143"/><path d="M121 164 Q130 154 139 164"/></g>`;
+  }
+  return `<svg ${a?'id="A"':''} width="${size}" height="${size}" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Plover">
+<defs><clipPath id="${id}"><rect width="256" height="256" rx="56"/></clipPath></defs>
+<rect width="256" height="256" rx="56" fill="${C.tile}"/>
+<g clip-path="url(#${id})">
+ <g class="head"${headT}>
+  <circle cx="80" cy="186" r="108" fill="${C.bird}"/>
+  ${eyes}
+  <path d="M136 124 Q172 102 214 92 Q202 128 162 162 Q142 150 136 124 Z" fill="${C.beak}" stroke="${C.beak}" stroke-width="3" stroke-linejoin="round"/>
+  <g class="wingg"${wingT}><path d="M80 262 C82 240 96 226 110 214 C122 228 134 242 134 262 Z" fill="${C.wing}" stroke="${C.bird}" stroke-width="5" stroke-linejoin="round"/></g>
+ </g>
+</g></svg>`;
+}
+const $=i=>document.getElementById(i);
+$('s220').innerHTML=bird(220);$('s64').innerHTML=bird(64);$('s32').innerHTML=bird(32);$('s16').innerHTML=bird(16);
+$('d64').innerHTML=bird(64);$('d32').innerHTML=bird(32);$('d16').innerHTML=bird(16);
+$('anim').innerHTML=bird(260,{anim:1});
+const poses=[
+ ['Idle','Resting in the corner. Calm default, always there.',{eye:'open'}],
+ ['Focus started','Head lifts and turns up-right toward the task. Timer is on.',{ty:-4,tx:3,r:-9,gx:4,gy:-4,eye:'open'}],
+ ['Check-in','Curious head-tilt, small hop. "How is it going?"',{ty:-10,tx:2,r:11,eye:'open',wr:-5}],
+ ['Break time','Sinks lower, eyes softly closed. Rest, no pressure.',{tx:-16,ty:18,r:9,eye:'closed'}],
+ ['Nice work','Lifted, happy eyes, wing perks. Step or session done.',{ty:-8,tx:4,r:-6,eye:'happy',wr:-7}],
+ ['Away / hidden','Only the crown and beak tip show. App is quiet.',{tx:-40,ty:56,r:12,eye:'half'}]
+];
+$('sb').innerHTML=poses.map(([n,d,p])=>`<div class="card">${bird(168,p)}<b>${n}</b><span>${d}</span></div>`).join('');
+</script></body></html>

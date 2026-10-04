@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Type compare</title>
+<style>
+@font-face{font-family:"P-Lexend";src:url(fonts/lexend.woff2) format("woff2");font-weight:100 900}
+@font-face{font-family:"P-Nunito";src:url(fonts/nunito.woff2) format("woff2");font-weight:200 1000}
+@font-face{font-family:"P-Manrope";src:url(fonts/manrope.woff2) format("woff2");font-weight:200 800}
+@font-face{font-family:"P-Fraunces";src:url(fonts/fraunces.woff2) format("woff2");font-weight:100 900}
+:root{--sage:#5E7F6B;--cream:#F3EEE1;--ink:#2F4236;--sand:#D9CFB4}
+*{box-sizing:border-box}
+body{margin:0;background:var(--cream);color:var(--ink);font-family:"P-Lexend",sans-serif;width:1400px}
+section{padding:34px 56px}
+h1{font-size:28px;margin:0 0 8px;font-weight:600}
+p.lead{max-width:920px;line-height:1.6;margin:0}
+.opt{display:grid;grid-template-columns:230px 1fr 330px;gap:30px;align-items:center;background:#FBF8F1;border:1px solid #2F423614;border-radius:26px;padding:26px 32px;margin-bottom:18px}
+.opt.dim{opacity:.55}
+.lbl b{display:block;font-size:20px;font-weight:600;margin-bottom:6px}
+.lbl span{font-size:13px;line-height:1.5;color:#2F4236bf}
+.lock{display:flex;align-items:center;gap:22px}
+.lock svg{width:92px;height:92px;flex:none}
+.wm{font-size:96px;line-height:1;letter-spacing:-.025em}
+.wm2{font-size:44px;line-height:1;letter-spacing:-.015em;margin-top:10px;color:#2F4236cc}
+.glyphs{font-size:54px;letter-spacing:.06em;line-height:1}
+.ui{font-size:15px;line-height:1.55;margin-top:14px;color:#2F4236}
+.chip{display:inline-block;background:var(--sage);color:var(--cream);border-radius:999px;padding:7px 14px;font-weight:600;font-size:15px;margin-top:10px}
+.pick{display:inline-block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;background:var(--sage);color:var(--cream);border-radius:999px;padding:3px 9px;margin-left:6px;vertical-align:3px}
+</style>
+</head>
+<body>
+<section>
+  <h1>Type, side by side (real fonts)</h1>
+  <p class="lead">Each row shows the name next to the logo in lowercase and capitalised, the letters that differ most between the
+  fonts (a, g, e, r, y, t), and a line of app text at real size. Look at the "g" and "a" first: that's where the
+  personality lives.</p>
+</section>
+<section id="rows"></section>
+<script>
+const LOGO = '<svg viewBox="0 0 256 256"><defs><clipPath id="ID"><rect width="256" height="256" rx="56"/></clipPath></defs><rect width="256" height="256" rx="56" fill="#5E7F6B"/><g clip-path="url(#ID)"><circle cx="168" cy="226" r="112" fill="#F3EEE1"/><path d="M108 168 Q122 182 136 168" fill="none" stroke="#2F4236" stroke-width="8" stroke-linecap="round"/><path d="M66 178 Q40 186 22 196 Q42 206 68 212 Z" fill="#E3B55B" stroke="#E3B55B" stroke-width="8" stroke-linejoin="round"/><path d="M138 260 C138 236 152 222 164 210 C176 222 190 236 190 260 Z" fill="#D9CFB4" stroke="#F3EEE1" stroke-width="5" stroke-linejoin="round"/></g></svg>';
+const R = [
+  ["A · Lexend", "Calm and easy to read. Wide, open letters made to reduce reading effort. Single-storey a and g, very plain.", "P-Lexend", 600, "", true, false],
+  ["B · Nunito", "Soft and round. Rounded stroke ends echo the round bird and soft corners. Friendliest, can tip childish.", "P-Nunito", 800, "", false, false],
+  ["C · Fraunces Soft", "Warm and bookish serif. The most character for the name; needs Lexend for app text.", "P-Fraunces", 600, "font-variation-settings:'SOFT' 100,'WONK' 0,'opsz' 96;", false, false],
+  ["D · Manrope", "Crisp and modern. Feels like a generic tool. Shown for reference; I'd drop it.", "P-Manrope", 800, "", false, true],
+];
+document.getElementById('rows').innerHTML = R.map(([name, why, fam, w, extra, pick, dim], i) => {
+  const st = `font-family:'${fam}';font-weight:${w};${extra}`;
+  const uiFam = fam === 'P-Fraunces' ? "'P-Lexend'" : `'${fam}'`;
+  return `<div class="opt${dim ? ' dim' : ''}">
+    <div class="lbl"><b>${name}${pick ? '<span class="pick">my pick</span>' : ''}</b><span>${why}</span></div>
+    <div><div class="lock">${LOGO.replace(/ID/g, 'c' + i)}<div><div class="wm" style="${st}">plover</div><div class="wm2" style="${st}">Plover</div></div></div></div>
+    <div><div class="glyphs" style="${st}">a g e r y t</div>
+      <div class="ui" style="font-family:${uiFam}">Pick the next small thing. I'll stay right here while you do it.</div>
+      <span class="chip" style="font-family:${uiFam}">Draft the intro · 18:42</span></div>
+  </div>`;
+}).join('');
+</script>
+</body>
+</html>

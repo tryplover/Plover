@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plover Glyph Mascot</title>
+<style>
+:root{
+  --page:#F6F1EA; --panel:#FFFFFF; --text:#2A1D12; --sub:#6B5A4B; --line:#E6DCCF; --btn:#F3ECE3; --btn-on:#7A4718; --btn-on-text:#FFFFFF;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --page:#12100E; --panel:#1C1815; --text:#F1E6D8; --sub:#A8998A; --line:#2E2722; --btn:#2A231E; --btn-on:#D29A5F; --btn-on-text:#191411;
+  }
+}
+:root[data-theme="dark"]{
+  --page:#12100E; --panel:#1C1815; --text:#F1E6D8; --sub:#A8998A; --line:#2E2722; --btn:#2A231E; --btn-on:#D29A5F; --btn-on-text:#191411;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1080px;margin:0 auto;padding:32px 16px 64px}
+h1{font-size:26px;margin:0 0 4px;letter-spacing:-.01em}
+h2{font-size:20px;margin:0 0 6px}
+.kicker{color:var(--sub);font-size:13px;text-transform:uppercase;letter-spacing:.08em;margin:0}
+.rationale{max-width:760px;margin:12px 0 18px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;margin:20px 0}
+.palette{display:flex;flex-wrap:wrap;gap:18px}
+.palette .set{flex:1 1 300px}
+.palette h3{font-size:13px;margin:0 0 8px;color:var(--sub);font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:flex;align-items:center;gap:6px;font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;border:1px solid var(--line);border-radius:8px;padding:4px 8px 4px 4px}
+.chip i{display:block;width:18px;height:18px;border-radius:5px;border:1px solid rgba(0,0,0,.12)}
+.chip span{color:var(--sub)}
+.controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;font-size:14px}
+.summary{margin:6px 0 14px;padding-left:18px;color:var(--sub)}
+.summary li{margin:2px 0}
+.switcher{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.switcher button{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--btn);color:var(--text);border-radius:999px;padding:5px 12px;cursor:pointer}
+.switcher button[aria-pressed="true"]{background:var(--btn-on);color:var(--btn-on-text);border-color:transparent}
+.stage{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.tile{border-radius:12px;padding:16px;display:flex;align-items:center;justify-content:space-around;gap:12px;min-height:240px;position:relative}
+.tile .tag{position:absolute;top:8px;left:12px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--t-sub)}
+.pill{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:var(--t-sub)}
+.pill .chrome{display:flex;align-items:center;gap:8px;padding:6px 10px 6px 6px;border-radius:999px;background:var(--t-chrome);border:1px solid var(--t-line);color:var(--t-text);font-size:12px}
+.strip{margin-top:14px;overflow-x:auto}
+.strip table{border-collapse:separate;border-spacing:6px;min-width:100%}
+.strip th{font-size:11px;font-weight:600;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;text-align:center;padding:0 4px}
+.strip th.row{text-align:left}
+.strip td{border-radius:10px;padding:8px 10px;text-align:center;white-space:nowrap}
+.strip td svg{vertical-align:middle;margin:0 4px}
+.note{font-size:13px;color:var(--sub);margin-top:10px}
+
+/* Mascot tile themes (fixed, independent of page theme) */
+.t-light{--bg:#FBF7F2;--ink:#7A4718;--deep:#2E1B0C;--face:#FFFFFF;--accent:#2F8F83;--warn:#C9821B;--muted:#BDB2A8;--muted2:#8D8178;--t-sub:#8D8178;--t-chrome:#FFFFFF;--t-line:#E6DCCF;--t-text:#2A1D12;background:var(--bg)}
+.t-dark{--bg:#191411;--ink:#D29A5F;--deep:#F2E2CB;--face:#191411;--accent:#5CC8B8;--warn:#F0B04A;--muted:#5E5650;--muted2:#857A72;--t-sub:#857A72;--t-chrome:#241E1A;--t-line:#352D27;--t-text:#F1E6D8;background:var(--bg)}
+
+.mascot{display:block;overflow:visible}
+.mascot .legs path{fill:none;stroke:var(--ink);stroke-width:3.4;stroke-linecap:round}
+.mascot.sm .legs path{stroke-width:6}
+.mascot[data-state="paused"] .legs path{stroke:var(--muted2)}
+.mascot .sparks path{fill:none;stroke:var(--accent);stroke-width:3.4;stroke-linecap:round}
+.mascot.sm .sparks path{stroke-width:6}
+
+/* Variant A: single continuous line */
+.vA .outline,.vA .pen{fill:none;stroke-width:5.5;stroke-linecap:round;stroke-linejoin:round}
+.vA.sm .outline,.vA.sm .pen{stroke-width:8.5}
+.vA .outline{stroke:var(--ink)}
+.vA .pen{stroke:var(--accent);opacity:0;stroke-dasharray:16 84}
+.vA .collar{fill:none;stroke:var(--deep);stroke-width:8;stroke-linecap:round}
+.vA.sm .collar{stroke-width:11}
+.vA .eye{fill:var(--deep);transform-box:fill-box;transform-origin:center}
+.vA.sm .eye{r:4}
+.vA .lid{fill:none;stroke:var(--deep);stroke-width:2.4;stroke-linecap:round;opacity:0}
+.vA.sm .lid{stroke-width:4}
+.vA .sparks{opacity:0}
+.vA .bird{transform-box:view-box;transform-origin:50px 82px}
+.vA .sparks path{transform-box:view-box;transform-origin:82px 22px}
+.vA[data-state="working"] .pen{opacity:1;stroke-dashoffset:30}
+.vA[data-state="progress"] .pen{opacity:1;stroke-dasharray:100 100;stroke-dashoffset:0}
+.vA[data-state="progress"] .collar{stroke:var(--accent)}
+.vA[data-state="progress"] .sparks{opacity:1}
+.vA[data-state="nudge"] .collar{stroke:var(--warn)}
+.vA[data-state="paused"] .outline{stroke:var(--muted2);stroke-dasharray:2 4}
+.vA[data-state="paused"] .collar{stroke:var(--muted)}
+.vA[data-state="paused"] .eye{opacity:0}
+.vA[data-state="paused"] .lid{opacity:1;stroke:var(--muted2)}
+
+/* Variant B: stroke cluster */
+.vB .p{fill:none;stroke:var(--ink);stroke-width:6.5;stroke-linecap:round;stroke-linejoin:round}
+.vB.sm .p{stroke-width:9.5}
+.vB .p-collar{stroke:var(--deep);stroke-width:9}
+.vB.sm .p-collar{stroke-width:12.5}
+.vB .eye{fill:none;stroke:var(--deep);stroke-linecap:round}
+.vB[data-state="progress"] .p-collar{stroke:var(--accent)}
+.vB[data-state="nudge"] .p-collar{stroke:var(--warn)}
+.vB[data-state="paused"] .p{stroke:var(--muted2)}
+.vB[data-state="paused"] .p-collar{stroke:var(--muted)}
+.vB[data-state="paused"] .eye{stroke:var(--muted2)}
+
+/* Variant C: filled petals */
+.vC .p{fill:var(--ink);stroke:none}
+.vC .p-collar{fill:var(--deep)}
+.vC .eye{fill:none;stroke:var(--face);stroke-linecap:round}
+.vC[data-state="progress"] .p-collar{fill:var(--accent)}
+.vC[data-state="nudge"] .p-collar{fill:var(--warn)}
+.vC[data-state="paused"] .p{fill:var(--muted)}
+.vC[data-state="paused"] .p-collar{fill:var(--muted2)}
+
+/* Motion: only when the OS allows it and the in-page preview toggle is off */
+@media (prefers-reduced-motion: no-preference){
+  body:not(.rm) .mascot .p,body:not(.rm) .mascot .collar,body:not(.rm) .mascot .outline,body:not(.rm) .mascot .eye,body:not(.rm) .mascot .lid{transition:stroke .45s ease,fill .45s ease,opacity .3s ease}
+  body:not(.rm) .vA[data-state="idle"] .bird{animation:a-breathe 3.4s ease-in-out infinite}
+  body:not(.rm) .vA[data-state="idle"] .eye{animation:a-blink 4.6s ease-in-out infinite}
+  body:not(.rm) .vA[data-state="working"] .pen{animation:a-trace 2.6s linear infinite}
+  body:not(.rm) .vA[data-state="progress"] .pen{animation:a-draw 3.2s ease-in-out infinite}
+  body:not(.rm) .vA[data-state="progress"] .hopper{animation:a-hop 3.2s ease-out infinite}
+  body:not(.rm) .vA[data-state="progress"] .sparks path{animation:a-spark 3.2s ease-out infinite}
+  body:not(.rm) .vA[data-state="nudge"] .bird{animation:a-alert 4.4s ease-in-out infinite}
+  body:not(.rm) .vA[data-state="nudge"] .collar{animation:a-collar 4.4s ease-in-out infinite}
+}
+@keyframes a-breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-.9px)}}
+@keyframes a-blink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.12)}}
+@keyframes a-trace{from{stroke-dashoffset:100}to{stroke-dashoffset:0}}
+@keyframes a-draw{0%{stroke-dashoffset:100;opacity:0}2%{opacity:1}42%{stroke-dashoffset:0;opacity:1}80%{stroke-dashoffset:0;opacity:1}100%{stroke-dashoffset:0;opacity:0}}
+@keyframes a-hop{0%,40%,66%,100%{transform:translateY(0)}51%{transform:translateY(-7px)}60%{transform:translateY(.8px)}}
+@keyframes a-spark{0%,46%{opacity:0;transform:scale(.4)}54%{opacity:1;transform:scale(1)}84%{opacity:0;transform:scale(1.3)}100%{opacity:0;transform:scale(1.3)}}
+@keyframes a-alert{0%,24%,100%{transform:scale(1,1)}5%{transform:scale(.98,1.07)}10%{transform:scale(1,1)}15%{transform:scale(.98,1.07)}20%{transform:scale(1,1)}}
+@keyframes a-collar{0%,24%,100%{stroke-width:8}5%,15%{stroke-width:11}}
+</style>
+</head>
+<body>
+<main>
+  <p class="kicker">Plover mascot concepts &middot; 02</p>
+  <h1>Glyph: a brand mark that becomes a bird</h1>
+  <p class="rationale">
+    Glyph treats Plover's character as an animated logo rather than a cartoon: two to five strokes or petals that settle into a plover silhouette (round head, wedge beak, collar) when at rest and fold into an abstract asterisk while Plover is working.
+    That fold between "bird" and "mark" is the status signal, so you can read the state at 32px from overall shape instead of small details.
+    The plover's black breast-band does double duty as Plover's progress ring. It is the only part that changes color: deep brown at rest, sea-glass when progress lands, dune-amber for a nudge, grey when paused.
+    Paused is unambiguous: the eye closes to a lid line, the head tucks, the mark goes grey, and in the line variant the outline breaks into a dashed "off" line.
+    Motion borrows the real bird's run-and-stop rhythm. It moves in short bursts with long still rests, so it never feels like it is staring at you.
+  </p>
+
+  <section class="panel" aria-labelledby="pal">
+    <h2 id="pal">Palette</h2>
+    <div class="palette">
+      <div class="set">
+        <h3>On light</h3>
+        <div class="chips">
+          <span class="chip"><i style="background:#FBF7F2"></i>#FBF7F2 <span>sand bg</span></span>
+          <span class="chip"><i style="background:#7A4718"></i>#7A4718 <span>brand ink</span></span>
+          <span class="chip"><i style="background:#2E1B0C"></i>#2E1B0C <span>collar / eye</span></span>
+          <span class="chip"><i style="background:#FFFFFF"></i>#FFFFFF <span>face</span></span>
+          <span class="chip"><i style="background:#2F8F83"></i>#2F8F83 <span>progress</span></span>
+          <span class="chip"><i style="background:#C9821B"></i>#C9821B <span>nudge</span></span>
+          <span class="chip"><i style="background:#BDB2A8"></i>#BDB2A8 <span>paused</span></span>
+          <span class="chip"><i style="background:#8D8178"></i>#8D8178 <span>paused line</span></span>
+        </div>
+      </div>
+      <div class="set">
+        <h3>On dark</h3>
+        <div class="chips">
+          <span class="chip"><i style="background:#191411"></i>#191411 <span>night bg</span></span>
+          <span class="chip"><i style="background:#D29A5F"></i>#D29A5F <span>brand ink</span></span>
+          <span class="chip"><i style="background:#F2E2CB"></i>#F2E2CB <span>collar / eye</span></span>
+          <span class="chip"><i style="background:#191411"></i>#191411 <span>face</span></span>
+          <span class="chip"><i style="background:#5CC8B8"></i>#5CC8B8 <span>progress</span></span>
+          <span class="chip"><i style="background:#F0B04A"></i>#F0B04A <span>nudge</span></span>
+          <span class="chip"><i style="background:#5E5650"></i>#5E5650 <span>paused</span></span>
+          <span class="chip"><i style="background:#857A72"></i>#857A72 <span>paused line</span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="panel controls">
+    <label><input type="checkbox" id="rmToggle"> Preview reduced motion (the OS setting is also respected)</label>
+    <span class="switcher" id="allSwitch" style="margin:0"></span>
+  </div>
+
+  <section class="panel" data-variant="A">
+    <h2>A &middot; Single line</h2>
+    <ul class="summary">
+      <li>One continuous outline (tail, back, crown, beak, breast, belly) plus a collar stroke and an eye dot, drawn with stroke-dasharray.</li>
+      <li>Working: a sea-glass "pen" comet traces the outline in a loop. Progress: the whole outline redraws in sea-glass, then a hop and three spark ticks.</li>
+      <li>Paused: the line breaks into dashes and goes grey, and the eye closes to a lid. Pure CSS, the lightest option to ship in the overlay.</li>
+    </ul>
+  </section>
+
+  <section class="panel" data-variant="B">
+    <h2>B &middot; Stroke cluster</h2>
+    <ul class="summary">
+      <li>Five open strokes (back, belly, collar, head arc, beak chevron) that together read as the plover, morphed point-for-point in JS.</li>
+      <li>Working: the strokes straighten into a five-spoke asterisk that turns slowly, with the eye as its center dot ("still looking, thinking").</li>
+      <li>Progress bursts into the asterisk and snaps back to the bird with a hop. Nudge: the bird stands tall twice with an amber collar. Paused: grey, tucked, eyes shut.</li>
+    </ul>
+  </section>
+
+  <section class="panel" data-variant="C">
+    <h2>C &middot; Filled petals</h2>
+    <ul class="summary">
+      <li>Four filled petals (body teardrop, collar crescent, round head, beak wedge) and a face-colored eye. The most logo-like and the boldest at 32px.</li>
+      <li>Working: the petals bloom into a four-petal rosette that rotates and breathes slowly, so the mark looks like it is mulling things over.</li>
+      <li>The collar petal carries every state color. Paused flattens the whole mark to grey with the head tucked and the eye closed.</li>
+    </ul>
+  </section>
+
+  <p class="note">Each section has a switcher for the large stage (200px plus a 32px overlay pill on light and dark), and a strip below it shows every state at 64px and 32px. The 32px renders use heavier strokes for optical sizing. Under reduced motion every state holds a still pose that is still distinct: an asterisk or traced outline for working, sparks and a sea-glass collar for progress, an amber collar for a nudge.</p>
+</main>
+
+<script>
+(function(){
+  "use strict";
+  var STATES = ["idle","working","progress","nudge","paused"];
+  var LABEL = {idle:"Idle",working:"Working",progress:"Progress",nudge:"Nudge",paused:"Paused"};
+  var VNAME = {A:"single line",B:"stroke cluster",C:"filled petals"};
+  var NS = "http://www.w3.org/2000/svg";
+  var mq = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : {matches:false};
+  function reduced(){ return mq.matches || document.body.classList.contains("rm"); }
+
+  var lerp = function(a,b,t){ return a+(b-a)*t; };
+  var clamp01 = function(x){ return Math.max(0,Math.min(1,x)); };
+  var ease = function(t){ return t<.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2; };
+  var pulse = function(t,a,b){ return (t<a||t>b) ? 0 : Math.sin(Math.PI*(t-a)/(b-a)); };
+
+  var A_OUT = "M12,58 C24,52 38,46 50,44 C48,30 56,21 65,21 C72,21 77,26 77,31 L89,37 L77,41 C76,44 75,46 75,50 C77,72 64,82 48,82 C34,82 22,74 12,58 Z";
+  var LEGS = '<g class="legs"><path d="M46,82 L44,93"/><path d="M56,82 L58,93"/></g>';
+  var SPARK_O = [82,22], SPARK_A = [-75,-35,5];
+  function sparkD(i,s){
+    var a = SPARK_A[i]*Math.PI/180, r1 = 4+2*s, r2 = r1+8*s;
+    var x = SPARK_O[0], y = SPARK_O[1];
+    return "M"+(x+Math.cos(a)*r1).toFixed(2)+","+(y+Math.sin(a)*r1).toFixed(2)+" L"+(x+Math.cos(a)*r2).toFixed(2)+","+(y+Math.sin(a)*r2).toFixed(2);
+  }
+
+  var BIRD = {
+    B: {
+      order: ["back","belly","collar","head","beak"],
+      head: {head:1,beak:1},
+      eye: [67,31],
+      parts: {
+        back:   [[12,58],[18,55],[24,52],[31,49.5],[38,47],[45,45],[52,44]],
+        belly:  [[12,58],[24,76],[36,82],[50,82],[64,82],[76,72],[76,46]],
+        collar: [[59,53],[63,56],[67,57],[71,56],[72.5,55.6],[74,54.8],[75,54]],
+        head:   [[52,44],[48,30],[56,21],[65,21],[72,21],[77,26],[77,32]],
+        beak:   [[77,31],[81,32.7],[85,35.3],[89,37],[85,38.3],[81,39.7],[77,41]]
+      }
+    },
+    C: {
+      order: ["body","collar","head","beak"],
+      head: {head:1,beak:1},
+      eye: [68,31],
+      parts: {
+        body:   [[10,58],[26,46],[52,36],[76,56],[76,80],[30,84],[10,58]],
+        collar: [[56,46],[62,53],[72,54],[79,47],[79,53],[70,62],[56,52]],
+        head:   [[52,34],[52,18],[76,18],[76,34],[76,50],[52,50],[52,34]],
+        beak:   [[74,29],[80,31.5],[86,34.5],[91,37],[86,38.5],[80,40.5],[74,43]]
+      }
+    }
+  };
+
+  function spokeB(i,angle,s){
+    var a = (angle+i*36)*Math.PI/180, ux = Math.cos(a), uy = Math.sin(a), L = 56*s, out = [];
+    for(var k=0;k<7;k++){ var d = -L/2+L*k/6; out.push([50+ux*d,50+uy*d]); }
+    return out;
+  }
+  function petalC(i,angle,s){
+    var a = (angle+45+i*90)*Math.PI/180, ux = Math.cos(a), uy = Math.sin(a), nx = -uy, ny = ux, R = 36*s, w = 10*s;
+    function P(al,sd){ return [50+ux*al+nx*sd, 50+uy*al+ny*sd]; }
+    return [P(0,0),P(R*.3,w*1.25),P(R*.95,w),P(R,0),P(R*.95,-w),P(R*.3,-w*1.25),P(0,0)];
+  }
+  function headOff(p){ return [1.2*p.look-1.5*p.tuck, -3*p.look+3.5*p.tuck]; }
+  function f(pt){ return pt[0].toFixed(2)+","+pt[1].toFixed(2); }
+  function dFrom(q,closed){
+    return "M"+f(q[0])+" C"+f(q[1])+" "+f(q[2])+" "+f(q[3])+" C"+f(q[4])+" "+f(q[5])+" "+f(q[6])+(closed?" Z":"");
+  }
+
+  function params(state,t,v,red){
+    var p = {m:0,angle:0,scale:1,wave:0,ph:t,bob:0,hop:0,look:0,tuck:0,lid:0,spark:0};
+    if(state==="idle"){
+      if(!red){
+        p.bob = -0.9*(0.5-0.5*Math.cos(2*Math.PI*t/3.4));
+        var b = t%4.6; p.lid = b>4.3 ? Math.sin(Math.PI*(b-4.3)/0.3) : 0;
+      }
+    } else if(state==="working"){
+      p.m = 1;
+      if(!red){ p.angle = t*(v==="B"?36:24); p.scale = 1+0.04*Math.sin(2*Math.PI*t/2.6); p.wave = 1; }
+    } else if(state==="progress"){
+      if(red){ p.spark = 0.85; }
+      else {
+        var u = (t%3.2)/3.2;
+        p.m = u<.2 ? ease(u/.2) : (u<.46 ? 1-ease((u-.2)/.26) : 0);
+        p.angle = 100*ease(clamp01(u/.46));
+        p.scale = 1.12;
+        p.hop = -7*pulse(u,.42,.6) + 0.8*pulse(u,.6,.66);
+        p.spark = pulse(u,.46,.86);
+      }
+    } else if(state==="nudge"){
+      if(red){ p.look = 0.8; }
+      else {
+        var tt = t%4.4;
+        p.look = pulse(tt,.05,.45)+pulse(tt,.55,.95);
+        p.m = 0.1*pulse(tt,.05,.45);
+      }
+    } else if(state==="paused"){
+      p.tuck = 1; p.lid = 1;
+    }
+    return p;
+  }
+
+  var jsInsts = [];
+  var allInsts = [];
+
+  function render(inst){
+    var p = inst.cur, v = inst.v, B = BIRD[v], off = headOff(p);
+    B.order.forEach(function(name,i){
+      var base = B.parts[name], hb = B.head[name];
+      var g = v==="B"
+        ? spokeB(i,p.angle,p.scale*(1+0.1*p.wave*Math.sin(p.ph*3-i*1.3)))
+        : petalC(i,p.angle,p.scale*(1+0.05*p.wave*Math.sin(p.ph*2.4-i*1.6)));
+      var q = base.map(function(pt,k){
+        var x = pt[0]+(hb?off[0]:0), y = pt[1]+(hb?off[1]:0);
+        return [lerp(x,g[k][0],p.m), lerp(y,g[k][1],p.m)];
+      });
+      inst.paths[i].setAttribute("d", dFrom(q, v==="C"));
+    });
+    var ex = lerp(B.eye[0]+off[0],50,p.m), ey = lerp(B.eye[1]+off[1],50,p.m);
+    var lid = clamp01(p.lid), l = lerp(0.01,3.6,lid), c = lerp(0,1.8,lid);
+    inst.eye.setAttribute("d","M"+(ex-l).toFixed(2)+","+ey.toFixed(2)+" Q"+ex.toFixed(2)+","+(ey+c).toFixed(2)+" "+(ex+l).toFixed(2)+","+ey.toFixed(2));
+    inst.eye.setAttribute("stroke-width", inst.sm ? lerp(8,3.6,lid) : lerp(5.8,2.3,lid));
+    inst.bird.setAttribute("transform","translate(0,"+p.bob.toFixed(2)+")");
+    inst.hopper.setAttribute("transform","translate(0,"+p.hop.toFixed(2)+")");
+    inst.legs.setAttribute("opacity",(1-clamp01(p.m*1.4)).toFixed(3));
+    var s = clamp01(p.spark);
+    inst.sparks.setAttribute("opacity",clamp01(s*3).toFixed(3));
+    for(var i=0;i<3;i++) inst.sparkPaths[i].setAttribute("d",sparkD(i,Math.max(s,.01)));
+  }
+
+  function update(inst,now){
+    var red = reduced();
+    var t = (now-inst.t0)/1000;
+    var target = params(inst.state,t,inst.v,red);
+    var p = target;
+    if(inst.from && !red){
+      if(inst.fixAngle){
+        var d = ((inst.from.angle-target.angle)%360+540)%360-180;
+        inst.from.angle = target.angle+d; inst.fixAngle = false;
+      }
+      var w = ease(clamp01((now-inst.switchAt)/480));
+      if(w<1){ p = {}; for(var k in target) p[k] = lerp(inst.from[k],target[k],w); }
+      else inst.from = null;
+    } else if(red){ inst.from = null; }
+    inst.cur = p;
+    render(inst);
+  }
+
+  function makeSvg(v,size,state){
+    var sm = size<=40;
+    var inner;
+    if(v==="A"){
+      var sp = ""; for(var i=0;i<3;i++) sp += '<path d="'+sparkD(i,1)+'"/>';
+      inner = '<g class="hopper"><g class="bird"><path class="outline" pathLength="100" d="'+A_OUT+'"/><path class="pen" pathLength="100" d="'+A_OUT+'"/><path class="collar" d="M58,53 C63,56.5 69,56.5 75,53"/><circle class="eye" cx="67" cy="31" r="2.9"/><path class="lid" d="M63.4,31 Q67,33.6 70.6,31"/><g class="sparks">'+sp+'</g></g>'+LEGS+'</g>';
+    } else {
+      var ps = BIRD[v].order.map(function(n){ return '<path class="p p-'+n+'"/>'; }).join("");
+      inner = '<g class="hopper">'+LEGS+'<g class="bird">'+ps+'<path class="eye"/><g class="sparks"><path/><path/><path/></g></g></g>';
+    }
+    var wrap = document.createElement("div");
+    wrap.innerHTML = '<svg xmlns="'+NS+'" viewBox="0 0 100 100" width="'+size+'" height="'+size+'" class="mascot v'+v+(sm?" sm":"")+'" data-state="'+state+'" role="img" aria-label="Plover glyph, '+VNAME[v]+', '+LABEL[state]+'">'+inner+'</svg>';
+    var svg = wrap.firstChild;
+    var inst = {el:svg,v:v,state:state,sm:sm,t0:performance.now(),from:null};
+    if(v!=="A"){
+      inst.paths = Array.prototype.slice.call(svg.querySelectorAll(".p"));
+      inst.eye = svg.querySelector(".eye");
+      inst.bird = svg.querySelector(".bird");
+      inst.hopper = svg.querySelector(".hopper");
+      inst.legs = svg.querySelector(".legs");
+      inst.sparks = svg.querySelector(".sparks");
+      inst.sparkPaths = Array.prototype.slice.call(inst.sparks.querySelectorAll("path"));
+      inst.cur = params(state,0,v,reduced());
+      render(inst);
+      jsInsts.push(inst);
+    }
+    allInsts.push(inst);
+    return {svg:svg,inst:inst};
+  }
+
+  function setState(inst,s){
+    if(inst.state===s) return;
+    var now = performance.now();
+    if(inst.cur){ inst.from = Object.assign({},inst.cur); inst.fixAngle = true; }
+    inst.switchAt = now; inst.t0 = now; inst.state = s;
+    inst.el.setAttribute("data-state",s);
+    inst.el.setAttribute("aria-label","Plover glyph, "+VNAME[inst.v]+", "+LABEL[s]);
+  }
+
+  function buildSwitcher(container,onPick,initial){
+    var btns = [];
+    STATES.forEach(function(s){
+      var b = document.createElement("button");
+      b.type = "button"; b.textContent = LABEL[s];
+      b.setAttribute("aria-pressed", s===initial ? "true" : "false");
+      b.addEventListener("click",function(){
+        btns.forEach(function(x){ x.setAttribute("aria-pressed","false"); });
+        b.setAttribute("aria-pressed","true");
+        onPick(s);
+      });
+      btns.push(b); container.appendChild(b);
+    });
+    return {select:function(s){ btns.forEach(function(x,i){ x.setAttribute("aria-pressed", STATES[i]===s ? "true":"false"); }); }};
+  }
+
+  var stageSetters = [];
+  document.querySelectorAll("section[data-variant]").forEach(function(sec){
+    var v = sec.getAttribute("data-variant");
+    var sw = document.createElement("div"); sw.className = "switcher"; sw.setAttribute("role","group"); sw.setAttribute("aria-label","State for variant "+v);
+    sec.appendChild(sw);
+    var stage = document.createElement("div"); stage.className = "stage"; sec.appendChild(stage);
+    var stageInsts = [];
+    [["t-light","Light"],["t-dark","Dark"]].forEach(function(th){
+      var tile = document.createElement("div"); tile.className = "tile "+th[0];
+      tile.innerHTML = '<span class="tag">'+th[1]+' &middot; 200px</span>';
+      var big = makeSvg(v,200,"idle"); tile.appendChild(big.svg); stageInsts.push(big.inst);
+      var pill = document.createElement("div"); pill.className = "pill";
+      var chrome = document.createElement("div"); chrome.className = "chrome";
+      var small = makeSvg(v,32,"idle"); chrome.appendChild(small.svg); stageInsts.push(small.inst);
+      var txt = document.createElement("span"); txt.textContent = "Outline draft"; chrome.appendChild(txt);
+      pill.appendChild(chrome);
+      var cap = document.createElement("span"); cap.textContent = "32px overlay"; pill.appendChild(cap);
+      tile.appendChild(pill);
+      stage.appendChild(tile);
+    });
+    var ctl = buildSwitcher(sw,function(s){ stageInsts.forEach(function(i){ setState(i,s); }); },"idle");
+    stageSetters.push(function(s){ ctl.select(s); stageInsts.forEach(function(i){ setState(i,s); }); });
+
+    var strip = document.createElement("div"); strip.className = "strip";
+    var table = document.createElement("table");
+    var head = "<thead><tr><th class='row'>All states</th>"+STATES.map(function(s){ return "<th scope='col'>"+LABEL[s]+"</th>"; }).join("")+"</tr></thead>";
+    table.innerHTML = head+"<tbody></tbody>";
+    var tbody = table.querySelector("tbody");
+    [["t-light","Light"],["t-dark","Dark"]].forEach(function(th){
+      var tr = document.createElement("tr");
+      var rh = document.createElement("th"); rh.className = "row"; rh.scope = "row"; rh.textContent = th[1]+" 64 / 32"; tr.appendChild(rh);
+      STATES.forEach(function(s){
+        var td = document.createElement("td"); td.className = th[0];
+        td.appendChild(makeSvg(v,64,s).svg);
+        td.appendChild(makeSvg(v,32,s).svg);
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    strip.appendChild(table); sec.appendChild(strip);
+  });
+
+  var all = document.getElementById("allSwitch");
+  var lbl = document.createElement("span"); lbl.textContent = "Set every stage:"; lbl.style.alignSelf = "center"; lbl.style.marginRight = "4px";
+  all.appendChild(lbl);
+  buildSwitcher(all,function(s){ stageSetters.forEach(function(fn){ fn(s); }); },"idle");
+
+  document.getElementById("rmToggle").addEventListener("change",function(e){
+    document.body.classList.toggle("rm",e.target.checked);
+  });
+
+  function frame(now){
+    for(var i=0;i<jsInsts.length;i++) update(jsInsts[i],now);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

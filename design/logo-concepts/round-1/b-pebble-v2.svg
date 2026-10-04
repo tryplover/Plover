@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <mask id="m">
+      <rect width="256" height="256" fill="#fff"/>
+      <circle cx="150" cy="86" r="56" fill="#000"/>
+      <circle cx="150" cy="86" r="48" fill="#fff"/>
+      <circle cx="150" cy="86" r="80" fill="none" stroke="#000" stroke-width="8"/>
+    </mask>
+    <mask id="e">
+      <rect width="256" height="256" fill="#fff"/>
+      <circle cx="162" cy="78" r="8.5" fill="#000"/>
+    </mask>
+  </defs>
+  <path mask="url(#m)" d="M50 154 A72 72 0 1 0 194 154 A72 72 0 1 0 50 154 Z"/>
+  <circle mask="url(#e)" cx="150" cy="86" r="48"/>
+  <path d="M192 70 L226 84 L192 98 Z" stroke="#000" stroke-width="4" stroke-linejoin="round"/>
+</svg>

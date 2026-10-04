@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plover Mascot: Pebble</title>
+<style>
+  :root {
+    --page: #F4EFE8;
+    --text: #2B1B0E;
+    --muted: #6E5A48;
+    --card: #FFFFFF;
+    --line: #E3D8CA;
+    --sw-light: #FBF6EE;
+    --sw-dark: #15110D;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--text);
+    font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 1100px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 28px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  h2 { font-size: 20px; margin: 0; }
+  .kicker { color: var(--muted); margin: 0 0 16px; }
+  .rationale { max-width: 72ch; margin: 0 0 16px; }
+  .palette { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 20px; padding: 0; list-style: none; }
+  .palette li { display: flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px 4px 4px; font-size: 13px; }
+  .palette i { width: 22px; height: 22px; border-radius: 50%; border: 1px solid rgba(0,0,0,.12); display: inline-block; }
+  .palette code { font-size: 12px; color: var(--muted); }
+  .toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; font-size: 14px; color: var(--muted); }
+  .toolbar label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; color: var(--text); }
+
+  section.variant { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 24px; }
+  .vhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+  .vhead ul { margin: 6px 0 0; padding-left: 18px; color: var(--muted); font-size: 14px; max-width: 60ch; }
+  .states { display: flex; flex-wrap: wrap; gap: 6px; }
+  .states button {
+    font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 999px;
+    border: 1px solid var(--line); background: #FBF8F4; color: var(--text); cursor: pointer;
+  }
+  .states button[aria-pressed="true"] { background: var(--text); color: #FFF4E4; border-color: var(--text); }
+  .stage { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+  .swatch { border-radius: 12px; padding: 16px; display: flex; align-items: flex-end; justify-content: center; gap: 28px; min-height: 250px; position: relative; }
+  .swatch.light { background: var(--sw-light); }
+  .swatch.dark { background: var(--sw-dark); }
+  .swatch .tag { position: absolute; top: 10px; left: 12px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #9B8672; }
+  .size { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; color: #9B8672; }
+  .size svg { display: block; overflow: visible; }
+
+  .grid { margin-top: 16px; display: grid; grid-template-columns: 70px repeat(5, 1fr); gap: 1px; background: var(--line); border-radius: 12px; overflow: hidden; }
+  .grid > div { padding: 10px 6px; display: flex; align-items: center; justify-content: center; gap: 12px; }
+  .grid .h { background: #FBF8F4; font-size: 12px; color: var(--muted); }
+  .grid .l { background: var(--sw-light); }
+  .grid .d { background: var(--sw-dark); }
+  .grid .rl { font-size: 11px; color: #9B8672; justify-content: flex-start; }
+  @media (max-width: 720px) {
+    .stage { grid-template-columns: 1fr; }
+    .grid { grid-template-columns: 44px repeat(5, 1fr); }
+    .grid > div { flex-direction: column; gap: 6px; }
+    .grid .h { font-size: 10px; }
+  }
+
+  /* ───────── Mascot ───────── */
+  .m {
+    --body: #7A4718; --face: #FFF4E4; --ink: #2B1B0E; --beak: #E4893A;
+    --spark: #F4B740; --leg: #5C3613; --eye: var(--ink);
+  }
+  .dark .m { --body: #B5763A; --leg: #C99A6B; }
+  .m.v-a { --eye: var(--face); }
+
+  .m .hop, .m .tilt, .m .sit, .m .body, .m .eyes, .m .eye-dot, .m .legs, .m .spark, .m .nudge-dot {
+    transform-box: fill-box;
+  }
+  .m .hop, .m .tilt, .m .body, .m .legs, .m .sit { transform-origin: 50% 100%; }
+  .m .eyes, .m .eye-dot, .m .spark, .m .nudge-dot { transform-origin: 50% 50%; }
+  .m .fig { transition: opacity .5s ease, filter .5s ease; }
+  .m .sit, .m .legs, .m .eyes { transition: transform .45s cubic-bezier(.3,.7,.3,1); }
+
+  .m .eye-happy, .m .eye-closed { display: none; }
+  .m .spark, .m .nudge-dot { opacity: 0; }
+
+  /* Idle: breathe, glance around, blink */
+  .m.s-idle .body  { animation: breathe 3.6s ease-in-out infinite; }
+  .m.s-idle .eyes  { animation: look 8s ease-in-out infinite; }
+  .m.s-idle .eye-dot { animation: blink 4.4s infinite; }
+
+  /* Working: steady metronome bob, eyes down toward the work, slight focus squint */
+  .m.s-working .hop  { animation: bob 1.4s ease-in-out infinite; }
+  .m.s-working .body { animation: breathe 2.8s ease-in-out infinite; }
+  .m.s-working .eyes { transform: translate(1.5px, 2px); }
+  .m.s-working .eye-dot { transform: scaleY(.7); animation: blink-squint 5s infinite; }
+
+  /* Progress: squash, hop, stretch, land; happy arcs; sparks */
+  .m.s-progress .hop  { animation: hop 1.8s cubic-bezier(.3,.6,.4,1) infinite; }
+  .m.s-progress .body { animation: squash 1.8s ease-in-out infinite; }
+  .m.s-progress .eye-dot { display: none; }
+  .m.s-progress .eye-happy { display: inline; }
+  .m.s-progress .spark { animation: spark 1.8s ease-out infinite; }
+  .m.s-progress .spark:nth-of-type(2) { animation-delay: .06s; }
+  .m.s-progress .spark:nth-of-type(3) { animation-delay: .12s; }
+
+  /* Nudge: one curious head-tilt + two small bobs, then rest. Looks at you. */
+  .m.s-nudge .tilt { animation: tilt 3.4s ease-in-out infinite; }
+  .m.s-nudge .hop  { animation: nhop 3.4s ease-in-out infinite; }
+  .m.s-nudge .eyes { transform: translateY(-1px) scale(1.14); }
+  .m.s-nudge .eye-dot { animation: blink 3.4s infinite; }
+  .m.s-nudge .nudge-dot { animation: pulse 2.4s ease-in-out infinite; }
+
+  /* Paused: eyes closed, settled, desaturated, near-still */
+  .m.s-paused .fig { opacity: .62; filter: saturate(.35); }
+  .m.s-paused .body { animation: breathe 7s ease-in-out infinite; }
+  .m.s-paused .eye-dot { display: none; }
+  .m.s-paused .eye-closed { display: inline; }
+  .m.v-c.s-paused .sit { transform: translateY(9px); }
+  .m.v-c.s-paused .legs { transform: scaleY(.3); }
+
+  @keyframes breathe { 0%,100% { transform: scale(1,1); } 50% { transform: scale(.985,1.03); } }
+  @keyframes look {
+    0%,28% { transform: translate(0,0); } 32%,48% { transform: translate(-3px,0); }
+    52%,70% { transform: translate(0,0); } 74%,88% { transform: translate(3px,-1px); } 92%,100% { transform: translate(0,0); }
+  }
+  @keyframes blink { 0%,92%,100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+  @keyframes blink-squint { 0%,90%,100% { transform: scaleY(.7); } 94% { transform: scaleY(.1); } }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(1.2px); } }
+  @keyframes hop {
+    0%,12% { transform: translateY(0); } 30% { transform: translateY(-11px); }
+    44%,100% { transform: translateY(0); }
+  }
+  @keyframes squash {
+    0% { transform: scale(1,1); } 10% { transform: scale(1.12,.86); } 24% { transform: scale(.92,1.1); }
+    44% { transform: scale(1.1,.88); } 56% { transform: scale(.98,1.03); } 66%,100% { transform: scale(1,1); }
+  }
+  @keyframes spark {
+    0%,22% { opacity: 0; transform: scale(.2); } 34% { opacity: 1; transform: scale(1.2); }
+    60% { opacity: 0; transform: translateY(-4px) scale(.8); } 100% { opacity: 0; }
+  }
+  @keyframes tilt {
+    0%,8% { transform: rotate(0); } 14% { transform: rotate(-9deg); } 22% { transform: rotate(7deg); }
+    30% { transform: rotate(-3deg); } 36%,100% { transform: rotate(0); }
+  }
+  @keyframes nhop {
+    0%,36% { transform: translateY(0); } 42% { transform: translateY(-4px); } 48% { transform: translateY(0); }
+    54% { transform: translateY(-3px); } 60%,100% { transform: translateY(0); }
+  }
+  @keyframes pulse { 0%,100% { opacity: .35; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.1); } }
+
+  /* Reduced motion: every state becomes a distinct static pose. */
+  @media (prefers-reduced-motion: reduce) {
+    .m *, .m { animation: none !important; transition: none !important; }
+    .m.s-progress .spark { opacity: 1; }
+    .m.s-progress .hop { transform: translateY(-3px); }
+    .m.s-nudge .tilt { transform: rotate(-7deg); }
+    .m.s-nudge .nudge-dot { opacity: 1; }
+  }
+  .rm .m *, .rm .m { animation: none !important; transition: none !important; }
+  .rm .m.s-progress .spark { opacity: 1; }
+  .rm .m.s-progress .hop { transform: translateY(-3px); }
+  .rm .m.s-nudge .tilt { transform: rotate(-7deg); }
+  .rm .m.s-nudge .nudge-dot { opacity: 1; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Pebble</h1>
+  <p class="kicker">Plover mascot concept 01. Geometric primitives, expression from the eyes and squash-and-stretch.</p>
+  <p class="rationale">
+    Pebble reduces the plover to one egg-shaped body, a small orange triangle beak and dot eyes,
+    so it still reads as a bird at 32px in the overlay. All the personality comes from motion:
+    it squashes before a hop and stretches at the top, its eyes glance around or squint while
+    you focus, and they curve into happy arcs when a subtask moves forward. The plover cues are
+    the black breast collar and the stick legs, and they are added in steps across the three
+    variants so you can see how much detail the small size can carry. Privacy has one clear
+    signal: closed eyes, a desaturated body and stillness mean Plover is not watching. Nudges
+    are a single curious head-tilt and a soft amber dot, with no shaking and no red.
+  </p>
+  <ul class="palette" aria-label="Palette">
+    <li><i style="background:#7A4718"></i>Body (logo brown) <code>#7A4718</code></li>
+    <li><i style="background:#B5763A"></i>Body on dark <code>#B5763A</code></li>
+    <li><i style="background:#FFF4E4"></i>Face / belly / A-eyes <code>#FFF4E4</code></li>
+    <li><i style="background:#2B1B0E"></i>Ink: eyes, collar <code>#2B1B0E</code></li>
+    <li><i style="background:#E4893A"></i>Beak <code>#E4893A</code></li>
+    <li><i style="background:#F4B740"></i>Spark / nudge <code>#F4B740</code></li>
+    <li><i style="background:#5C3613"></i>Legs (light) <code>#5C3613</code></li>
+    <li><i style="background:#C99A6B"></i>Legs (dark) <code>#C99A6B</code></li>
+    <li><i style="background:#FBF6EE"></i>Swatch light <code>#FBF6EE</code></li>
+    <li><i style="background:#15110D"></i>Swatch dark <code>#15110D</code></li>
+  </ul>
+  <div class="toolbar">
+    <label><input type="checkbox" id="rm-toggle"> Preview reduced motion (static poses)</label>
+    <span>Your OS reduced-motion setting is also honoured automatically.</span>
+  </div>
+  <div id="variants"></div>
+</main>
+
+<script>
+(function () {
+  var STATES = [
+    ['idle', 'Idle'], ['working', 'Working'], ['progress', 'Progress'],
+    ['nudge', 'Nudge'], ['paused', 'Paused']
+  ];
+  var VARIANTS = [
+    {
+      id: 'a', name: 'A · Pebble Dot',
+      notes: [
+        'Just the brown egg, an orange beak and two cream "screen" eyes, the most desk-robot of the three.',
+        'Cream eyes glow on the brown body, so they stay readable at 32px on both light and dark backgrounds.',
+        'Best fit for the always-on overlay. The plover cue is weakest here and relies on the logo colour and beak.'
+      ]
+    },
+    {
+      id: 'b', name: 'B · Pebble Collar',
+      notes: [
+        'Adds the cream face mask from the logo, dark ink eyes, the black breast collar and a cream belly.',
+        'The collar is what makes it a plover, and at 32px it reads as one bold stripe.',
+        'A balanced pick for both overlay and in-app use, and the happy arcs and closed eyes read well on the mask.'
+      ]
+    },
+    {
+      id: 'c', name: 'C · Pebble Legs',
+      notes: [
+        'Variant B on two stick legs with tiny feet, the full shorebird silhouette.',
+        'The legs give the progress hop real lift-off, and in the paused state they tuck under as it sits down.',
+        'Made for onboarding, empty states and celebrations. At 32px the legs are about 1px, so use B or A in the overlay.'
+      ]
+    }
+  ];
+
+  var uid = 0;
+  var EGG = 'M50 16 C73 16 84 37 84 59 C84 80 70 92 50 92 C30 92 16 80 16 59 C16 37 27 16 50 16Z';
+
+  function eyes(v) {
+    var big = v === 'a';
+    var r = big ? 5.6 : 4.6, y = big ? 48 : 46, xs = big ? [39, 61] : [40, 60];
+    var sw = big ? 3.6 : 3.2;
+    var out = '<g class="eyes">';
+    xs.forEach(function (x) {
+      out += '<circle class="eye-dot" cx="' + x + '" cy="' + y + '" r="' + r + '" fill="var(--eye)"/>';
+      out += '<path class="eye-happy" d="M' + (x - 5) + ' ' + (y + 2) + ' Q' + x + ' ' + (y - 6) + ' ' + (x + 5) + ' ' + (y + 2) +
+             '" fill="none" stroke="var(--eye)" stroke-width="' + sw + '" stroke-linecap="round"/>';
+      out += '<path class="eye-closed" d="M' + (x - 5) + ' ' + y + ' Q' + x + ' ' + (y + 3) + ' ' + (x + 5) + ' ' + y +
+             '" fill="none" stroke="var(--eye)" stroke-width="' + sw + '" stroke-linecap="round"/>';
+    });
+    return out + '</g>';
+  }
+
+  function body(v) {
+    var id = 'pb' + (uid++);
+    var s = '<g class="body"><defs><clipPath id="' + id + '"><path d="' + EGG + '"/></clipPath></defs>';
+    s += '<path d="' + EGG + '" fill="var(--body)"/>';
+    if (v !== 'a') {
+      s += '<g clip-path="url(#' + id + ')">' +
+           '<ellipse cx="50" cy="45" rx="26" ry="15" fill="var(--face)"/>' +
+           '<ellipse cx="50" cy="88" rx="26" ry="17" fill="var(--face)"/>' +
+           '<path d="M14 65 Q50 81 86 65" fill="none" stroke="var(--ink)" stroke-width="7.5"/>' +
+           '</g>';
+    }
+    var by = v === 'a' ? 56 : 53;
+    s += '<path d="M45.5 ' + by + ' L54.5 ' + by + ' L50 ' + (by + 7) + 'Z" fill="var(--beak)" stroke="var(--beak)" stroke-width="1.5" stroke-linejoin="round"/>';
+    s += eyes(v);
+    return s + '</g>';
+  }
+
+  function legs() {
+    return '<g class="legs" fill="none" stroke="var(--leg)" stroke-width="3.6" stroke-linecap="round">' +
+           '<path d="M43 76 L41.5 95 M37 95 L45 95"/>' +
+           '<path d="M57 76 L58.5 95 M55 95 L63 95"/>' +
+           '</g>';
+  }
+
+  function mascot(v, state, px) {
+    var lift = v === 'c' ? -8 : 0;
+    var s = '<svg class="m v-' + v + ' s-' + state + '" width="' + px + '" height="' + px +
+            '" viewBox="0 0 100 100" role="img" aria-label="Pebble variant ' + v.toUpperCase() + ', ' + state + '">';
+    s += '<g class="fig">';
+    s += '<circle class="nudge-dot" cx="82" cy="' + (16 + lift) + '" r="4.5" fill="var(--spark)"/>';
+    s += '<g>' +
+         '<circle class="spark" cx="14" cy="' + (26 + lift) + '" r="3.2" fill="var(--spark)"/>' +
+         '<circle class="spark" cx="50" cy="' + (5 + lift / 2) + '" r="3.6" fill="var(--spark)"/>' +
+         '<circle class="spark" cx="86" cy="' + (26 + lift) + '" r="3.2" fill="var(--spark)"/>' +
+         '</g>';
+    s += '<g class="hop"><g class="tilt">';
+    if (v === 'c') s += legs();
+    s += '<g transform="translate(0 ' + lift + ')"><g class="sit">' + body(v) + '</g></g>';
+    s += '</g></g></g></svg>';
+    return s;
+  }
+
+  function setState(root, v, state) {
+    root.querySelectorAll('.m.v-' + v + '.live').forEach(function (el) {
+      STATES.forEach(function (st) { el.classList.remove('s-' + st[0]); });
+      el.classList.add('s-' + state);
+      el.setAttribute('aria-label', 'Pebble variant ' + v.toUpperCase() + ', ' + state);
+    });
+    root.querySelectorAll('.states button').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.state === state));
+    });
+  }
+
+  var host = document.getElementById('variants');
+  VARIANTS.forEach(function (V) {
+    var sec = document.createElement('section');
+    sec.className = 'variant';
+    var html = '<div class="vhead"><div><h2>' + V.name + '</h2><ul>' +
+      V.notes.map(function (n) { return '<li>' + n + '</li>'; }).join('') + '</ul></div>' +
+      '<div class="states" role="group" aria-label="State">' +
+      STATES.map(function (st) {
+        return '<button type="button" data-state="' + st[0] + '" aria-pressed="' + (st[0] === 'idle') + '">' + st[1] + '</button>';
+      }).join('') + '</div></div>';
+    html += '<div class="stage">';
+    ['light', 'dark'].forEach(function (t) {
+      html += '<div class="swatch ' + t + '"><span class="tag">' + t + '</span>' +
+        '<div class="size">' + mascot(V.id, 'idle', 200) + '200px</div>' +
+        '<div class="size">' + mascot(V.id, 'idle', 32) + '32px</div></div>';
+    });
+    html += '</div>';
+    html += '<div class="grid"><div class="h"></div>' +
+      STATES.map(function (st) { return '<div class="h">' + st[1] + '</div>'; }).join('');
+    ['l', 'd'].forEach(function (t) {
+      html += '<div class="' + t + ' rl">' + (t === 'l' ? 'light' : 'dark') + '<br>32 / 64</div>';
+      STATES.forEach(function (st) {
+        html += '<div class="' + t + (t === 'd' ? ' dark' : '') + '">' + mascot(V.id, st[0], 32) + mascot(V.id, st[0], 64) + '</div>';
+      });
+    });
+    html += '</div>';
+    sec.innerHTML = html;
+    sec.querySelectorAll('.stage .m').forEach(function (el) { el.classList.add('live'); });
+    sec.querySelectorAll('.states button').forEach(function (b) {
+      b.addEventListener('click', function () { setState(sec, V.id, b.dataset.state); });
+    });
+    host.appendChild(sec);
+  });
+
+  document.getElementById('rm-toggle').addEventListener('change', function (e) {
+    document.body.classList.toggle('rm', e.target.checked);
+  });
+})();
+</script>
+</body>
+</html>

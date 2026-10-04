@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plover Buddy Round 2</title>
+<style>
+  :root { --bg:#F6F1E8; --ink:#2A1A0E; --muted:#7A6A5A; --tab:#E9E0D2; --on:#7A4718; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#17140F; --ink:#F2E8DA; --muted:#A8987F; --tab:#2A241C; --on:#C98B52; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.4 system-ui, sans-serif; display:flex; flex-direction:column; height:100vh; }
+  header { padding:14px 16px 10px; }
+  h1 { margin:0 0 8px; font-size:18px; }
+  nav { display:flex; flex-wrap:wrap; gap:6px; }
+  button { border:0; border-radius:999px; padding:7px 14px; background:var(--tab); color:var(--ink); font:inherit; cursor:pointer; }
+  button[aria-pressed="true"] { background:var(--on); color:#fff; }
+  button small { color:inherit; opacity:.7; margin-left:4px; }
+  iframe { flex:1; border:0; width:100%; background:#fff; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Plover buddy — round 2</h1>
+  <nav id="nav"></nav>
+</header>
+<iframe id="frame" title="Concept"></iframe>
+<script>
+  const concepts = [
+    ['A-dots.html', 'Dots', 'floating, merging dots'],
+    ['B-blob.html', 'Blob', 'squishy, eyes do the work'],
+    ['C-gesture.html', 'Gesture', 'body language, no face'],
+    ['B-puff-variations.html', 'Puff variations', '6 takes on Puff'],
+  ];
+  const nav = document.getElementById('nav'), frame = document.getElementById('frame');
+  function show(i) {
+    frame.src = concepts[i][0];
+    [...nav.children].forEach((b, j) => b.setAttribute('aria-pressed', i === j));
+    try { localStorage.setItem('concept-r2', i); } catch {}
+  }
+  concepts.forEach(([, name, hint], i) => {
+    const b = document.createElement('button');
+    b.innerHTML = `${name}<small>${hint}</small>`;
+    b.onclick = () => show(i);
+    nav.appendChild(b);
+  });
+  let start = 0; try { start = +localStorage.getItem('concept-r2') || 0; } catch {}
+  show(start);
+</script>
+</body>
+</html>
