@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Loader test</title>
+<style>
+:root{--sage:#5E7F6B;--cream:#F3EEE1;--ink:#2F4236;--sand:#D9CFB4;--beak:#E3B55B}
+*{box-sizing:border-box}
+body{margin:0;background:var(--cream);color:var(--ink);font-family:"Segoe UI",system-ui,sans-serif;width:1400px}
+section{padding:36px 56px}
+h1{font-size:28px;margin:0 0 8px;font-weight:600}
+h2{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--sage);margin:0 0 18px;font-weight:600}
+p.lead{max-width:900px;line-height:1.6;margin:0}
+.row{display:flex;gap:28px}
+.col{flex:1}
+.col h3{font-size:17px;margin:0 0 4px;font-weight:600}
+.col .muted{font-size:13px;color:#2F4236b3;margin-bottom:14px;line-height:1.5;min-height:40px}
+
+.card{position:relative;background:#FBF8F1;border:1px solid #2F423614;border-radius:22px;padding:20px;height:250px;overflow:hidden}
+.task{background:var(--cream);border-radius:14px;padding:12px 14px;font-size:14.5px;border:1px solid #2F423612}
+.ld{position:absolute;left:20px;right:20px;top:92px;display:flex;gap:14px;align-items:center;font-size:15px;animation:ldv 7s infinite}
+.st{list-style:none;padding:0;margin:16px 0 0}
+.st li{display:flex;gap:12px;align-items:center;padding:7px 0;font-size:15px;opacity:0}
+.st li:nth-child(1){animation:in1 7s infinite}
+.st li:nth-child(2){animation:in2 7s infinite}
+.st li:nth-child(3){animation:in3 7s infinite}
+.box{position:relative;width:26px;height:26px;flex:none}
+.box svg{position:absolute;inset:0}
+.box .fill{animation:done 7s infinite;transform-origin:center;opacity:0}
+.txt1{position:relative}
+.txt1::after{content:"";position:absolute;left:0;top:50%;height:1.5px;background:#2F423699;width:100%;transform-origin:left;transform:scaleX(0);animation:strike 7s infinite}
+
+@keyframes ldv{0%,42%{opacity:1}48%,100%{opacity:0}}
+@keyframes in1{0%,48%{opacity:0;transform:translateY(6px)}54%,100%{opacity:1;transform:none}}
+@keyframes in2{0%,53%{opacity:0;transform:translateY(6px)}59%,100%{opacity:1;transform:none}}
+@keyframes in3{0%,58%{opacity:0;transform:translateY(6px)}64%,100%{opacity:1;transform:none}}
+@keyframes done{0%,78%{opacity:0;transform:scale(.4)}84%,100%{opacity:1;transform:scale(1)}}
+@keyframes strike{0%,80%{transform:scaleX(0)}88%,100%{transform:scaleX(1)}}
+
+.blink{transform-box:fill-box;transform-origin:center 30%;animation:blink 2.2s ease-in-out infinite}
+@keyframes blink{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.2)}}
+.peekblink{transform-box:fill-box;transform-origin:center 30%;animation:pblink 2.6s ease-in-out infinite}
+@keyframes pblink{0%,60%,100%{transform:scaleY(1)}75%{transform:scaleY(-1)}}
+.bob{animation:bob 2.6s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(2px)}}
+.dots i{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--sage);margin-right:6px;animation:dot 1.2s infinite}
+.dots i:nth-child(2){animation-delay:.2s}.dots i:nth-child(3){animation-delay:.4s}
+@keyframes dot{0%,100%{opacity:.3}50%{opacity:1}}
+
+.frames .card{height:250px}
+.frames *{animation-play-state:paused!important}
+.ft{font-size:12.5px;color:#2F4236b3;margin:8px 0 22px}
+</style>
+</head>
+<body>
+<section>
+  <h1>Loader test: "Breaking it into steps…"</h1>
+  <p class="lead">The same moment three ways, looping every 7 seconds: you type a task, the loader runs, the steps appear, then the
+  first step gets ticked off with the done mark. The question is whether a lone eye means anything to people, or whether it
+  only works when it's clearly the bird.</p>
+</section>
+
+<section>
+  <h2>Live (open this file in a browser to see it move)</h2>
+  <div class="row" id="live"></div>
+</section>
+
+<section class="frames">
+  <h2>Frame by frame (still images of the same loop)</h2>
+  <div id="frames"></div>
+</section>
+
+<template id="tpl">
+  <div class="card">
+    <div class="task">Write the intro section of my history essay</div>
+    <div class="ld">__LOADER__<span>Breaking it into steps…</span></div>
+    <ul class="st">
+      <li><span class="box"><svg viewBox="0 0 26 26"><circle cx="13" cy="13" r="11" fill="none" stroke="#5E7F6B" stroke-width="2.2"/></svg><svg class="fill" viewBox="0 0 26 26">__DONE__</svg></span><span class="txt1">Reread the essay prompt</span></li>
+      <li><span class="box"><svg viewBox="0 0 26 26"><circle cx="13" cy="13" r="11" fill="none" stroke="#5E7F6B" stroke-width="2.2"/></svg></span>Write one opening sentence</li>
+      <li><span class="box"><svg viewBox="0 0 26 26"><circle cx="13" cy="13" r="11" fill="none" stroke="#D9CFB4" stroke-width="2.2"/></svg></span>List three points to cover</li>
+    </ul>
+  </div>
+</template>
+
+<script>
+const EYE = '<svg width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="23" r="22" fill="#5E7F6B"/><path class="blink" d="M14 21 Q23 30 32 21" fill="none" stroke="#F3EEE1" stroke-width="3.5" stroke-linecap="round"/></svg>';
+const BIRD = '<svg width="70" height="52" viewBox="0 0 70 52" style="overflow:visible"><g class="bob"><circle cx="44" cy="30" r="24" fill="#F3EEE1" stroke="#D9CFB4" stroke-width="2"/><path class="peekblink" d="M32 24 Q37 29 42 24" fill="none" stroke="#2F4236" stroke-width="3" stroke-linecap="round"/><path d="M22 27 Q14 30 8 33 Q15 36 23 38 Z" fill="#E3B55B" stroke="#E3B55B" stroke-width="3" stroke-linejoin="round"/></g></svg>';
+const DOTS = '<span class="dots"><i></i><i></i><i></i></span>';
+const DONE_EYE = '<circle cx="13" cy="13" r="12" fill="#5E7F6B"/><path d="M7.5 15 Q13 8 18.5 15" fill="none" stroke="#F3EEE1" stroke-width="2.4" stroke-linecap="round"/>';
+const DONE_CHECK = '<circle cx="13" cy="13" r="12" fill="#5E7F6B"/><path d="M7.5 13.5 L11.5 17.5 L18.5 9.5" fill="none" stroke="#F3EEE1" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>';
+const V = [
+  ["A · The eye on its own", "Abstract: a sage circle with the closed eye breathing open and shut. Done mark uses the happy eye.", EYE, DONE_EYE],
+  ["B · The bird itself", "The buddy's head with its beak, blinking and bobbing slightly. Done mark uses the happy eye.", BIRD, DONE_EYE],
+  ["C · Plain dots (control)", "What most apps do. Done mark is a normal check.", DOTS, DONE_CHECK],
+];
+const tpl = document.getElementById('tpl').innerHTML;
+const make = (v) => tpl.replace('__LOADER__', v[2]).replace('__DONE__', v[3]);
+document.getElementById('live').innerHTML = V.map(v => `<div class="col"><h3>${v[0]}</h3><div class="muted">${v[1]}</div>${make(v)}</div>`).join('');
+const T = [[0.4, "0.4 s · loader, eye open"], [1.3, "1.3 s · loader, eye closing"], [4.2, "4.2 s · steps appear"], [6.5, "6.5 s · first step done"]];
+document.getElementById('frames').innerHTML = T.map(([t, label]) =>
+  `<div class="row">${V.map(v => `<div class="col" style="--t:${t}">${make(v)}</div>`).join('')}</div><div class="ft">${label}</div>`).join('');
+document.querySelectorAll('.frames .col').forEach(col => {
+  const t = parseFloat(col.style.getPropertyValue('--t'));
+  col.querySelectorAll('*').forEach(el => {
+    const cs = getComputedStyle(el);
+    if (cs.animationName && cs.animationName !== 'none') el.style.animationDelay = `-${t}s`;
+  });
+});
+</script>
+</body>
+</html>

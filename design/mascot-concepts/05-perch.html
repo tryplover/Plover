@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plover Perch</title>
+<style>
+:root{
+  --page:#F6F1E8; --ink:#2A1A0E; --muted:#7d6b5a; --rule:#E3D8C8; --card:#FFFDF9;
+  --lt-bg:#F6F1E8; --dk-bg:#17140F;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --page:#14110D; --ink:#F1E6D6; --muted:#a8957f; --rule:#342c23; --card:#1c1813; }
+}
+:root[data-theme="dark"]{ --page:#14110D; --ink:#F1E6D6; --muted:#a8957f; --rule:#342c23; --card:#1c1813; }
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font:15px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:1120px;margin:0 auto;padding:32px 16px 80px}
+h1{font-size:28px;margin:0 0 4px;letter-spacing:-.01em}
+h2{font-size:20px;margin:0}
+h3{font-size:13px;margin:0 0 8px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+p{margin:0 0 10px;max-width:72ch}
+.sub{color:var(--muted);margin-bottom:18px}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9em}
+
+.palette{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 6px}
+.chip{display:flex;align-items:center;gap:8px;border:1px solid var(--rule);border-radius:8px;padding:6px 10px 6px 6px;background:var(--card);font-size:13px}
+.chip i{width:22px;height:22px;border-radius:5px;border:1px solid rgba(0,0,0,.15);display:block}
+.chip b{font-weight:600}
+
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:18px 0 8px}
+button{font:inherit;font-size:13px;border:1px solid var(--rule);background:var(--card);color:var(--ink);border-radius:999px;padding:5px 12px;cursor:pointer}
+button[aria-pressed="true"]{background:var(--ink);color:var(--page);border-color:var(--ink)}
+button:focus-visible{outline:2px solid #E39A2D;outline-offset:2px}
+
+section.variant{border-top:1px solid var(--rule);margin-top:36px;padding-top:24px}
+.vhead{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px;margin-bottom:6px}
+.tag{font-size:12px;color:var(--muted)}
+.states{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 16px}
+
+.swatches{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.sw{border-radius:14px;padding:16px;border:1px solid var(--rule)}
+.theme-light{background:var(--lt-bg);color:#7A4718;--b:#7A4718;--w:#FFF8EE;--k:#2A1A0E;--a:#E39A2D;--txt:#2A1A0E;--txt2:#7d6b5a}
+.theme-dark{background:var(--dk-bg);color:#E8D9C4;--b:#C98B52;--w:#FFF1DE;--k:#1E140B;--a:#F2B54F;--txt:#F1E6D6;--txt2:#a8957f}
+.sw .lbl{font-size:11px;color:var(--txt2);text-transform:uppercase;letter-spacing:.06em}
+.sizes{display:flex;align-items:flex-end;gap:22px;flex-wrap:wrap}
+.sizes figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+.sizes figcaption{font-size:11px;color:var(--txt2)}
+.big{width:200px;height:200px;display:flex;align-items:flex-end;justify-content:center}
+
+/* contexts */
+.ctx{border-radius:14px;padding:0 0 22px;overflow:hidden;border:1px solid var(--rule)}
+.menubar{height:24px;display:flex;align-items:center;justify-content:space-between;padding:0 10px;font-size:12px;color:var(--txt)}
+.theme-light .menubar{background:#ECE6DC;border-bottom:1px solid #DDD3C4}
+.theme-dark .menubar{background:#2A251F;border-bottom:1px solid #3A322A}
+.mb-r{display:flex;align-items:center;gap:12px}
+.mb-r .glyph{width:14px;height:9px;border:1.5px solid currentColor;border-radius:2px;opacity:.6}
+.tray{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:5px}
+.theme-light .tray{background:rgba(0,0,0,.06)} .theme-dark .tray{background:rgba(255,255,255,.08)}
+.stage{padding:48px 16px 0;display:flex;justify-content:center}
+.pill{position:relative;display:flex;align-items:center;gap:10px;height:40px;padding:0 18px;border-radius:20px;font-size:13px;color:var(--txt);width:min(300px,100%)}
+.theme-light .pill{background:#FFFFFF;border:1px solid #E3D8C8;box-shadow:0 4px 14px rgba(60,35,10,.08)}
+.theme-dark .pill{background:#26211B;border:1px solid #3A322A;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.pill .dot{width:8px;height:8px;border-radius:50%;background:#4E9A6A;flex:none}
+.pill.paused .dot{background:transparent;border:1.5px solid var(--txt2)}
+.pill .t{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill .bar{width:56px;height:5px;border-radius:3px;background:rgba(127,110,90,.25);overflow:hidden;flex:none}
+.pill .bar i{display:block;height:100%;width:40%;background:var(--b)}
+.perch{position:absolute;right:26px;bottom:calc(100% - 2px);line-height:0}
+.perch.peek{bottom:100%}
+
+/* all-states grid */
+.grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:14px}
+.cell{border-radius:10px;padding:10px 6px 8px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.cell .row{display:flex;align-items:flex-end;gap:12px;min-height:32px}
+.cell .lbl{font-size:11px;color:var(--txt2)}
+@media (max-width:640px){ .grid{grid-template-columns:repeat(2,minmax(0,1fr))} .big{width:160px;height:160px} }
+
+/* ---------- A + C : frame-by-frame sprites ---------- */
+.spr{display:block;width:var(--s);height:var(--s);background-repeat:no-repeat;image-rendering:pixelated;image-rendering:crisp-edges;
+  background-size:calc(var(--n) * var(--s)) var(--s);background-position:0 0;
+  animation:play var(--dur) steps(var(--n)) infinite}
+@keyframes play{to{background-position:calc(var(--n) * var(--s) * -1) 0}}
+.clip{display:block;width:var(--s);height:var(--s);overflow:hidden}
+.strip{display:block;animation:slide var(--dur) steps(var(--n)) infinite}
+@keyframes slide{to{transform:translateX(calc(var(--n) * var(--s) * -1))}}
+.still{animation:none!important}
+.rm .spr{animation:none;background-position:calc(var(--key) * var(--s) * -1) 0}
+.rm .strip{animation:none;transform:translateX(calc(var(--key) * var(--s) * -1))}
+
+/* ---------- B : flat vector, stepped few-frame motion ---------- */
+.vb{display:block;overflow:visible}
+.vb *{transform-box:view-box}
+.vb .head{transform-origin:19px 16px}
+.vb .eye{transform-box:fill-box;transform-origin:center}
+.vb .lid,.vb .spark,.vb .ping{opacity:0}
+.vb.st-idle .all{animation:b-bob 3.6s steps(1,end) infinite}
+.vb.st-idle .eye{animation:b-blink 3.6s steps(1,end) infinite}
+.vb.st-working .head{animation:b-peck 1.2s steps(1,end) infinite}
+.vb.st-progress .all{animation:b-hop 1.8s steps(1,end) infinite}
+.vb.st-progress .spark{animation:b-spark 1.8s steps(1,end) infinite}
+.vb.st-nudge .head{animation:b-look 3.2s steps(1,end) infinite}
+.vb.st-nudge .all{animation:b-shuffle 3.2s steps(1,end) infinite}
+.vb.st-nudge .ping{animation:b-ping 3.2s steps(1,end) infinite}
+.vb.st-paused .all{opacity:.62}
+.vb.st-paused .head{transform:translate(-1px,3.5px) rotate(-6deg)}
+.vb.st-paused .eye,.vb.st-paused .beak{opacity:0}
+.vb.st-paused .lid{opacity:1}
+@keyframes b-bob{0%{transform:translateY(0)}62%{transform:translateY(1px)}68%{transform:translateY(0)}100%{transform:translateY(0)}}
+@keyframes b-blink{0%{transform:scaleY(1)}30%{transform:scaleY(.15)}34%{transform:scaleY(1)}100%{transform:scaleY(1)}}
+@keyframes b-peck{0%{transform:rotate(0)}66%{transform:rotate(16deg)}84%{transform:rotate(0)}100%{transform:rotate(0)}}
+@keyframes b-hop{0%{transform:translateY(0)}12%{transform:translateY(1px)}22%{transform:translateY(-5px)}40%{transform:translateY(-2.5px)}50%{transform:translateY(0)}100%{transform:translateY(0)}}
+@keyframes b-spark{0%{opacity:0}22%{opacity:1}50%{opacity:0}100%{opacity:0}}
+@keyframes b-look{0%{transform:rotate(0)}12%{transform:rotate(-14deg)}70%{transform:rotate(0)}100%{transform:rotate(0)}}
+@keyframes b-shuffle{0%{transform:translateX(0)}4%{transform:translateX(1px)}8%{transform:translateX(0)}100%{transform:translateX(0)}}
+@keyframes b-ping{0%{opacity:0}14%{opacity:1}30%{opacity:0}38%{opacity:1}60%{opacity:0}100%{opacity:0}}
+.rm .vb *{animation:none!important}
+.rm .vb.st-working .head{transform:rotate(16deg)}
+.rm .vb.st-progress .all{transform:translateY(-3px)}
+.rm .vb.st-progress .spark{opacity:1}
+.rm .vb.st-nudge .head{transform:rotate(-14deg)}
+.rm .vb.st-nudge .ping{opacity:1}
+
+.notes{font-size:13px;color:var(--muted);margin-top:12px}
+.notes li{margin:2px 0}
+</style>
+</head>
+<body>
+<main>
+  <h1>Perch: a small-first Plover</h1>
+  <p class="sub">Concept 05. Drawn at 16px first, then scaled up. The bird sits on the edge of whatever UI it lives in.</p>
+
+  <p><b>Rationale.</b> Plover spends most of its life at 16 to 32px, in a menu bar or perched on the overlay pill, so every variant here was drawn on a 16-pixel grid first and only then enlarged. At that size detail does nothing, but posture and timing read clearly. So each state is a <em>pose</em>: standing, pecking, hopping, looking up, or tucked away. The motion is a handful of held frames played with CSS <code>steps()</code>, never tweened, which stays crisp at any scale and echoes how a real plover runs, stops dead, and bobs. For privacy, "paused" always changes the silhouette as well as the color: the beak tucks away, the eye shuts, and in the menu-bar version the bird ducks below the edge entirely.</p>
+
+  <div class="palette" aria-label="Palette">
+    <span class="chip"><i style="background:#7A4718"></i><span><b>Plumage</b> #7A4718 (brand)</span></span>
+    <span class="chip"><i style="background:#FFF8EE"></i><span><b>Face / belly</b> #FFF8EE</span></span>
+    <span class="chip"><i style="background:#2A1A0E"></i><span><b>Collar / eye</b> #2A1A0E</span></span>
+    <span class="chip"><i style="background:#E39A2D"></i><span><b>Signal</b> #E39A2D (progress + nudge only)</span></span>
+    <span class="chip"><i style="background:#C98B52"></i><span><b>Plumage, dark UI</b> #C98B52</span></span>
+    <span class="chip"><i style="background:#FFF1DE"></i><span><b>Face, dark UI</b> #FFF1DE</span></span>
+    <span class="chip"><i style="background:#F2B54F"></i><span><b>Signal, dark UI</b> #F2B54F</span></span>
+    <span class="chip"><i style="background:#F6F1E8"></i><span><b>Light bg</b> #F6F1E8</span></span>
+    <span class="chip"><i style="background:#17140F"></i><span><b>Dark bg</b> #17140F</span></span>
+  </div>
+  <p class="notes">Core sprite is 3 colors. Amber is a 4th "signal" color that appears only during progress and nudge, so it always means something. On dark UI the palette swaps rather than inverts: the plumage lightens so the silhouette holds.</p>
+
+  <div class="toolbar">
+    <button id="rmToggle" aria-pressed="false">Reduced motion: off</button>
+    <span class="tag" id="rmNote">Follows your OS setting. Toggle to preview the held key poses.</span>
+  </div>
+
+  <div id="variants"></div>
+</main>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------------- pixel data ---------------- */
+// A "Pip": B = plumage, W = face/belly, K = collar/eye, A = signal
+var A_BODY = [
+  "................",
+  "................",
+  ".........BBBB...",
+  "........BBBBBB..",
+  "........BWWKWB..",
+  "........BWWWWBBB",
+  "........BBWWBB..",
+  ".....BBBKKKKKB..",
+  "...BBBBBBBWWWB..",
+  ".BBBBBBBBWWWWB..",
+  "..BBBBBBWWWWB...",
+  "....BWWWWWWB....",
+  ".....BBBBBB....."
+];
+var A_BLINK = A_BODY.slice(); A_BLINK[4] = "........BWWWWB..";
+var A_PECK = [
+  "................",
+  "................",
+  "................",
+  "................",
+  ".........BBBB...",
+  "........BBBBBB..",
+  "........BWWKWB..",
+  ".....BBBBWWWWBBB",
+  "...BBBBBKKKKKB..",
+  ".BBBBBBBBWWWWB..",
+  "..BBBBBBWWWWB...",
+  "....BWWWWWWB....",
+  ".....BBBBBB....."
+];
+var A_PAUSED = [
+  "................","................","................","................",
+  "................","................","................",
+  "..........BBB...",
+  ".........BBBBB..",
+  ".........BWWBB..",
+  "....BBBBBKKKBB..",
+  "..BBBBBBBBWWWB..",
+  ".BBBBBBBBWWWWB..",
+  "..BBBBBBWWWWB...",
+  "...BWWWWWWWB....",
+  "....BBBBBBB....."
+];
+var LEGS   = ["......B..B......","......B..B......",".....BB.BB......"];
+var CROUCH = ["......B..B......",".....BB.BB......"];
+var TUCK   = [".....BB.BB......"];
+var SPARK1 = [[3,2],[2,3],[3,3],[4,3],[3,4]];
+var SPARK2 = [[2,2],[4,2],[2,4],[4,4],[1,3],[5,3]];
+var PING   = [[13,0],[14,0],[13,1],[14,1]];
+
+// C "Peek": 1-bit bust, '#' = ink, '.' = knockout (shows whatever is behind)
+var C_BUST = [
+  "................",
+  "................",
+  "......####......",
+  "....########....",
+  "...##########...",
+  "..######...###..",
+  "..#####.....##..",
+  ".######..#..####",
+  ".######.....###.",
+  ".#######...###..",
+  "..###########...",
+  "...##.....##....",
+  "..###########...",
+  "..###########...",
+  ".#############..",
+  ".#############.."
+];
+var C_BLINK = C_BUST.slice();  C_BLINK[7]  = ".######.....####";
+var C_CLOSED = C_BUST.slice(); C_CLOSED[7] = ".######.###.####";
+var C_SPARK1 = [[14,0],[13,1],[15,1],[14,2]];
+var C_SPARK2 = [[13,0],[15,0],[13,2],[15,2]];
+var C_PING   = [[14,0],[14,1]];
+
+function blank(){ var g=[]; for(var y=0;y<16;y++){ g.push("................".split("")); } return g; }
+function stamp(g, rows, dx, dy){
+  rows.forEach(function(r,y){
+    if(r.length!==16) throw new Error("row width "+r.length+": "+r);
+    r.split("").forEach(function(c,x){
+      if(c===".") return;
+      var X=x+dx, Y=y+dy;
+      if(X>=0&&X<16&&Y>=0&&Y<16) g[Y][X]=c;
+    });
+  });
+  return g;
+}
+function dots(g, pts, ch){ pts.forEach(function(p){ g[p[1]][p[0]]=ch; }); return g; }
+// A frames are drawn one column left of the source art to leave room for the beak when leaning.
+function aFrame(body, bdy, bdx, legs, ldy, extra){
+  var g=blank();
+  stamp(g, body, -1+(bdx||0), bdy||0);
+  if(legs) stamp(g, legs, -1, ldy);
+  if(extra) dots(g, extra, "A");
+  return g;
+}
+function cFrame(rows, dy, extra){
+  var g=blank(); stamp(g, rows, 0, dy||0);
+  // rising out from behind the edge reveals more chest, never a gap
+  for(var y=16+(dy||0); y<16 && dy<0; y++) g[y]=rows[15].split("");
+  if(extra) dots(g, extra, "#"); return g;
+}
+
+var aStand  = aFrame(A_BODY,0,0,LEGS,13);
+var aBlink  = aFrame(A_BLINK,0,0,LEGS,13);
+var aCrouch = aFrame(A_BODY,1,0,CROUCH,14);
+var aPeck   = aFrame(A_PECK,0,0,LEGS,13);
+var aLean   = aFrame(A_BODY,0,1,LEGS,13);
+var aPing   = aFrame(A_BODY,0,0,LEGS,13,PING);
+var aHop1   = aFrame(A_BODY,-2,0,TUCK,11,SPARK1);
+var aHop2   = aFrame(A_BODY,-2,0,TUCK,11,SPARK2);
+var aHop3   = aFrame(A_BODY,-1,0,TUCK,12,SPARK1);
+var aPaused = aFrame(A_PAUSED,0,0,null,0);
+function rep(f,n){ var a=[]; for(var i=0;i<n;i++) a.push(f); return a; }
+
+var cB = cFrame(C_BUST,0), cBl = cFrame(C_BLINK,0), cDn = cFrame(C_BUST,1), cUp = cFrame(C_BUST,-1);
+
+var STATES = ["idle","working","progress","nudge","paused"];
+var LABEL = {idle:"Idle",working:"Working",progress:"Progress",nudge:"Nudge",paused:"Paused"};
+
+var DATA = {
+  A:{
+    idle:    {dur:3.6,key:0,frames:[].concat(rep(aStand,8),[aBlink],rep(aStand,5),[aCrouch,aCrouch],rep(aStand,2))},
+    working: {dur:1.2,key:3,frames:[aStand,aStand,aStand,aPeck]},
+    progress:{dur:1.6,key:2,frames:[aStand,aCrouch,aHop1,aHop2,aHop3,aCrouch].concat(rep(aStand,4))},
+    nudge:   {dur:3.2,key:5,frames:[aStand,aLean,aStand,aLean,aStand,aPing,aPing,aStand,aPing,aPing].concat(rep(aStand,6))},
+    paused:  {dur:1,key:0,frames:[aPaused]}
+  },
+  C:{
+    idle:    {dur:3.2,key:0,frames:[].concat(rep(cB,10),[cBl],rep(cB,5))},
+    working: {dur:1.2,key:2,frames:[cB,cB,cDn,cDn]},
+    progress:{dur:1.6,key:2,frames:[cB,cDn,cFrame(C_BUST,-2,C_SPARK1),cFrame(C_BUST,-2,C_SPARK2),cUp].concat(rep(cB,5))},
+    nudge:   {dur:3.2,key:4,frames:[cB,cUp,cB,cUp,cFrame(C_BUST,-1,C_PING),cUp,cFrame(C_BUST,-1,C_PING),cUp].concat(rep(cB,8))},
+    paused:  {dur:1,key:0,frames:[cFrame(C_CLOSED,6)]}
+  }
+};
+
+var PAL = {
+  light:{B:"#7A4718",W:"#FFF8EE",K:"#2A1A0E",A:"#E39A2D"},
+  dark: {B:"#C98B52",W:"#FFF1DE",K:"#1E140B",A:"#F2B54F"}
+};
+
+if (typeof document === "undefined") { if (typeof module!=="undefined") module.exports={DATA:DATA}; return; }
+
+/* ---------------- renderers ---------------- */
+var stripCache = {};
+function stripURL(state, theme){
+  var id = state+"/"+theme;
+  if(stripCache[id]) return stripCache[id];
+  var frames = DATA.A[state].frames, pal = PAL[theme];
+  var c = document.createElement("canvas"); c.width = 16*frames.length; c.height = 16;
+  var x = c.getContext("2d");
+  frames.forEach(function(g,i){ g.forEach(function(row,y){ row.forEach(function(ch,X){
+    if(ch===".") return; x.fillStyle = pal[ch]; x.fillRect(i*16+X, y, 1, 1);
+  }); }); });
+  return (stripCache[id] = c.toDataURL("image/png"));
+}
+function cRects(frames){
+  var out = "";
+  frames.forEach(function(g,i){ g.forEach(function(row,y){
+    var x=0; while(x<16){ if(row[x]!=="."){ var s=x; while(x<16&&row[x]!==".") x++; out += '<rect x="'+(i*16+s)+'" y="'+y+'" width="'+(x-s)+'" height="1"/>'; } else x++; }
+  }); });
+  return out;
+}
+function vars(el, d, size){
+  el.style.setProperty("--s", size+"px");
+  el.style.setProperty("--n", d.frames.length);
+  el.style.setProperty("--key", d.key);
+  el.style.setProperty("--dur", d.dur+"s");
+}
+var B_SVG =
+  '<g class="all">'+
+    '<g class="legs" stroke="var(--b)" stroke-width="2" stroke-linecap="round"><path d="M14 25.5 L13 31"/><path d="M19 25.5 L20 31"/></g>'+
+    '<path fill="var(--b)" d="M1.5 18.5 C6 14.5 11 13.5 16 14.5 L23.5 14.5 C26.5 19 24.5 26.5 16 26.5 C10 26.5 5.5 23 1.5 18.5Z"/>'+
+    '<path fill="var(--w)" d="M10.5 22.8 C14 20.4 20 19.4 24.6 18.6 C24.4 22.6 21.4 25.2 16.2 25.2 C13.6 25.2 11.8 24.3 10.5 22.8Z"/>'+
+    '<path d="M15.8 16.6 C19 19.4 22.6 19.6 25.2 16.8" stroke="var(--k)" stroke-width="2.8" fill="none" stroke-linecap="round"/>'+
+    '<g class="head">'+
+      '<circle cx="21" cy="10.5" r="6.8" fill="var(--b)"/>'+
+      '<path class="beak" d="M27 8.6 L31.4 10.6 L27 12.6Z" fill="var(--b)"/>'+
+      '<circle cx="23" cy="10.2" r="3.9" fill="var(--w)"/>'+
+      '<ellipse class="eye" cx="24" cy="9.9" rx="1.8" ry="1.8" fill="var(--k)"/>'+
+      '<path class="lid" d="M21.8 10.4 Q24 12.2 26 10.4" stroke="var(--k)" stroke-width="1.5" fill="none" stroke-linecap="round"/>'+
+    '</g>'+
+    '<g class="spark" stroke="var(--a)" stroke-width="1.6" stroke-linecap="round"><path d="M6 6.5 L6 3"/><path d="M9.5 7.5 L11.8 5.2"/><path d="M3.5 8.5 L1.2 7"/></g>'+
+  '</g>'+
+  '<circle class="ping" cx="29" cy="2.6" r="2" fill="var(--a)"/>';
+
+function mk(v, state, theme, size){
+  if(v==="A"){
+    var d = DATA.A[state], el = document.createElement("span");
+    el.className = "spr" + (d.frames.length===1 ? " still" : "");
+    vars(el, d, size);
+    el.style.backgroundImage = "url("+stripURL(state, theme)+")";
+    el.setAttribute("role","img"); el.setAttribute("aria-label","Pip, "+LABEL[state]);
+    return el;
+  }
+  if(v==="B"){
+    var w = document.createElement("span");
+    w.innerHTML = '<svg class="vb st-'+state+'" width="'+size+'" height="'+size+'" viewBox="0 0 32 32" role="img" aria-label="Tick, '+LABEL[state]+'">'+B_SVG+'</svg>';
+    return w.firstChild;
+  }
+  var dc = DATA.C[state], clip = document.createElement("span");
+  clip.className = "clip"; vars(clip, dc, size);
+  var n = dc.frames.length;
+  clip.innerHTML = '<svg class="strip'+(n===1?" still":"")+'" width="'+(n*size)+'" height="'+size+'" viewBox="0 0 '+(16*n)+' 16" shape-rendering="crispEdges" fill="currentColor" role="img" aria-label="Peek, '+LABEL[state]+'">'+cRects(dc.frames)+'</svg>';
+  return clip;
+}
+
+/* ---------------- page ---------------- */
+var VARIANTS = [
+  {id:"A", name:"A. Pip", tag:"16×16 pixel sprite · 3 colors + signal · CSS steps() sprite strip", big:192,
+   notes:["The 16px frame is the master. The 32px and 192px versions are exact 2× and 12× nearest-neighbour scales (192 instead of 200 keeps the pixels whole).",
+          "Each state is a short strip of frames: idle 18, working 4, progress 10, nudge 16, paused 1. In production this is one PNG per theme plus a background-position steps() animation.",
+          "Nudge: two quick 'run-and-stop' leans, then an amber signal light blinks twice. No shaking, no red, no face pulled at you."]},
+  {id:"B", name:"B. Tick", tag:"flat vector · 32-unit grid · motion held in steps(1) keyframes", big:200,
+   notes:["Seven shapes: body, belly, collar, head, face patch, eye, beak. The eye is sized to land on a full pixel at 16px.",
+          "Motion is a few held poses, not tweens: blink, a 1px bob, a 16° peck, a 5-unit hop, a 14° look-up. That is cheap and stays crisp.",
+          "Paused: beak tucked, eye becomes a closed curve, head sinks, and the whole bird drops to 62% opacity. Fully static."]},
+  {id:"C", name:"C. Peek", tag:"1-bit bust · menu-bar template icon · peeks over the edge", big:192,
+   notes:["Uses one color (currentColor) with the face patch knocked out, so it works as a macOS template image and follows the menu bar's tint for free.",
+          "Only the head and collar are drawn, peeking over the top of the pill. At 16px that is the most bird you can fit.",
+          "Paused is the clearest privacy signal here: the bird shuts its eye and ducks below the edge, so only the crown shows. When it isn't watching, you can see it isn't."]}
+];
+var current = {A:"idle",B:"idle",C:"idle"};
+var root = document.getElementById("variants");
+
+function figure(node, cap){
+  var f = document.createElement("figure"); f.appendChild(node);
+  var c = document.createElement("figcaption"); c.textContent = cap; f.appendChild(c); return f;
+}
+function swatch(v, state, theme){
+  var sw = document.createElement("div"); sw.className = "sw theme-"+theme;
+  sw.innerHTML = '<div class="lbl">'+(theme==="light"?"Light":"Dark")+'</div>';
+  var sizes = document.createElement("div"); sizes.className = "sizes";
+  var big = document.createElement("div"); big.className = "big"; big.appendChild(mk(v.id, state, theme, v.big));
+  sizes.appendChild(figure(big, v.big+"px"));
+  sizes.appendChild(figure(mk(v.id, state, theme, 32), "32px"));
+  sizes.appendChild(figure(mk(v.id, state, theme, 16), "16px"));
+  sw.appendChild(sizes); return sw;
+}
+function context(v, state, theme){
+  var ctx = document.createElement("div"); ctx.className = "ctx theme-"+theme;
+  var mb = document.createElement("div"); mb.className = "menubar";
+  mb.innerHTML = '<span><b>Plover</b>&nbsp;&nbsp;File&nbsp;&nbsp;Edit&nbsp;&nbsp;View</span>';
+  var r = document.createElement("span"); r.className = "mb-r";
+  var tray = document.createElement("span"); tray.className = "tray"; tray.title = "Menu bar, 16px"; tray.appendChild(mk(v.id, state, theme, 16));
+  r.appendChild(tray);
+  r.insertAdjacentHTML("beforeend", '<span class="glyph"></span><span>9:41</span>');
+  mb.appendChild(r); ctx.appendChild(mb);
+  var stage = document.createElement("div"); stage.className = "stage";
+  var pill = document.createElement("div"); pill.className = "pill" + (state==="paused" ? " paused" : "");
+  var text = {idle:"Outline chapter 2",working:"Outline chapter 2 · on track",progress:"Section 3 done · 60%",nudge:"Back to chapter 2?",paused:"Paused · not watching"}[state];
+  pill.innerHTML = '<span class="dot"></span><span class="t">'+text+'</span><span class="bar"><i style="width:'+(state==="progress"?60:40)+'%"></i></span>';
+  var perch = document.createElement("span"); perch.className = "perch" + (v.id==="C" ? " peek" : "");
+  perch.appendChild(mk(v.id, state, theme, 32));
+  pill.appendChild(perch); stage.appendChild(pill); ctx.appendChild(stage);
+  return ctx;
+}
+function allStates(v, theme){
+  var g = document.createElement("div"); g.className = "grid";
+  STATES.forEach(function(s){
+    var c = document.createElement("div"); c.className = "cell theme-"+theme;
+    var row = document.createElement("div"); row.className = "row";
+    row.appendChild(mk(v.id, s, theme, 32)); row.appendChild(mk(v.id, s, theme, 16));
+    c.appendChild(row);
+    var l = document.createElement("div"); l.className = "lbl"; l.textContent = LABEL[s]; c.appendChild(l);
+    g.appendChild(c);
+  });
+  return g;
+}
+function buildVariant(v){
+  var sec = document.createElement("section"); sec.className = "variant"; sec.id = "variant-"+v.id;
+  sec.innerHTML = '<div class="vhead"><h2>'+v.name+'</h2><span class="tag">'+v.tag+'</span></div>';
+  var bar = document.createElement("div"); bar.className = "states"; bar.setAttribute("role","group"); bar.setAttribute("aria-label", v.name+" state");
+  STATES.forEach(function(s){
+    var b = document.createElement("button"); b.textContent = LABEL[s]; b.dataset.state = s;
+    b.setAttribute("aria-pressed", String(s===current[v.id]));
+    b.addEventListener("click", function(){ current[v.id] = s; draw(); });
+    bar.appendChild(b);
+  });
+  sec.appendChild(bar);
+  var hero = document.createElement("div"); sec.appendChild(hero);
+  var ul = document.createElement("ul"); ul.className = "notes";
+  v.notes.forEach(function(n){ var li = document.createElement("li"); li.textContent = n; ul.appendChild(li); });
+  sec.appendChild(ul);
+  var h = document.createElement("h3"); h.style.marginTop = "18px"; h.textContent = "All states · 32px + 16px"; sec.appendChild(h);
+  sec.appendChild(allStates(v, "light")); sec.appendChild(allStates(v, "dark"));
+  function draw(){
+    var s = current[v.id];
+    bar.querySelectorAll("button").forEach(function(b){ b.setAttribute("aria-pressed", String(b.dataset.state===s)); });
+    hero.innerHTML = "";
+    var sws = document.createElement("div"); sws.className = "swatches";
+    sws.appendChild(swatch(v, s, "light")); sws.appendChild(swatch(v, s, "dark"));
+    hero.appendChild(sws);
+    var h3 = document.createElement("h3"); h3.style.marginTop = "16px"; h3.textContent = "Perched · overlay pill (32px) + menu bar (16px)"; hero.appendChild(h3);
+    var cx = document.createElement("div"); cx.className = "swatches";
+    cx.appendChild(context(v, s, "light")); cx.appendChild(context(v, s, "dark"));
+    hero.appendChild(cx);
+  }
+  draw();
+  return sec;
+}
+VARIANTS.forEach(function(v){ root.appendChild(buildVariant(v)); });
+
+/* reduced motion: OS setting by default, manual override for preview */
+var mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+var override = null;
+var btn = document.getElementById("rmToggle");
+function applyRM(){
+  var on = override === null ? mq.matches : override;
+  document.body.classList.toggle("rm", on);
+  btn.setAttribute("aria-pressed", String(on));
+  btn.textContent = "Reduced motion: " + (on ? "on" : "off");
+}
+btn.addEventListener("click", function(){ override = !document.body.classList.contains("rm"); applyRM(); });
+if (mq.addEventListener) mq.addEventListener("change", applyRM);
+applyRM();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plover Dots</title>
+<style>
+:root{
+  --page:#F3F1EC; --card:#FFFFFF; --text:#1E2240; --muted:#626783; --line:#E3E0D8;
+  --stage-light:#F7F5F0; --stage-dark:#17181F;
+  --chip:#EFEDF7; --chip-on:#1E2240; --chip-on-text:#fff;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --page:#111218; --card:#1B1C24; --text:#ECEDF5; --muted:#9A9DB5; --line:#2C2E3A;
+    --chip:#262836; --chip-on:#ECEDF5; --chip-on-text:#1B1C24;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--text);font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:32px 16px 64px}
+h1{font-size:28px;margin:0 0 4px;letter-spacing:-.01em}
+h2{font-size:20px;margin:0}
+.sub{color:var(--muted);margin:0 0 20px}
+.intro{display:grid;grid-template-columns:1.4fr 1fr;gap:20px}
+@media (max-width:820px){.intro{grid-template-columns:1fr}}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px}
+.panel p{margin:0 0 10px}
+.panel p:last-child{margin:0}
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:6px}
+.sw{display:flex;align-items:center;gap:8px;font-size:12.5px}
+.sw i{width:22px;height:22px;border-radius:50%;flex:none;border:1px solid rgba(0,0,0,.08)}
+.sw code{color:var(--muted)}
+.toolbar{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin:24px 0 16px}
+.toggle{display:inline-flex;gap:8px;align-items:center;cursor:pointer;user-select:none;font-weight:600}
+.toggle input{width:18px;height:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;margin-bottom:20px}
+.card-head{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap}
+.tag{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.card .desc{color:var(--muted);margin:6px 0 14px;max-width:760px}
+.states{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.states button,.btn{border:0;background:var(--chip);color:var(--text);padding:6px 11px;border-radius:999px;font:600 13px system-ui,sans-serif;cursor:pointer}
+.states button.on{background:var(--chip-on);color:var(--chip-on-text)}
+.btn.play{background:#7088F0;color:#fff}
+.note{font-size:13px;color:var(--muted);min-height:20px;margin-bottom:12px}
+.note b{color:var(--text)}
+.stages{display:grid;grid-template-columns:1fr 1fr 110px 110px;gap:10px}
+@media (max-width:640px){.stages{grid-template-columns:1fr 1fr}}
+.stage{border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 8px 8px;min-height:190px;position:relative}
+.stage.small{min-height:110px}
+.stage.light{background:var(--stage-light);border:1px solid #E8E5DD}
+.stage.dark{background:var(--stage-dark);border:1px solid #2A2B35}
+.stage .lbl{font-size:11px;margin-top:6px;opacity:.6}
+.stage.light .lbl{color:#1E2240}.stage.dark .lbl{color:#E8E9F2}
+.stage svg{display:block;overflow:visible}
+
+/* in-context mock */
+.desk{position:relative;width:100%;aspect-ratio:16/10;min-height:420px;border-radius:14px;overflow:hidden;
+  background:radial-gradient(120% 90% at 20% 10%,#C9D3F7 0%,#E9D9E8 45%,#F4E3CF 100%)}
+.menubar{position:absolute;left:0;right:0;top:0;height:24px;background:rgba(255,255,255,.55);backdrop-filter:blur(6px);
+  font:600 11px system-ui,sans-serif;color:#333;display:flex;align-items:center;gap:14px;padding:0 12px}
+.doc{position:absolute;left:5%;top:9%;width:66%;height:82%;background:#fff;border-radius:10px;box-shadow:0 18px 40px rgba(30,34,64,.18);
+  filter:blur(1.6px);padding:34px 28px;overflow:hidden}
+.doc .bar{position:absolute;left:0;right:0;top:0;height:22px;background:#F1EFEA;border-radius:10px 10px 0 0}
+.doc .ln{height:9px;background:#DCDDE6;border-radius:5px;margin:0 0 11px}
+.doc .h{height:16px;width:46%;background:#B9BCD0;margin-bottom:20px}
+.buddywin{position:absolute;right:4%;bottom:6%;width:150px;display:flex;flex-direction:column;align-items:center;transition:width .4s}
+.ringwrap{position:relative;width:150px;height:150px;transition:transform .45s cubic-bezier(.5,0,.2,1)}
+.ringwrap svg.ring{position:absolute;inset:0}
+.ringwrap .bud{position:absolute;left:15px;top:15px;width:120px;height:120px;cursor:pointer}
+.buddywin.min .ringwrap{transform:scale(.36) translate(90px,110px)}
+.buddywin.min .readout{opacity:0}
+.readout{margin-top:2px;background:rgba(255,255,255,.82);border-radius:999px;padding:3px 10px;font:600 12px ui-monospace,Consolas,monospace;color:#1E2240;transition:opacity .3s;white-space:nowrap}
+.minbtn{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(255,255,255,.8);color:#1E2240;font:700 14px/1 system-ui;cursor:pointer;z-index:3}
+.buddywin.min .minbtn{display:none}
+.bubble{position:absolute;right:calc(4% + 120px);bottom:calc(6% + 120px);width:min(270px,62%);background:#fff;color:#1E2240;border-radius:16px 16px 4px 16px;
+  padding:12px 14px;box-shadow:0 10px 30px rgba(30,34,64,.18);font-size:14px;transition:opacity .25s, transform .25s;transform-origin:100% 100%}
+.bubble.hide{opacity:0;transform:scale(.92);pointer-events:none}
+.bubble .q{font-weight:600;margin-bottom:8px}
+.bubble .row{display:flex;flex-wrap:wrap;gap:6px}
+.bubble button{border:0;border-radius:999px;padding:6px 11px;font:600 12.5px system-ui;cursor:pointer;background:#EFEDF7;color:#1E2240}
+.bubble button.pri{background:#7088F0;color:#fff}
+.bubble input{width:100%;border:1px solid #DDDBE6;border-radius:8px;padding:7px 9px;font:13px system-ui;margin-bottom:8px;color:#1E2240;background:#fff}
+.bubble ol{margin:0 0 8px;padding-left:20px;font-size:13px}
+.bubble li.cur{font-weight:700}
+.bubble li.done{text-decoration:line-through;opacity:.55}
+.mockbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:12px 0 14px}
+.mockbar .sel button{margin-right:4px}
+.flowlog{font-size:13px;color:var(--muted)}
+.flowlog b{color:var(--text)}
+footer{color:var(--muted);font-size:13px;margin-top:24px}
+@media (max-width:560px){
+  .bubble{right:12px;bottom:calc(6% + 156px);width:calc(100% - 24px)}
+  .doc{width:88%}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Plover, direction A: Dots</h1>
+  <p class="sub">Round 2 mascot concept. A bird built from one to four soft dots that float, merge, split and re-form.</p>
+
+  <div class="intro">
+    <div class="panel">
+      <p><b>Rationale.</b> Voice-assistant dots feel alive because nothing ever snaps: everything eases, breathes and melts into its neighbour. Dots borrow that, then use the <i>arrangement</i> of a few blobs to suggest a bird: a big dot with a small one on top becomes a body and a head, a single blob that hops reads as a little sparrow. Each state is told through rhythm alone (a sequential bob for listening, a slow shared breath for working, a burst and regroup for celebrating), so it still reads at 40px where no detail survives. Colour shifts are soft and secondary; nudges use warm apricot and never red.</p>
+      <p><b>How I'd build it for real.</b> Ship it as code-driven SVG (or a tiny canvas), not Lottie. Each variant is a pose function <code>pose(state, t) → dots[]</code> and transitions are a 0.7s eased blend from the current frame to the new pose, which is exactly the <code>idle / working / …</code> state interface the spec asks for, and it makes interrupted transitions free. The goo merge is one SVG blur + alpha-threshold filter. If the art team wants hand-authored timing later, Rive's state machine is the natural upgrade path since it handles blended state transitions natively; Lottie is a poor fit because it can't blend between loops mid-flight.</p>
+    </div>
+    <div class="panel">
+      <p><b>Palette</b> (body colour follows state; the dots are always one flat colour so they merge cleanly).</p>
+      <div class="swatches">
+        <div class="sw"><i style="background:#7088F0"></i><span>Periwinkle <code>#7088F0</code><br>idle, working</span></div>
+        <div class="sw"><i style="background:#9B86F2"></i><span>Lilac <code>#9B86F2</code><br>listening</span></div>
+        <div class="sw"><i style="background:#56B4EA"></i><span>Sky <code>#56B4EA</code><br>checking-in</span></div>
+        <div class="sw"><i style="background:#F3AE63"></i><span>Apricot <code>#F3AE63</code><br>nudging</span></div>
+        <div class="sw"><i style="background:#F5C04A"></i><span>Sun <code>#F5C04A</code><br>celebrating</span></div>
+        <div class="sw"><i style="background:#62C9A3"></i><span>Mint <code>#62C9A3</code><br>break</span></div>
+        <div class="sw"><i style="background:#9AA1C6"></i><span>Dusk <code>#9AA1C6</code><br>sleeping</span></div>
+        <div class="sw"><i style="background:#1E2240"></i><span>Ink <code>#1E2240</code><br>eye (variant 3)</span></div>
+        <div class="sw"><i style="background:#E9784A"></i><span>Beak <code>#E9784A</code><br>beak (variant 3)</span></div>
+        <div class="sw"><i style="background:#F7F5F0"></i><span>Paper <code>#F7F5F0</code> / Night <code>#17181F</code></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <label class="toggle"><input type="checkbox" id="rm"> Preview reduced motion</label>
+    <span class="flowlog" id="rmnote"></span>
+  </div>
+
+  <div id="cards"></div>
+
+  <div class="card">
+    <div class="card-head"><h2>In context</h2><span class="tag">mini session flow</span></div>
+    <p class="desc">A fake laptop desktop with the buddy in its corner. Click the buttons in the speech bubble to move through a session. The ring is the focus timer (it runs fast here). The <b>–</b> button minimizes the buddy to sleep; click it to wake.</p>
+    <div class="mockbar">
+      <span class="sel" id="mocksel"></span>
+      <button class="btn" id="restart">Restart from the beginning</button>
+      <span class="flowlog" id="flowlog"></span>
+    </div>
+    <div class="desk" id="desk">
+      <div class="menubar"><span>Docs</span><span style="font-weight:400">File</span><span style="font-weight:400">Edit</span><span style="font-weight:400">View</span></div>
+      <div class="doc">
+        <div class="bar"></div>
+        <div class="ln h"></div>
+        <div class="ln" style="width:92%"></div><div class="ln" style="width:86%"></div><div class="ln" style="width:90%"></div><div class="ln" style="width:60%"></div>
+        <div style="height:14px"></div>
+        <div class="ln" style="width:88%"></div><div class="ln" style="width:94%"></div><div class="ln" style="width:81%"></div><div class="ln" style="width:89%"></div><div class="ln" style="width:42%"></div>
+        <div style="height:14px"></div>
+        <div class="ln" style="width:91%"></div><div class="ln" style="width:76%"></div>
+      </div>
+      <div class="bubble hide" id="bubble"></div>
+      <div class="buddywin" id="buddywin">
+        <div class="ringwrap">
+          <button class="minbtn" id="minbtn" title="Minimize">–</button>
+          <svg class="ring" viewBox="0 0 150 150" width="150" height="150">
+            <circle cx="75" cy="75" r="68" fill="rgba(255,255,255,.35)" stroke="rgba(255,255,255,.7)" stroke-width="5"/>
+            <circle id="ringfg" cx="75" cy="75" r="68" fill="none" stroke="#7088F0" stroke-width="5" stroke-linecap="round"
+              transform="rotate(-90 75 75)" stroke-dasharray="427.3" stroke-dashoffset="427.3" style="transition:stroke .5s"/>
+          </svg>
+          <div class="bud" id="mockbud"></div>
+        </div>
+        <div class="readout" id="readout">25:00 · ready</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Self-contained: inline SVG, CSS and vanilla JS. No external requests.</footer>
+</div>
+
+<script>
+(function(){
+const TAU = Math.PI*2, S = Math.sin, C = Math.cos;
+const STATES = ['idle','listening','working','break','checking-in','nudging','celebrating','sleeping'];
+const COLORS = {
+  'idle':'#7088F0','listening':'#9B86F2','working':'#7088F0','break':'#62C9A3',
+  'checking-in':'#56B4EA','nudging':'#F3AE63','celebrating':'#F5C04A','sleeping':'#9AA1C6'
+};
+/* fixed sample time per state for reduced motion: a representative still pose */
+const FIXED = {'idle':0.3,'listening':0.3,'working':1,'break':1.4,'checking-in':0.22,'nudging':0.2,'celebrating':0.5,'sleeping':2};
+
+function P(x,y,r,o,sx,sy){return {x:x,y:y,r:r,o:o==null?1:o,sx:sx||1,sy:sy||1};}
+function wave(t,period,phase){return S(TAU*t/period+(phase||0));}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function easeOut(x){return 1-Math.pow(1-x,3);}
+function easeIn(x){return x*x*x;}
+function easeIO(x){return x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;}
+/* two little hops then a rest: reads as a polite "hey?" */
+function doubleHop(t,period){
+  const p=(t%period)/period;
+  if(p<.18) return S(p/.18*Math.PI);
+  if(p<.32) return .45*S((p-.18)/.14*Math.PI);
+  return 0;
+}
+/* forward peck then glide back */
+function peck(t,period){
+  const p=(t%period)/period;
+  if(p<.22) return easeOut(p/.22);
+  if(p<.55) return 1-easeIO((p-.22)/.33);
+  return 0;
+}
+/* a single hop with a squash on landing */
+function hop(t,period){
+  const p=(t%period)/period;
+  const h = p<.45 ? S(p/.45*Math.PI) : 0;
+  const land = (p>=.45 && p<.62) ? S((p-.45)/.17*Math.PI) : 0;
+  return {h:h,land:land,p:p};
+}
+/* a dot that drifts up out of the body and dissolves, like a sleepy z */
+function zBubble(t,x0,y0){
+  const q=(t%4.6)/4.6;
+  return P(x0+13*q+2*S(q*7), y0-30*q, q<.12 ? 3+18*q : 5.2*(1-q)+0.6);
+}
+
+const VARIANTS = {
+  murmur:{
+    name:'1. Murmur', tag:'very abstract',
+    desc:'Three dots and nothing else, closest to a voice-assistant indicator. It is only a bird in how it moves: dots hop, peck and huddle like a flock of tiny shorebirds. Most brandable and calm, least "character".',
+    dots:[{layer:'goo'},{layer:'goo'},{layer:'goo'}],
+    notes:{
+      'idle':'Three dots float on a slow, staggered breath.',
+      'listening':'Dots bob one after another, a ripple that says "taking it in".',
+      'working':'All three melt into one blob that breathes slowly in sync, 4s cycle.',
+      'break':'Dots spread out, sink low, flatten and drift. Loose and unhurried.',
+      'checking-in':'The middle dot pops up like a raised head and does a polite double hop.',
+      'nudging':'A ripple runs left to right, a soft "this way" lean back toward the work.',
+      'celebrating':'The blob bursts into three, spins, and regroups. Repeats as a joy loop.',
+      'sleeping':'Merged into one dim, low dot breathing slowly; a little dot drifts up like a "z".'
+    },
+    pose:function(s,t){
+      const out=[];
+      if(s==='idle'){
+        for(let i=0;i<3;i++){const w=wave(t,2.6,-i*.9);out.push(P(30+20*i,56+2.2*w,7.9+.5*wave(t,2.6,-i*.9+1.2)));}
+      }else if(s==='listening'){
+        for(let i=0;i<3;i++){const b=Math.max(0,wave(t,1.15,-i*1.05));out.push(P(30+20*i,57-9*b*b,7.8+.8*b,1,1-.06*b,1+.08*b));}
+      }else if(s==='working'){
+        const br=1+.07*wave(t,4);
+        out.push(P(42,57,11*br),P(50,54,13.5*br),P(58,57,11*br));
+      }else if(s==='break'){
+        for(let i=0;i<3;i++) out.push(P(27+23*i+1.5*wave(t,7,i),64+1.2*wave(t,5.5,i*2),8,1,1.14,.82));
+      }else if(s==='checking-in'){
+        const h=doubleHop(t,2.4), sway=3*wave(t,4.8);
+        out.push(P(35,61,7.6,1,1.05,.95),P(50+sway,43-9*h,10.5,1,1-.05*h,1+.08*h),P(65,61,7.6,1,1.05,.95));
+      }else if(s==='nudging'){
+        for(let i=0;i<3;i++){const k=Math.max(0,wave(t,1.9,-i*.85));out.push(P(29+20*i+7*k*k,56-2.5*k,7.8+1.1*k,1,1+.08*k,1-.05*k));}
+      }else if(s==='celebrating'){
+        const p=(t%1.6)/1.6;
+        const e = p<.3 ? easeOut(p/.3) : 1-easeIO((p-.3)/.7);
+        for(let i=0;i<3;i++){const a=-Math.PI/2+(i-1)*2.094+p*1.6;out.push(P(50+C(a)*24*e,54+S(a)*24*e,10.5-2*e));}
+      }else if(s==='sleeping'){
+        const br=1+.04*wave(t,5.5);
+        out.push(P(46,66,9*br),P(52,65,10.5*br),zBubble(t,55,58));
+      }
+      return out;
+    }
+  },
+  pair:{
+    name:'2. Pair', tag:'in between',
+    desc:'A big dot and a small dot that read as body and head, plus one free "thought" dot that splits off to point, wonder, or float away as a "z". The head can tilt, tuck and peck, so it has posture, but no face.',
+    dots:[{layer:'goo'},{layer:'goo'},{layer:'goo'}],
+    notes:{
+      'idle':'Body breathes; the head bobs a beat behind it and slowly looks around.',
+      'listening':'Head cocks to the side and nods; a small dot bobs above it in sequence, "thinking".',
+      'working':'Head tucks down into the body: one round, hunched little bird, breathing in sync.',
+      'break':'Body flattens and sinks; the head rests low on its side. Slow 6s breath.',
+      'checking-in':'Head lifts high and tilts side to side; the small dot hops beside it like a "?".',
+      'nudging':'Head pecks forward and a dot shoots out and back, pointing gently at the work.',
+      'celebrating':'The whole bird hops with a squash on landing; the free dot loops around it.',
+      'sleeping':'Head tucked in fully, dim, slow breath; the free dot drifts up as a "z".'
+    },
+    pose:function(s,t){
+      if(s==='idle'){
+        const b=wave(t,3.4);
+        return [P(48,62,17*(1+.03*b)),P(63+1.8*wave(t,9),41+1.6*wave(t,3.4,-.8),10.5),P(48,62,4)];
+      }
+      if(s==='listening'){
+        const hb=Math.max(0,wave(t,1.2)), sb=Math.max(0,wave(t,1.2,-1.5)), tilt=wave(t,4.8);
+        return [P(48,63+.8*hb,17),P(65+2*tilt,42-4*hb*hb,10.5,1,1-.04*hb,1+.05*hb),P(80+1.5*tilt,26-5*sb*sb,5.6)];
+      }
+      if(s==='working'){
+        const br=1+.05*wave(t,4);
+        return [P(48,62,17*br),P(58,48,10.5*br),P(48,62,4)];
+      }
+      if(s==='break'){
+        const br=1+.025*wave(t,6);
+        return [P(52,68,17*br,1,1.16,.82),P(35,63+.8*wave(t,6,-.6),9.6),P(52,68,4)];
+      }
+      if(s==='checking-in'){
+        const tilt=wave(t,2.4), h=doubleHop(t,2.4);
+        return [P(48,63-2*h,16.5),P(62+4*tilt,33-4*h,10.5),P(80,27-6*doubleHop(t+.25,2.4)+1.5*wave(t,1.2),5.4)];
+      }
+      if(s==='nudging'){
+        const k=peck(t,1.7), k2=peck(t-.08,1.7);
+        const hx=63+8*k, hy=42+5*k;
+        return [P(48+2*k,62,17),P(hx,hy,10.5),P(hx+20*k2,hy+3*k2,5.6)];
+      }
+      if(s==='celebrating'){
+        const H=hop(t,1.4), a=H.p*TAU-Math.PI/2, e=S(H.p*Math.PI);
+        const by=62-13*H.h;
+        return [P(48,by+2.5*H.land,16.5,1,1-.05*H.h+.12*H.land,1+.06*H.h-.12*H.land),P(62,41-16*H.h+3*H.land,10.5),P(50+C(a)*28*e,52+S(a)*24*e,5.6)];
+      }
+      /* sleeping */
+      const br=1+.035*wave(t,5.5);
+      return [P(50,64,16*br),P(56,56,9.5*br),zBubble(t,56,54)];
+    }
+  },
+  chick:{
+    name:'3. Chick', tag:'clearly a bird',
+    desc:'Four dots: a body and head that melt together, a dark eye and a small warm beak. Clearly a little round bird, but still nothing but circles. The eye carries most of the feeling: blinks, looks down at your work, squints when happy, closes when asleep.',
+    dots:[{layer:'goo'},{layer:'goo'},{layer:'top',fill:'#1E2240'},{layer:'top',fill:'#E9784A'}],
+    notes:{
+      'idle':'Gentle breath, head bobs a beat behind, blinks every few seconds.',
+      'listening':'Head cocks and nods while the eye looks up, the classic bird "hm?".',
+      'working':'Head dips and the eye looks down-right at your work; slow synced breath, slow blinks.',
+      'break':'Settles low and fluffs out wider; eye half closed, relaxed.',
+      'checking-in':'Head up, eye wide, a polite double hop and a head tilt.',
+      'nudging':'Leans in and pecks toward the work, then glides back. Warm apricot, never red.',
+      'celebrating':'Big hop with squash on landing, eye squeezed happy, beak a little bigger.',
+      'sleeping':'Head tucked into the body, eye closed, beak hidden, slow dim breath.'
+    },
+    pose:function(s,t){
+      function blink(tt){return (tt%3.7)<.14 ? .1 : 1;}
+      function bird(bx,by,br,hx,hy,hr,o){
+        o=o||{};
+        const ex=o.ex==null?4.5:o.ex, ey=o.ey==null?-1.5:o.ey;
+        const beak=o.beak==null?1:o.beak;
+        return [
+          P(bx,by,br,1,o.bsx||1,o.bsy||1),
+          P(hx,hy,hr),
+          P(hx+ex,hy+ey,3.3*(o.esz||1),1,1,o.eye==null?1:o.eye),
+          P(hx+hr-.5+(o.bdx||0),hy+2.6+(o.bdy||0),3.8*beak)
+        ];
+      }
+      if(s==='idle'){
+        const b=wave(t,3.4);
+        return bird(47,64,17*(1+.03*b),62,42+1.6*wave(t,3.4,-.8),12,{eye:blink(t)});
+      }
+      if(s==='listening'){
+        const hb=Math.max(0,wave(t,1.2)), tilt=wave(t,2.4);
+        return bird(47,65+.8*hb,17,64+2*tilt,41-4*hb*hb,12,{ey:-3.5,ex:4+tilt,eye:blink(t+1)});
+      }
+      if(s==='working'){
+        const br=1+.04*wave(t,4);
+        return bird(47,64,17*br,60,46,11.5*br,{ex:5.5,ey:1.5,eye:(t%6)<.22?.15:1,bdy:2});
+      }
+      if(s==='break'){
+        const br=1+.025*wave(t,6);
+        return bird(49,68,17*br,61,52+.8*wave(t,6,-.6),11.5,{bsx:1.15,bsy:.84,eye:.35,ey:0});
+      }
+      if(s==='checking-in'){
+        const h=doubleHop(t,2.4), tilt=wave(t,4.8);
+        return bird(47,64-3*h,17,62+3*tilt,38-7*h,12,{esz:1.15,ey:-2,eye:blink(t+2)});
+      }
+      if(s==='nudging'){
+        const k=peck(t,1.7);
+        return bird(47+1.5*k,64,17,63+7*k,42+6*k,12,{ex:5.5,ey:-.5+1.5*k});
+      }
+      if(s==='celebrating'){
+        const H=hop(t,1.4);
+        return bird(47,64-13*H.h+2.5*H.land,16.5,62,42-15*H.h+3*H.land,12,
+          {bsx:1-.05*H.h+.12*H.land,bsy:1+.06*H.h-.12*H.land,eye:.32,esz:1.1,beak:1.2});
+      }
+      const br=1+.035*wave(t,5.5);
+      return bird(50,64,16.5*br,57,55,11,{eye:.12,ex:4,ey:1,beak:0,bdx:-4});
+    }
+  }
+};
+
+/* ---------- rendering engine ---------- */
+let RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let uid=0;
+const instances=[];
+const NS='http://www.w3.org/2000/svg';
+function hex(h){return [parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];}
+function rgb(a){return 'rgb('+a.map(function(v){return Math.round(v);}).join(',')+')';}
+function now(){return performance.now()/1000;}
+
+function makeBuddy(host,key,size,state){
+  const v=VARIANTS[key], id='goo'+(uid++);
+  const svg=document.createElementNS(NS,'svg');
+  svg.setAttribute('viewBox','0 0 100 100');svg.setAttribute('width',size);svg.setAttribute('height',size);
+  svg.setAttribute('role','img');svg.setAttribute('aria-label','Plover buddy, '+state);
+  svg.innerHTML='<defs><filter id="'+id+'" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">'+
+    '<feGaussianBlur in="SourceGraphic" stdDeviation="2.8"/>'+
+    '<feColorMatrix mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -9"/></filter></defs>';
+  const goo=document.createElementNS(NS,'g');goo.setAttribute('filter','url(#'+id+')');
+  const top=document.createElementNS(NS,'g');
+  svg.appendChild(goo);svg.appendChild(top);
+  const els=v.dots.map(function(d){
+    const e=document.createElementNS(NS,'ellipse');
+    if(d.fill) e.setAttribute('fill',d.fill);
+    (d.layer==='top'?top:goo).appendChild(e);return e;
+  });
+  host.appendChild(svg);
+  const inst={v:v,key:key,svg:svg,goo:goo,els:els,state:state,from:null,fromColor:null,sw:-99,last:null,lastColor:hex(COLORS[state])};
+  instances.push(inst);
+  return inst;
+}
+function setState(inst,s){
+  if(inst.state===s) return;
+  inst.from=inst.last?inst.last.map(function(d){return Object.assign({},d);}):null;
+  inst.fromColor=inst.lastColor.slice();
+  inst.sw=now();inst.state=s;
+  inst.svg.setAttribute('aria-label','Plover buddy, '+s);
+}
+function removeBuddy(inst){const i=instances.indexOf(inst);if(i>=0)instances.splice(i,1);inst.svg.remove();}
+
+function frame(){
+  const T=now();
+  for(const inst of instances){
+    const tp = RM ? FIXED[inst.state] : T;
+    let target=inst.v.pose(inst.state,tp);
+    const dur = RM ? .3 : .7;
+    const w = inst.from ? easeIO(clamp((T-inst.sw)/dur,0,1)) : 1;
+    let vals=target, col=hex(COLORS[inst.state]);
+    if(w<1){
+      vals=target.map(function(d,i){const f=inst.from[i]||d;return {x:f.x+(d.x-f.x)*w,y:f.y+(d.y-f.y)*w,r:f.r+(d.r-f.r)*w,o:f.o+(d.o-f.o)*w,sx:f.sx+(d.sx-f.sx)*w,sy:f.sy+(d.sy-f.sy)*w};});
+      col=inst.fromColor.map(function(c,i){return c+(col[i]-c)*w;});
+    }
+    inst.last=vals;inst.lastColor=col;
+    inst.goo.setAttribute('fill',rgb(col));
+    for(let i=0;i<vals.length;i++){
+      const d=vals[i],e=inst.els[i];
+      e.setAttribute('cx',d.x.toFixed(2));e.setAttribute('cy',d.y.toFixed(2));
+      e.setAttribute('rx',Math.max(0,d.r*d.sx).toFixed(2));e.setAttribute('ry',Math.max(0,d.r*d.sy).toFixed(2));
+      e.setAttribute('opacity',d.o.toFixed(2));
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ---------- variant cards ---------- */
+const cardsHost=document.getElementById('cards');
+Object.keys(VARIANTS).forEach(function(key){
+  const v=VARIANTS[key];
+  const card=document.createElement('div');card.className='card';
+  card.innerHTML='<div class="card-head"><h2>'+v.name+'</h2><span class="tag">'+v.tag+'</span></div>'+
+    '<p class="desc">'+v.desc+'</p><div class="states"></div><div class="note"></div><div class="stages"></div>';
+  cardsHost.appendChild(card);
+  const statesEl=card.querySelector('.states'), note=card.querySelector('.note'), stages=card.querySelector('.stages');
+  const insts=[];
+  [['light',140],['dark',140],['light',40],['dark',40]].forEach(function(c){
+    const st=document.createElement('div');st.className='stage '+c[0]+(c[1]<100?' small':'');
+    const holder=document.createElement('div');st.appendChild(holder);
+    const l=document.createElement('div');l.className='lbl';l.textContent=c[1]+'px · '+c[0];st.appendChild(l);
+    stages.appendChild(st);
+    insts.push(makeBuddy(holder,key,c[1],'idle'));
+  });
+  let timers=[];
+  function show(s){
+    insts.forEach(function(i){setState(i,s);});
+    statesEl.querySelectorAll('button[data-s]').forEach(function(b){b.classList.toggle('on',b.dataset.s===s);});
+    note.innerHTML='<b>'+s+'</b> · '+v.notes[s];
+  }
+  STATES.forEach(function(s){
+    const b=document.createElement('button');b.textContent=s;b.dataset.s=s;
+    b.onclick=function(){timers.forEach(clearTimeout);timers=[];show(s);};
+    statesEl.appendChild(b);
+  });
+  const play=document.createElement('button');play.className='btn play';play.textContent='▶ Transition: working → celebrating → break';
+  play.onclick=function(){
+    timers.forEach(clearTimeout);timers=[];
+    show('working');
+    timers.push(setTimeout(function(){show('celebrating');},2200));
+    timers.push(setTimeout(function(){show('break');},5000));
+  };
+  statesEl.appendChild(play);
+  show('idle');
+});
+
+/* ---------- reduced motion toggle ---------- */
+const rmBox=document.getElementById('rm'), rmNote=document.getElementById('rmnote');
+function syncRM(){
+  rmBox.checked=RM;
+  rmNote.textContent = RM ? 'Loops are frozen to one still pose per state; state changes are a short 0.3s glide.' : 'Your system setting is respected on load.';
+}
+rmBox.onchange=function(){RM=rmBox.checked;syncRM();};
+window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change',function(e){RM=e.matches;syncRM();});
+syncRM();
+
+/* ---------- in-context mock ---------- */
+const bubble=document.getElementById('bubble'), readout=document.getElementById('readout'), ring=document.getElementById('ringfg');
+const flowlog=document.getElementById('flowlog'), win=document.getElementById('buddywin'), budHost=document.getElementById('mockbud');
+const RING=427.3, WORK=25*60, BREAK=5*60, SPEED=12;
+let mockKey='chick', mock=makeBuddy(budHost,mockKey,120,'checking-in');
+const STEPS=['Reread the essay prompt','Draft a hook sentence','Write the thesis and roadmap'];
+let stepIdx=1, done=[true,false,false], phase='work', remaining=WORK*.55, step='check', nudged=true, timer=null, prevStep=null;
+let lastTick=now();
+
+function fmt(sec){sec=Math.max(0,Math.ceil(sec));return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');}
+function stepsHtml(list,cur,dn){return '<ol>'+list.map(function(s,i){return '<li class="'+(dn&&dn[i]?'done':(i===cur?'cur':''))+'">'+s+'</li>';}).join('')+'</ol>';}
+function later(fn,ms){clearTimeout(timer);timer=setTimeout(fn,ms);}
+function say(html,buttons){
+  bubble.innerHTML=html+(buttons&&buttons.length?'<div class="row"></div>':'');
+  const row=bubble.querySelector('.row');
+  (buttons||[]).forEach(function(b){const el=document.createElement('button');el.textContent=b[0];if(b[2])el.className='pri';el.onclick=b[1];row.appendChild(el);});
+  bubble.classList.remove('hide');
+}
+function hush(){bubble.classList.add('hide');}
+function running(){return step==='work'||step==='nudge'||step==='check'||step==='brk';}
+
+function go(s){
+  step=s;clearTimeout(timer);
+  flowlog.innerHTML='State: <b>'+({ask:'idle',think:'listening',plan:'idle',work:'working',nudge:'nudging',check:'checking-in',yay:'celebrating',brk:'break',fin:'celebrating',sleep:'sleeping'}[s])+'</b>';
+  if(s==='ask'){
+    setState(mock,'idle');phase='work';remaining=WORK;stepIdx=0;done=[false,false,false];nudged=false;
+    say('<div class="q">What are you working on?</div><input id="taskin" value="Write the intro section of my history essay">',[['Break it down',function(){go('think');},true]]);
+  }else if(s==='think'){
+    setState(mock,'listening');say('<div class="q">Hmm, let me break that into steps…</div>');
+    later(function(){go('plan');},2400);
+  }else if(s==='plan'){
+    setState(mock,'idle');
+    say('<div class="q">Here\'s a plan. Look okay?</div>'+stepsHtml(STEPS,0,done),[['Start 25:00',function(){go('work');},true]]);
+  }else if(s==='work'){
+    setState(mock,'working');phase='work';hush();
+    later(function(){go(nudged?'check':'nudge');},4200);
+  }else if(s==='nudge'){
+    setState(mock,'nudging');nudged=true;
+    say('<div class="q">Psst. Still with “'+STEPS[stepIdx].toLowerCase()+'”? Let\'s lock back in.</div>',[['I\'m back',function(){go('work');},true]]);
+  }else if(s==='check'){
+    setState(mock,'checking-in');
+    say('<div class="q">How\'s step '+(stepIdx+1)+' going?</div>',[
+      ['Done',function(){go('yay');},true],
+      ['Still on it',function(){go('work');say('<div class="q">Got it. I\'m right here.</div>');later(function(){hush();later(function(){go('check');},3600);},1500);}],
+      ['Stuck',function(){
+        setState(mock,'listening');say('<div class="q">No worries. Let\'s make it smaller…</div>');
+        clearTimeout(timer);timer=setTimeout(function(){
+          setState(mock,'idle');
+          say('<div class="q">Try just these:</div><ol><li class="cur">Write one ugly first sentence</li><li>Swap in a stronger verb</li></ol>',[['Try the first one',function(){go('work');},true]]);
+        },2000);
+      }]
+    ]);
+  }else if(s==='yay'){
+    setState(mock,'celebrating');done[stepIdx]=true;
+    say('<div class="q">Nice! Step '+(stepIdx+1)+' done.</div>');
+    later(function(){
+      if(stepIdx>=STEPS.length-1){go('fin');return;}
+      stepIdx++;nudged=false;go('brk');
+    },2600);
+  }else if(s==='brk'){
+    setState(mock,'break');phase='break';remaining=BREAK;
+    say('<div class="q">Break time. Stretch, grab some water.</div><div style="font-size:12.5px;margin-bottom:8px">Next up: '+STEPS[stepIdx]+'</div>',[['Back to it',function(){phase='work';remaining=WORK;go('work');},true]]);
+  }else if(s==='fin'){
+    setState(mock,'celebrating');phase='work';remaining=0;
+    say('<div class="q">That\'s the whole intro. Good work today.</div>'+stepsHtml(STEPS,-1,done),[['Start something new',function(){go('ask');},true]]);
+  }
+}
+function render(){
+  const T=now(), dt=T-lastTick;lastTick=T;
+  if(running() && !win.classList.contains('min')){
+    remaining-=dt*SPEED;
+    if(remaining<=0){
+      if(phase==='work'){remaining=0;if(step==='work'){done[stepIdx]=true;go('yay');}}
+      else{phase='work';remaining=WORK;go('work');}
+    }
+  }
+  const total=phase==='break'?BREAK:WORK;
+  ring.setAttribute('stroke-dashoffset',(RING*(1-clamp(remaining/total,0,1))).toFixed(1));
+  ring.setAttribute('stroke',phase==='break'?'#62C9A3':COLORS[mock.state]==='#9AA1C6'?'#9AA1C6':'#7088F0');
+  if(step==='ask'||step==='think'||step==='plan') readout.textContent='25:00 · ready';
+  else if(step==='fin') readout.textContent='session done';
+  else readout.textContent=fmt(remaining)+(phase==='break'?' · break':' · step '+(stepIdx+1)+'/'+STEPS.length);
+  requestAnimationFrame(render);
+}
+document.getElementById('minbtn').onclick=function(e){
+  e.stopPropagation();prevStep=step;clearTimeout(timer);hush();win.classList.add('min');setState(mock,'sleeping');
+  flowlog.innerHTML='State: <b>sleeping</b> · click the buddy to wake it';
+};
+budHost.onclick=function(){
+  if(!win.classList.contains('min')) return;
+  win.classList.remove('min');go(prevStep==='yay'||prevStep==='think'?'work':(prevStep||'ask'));
+};
+document.getElementById('restart').onclick=function(){win.classList.remove('min');go('ask');};
+const sel=document.getElementById('mocksel');
+Object.keys(VARIANTS).forEach(function(k){
+  const b=document.createElement('button');b.className='btn';b.textContent=VARIANTS[k].name;
+  b.onclick=function(){
+    const s=mock.state;removeBuddy(mock);mockKey=k;mock=makeBuddy(budHost,k,120,s);
+    sel.querySelectorAll('button').forEach(function(x){x.classList.remove('play');});b.classList.add('play');
+  };
+  if(k===mockKey) b.classList.add('play');
+  sel.appendChild(b);
+});
+go('check');
+requestAnimationFrame(frame);
+requestAnimationFrame(render);
+})();
+</script>
+</body>
+</html>

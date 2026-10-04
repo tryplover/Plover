@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Card perch</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F6F3EA;--ink:#2F4236;--mut:#6a7a6f;--sage:#5E7F6B;--cream:#F3EEE1;--sand:#D9CFB4;--beak:#E3B55B;--card:#E6EDE2;--cardline:#C9D6C6;--track:#C3D1BF}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;width:1400px}
+section{padding:26px 60px}
+h1{font-size:26px;margin:0 0 10px}
+h2{font-size:14px;letter-spacing:.07em;text-transform:uppercase;color:var(--mut);margin:0 0 16px}
+p.r{max-width:980px;line-height:1.55;font-size:14.5px;margin:0 0 8px}
+p.w{max-width:980px;line-height:1.5;font-size:13.5px;margin:0;color:#4b5d51}
+p.w b,p.r b{color:var(--ink)}
+
+/* ---------- the buddy unit: bird perched on its own card ---------- */
+.unit{--ch:68px;position:relative;width:260px;height:242px;font-family:Inter,system-ui,sans-serif}
+.card{position:absolute;left:50%;bottom:0;margin-left:-128px;width:256px;height:var(--ch);border-radius:18px;
+  background:var(--card);border:1.5px solid var(--cardline);box-shadow:0 8px 20px rgba(47,66,54,.13);
+  display:flex;align-items:center;justify-content:space-between;padding:0 16px;z-index:2;overflow:hidden;
+  transition:width .7s cubic-bezier(.45,0,.2,1),height .7s cubic-bezier(.45,0,.2,1),margin-left .7s cubic-bezier(.45,0,.2,1),padding .7s}
+.info{max-width:210px;opacity:1;overflow:hidden;white-space:nowrap;transition:max-width .7s cubic-bezier(.45,0,.2,1),opacity .4s}
+.title{display:flex;align-items:center;font-size:14.5px;font-weight:600;line-height:20px}
+.title b{font-weight:600;transition:color .4s}
+.sub{display:flex;align-items:center;gap:6px;margin-top:5px;font-size:10.5px;color:var(--mut);line-height:12px}
+.segs{display:flex;gap:3px}
+.segs i{width:9px;height:4px;border-radius:2px;background:var(--track)}
+.segs i.d{background:var(--sage)}
+.segs i.c{background:linear-gradient(90deg,var(--sage) 50%,var(--track) 50%)}
+.time{font-size:23px;font-weight:600;letter-spacing:-.01em;font-variant-numeric:tabular-nums;line-height:1;transition:font-size .7s,opacity .4s,color .4s;padding-left:8px}
+.tick{position:relative;display:inline-block;width:0;height:16px;border-radius:50%;background:var(--sage);flex:none;overflow:hidden;transition:width .35s,margin-right .35s}
+.tick::after{content:"";position:absolute;left:5.5px;top:2.5px;width:4px;height:8px;border:solid var(--cream);border-width:0 2px 2px 0;transform:rotate(45deg)}
+
+.bird{position:absolute;left:50%;margin-left:-68px;bottom:calc(var(--ch) - 8px);width:136px;height:117px;z-index:3;overflow:visible;
+  transform-origin:50% 100%;transition:bottom .7s cubic-bezier(.45,0,.2,1),transform .8s cubic-bezier(.45,0,.2,1)}
+.pose{transform-origin:100px 160px;transform-box:view-box}
+.face{transition:transform .6s cubic-bezier(.45,0,.2,1)}
+.wl,.wr{transition:transform .6s cubic-bezier(.45,0,.2,1)}
+.wl{transform-origin:62px 84px}.wr{transform-origin:138px 84px}
+.eo,.ec,.eh{opacity:0;transition:opacity .25s}
+.eo{transform-box:fill-box;transform-origin:center}
+.extra{opacity:0;transition:opacity .4s}
+
+.bubble{position:absolute;right:0;top:4px;background:#FBF8EF;border:1.5px solid var(--cardline);color:var(--ink);
+  font-size:12.5px;font-weight:500;line-height:1.2;padding:7px 12px;border-radius:14px;white-space:nowrap;z-index:4;
+  opacity:0;transform:translateY(8px) scale(.9);transform-origin:20px 100%;transition:opacity .35s,transform .45s cubic-bezier(.3,1.4,.5,1)}
+.bubble::after{content:"";position:absolute;left:18px;bottom:-6px;width:10px;height:10px;background:#FBF8EF;border:solid var(--cardline);border-width:0 1.5px 1.5px 0;transform:rotate(45deg)}
+
+/* ---- states ---- */
+.unit[data-state=idle] .ec,.unit[data-state=focus] .ec,.unit[data-state=break] .ec{opacity:1}
+.unit[data-state=working] .eo,.unit[data-state=nudging] .eo{opacity:1}
+.unit[data-state=celebrating] .eh{opacity:1}
+.unit[data-state=idle] .time{opacity:.5}
+.unit[data-state=idle] .pose,.unit[data-state=working] .pose,.unit[data-state=nudging] .pose{animation:breathe 4s ease-in-out infinite}
+.unit[data-state=working] .eo{animation:blink 5.5s infinite}
+.unit[data-state=working] .face{animation:glance 11s ease-in-out infinite}
+.unit[data-state=focus] .pose{animation:breathe 7s ease-in-out infinite}
+.unit[data-state=break] .pose{animation:doze 5s ease-in-out infinite}
+
+.unit[data-state=focus]{--ch:40px}
+.unit[data-state=focus] .card{width:128px;margin-left:-64px;padding:0 10px;justify-content:center;border-radius:16px}
+.unit[data-state=focus] .info{max-width:0;opacity:0}
+.unit[data-state=focus] .time{font-size:19px;padding-left:0}
+.unit[data-state=focus] .bird{z-index:1;transform:translateY(18px) scale(.9)}
+
+.unit[data-state=break] .bird{transform:translateY(3px)}
+.unit[data-state=break] .face{transform:translateY(7px)}
+.unit[data-state=break] .wl{transform:rotate(6deg)}.unit[data-state=break] .wr{transform:rotate(-6deg)}
+.unit[data-state=break] .zz{opacity:1}
+.unit[data-state=break] .zz .z1{animation:zfloat 3s ease-in-out infinite}
+.unit[data-state=break] .zz .z2{animation:zfloat 3s ease-in-out -1.4s infinite}
+
+.unit[data-state=nudging] .bird{transform:translateY(5px) scale(1.12) rotate(5deg)}
+.unit[data-state=nudging] .face{transform:translateY(8px) translateX(2px)}
+.unit[data-state=nudging] .bubble{opacity:1;transform:none}
+.unit[data-state=nudging] .pose{animation:sway 3s ease-in-out infinite}
+
+.unit[data-state=celebrating] .pose{animation:hop .9s cubic-bezier(.3,0,.4,1) 3}
+.unit[data-state=celebrating] .wl{animation:flapl .9s ease-in-out 3;transform:rotate(26deg)}
+.unit[data-state=celebrating] .wr{animation:flapr .9s ease-in-out 3;transform:rotate(-26deg)}
+.unit[data-state=celebrating] .spark{opacity:1}
+.unit[data-state=celebrating] .spark .s1{animation:twinkle 1.1s ease-in-out infinite}
+.unit[data-state=celebrating] .spark .s2{animation:twinkle 1.1s ease-in-out -.5s infinite}
+.unit[data-state=celebrating] .tick{width:16px;margin-right:7px}
+.unit[data-state=celebrating] .title b{color:var(--mut);text-decoration:line-through;text-decoration-thickness:1.5px}
+.unit[data-state=celebrating] .tick{animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
+.unit[data-state=celebrating] .time{opacity:.4}
+
+@keyframes breathe{0%,100%{transform:scale(1,1)}50%{transform:scale(.99,1.025)}}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+@keyframes glance{0%,18%{transform:translateX(0)}26%,44%{transform:translateX(-4px)}54%,70%{transform:translateX(4px)}80%,100%{transform:translateX(0)}}
+@keyframes doze{0%,100%{transform:rotate(-5deg) scale(1,1)}50%{transform:rotate(-6.5deg) scale(.99,1.02)}}
+@keyframes sway{0%,100%{transform:rotate(0)}50%{transform:rotate(2.5deg)}}
+@keyframes hop{0%{transform:translateY(0) scale(1.04,.94)}12%{transform:translateY(0) scale(1.04,.94)}50%{transform:translateY(-24px) scale(.97,1.05)}88%,100%{transform:translateY(0) scale(1,1)}}
+@keyframes flapl{0%,100%{transform:rotate(26deg)}50%{transform:rotate(40deg)}}
+@keyframes flapr{0%,100%{transform:rotate(-26deg)}50%{transform:rotate(-40deg)}}
+@keyframes twinkle{0%,100%{transform:scale(.55);opacity:.6}50%{transform:scale(1);opacity:1}}
+@keyframes zfloat{0%{transform:translate(0,6px);opacity:0}25%{opacity:1}100%{transform:translate(6px,-14px);opacity:0}}
+@keyframes pop{0%{transform:scale(.4)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.unit *{animation:none!important}}
+
+/* ---------- mockup ---------- */
+.desk{position:relative;width:1280px;height:800px;border-radius:14px;overflow:hidden;background:#CBD8C8;box-shadow:0 0 0 1px #b9c8b6}
+.desk .blob{position:absolute;border-radius:50%;background:#D5E0D1}
+.menubar{position:absolute;left:0;right:0;top:0;height:28px;background:#EEEADC;display:flex;align-items:center;gap:14px;padding:0 16px}
+.menubar i{display:block;height:8px;border-radius:4px;background:#C9C4B0}
+.win{position:absolute;background:#FBF9F3;border-radius:12px;box-shadow:0 14px 34px rgba(47,66,54,.18),0 0 0 1px rgba(47,66,54,.08);overflow:hidden}
+.win .tb{height:36px;background:#EFEBDD;display:flex;align-items:center;gap:7px;padding:0 14px;border-bottom:1px solid #E0DBC8}
+.win .tb i{width:10px;height:10px;border-radius:50%;background:#CFCAB5}
+.win .tb u{margin-left:12px;height:8px;width:130px;border-radius:4px;background:#CFCAB5;text-decoration:none}
+.ln{height:9px;border-radius:5px;background:#E4E0D1;margin:0 0 14px}
+.ln.h{height:16px;background:#CFC9B2;margin-bottom:24px}
+.ln.cur{position:relative}
+.ln.cur::after{content:"";position:absolute;right:-3px;top:-4px;width:2px;height:17px;background:var(--sage);animation:caret 1s steps(1) infinite}
+@keyframes caret{50%{opacity:0}}
+.dock{position:absolute;left:50%;bottom:14px;margin-left:-190px;width:380px;height:56px;border-radius:20px;background:rgba(238,234,220,.8);display:flex;gap:12px;align-items:center;justify-content:center}
+.dock i{width:36px;height:36px;border-radius:10px;background:#C9C4B0}
+.dock i:nth-child(2n){background:#B7C7B3}.dock i:nth-child(3n){background:#D9CFB4}
+.desk .unit{position:absolute;left:915px;top:490px}
+.note{font-size:12.5px;color:var(--mut);margin-top:10px}
+
+/* ---------- state sheet ---------- */
+.sheet{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.sheet .c{display:flex;flex-direction:column;gap:4px;min-width:0}
+.sheet .stage{height:200px;display:flex;align-items:flex-end;justify-content:center}
+.sheet .stage .unit{zoom:.74}
+.sheet b{font-size:14px;margin-top:6px}
+.sheet span{font-size:12px;line-height:1.4;color:var(--mut);padding-right:6px}
+
+/* ---------- close-up ---------- */
+.close{display:flex;align-items:center;gap:60px}
+.close .stage{width:420px;height:310px;display:flex;align-items:flex-end;justify-content:center}
+.close .unit{zoom:1.25}
+.chips{display:flex;flex-direction:column;gap:6px}
+.chips div{font-size:13px;padding:6px 14px;border-radius:999px;color:var(--mut);background:transparent;transition:all .3s;width:150px}
+.chips div.on{background:var(--sage);color:#F6F3EA;font-weight:600}
+.cap{font-size:13px;color:var(--mut);max-width:300px;line-height:1.5}
+</style></head>
+<body>
+<section>
+<h1>3 - Perched on its own task card</h1>
+<p class="r"><b>Rationale.</b> The buddy's window is a small calm task card (current step, Pomodoro time, "2 of 5") and the bird sits on that card's top edge like a bird on a fence, front-facing, toes and wing tips curled over the lip. Because the card is always there, the bird gets a real, believable place to be: it never floats, it needs no desktop knowledge, and the card carries the useful information so the bird can stay tiny and quiet. Focus mode is the strongest move: the card collapses to a timer pill and the bird tucks down behind it, so the whole thing shrinks to almost nothing. The bird is a full round bird (cream body, sand cap, pointed wing tips, amber beak, two toes) with no collar band, and a thin sand outline so it reads on any background.</p>
+<p class="w"><b>Honest weaknesses.</b> The unit is tall (about 240 px with bubble headroom) and wider than a free bird, so it asks for more screen than the other ideas. Card and bird compete: the card text is the real content and the bird risks feeling like a hat on a widget. The perch is its own card only, so it can never interact with other windows. The bird is small (about 115 px) and its expressions rely on tiny eyes. Focus mode hides most of the character at the moment the user is most engaged, which is intentional but means little personality there. The transparent window needs click-through on the headroom area above the bird and bubble.</p>
+</section>
+
+<section>
+<h2>1. Desktop mockup, mid-working (live)</h2>
+<div class="desk">
+  <div class="blob" style="left:-120px;top:380px;width:520px;height:520px"></div>
+  <div class="blob" style="left:760px;top:-200px;width:600px;height:600px;background:#D2DECF"></div>
+  <div class="menubar"><i style="width:18px"></i><i style="width:60px"></i><i style="width:46px"></i><i style="width:52px"></i><i style="width:40px;margin-left:auto"></i><i style="width:30px"></i><i style="width:56px"></i></div>
+  <div class="win" style="left:90px;top:70px;width:760px;height:610px">
+    <div class="tb"><i></i><i></i><i></i><u></u></div>
+    <div style="padding:44px 70px">
+      <div class="ln h" style="width:300px"></div>
+      <div class="ln" style="width:100%"></div><div class="ln" style="width:94%"></div><div class="ln" style="width:98%"></div><div class="ln" style="width:62%;margin-bottom:34px"></div>
+      <div class="ln" style="width:100%"></div><div class="ln" style="width:90%"></div><div class="ln" style="width:97%"></div><div class="ln" style="width:99%"></div><div class="ln" style="width:48%;margin-bottom:34px"></div>
+      <div class="ln" style="width:96%"></div><div class="ln" style="width:100%"></div><div class="ln cur" style="width:56%"></div>
+    </div>
+  </div>
+  <div class="win" style="left:900px;top:70px;width:290px;height:260px">
+    <div class="tb"><i></i><i></i><i></i></div>
+    <div style="padding:20px 22px">
+      <div class="ln h" style="width:110px;margin-bottom:20px"></div>
+      <div style="display:flex;gap:10px;margin-bottom:14px"><div style="width:6px;border-radius:3px;background:#B7C7B3"></div><div style="flex:1"><div class="ln" style="width:80%;margin-bottom:8px"></div><div class="ln" style="width:50%"></div></div></div>
+      <div style="display:flex;gap:10px;margin-bottom:14px"><div style="width:6px;border-radius:3px;background:#D9CFB4"></div><div style="flex:1"><div class="ln" style="width:70%;margin-bottom:8px"></div><div class="ln" style="width:40%"></div></div></div>
+      <div style="display:flex;gap:10px"><div style="width:6px;border-radius:3px;background:#B7C7B3"></div><div style="flex:1"><div class="ln" style="width:86%;margin-bottom:8px"></div><div class="ln" style="width:56%"></div></div></div>
+    </div>
+  </div>
+  <div class="dock"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <div id="mock" class="unit" data-live="1"></div>
+</div>
+<div class="note">The card is the buddy's own window. The bird perches on it, never on the document or calendar windows.</div>
+</section>
+
+<section>
+<h2>2. State sheet</h2>
+<div class="sheet" id="sheet"></div>
+</section>
+
+<section>
+<h2>3. Close-up cycle (3 s per state)</h2>
+<div class="close">
+  <div class="stage"><div id="closeup" class="unit"></div></div>
+  <div class="chips" id="chips"></div>
+  <div class="cap">Loops idle, working, focus, break, nudging, celebrating. The card morphs between a full card and a timer pill; the bird rides the card's edge the whole time.</div>
+</div>
+</section>
+
+<script>
+var STATES={
+ idle:{t:"Write the intro",s:"Step 2 · ready",time:"25:00",d:1,c:2,desc:"Nothing running. Relaxed, eyes softly closed, slow breathing."},
+ working:{t:"Write the intro",s:"Step 2 of 5",time:"18:42",d:1,c:2,desc:"A block is running. Eyes open, blinks, glances now and then."},
+ focus:{t:"Write the intro",s:"Step 2 of 5",time:"18:42",d:1,c:2,desc:"Focus mode. Card shrinks to the timer, bird tucks down behind it."},
+ "break":{t:"Rest your eyes",s:"Back to step 2",time:"04:30",d:1,c:2,desc:"Break countdown on the card. Bird tilts and dozes, a soft z."},
+ nudging:{t:"Write the intro",s:"Step 2 of 5",time:"18:42",d:1,c:2,bubble:"Still on the intro?",desc:"Gentle check-in. Bird leans over the card edge with a small bubble."},
+ celebrating:{t:"Write the intro",s:"Step 2 done",time:"18:42",d:2,c:3,desc:"Step ticks off, wings lift, bird hops with a sparkle."}
+};
+var ORDER=["idle","working","focus","break","nudging","celebrating"];
+var BIRD='<svg class="bird" viewBox="0 0 200 172" xmlns="http://www.w3.org/2000/svg"><g class="pose">'
++'<g fill="#E3B55B"><g transform="translate(84 0)"><rect x="-10" y="152" width="5.5" height="16" rx="2.7"/><rect x="-2.7" y="152" width="5.5" height="17" rx="2.7"/><rect x="4.5" y="152" width="5.5" height="16" rx="2.7"/></g>'
++'<g transform="translate(116 0)"><rect x="-10" y="152" width="5.5" height="16" rx="2.7"/><rect x="-2.7" y="152" width="5.5" height="17" rx="2.7"/><rect x="4.5" y="152" width="5.5" height="16" rx="2.7"/></g></g>'
++'<ellipse cx="100" cy="98" rx="66" ry="60" fill="#F3EEE1" stroke="#D9CFB4" stroke-width="3"/>'
++'<path d="M49.2 62 A64.5 58.5 0 0 1 150.8 62 Q100 77 49.2 62 Z" fill="#D9CFB4"/>'
++'<path d="M84 142 q6.5 6 13 0 q6.5 6 13 0 q6.5 6 13 0" fill="none" stroke="#D9CFB4" stroke-width="3" stroke-linecap="round" opacity=".9"/>'
++'<g class="face">'
++'<g class="eo"><rect x="66" y="72" width="11" height="19" rx="5.5" fill="#2F4236"/><rect x="118" y="72" width="11" height="19" rx="5.5" fill="#2F4236"/></g>'
++'<g class="ec" fill="none" stroke="#2F4236" stroke-width="6" stroke-linecap="round"><path d="M63 84 Q71.5 93 80 84"/><path d="M115 84 Q123.5 93 132 84"/></g>'
++'<g class="eh" fill="none" stroke="#2F4236" stroke-width="6" stroke-linecap="round"><path d="M63 90 Q71.5 78 80 90"/><path d="M115 90 Q123.5 78 132 90"/></g>'
++'<path d="M84 99 H112 L97.5 125 Z" fill="#E3B55B" stroke="#E3B55B" stroke-width="7" stroke-linejoin="round"/><path d="M98 107 L97.5 118" stroke="#2F4236" stroke-width="2.5" stroke-linecap="round" opacity=".5"/>'
++'</g>'
++'<g class="wl"><path d="M44 78 C30 100 32 134 46 160 C60 146 70 124 70 98 Z" fill="#D9CFB4" stroke="#F3EEE1" stroke-width="3" stroke-linejoin="round"/></g>'
++'<g class="wr"><path d="M156 78 C170 100 168 134 154 160 C140 146 130 124 130 98 Z" fill="#D9CFB4" stroke="#F3EEE1" stroke-width="3" stroke-linejoin="round"/></g>'
++'</g>'
++'<g class="extra zz"><g class="z1" transform="translate(148 36)"><path d="M0 0 H12 L0 13 H12" fill="none" stroke="#5E7F6B" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></g>'
++'<g class="z2" transform="translate(166 18) scale(.7)"><path d="M0 0 H12 L0 13 H12" fill="none" stroke="#5E7F6B" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></g></g>'
++'<g class="extra spark"><g transform="translate(166 40)"><path class="s1" style="transform-box:fill-box;transform-origin:center" d="M0 -13 L3.4 -3.4 L13 0 L3.4 3.4 L0 13 L-3.4 3.4 L-13 0 L-3.4 -3.4 Z" fill="#E3B55B"/></g>'
++'<g transform="translate(30 36)"><path class="s2" style="transform-box:fill-box;transform-origin:center" d="M0 -8 L2.1 -2.1 L8 0 L2.1 2.1 L0 8 L-2.1 2.1 L-8 0 L-2.1 -2.1 Z" fill="#E3B55B"/></g></g>'
++'</svg>';
+function build(el,state){
+  el.innerHTML='<div class="bubble"></div>'+BIRD+'<div class="card"><div class="info"><div class="title"><i class="tick"></i><b></b></div><div class="sub"><span class="segs"><i></i><i></i><i></i><i></i><i></i></span><span class="st"></span></div></div><div class="time"></div></div>';
+  set(el,state);
+}
+function set(el,name){
+  var s=STATES[name];el.dataset.state=name;
+  el.querySelector('.title b').textContent=s.t;
+  el.querySelector('.st').textContent=s.s;
+  el.querySelector('.time').textContent=s.time;
+  el.querySelector('.bubble').textContent=s.bubble||el.querySelector('.bubble').textContent;
+  var seg=el.querySelectorAll('.segs i');
+  for(var i=0;i<5;i++){seg[i].className=i<s.d?'d':(i===s.c-1?'c':'');}
+}
+build(document.getElementById('mock'),'working');
+var sheet=document.getElementById('sheet');
+ORDER.forEach(function(n){
+  var c=document.createElement('div');c.className='c';
+  c.innerHTML='<div class="stage"><div class="unit"></div></div><b>'+n+'</b><span>'+STATES[n].desc+'</span>';
+  sheet.appendChild(c);build(c.querySelector('.unit'),n);
+});
+var cu=document.getElementById('closeup'),chips=document.getElementById('chips');
+build(cu,'working');
+ORDER.forEach(function(n){var d=document.createElement('div');d.textContent=n;d.dataset.n=n;chips.appendChild(d);});
+function mark(n){[].forEach.call(chips.children,function(d){d.className=d.dataset.n===n?'on':'';});}
+var idx=1;mark('working');
+setInterval(function(){idx=(idx+1)%ORDER.length;var n=ORDER[idx];set(cu,n);mark(n);},3000);
+/* live Pomodoro tick on the mockup */
+var secs=18*60+42;
+setInterval(function(){secs=secs>0?secs-1:25*60;var m=Math.floor(secs/60),s=secs%60;
+  document.querySelector('#mock .time').textContent=(m<10?'0':'')+m+':'+(s<10?'0':'')+s;},1000);
+</script>
+</body></html>

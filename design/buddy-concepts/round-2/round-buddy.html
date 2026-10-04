@@ -1,0 +1,402 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Round buddy</title><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet"><style>
+*{box-sizing:border-box} body{margin:0;background:#F6F3EA;font-family:Inter,system-ui,sans-serif;color:#2F4236;width:1400px}
+section{padding:30px 48px} h1{font-size:26px;margin:0 0 8px}
+h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#5E7F6B;margin:0 0 16px}
+p.n{max-width:900px;line-height:1.55;margin:0;color:#3d4f43}
+.bird{display:block;overflow:visible}
+.e-arc,.e-happy,.e-pill,.extras>g{opacity:0;transition:opacity .4s}
+.body,.headg,.face,.wing,.e-pill{transform-box:view-box}
+.body{transform-origin:128px 250px} .headg{transform-origin:128px 142px;transition:transform .8s ease}
+.face{transition:transform .8s ease} .e-pill{transform-origin:128px 122px}
+.wing{transition:transform .6s cubic-bezier(.3,.7,.3,1)}
+[data-s] .body{animation:breathe 4.5s ease-in-out infinite}
+@keyframes breathe{50%{transform:scale(1.02,1.015)}}
+[data-s=idle] .e-arc{opacity:1}
+[data-s=working] .e-pill{opacity:1;animation:blink 5s infinite}
+[data-s=working] .face{animation:glance 9s ease-in-out infinite}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+@keyframes glance{0%,40%,100%{transform:translateX(0)}50%,70%{transform:translateX(-7px)}}
+[data-s=focus] .e-arc{opacity:1} [data-s=focus] .body{animation:none;transform:scale(.86)}
+[data-s=focus] .wing{transform:translateY(8px)}
+[data-s=break] .e-arc{opacity:1} [data-s=break] .headg{transform:rotate(-9deg)}
+[data-s=break] .x-z{opacity:1;animation:zz 3s ease-in-out infinite}
+@keyframes zz{0%{transform:translate(0,8px);opacity:0}30%,70%{opacity:1}100%{transform:translate(8px,-10px);opacity:0}}
+[data-s=nudging] .e-pill{opacity:1} [data-s=nudging] .x-dots{opacity:1}
+[data-s=nudging] .headg{transform:rotate(6deg)}
+[data-s=nudging] .wr{animation:wave 1.6s ease-in-out infinite}
+@keyframes wave{0%,100%{transform:rotate(0)}40%{transform:rotate(38deg)}70%{transform:rotate(22deg)}}
+[data-s=celebrating] .e-happy{opacity:1} [data-s=celebrating] .x-spark{opacity:1}
+[data-s=celebrating] .wl{transform:rotate(-30deg)} [data-s=celebrating] .wr{transform:rotate(30deg)}
+[data-s=celebrating] .body{animation:hop 1.4s cubic-bezier(.3,.6,.3,1) infinite}
+@keyframes hop{0%,100%{transform:translateY(0) scale(1)}12%{transform:translateY(0) scale(1.06,.94)}40%{transform:translateY(-22px) scale(.98,1.03)}70%{transform:translateY(0) scale(1)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+.desk{position:relative;width:1100px;height:690px;border-radius:16px;background:#DCE3DA;overflow:hidden;border:1px solid #0001}
+.win{position:absolute;background:#FBF9F3;border-radius:12px;box-shadow:0 8px 30px #0001;border:1px solid #0000000d}
+.win .bar{height:32px;border-bottom:1px solid #0000000d;background:#F3EFE4;border-radius:12px 12px 0 0}
+.line{height:10px;border-radius:5px;background:#E4E0D3;margin:14px 34px}
+.task{position:absolute;left:0;right:0;bottom:0;height:48px;background:#F6F3EA;border-top:1px solid #0000000d}
+.buddy{position:absolute;right:26px;bottom:40px;width:128px}
+.pill{position:absolute;right:164px;bottom:60px;background:#5E7F6B;color:#F3EEE1;font-weight:600;font-size:14px;padding:7px 14px;border-radius:999px;display:flex;gap:8px;align-items:center}
+.pill i{width:7px;height:7px;border-radius:50%;background:#E3B55B}
+.btns{display:flex;gap:8px;margin-top:14px}
+.btns button{font:inherit;font-size:13px;border:1px solid #0002;background:#fff;border-radius:999px;padding:6px 12px;cursor:pointer}
+.btns button.on{background:#5E7F6B;color:#F3EEE1;border-color:#5E7F6B}
+.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:18px} .cell{background:#FBF9F3;border-radius:14px;padding:16px 14px}
+.cell .bird{width:150px;margin:0 auto} .cell b{display:block;margin-top:6px} .cell span{font-size:12.5px;color:#5b6b60;line-height:1.45}
+.vars{display:flex;gap:40px;align-items:end} .vars>div{text-align:center;font-size:13px;color:#5b6b60} .vars .bird{width:170px}
+.sizes{display:flex;gap:26px;align-items:end} .sizes>div{text-align:center;font-size:12px;color:#5b6b60}
+</style></head><body>
+<section><h1>Round buddy: corner sitter</h1><p class="n">The round peek bird, whole: one ball (head and body are the same circle), a short sand cap, amber beak, calm eyes, and the feather-tip wings pointing <b>up</b> at its sides so it can use them: wave, cheer, tuck. Tiny feet so it sits on the taskbar edge. No collar, no extra body parts. Motion stays small: breathing, blinks, a glance, a wave, a hop.</p></section>
+<section><h2>Desktop mockup (live, click a state)</h2><div class="desk"><div class="win" style="left:70px;top:50px;width:600px;height:500px"><div class="bar"></div><div class="line" style="width:40%"></div><div class="line" style="width:85%"></div><div class="line" style="width:90%"></div><div class="line" style="width:70%"></div><div class="line" style="width:88%"></div><div class="line" style="width:60%"></div><div class="line" style="width:0%"></div><div class="line" style="width:86%"></div><div class="line" style="width:80%"></div><div class="line" style="width:91%"></div><div class="line" style="width:55%"></div></div><div class="win" style="left:720px;top:80px;width:320px;height:260px"><div class="bar"></div><div class="line" style="width:60%"></div><div class="line" style="width:80%"></div><div class="line" style="width:50%"></div><div class="line" style="width:70%"></div></div><div class="task"></div><div class="pill" id="pill"><i></i><span>Draft the intro · 18:42</span></div><div class="buddy" id="desk" data-s="working"><svg class="bird" viewBox="0 0 256 280" xmlns="http://www.w3.org/2000/svg">
+<defs><clipPath id="r1"><circle cx="128" cy="142" r="100"/></clipPath></defs>
+<ellipse class="shadow" cx="128" cy="256" rx="70" ry="9" fill="#2F4236" opacity=".12"/>
+<g class="extras">
+  <g class="x-z"><path d="M196 34 H218 L196 60 H218" fill="none" stroke="#5E7F6B" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <g class="x-dots"><circle cx="180" cy="30" r="6" fill="#5E7F6B" opacity="0.45"/><circle cx="200" cy="30" r="6" fill="#5E7F6B" opacity="0.7"/><circle cx="220" cy="30" r="6" fill="#5E7F6B" opacity="1"/></g>
+  <g class="x-spark"><path d="M214 22 L219 36 L233 41 L219 46 L214 60 L209 46 L195 41 L209 36 Z" fill="#E3B55B"/><path d="M40 40 L43 48 L51 51 L43 54 L40 62 L37 54 L29 51 L37 48 Z" fill="#E3B55B"/></g>
+</g>
+<g class="body">
+  <ellipse cx="108" cy="244" rx="11" ry="6" fill="#E3B55B"/><ellipse cx="148" cy="244" rx="11" ry="6" fill="#E3B55B"/>
+  <g class="headg">
+    <circle cx="128" cy="142" r="100" fill="#F3EEE1"/>
+    <path clip-path="url(#r1)" d="M0 0 H256 V70 Q96 88 0 54 Z" fill="#D9CFB4"/>
+    <circle cx="128" cy="142" r="100" fill="none" stroke="#DCD2BB" stroke-width="4"/>
+    <g class="face">
+      <g class="e-pill"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><rect x="73.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><rect x="137.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g></g><g class="e-arc"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><path d="M69 120 Q80 132 91 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><path d="M133 120 Q144 132 155 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g><g class="e-happy"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><path d="M69 128 Q80 115 91 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><path d="M133 128 Q144 115 155 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g>
+      <path d="M96 146 H130 L106 171 Z" fill="#E3B55B" stroke="#E3B55B" stroke-width="8" stroke-linejoin="round"/>
+    </g>
+  </g>
+  <path class="wing wl" style="transform-origin:46px 202px" d="M28 200 C20 174 22 150 36 126 C52 144 62 170 62 198 Q46 212 28 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/><path class="wing wr" style="transform-origin:210px 202px" d="M228 200 C236 174 234 150 220 126 C204 144 194 170 194 198 Q210 212 228 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/>
+</g>
+</svg></div></div><div class="btns" id="btns"><button data-k="idle">idle</button><button data-k="working" class=on>working</button><button data-k="focus">focus</button><button data-k="break">break</button><button data-k="nudging">nudging</button><button data-k="celebrating">celebrating</button></div></section>
+<section><h2>States (engineering names)</h2><div class="grid">
+<div class="cell"><div data-s="idle"><svg class="bird" viewBox="0 0 256 280" xmlns="http://www.w3.org/2000/svg">
+<defs><clipPath id="r2"><circle cx="128" cy="142" r="100"/></clipPath></defs>
+<ellipse class="shadow" cx="128" cy="256" rx="70" ry="9" fill="#2F4236" opacity=".12"/>
+<g class="extras">
+  <g class="x-z"><path d="M196 34 H218 L196 60 H218" fill="none" stroke="#5E7F6B" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <g class="x-dots"><circle cx="180" cy="30" r="6" fill="#5E7F6B" opacity="0.45"/><circle cx="200" cy="30" r="6" fill="#5E7F6B" opacity="0.7"/><circle cx="220" cy="30" r="6" fill="#5E7F6B" opacity="1"/></g>
+  <g class="x-spark"><path d="M214 22 L219 36 L233 41 L219 46 L214 60 L209 46 L195 41 L209 36 Z" fill="#E3B55B"/><path d="M40 40 L43 48 L51 51 L43 54 L40 62 L37 54 L29 51 L37 48 Z" fill="#E3B55B"/></g>
+</g>
+<g class="body">
+  <ellipse cx="108" cy="244" rx="11" ry="6" fill="#E3B55B"/><ellipse cx="148" cy="244" rx="11" ry="6" fill="#E3B55B"/>
+  <g class="headg">
+    <circle cx="128" cy="142" r="100" fill="#F3EEE1"/>
+    <path clip-path="url(#r2)" d="M0 0 H256 V70 Q96 88 0 54 Z" fill="#D9CFB4"/>
+    <circle cx="128" cy="142" r="100" fill="none" stroke="#DCD2BB" stroke-width="4"/>
+    <g class="face">
+      <g class="e-pill"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><rect x="73.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><rect x="137.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g></g><g class="e-arc"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><path d="M69 120 Q80 132 91 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><path d="M133 120 Q144 132 155 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g><g class="e-happy"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><path d="M69 128 Q80 115 91 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><path d="M133 128 Q144 115 155 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g>
+      <path d="M96 146 H130 L106 171 Z" fill="#E3B55B" stroke="#E3B55B" stroke-width="8" stroke-linejoin="round"/>
+    </g>
+  </g>
+  <path class="wing wl" style="transform-origin:46px 202px" d="M28 200 C20 174 22 150 36 126 C52 144 62 170 62 198 Q46 212 28 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/><path class="wing wr" style="transform-origin:210px 202px" d="M228 200 C236 174 234 150 220 126 C204 144 194 170 194 198 Q210 212 228 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/>
+</g>
+</svg></div><b>idle</b><span>Nothing running. Eyes softly closed, slow breathing.</span></div>
+<div class="cell"><div data-s="working"><svg class="bird" viewBox="0 0 256 280" xmlns="http://www.w3.org/2000/svg">
+<defs><clipPath id="r3"><circle cx="128" cy="142" r="100"/></clipPath></defs>
+<ellipse class="shadow" cx="128" cy="256" rx="70" ry="9" fill="#2F4236" opacity=".12"/>
+<g class="extras">
+  <g class="x-z"><path d="M196 34 H218 L196 60 H218" fill="none" stroke="#5E7F6B" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <g class="x-dots"><circle cx="180" cy="30" r="6" fill="#5E7F6B" opacity="0.45"/><circle cx="200" cy="30" r="6" fill="#5E7F6B" opacity="0.7"/><circle cx="220" cy="30" r="6" fill="#5E7F6B" opacity="1"/></g>
+  <g class="x-spark"><path d="M214 22 L219 36 L233 41 L219 46 L214 60 L209 46 L195 41 L209 36 Z" fill="#E3B55B"/><path d="M40 40 L43 48 L51 51 L43 54 L40 62 L37 54 L29 51 L37 48 Z" fill="#E3B55B"/></g>
+</g>
+<g class="body">
+  <ellipse cx="108" cy="244" rx="11" ry="6" fill="#E3B55B"/><ellipse cx="148" cy="244" rx="11" ry="6" fill="#E3B55B"/>
+  <g class="headg">
+    <circle cx="128" cy="142" r="100" fill="#F3EEE1"/>
+    <path clip-path="url(#r3)" d="M0 0 H256 V70 Q96 88 0 54 Z" fill="#D9CFB4"/>
+    <circle cx="128" cy="142" r="100" fill="none" stroke="#DCD2BB" stroke-width="4"/>
+    <g class="face">
+      <g class="e-pill"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><rect x="73.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><rect x="137.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g></g><g class="e-arc"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><path d="M69 120 Q80 132 91 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><path d="M133 120 Q144 132 155 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g><g class="e-happy"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><path d="M69 128 Q80 115 91 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><path d="M133 128 Q144 115 155 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g>
+      <path d="M96 146 H130 L106 171 Z" fill="#E3B55B" stroke="#E3B55B" stroke-width="8" stroke-linejoin="round"/>
+    </g>
+  </g>
+  <path class="wing wl" style="transform-origin:46px 202px" d="M28 200 C20 174 22 150 36 126 C52 144 62 170 62 198 Q46 212 28 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/><path class="wing wr" style="transform-origin:210px 202px" d="M228 200 C236 174 234 150 220 126 C204 144 194 170 194 198 Q210 212 228 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/>
+</g>
+</svg></div><b>working</b><span>Timer running. Eyes open, slow blink, a glance toward your work now and then.</span></div>
+<div class="cell"><div data-s="focus"><svg class="bird" viewBox="0 0 256 280" xmlns="http://www.w3.org/2000/svg">
+<defs><clipPath id="r4"><circle cx="128" cy="142" r="100"/></clipPath></defs>
+<ellipse class="shadow" cx="128" cy="256" rx="70" ry="9" fill="#2F4236" opacity=".12"/>
+<g class="extras">
+  <g class="x-z"><path d="M196 34 H218 L196 60 H218" fill="none" stroke="#5E7F6B" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <g class="x-dots"><circle cx="180" cy="30" r="6" fill="#5E7F6B" opacity="0.45"/><circle cx="200" cy="30" r="6" fill="#5E7F6B" opacity="0.7"/><circle cx="220" cy="30" r="6" fill="#5E7F6B" opacity="1"/></g>
+  <g class="x-spark"><path d="M214 22 L219 36 L233 41 L219 46 L214 60 L209 46 L195 41 L209 36 Z" fill="#E3B55B"/><path d="M40 40 L43 48 L51 51 L43 54 L40 62 L37 54 L29 51 L37 48 Z" fill="#E3B55B"/></g>
+</g>
+<g class="body">
+  <ellipse cx="108" cy="244" rx="11" ry="6" fill="#E3B55B"/><ellipse cx="148" cy="244" rx="11" ry="6" fill="#E3B55B"/>
+  <g class="headg">
+    <circle cx="128" cy="142" r="100" fill="#F3EEE1"/>
+    <path clip-path="url(#r4)" d="M0 0 H256 V70 Q96 88 0 54 Z" fill="#D9CFB4"/>
+    <circle cx="128" cy="142" r="100" fill="none" stroke="#DCD2BB" stroke-width="4"/>
+    <g class="face">
+      <g class="e-pill"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><rect x="73.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><rect x="137.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g></g><g class="e-arc"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><path d="M69 120 Q80 132 91 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><path d="M133 120 Q144 132 155 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g><g class="e-happy"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><path d="M69 128 Q80 115 91 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><path d="M133 128 Q144 115 155 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g>
+      <path d="M96 146 H130 L106 171 Z" fill="#E3B55B" stroke="#E3B55B" stroke-width="8" stroke-linejoin="round"/>
+    </g>
+  </g>
+  <path class="wing wl" style="transform-origin:46px 202px" d="M28 200 C20 174 22 150 36 126 C52 144 62 170 62 198 Q46 212 28 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/><path class="wing wr" style="transform-origin:210px 202px" d="M228 200 C236 174 234 150 220 126 C204 144 194 170 194 198 Q210 212 228 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/>
+</g>
+</svg></div><b>focus</b><span>Focus mode. Shrinks a little, settles, eyes closed. No chatter.</span></div>
+<div class="cell"><div data-s="break"><svg class="bird" viewBox="0 0 256 280" xmlns="http://www.w3.org/2000/svg">
+<defs><clipPath id="r5"><circle cx="128" cy="142" r="100"/></clipPath></defs>
+<ellipse class="shadow" cx="128" cy="256" rx="70" ry="9" fill="#2F4236" opacity=".12"/>
+<g class="extras">
+  <g class="x-z"><path d="M196 34 H218 L196 60 H218" fill="none" stroke="#5E7F6B" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <g class="x-dots"><circle cx="180" cy="30" r="6" fill="#5E7F6B" opacity="0.45"/><circle cx="200" cy="30" r="6" fill="#5E7F6B" opacity="0.7"/><circle cx="220" cy="30" r="6" fill="#5E7F6B" opacity="1"/></g>
+  <g class="x-spark"><path d="M214 22 L219 36 L233 41 L219 46 L214 60 L209 46 L195 41 L209 36 Z" fill="#E3B55B"/><path d="M40 40 L43 48 L51 51 L43 54 L40 62 L37 54 L29 51 L37 48 Z" fill="#E3B55B"/></g>
+</g>
+<g class="body">
+  <ellipse cx="108" cy="244" rx="11" ry="6" fill="#E3B55B"/><ellipse cx="148" cy="244" rx="11" ry="6" fill="#E3B55B"/>
+  <g class="headg">
+    <circle cx="128" cy="142" r="100" fill="#F3EEE1"/>
+    <path clip-path="url(#r5)" d="M0 0 H256 V70 Q96 88 0 54 Z" fill="#D9CFB4"/>
+    <circle cx="128" cy="142" r="100" fill="none" stroke="#DCD2BB" stroke-width="4"/>
+    <g class="face">
+      <g class="e-pill"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><rect x="73.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><rect x="137.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g></g><g class="e-arc"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><path d="M69 120 Q80 132 91 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><path d="M133 120 Q144 132 155 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g><g class="e-happy"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><path d="M69 128 Q80 115 91 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><path d="M133 128 Q144 115 155 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g>
+      <path d="M96 146 H130 L106 171 Z" fill="#E3B55B" stroke="#E3B55B" stroke-width="8" stroke-linejoin="round"/>
+    </g>
+  </g>
+  <path class="wing wl" style="transform-origin:46px 202px" d="M28 200 C20 174 22 150 36 126 C52 144 62 170 62 198 Q46 212 28 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/><path class="wing wr" style="transform-origin:210px 202px" d="M228 200 C236 174 234 150 220 126 C204 144 194 170 194 198 Q210 212 228 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/>
+</g>
+</svg></div><b>break</b><span>Break. Head tips, dozes, a drifting z.</span></div>
+<div class="cell"><div data-s="nudging"><svg class="bird" viewBox="0 0 256 280" xmlns="http://www.w3.org/2000/svg">
+<defs><clipPath id="r6"><circle cx="128" cy="142" r="100"/></clipPath></defs>
+<ellipse class="shadow" cx="128" cy="256" rx="70" ry="9" fill="#2F4236" opacity=".12"/>
+<g class="extras">
+  <g class="x-z"><path d="M196 34 H218 L196 60 H218" fill="none" stroke="#5E7F6B" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <g class="x-dots"><circle cx="180" cy="30" r="6" fill="#5E7F6B" opacity="0.45"/><circle cx="200" cy="30" r="6" fill="#5E7F6B" opacity="0.7"/><circle cx="220" cy="30" r="6" fill="#5E7F6B" opacity="1"/></g>
+  <g class="x-spark"><path d="M214 22 L219 36 L233 41 L219 46 L214 60 L209 46 L195 41 L209 36 Z" fill="#E3B55B"/><path d="M40 40 L43 48 L51 51 L43 54 L40 62 L37 54 L29 51 L37 48 Z" fill="#E3B55B"/></g>
+</g>
+<g class="body">
+  <ellipse cx="108" cy="244" rx="11" ry="6" fill="#E3B55B"/><ellipse cx="148" cy="244" rx="11" ry="6" fill="#E3B55B"/>
+  <g class="headg">
+    <circle cx="128" cy="142" r="100" fill="#F3EEE1"/>
+    <path clip-path="url(#r6)" d="M0 0 H256 V70 Q96 88 0 54 Z" fill="#D9CFB4"/>
+    <circle cx="128" cy="142" r="100" fill="none" stroke="#DCD2BB" stroke-width="4"/>
+    <g class="face">
+      <g class="e-pill"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><rect x="73.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><rect x="137.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g></g><g class="e-arc"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><path d="M69 120 Q80 132 91 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><path d="M133 120 Q144 132 155 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g><g class="e-happy"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><path d="M69 128 Q80 115 91 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><path d="M133 128 Q144 115 155 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g>
+      <path d="M96 146 H130 L106 171 Z" fill="#E3B55B" stroke="#E3B55B" stroke-width="8" stroke-linejoin="round"/>
+    </g>
+  </g>
+  <path class="wing wl" style="transform-origin:46px 202px" d="M28 200 C20 174 22 150 36 126 C52 144 62 170 62 198 Q46 212 28 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/><path class="wing wr" style="transform-origin:210px 202px" d="M228 200 C236 174 234 150 220 126 C204 144 194 170 194 198 Q210 212 228 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/>
+</g>
+</svg></div><b>nudging</b><span>Gentle check-in: lifts a wing and waves, three waiting dots.</span></div>
+<div class="cell"><div data-s="celebrating"><svg class="bird" viewBox="0 0 256 280" xmlns="http://www.w3.org/2000/svg">
+<defs><clipPath id="r7"><circle cx="128" cy="142" r="100"/></clipPath></defs>
+<ellipse class="shadow" cx="128" cy="256" rx="70" ry="9" fill="#2F4236" opacity=".12"/>
+<g class="extras">
+  <g class="x-z"><path d="M196 34 H218 L196 60 H218" fill="none" stroke="#5E7F6B" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <g class="x-dots"><circle cx="180" cy="30" r="6" fill="#5E7F6B" opacity="0.45"/><circle cx="200" cy="30" r="6" fill="#5E7F6B" opacity="0.7"/><circle cx="220" cy="30" r="6" fill="#5E7F6B" opacity="1"/></g>
+  <g class="x-spark"><path d="M214 22 L219 36 L233 41 L219 46 L214 60 L209 46 L195 41 L209 36 Z" fill="#E3B55B"/><path d="M40 40 L43 48 L51 51 L43 54 L40 62 L37 54 L29 51 L37 48 Z" fill="#E3B55B"/></g>
+</g>
+<g class="body">
+  <ellipse cx="108" cy="244" rx="11" ry="6" fill="#E3B55B"/><ellipse cx="148" cy="244" rx="11" ry="6" fill="#E3B55B"/>
+  <g class="headg">
+    <circle cx="128" cy="142" r="100" fill="#F3EEE1"/>
+    <path clip-path="url(#r7)" d="M0 0 H256 V70 Q96 88 0 54 Z" fill="#D9CFB4"/>
+    <circle cx="128" cy="142" r="100" fill="none" stroke="#DCD2BB" stroke-width="4"/>
+    <g class="face">
+      <g class="e-pill"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><rect x="73.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><rect x="137.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g></g><g class="e-arc"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><path d="M69 120 Q80 132 91 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><path d="M133 120 Q144 132 155 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g><g class="e-happy"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><path d="M69 128 Q80 115 91 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><path d="M133 128 Q144 115 155 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g>
+      <path d="M96 146 H130 L106 171 Z" fill="#E3B55B" stroke="#E3B55B" stroke-width="8" stroke-linejoin="round"/>
+    </g>
+  </g>
+  <path class="wing wl" style="transform-origin:46px 202px" d="M28 200 C20 174 22 150 36 126 C52 144 62 170 62 198 Q46 212 28 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/><path class="wing wr" style="transform-origin:210px 202px" d="M228 200 C236 174 234 150 220 126 C204 144 194 170 194 198 Q210 212 228 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/>
+</g>
+</svg></div><b>celebrating</b><span>Step done: little hop, both wings up, happy eyes, sparkle.</span></div>
+</div></section>
+<section><h2>Head turn vs. straight</h2><div class="vars"><div><div data-s="idle"><svg class="bird" viewBox="0 0 256 280" xmlns="http://www.w3.org/2000/svg">
+<defs><clipPath id="r8"><circle cx="128" cy="142" r="100"/></clipPath></defs>
+<ellipse class="shadow" cx="128" cy="256" rx="70" ry="9" fill="#2F4236" opacity=".12"/>
+<g class="extras">
+  <g class="x-z"><path d="M196 34 H218 L196 60 H218" fill="none" stroke="#5E7F6B" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <g class="x-dots"><circle cx="180" cy="30" r="6" fill="#5E7F6B" opacity="0.45"/><circle cx="200" cy="30" r="6" fill="#5E7F6B" opacity="0.7"/><circle cx="220" cy="30" r="6" fill="#5E7F6B" opacity="1"/></g>
+  <g class="x-spark"><path d="M214 22 L219 36 L233 41 L219 46 L214 60 L209 46 L195 41 L209 36 Z" fill="#E3B55B"/><path d="M40 40 L43 48 L51 51 L43 54 L40 62 L37 54 L29 51 L37 48 Z" fill="#E3B55B"/></g>
+</g>
+<g class="body">
+  <ellipse cx="108" cy="244" rx="11" ry="6" fill="#E3B55B"/><ellipse cx="148" cy="244" rx="11" ry="6" fill="#E3B55B"/>
+  <g class="headg">
+    <circle cx="128" cy="142" r="100" fill="#F3EEE1"/>
+    <path clip-path="url(#r8)" d="M0 0 H256 V70 Q96 88 0 54 Z" fill="#D9CFB4"/>
+    <circle cx="128" cy="142" r="100" fill="none" stroke="#DCD2BB" stroke-width="4"/>
+    <g class="face">
+      <g class="e-pill"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><rect x="73.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><rect x="137.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g></g><g class="e-arc"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><path d="M69 120 Q80 132 91 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><path d="M133 120 Q144 132 155 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g><g class="e-happy"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><path d="M69 128 Q80 115 91 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><path d="M133 128 Q144 115 155 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g>
+      <path d="M96 146 H130 L106 171 Z" fill="#E3B55B" stroke="#E3B55B" stroke-width="8" stroke-linejoin="round"/>
+    </g>
+  </g>
+  <path class="wing wl" style="transform-origin:46px 202px" d="M28 200 C20 174 22 150 36 126 C52 144 62 170 62 198 Q46 212 28 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/><path class="wing wr" style="transform-origin:210px 202px" d="M228 200 C236 174 234 150 220 126 C204 144 194 170 194 198 Q210 212 228 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/>
+</g>
+</svg></div>Turned · idle</div><div><div data-s="working"><svg class="bird" viewBox="0 0 256 280" xmlns="http://www.w3.org/2000/svg">
+<defs><clipPath id="r9"><circle cx="128" cy="142" r="100"/></clipPath></defs>
+<ellipse class="shadow" cx="128" cy="256" rx="70" ry="9" fill="#2F4236" opacity=".12"/>
+<g class="extras">
+  <g class="x-z"><path d="M196 34 H218 L196 60 H218" fill="none" stroke="#5E7F6B" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <g class="x-dots"><circle cx="180" cy="30" r="6" fill="#5E7F6B" opacity="0.45"/><circle cx="200" cy="30" r="6" fill="#5E7F6B" opacity="0.7"/><circle cx="220" cy="30" r="6" fill="#5E7F6B" opacity="1"/></g>
+  <g class="x-spark"><path d="M214 22 L219 36 L233 41 L219 46 L214 60 L209 46 L195 41 L209 36 Z" fill="#E3B55B"/><path d="M40 40 L43 48 L51 51 L43 54 L40 62 L37 54 L29 51 L37 48 Z" fill="#E3B55B"/></g>
+</g>
+<g class="body">
+  <ellipse cx="108" cy="244" rx="11" ry="6" fill="#E3B55B"/><ellipse cx="148" cy="244" rx="11" ry="6" fill="#E3B55B"/>
+  <g class="headg">
+    <circle cx="128" cy="142" r="100" fill="#F3EEE1"/>
+    <path clip-path="url(#r9)" d="M0 0 H256 V70 Q96 88 0 54 Z" fill="#D9CFB4"/>
+    <circle cx="128" cy="142" r="100" fill="none" stroke="#DCD2BB" stroke-width="4"/>
+    <g class="face">
+      <g class="e-pill"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><rect x="73.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><rect x="137.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g></g><g class="e-arc"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><path d="M69 120 Q80 132 91 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><path d="M133 120 Q144 132 155 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g><g class="e-happy"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><path d="M69 128 Q80 115 91 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><path d="M133 128 Q144 115 155 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g>
+      <path d="M96 146 H130 L106 171 Z" fill="#E3B55B" stroke="#E3B55B" stroke-width="8" stroke-linejoin="round"/>
+    </g>
+  </g>
+  <path class="wing wl" style="transform-origin:46px 202px" d="M28 200 C20 174 22 150 36 126 C52 144 62 170 62 198 Q46 212 28 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/><path class="wing wr" style="transform-origin:210px 202px" d="M228 200 C236 174 234 150 220 126 C204 144 194 170 194 198 Q210 212 228 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/>
+</g>
+</svg></div>Turned · working</div><div><div data-s="working"><svg class="bird" viewBox="0 0 256 280" xmlns="http://www.w3.org/2000/svg">
+<defs><clipPath id="r10"><circle cx="128" cy="142" r="100"/></clipPath></defs>
+<ellipse class="shadow" cx="128" cy="256" rx="70" ry="9" fill="#2F4236" opacity=".12"/>
+<g class="extras">
+  <g class="x-z"><path d="M196 34 H218 L196 60 H218" fill="none" stroke="#5E7F6B" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <g class="x-dots"><circle cx="180" cy="30" r="6" fill="#5E7F6B" opacity="0.45"/><circle cx="200" cy="30" r="6" fill="#5E7F6B" opacity="0.7"/><circle cx="220" cy="30" r="6" fill="#5E7F6B" opacity="1"/></g>
+  <g class="x-spark"><path d="M214 22 L219 36 L233 41 L219 46 L214 60 L209 46 L195 41 L209 36 Z" fill="#E3B55B"/><path d="M40 40 L43 48 L51 51 L43 54 L40 62 L37 54 L29 51 L37 48 Z" fill="#E3B55B"/></g>
+</g>
+<g class="body">
+  <ellipse cx="108" cy="244" rx="11" ry="6" fill="#E3B55B"/><ellipse cx="148" cy="244" rx="11" ry="6" fill="#E3B55B"/>
+  <g class="headg">
+    <circle cx="128" cy="142" r="100" fill="#F3EEE1"/>
+    <path clip-path="url(#r10)" d="M0 0 H256 V62 Q128 84 0 62 Z" fill="#D9CFB4"/>
+    <circle cx="128" cy="142" r="100" fill="none" stroke="#DCD2BB" stroke-width="4"/>
+    <g class="face">
+      <g class="e-pill"><g transform="translate(94 124) scale(1 1) translate(-94 -124)"><rect x="87.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g><g transform="translate(160 124) scale(1 1) translate(-160 -124)"><rect x="153.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g></g><g class="e-arc"><g transform="translate(94 124) scale(1 1) translate(-94 -124)"><path d="M83 120 Q94 132 105 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(160 124) scale(1 1) translate(-160 -124)"><path d="M149 120 Q160 132 171 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g><g class="e-happy"><g transform="translate(94 124) scale(1 1) translate(-94 -124)"><path d="M83 128 Q94 115 105 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(160 124) scale(1 1) translate(-160 -124)"><path d="M149 128 Q160 115 171 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g>
+      <path d="M112 146 H146 L128 172 Z" fill="#E3B55B" stroke="#E3B55B" stroke-width="8" stroke-linejoin="round"/>
+    </g>
+  </g>
+  <path class="wing wl" style="transform-origin:46px 202px" d="M28 200 C20 174 22 150 36 126 C52 144 62 170 62 198 Q46 212 28 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/><path class="wing wr" style="transform-origin:210px 202px" d="M228 200 C236 174 234 150 220 126 C204 144 194 170 194 198 Q210 212 228 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/>
+</g>
+</svg></div>Straight · working (before)</div><div><div data-s="idle"><svg class="bird" viewBox="0 0 256 280" xmlns="http://www.w3.org/2000/svg">
+<defs><clipPath id="r11"><circle cx="128" cy="142" r="100"/></clipPath></defs>
+<ellipse class="shadow" cx="128" cy="256" rx="70" ry="9" fill="#2F4236" opacity=".12"/>
+<g class="extras">
+  <g class="x-z"><path d="M196 34 H218 L196 60 H218" fill="none" stroke="#5E7F6B" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <g class="x-dots"><circle cx="180" cy="30" r="6" fill="#5E7F6B" opacity="0.45"/><circle cx="200" cy="30" r="6" fill="#5E7F6B" opacity="0.7"/><circle cx="220" cy="30" r="6" fill="#5E7F6B" opacity="1"/></g>
+  <g class="x-spark"><path d="M214 22 L219 36 L233 41 L219 46 L214 60 L209 46 L195 41 L209 36 Z" fill="#E3B55B"/><path d="M40 40 L43 48 L51 51 L43 54 L40 62 L37 54 L29 51 L37 48 Z" fill="#E3B55B"/></g>
+</g>
+<g class="body">
+  <ellipse cx="108" cy="244" rx="11" ry="6" fill="#E3B55B"/><ellipse cx="148" cy="244" rx="11" ry="6" fill="#E3B55B"/>
+  <g class="headg">
+    <circle cx="128" cy="142" r="100" fill="#F3EEE1"/>
+    <path clip-path="url(#r11)" d="M0 0 H256 V62 Q128 84 0 62 Z" fill="#D9CFB4"/>
+    <circle cx="128" cy="142" r="100" fill="none" stroke="#DCD2BB" stroke-width="4"/>
+    <g class="face">
+      <g class="e-pill"><g transform="translate(94 124) scale(1 1) translate(-94 -124)"><rect x="87.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g><g transform="translate(160 124) scale(1 1) translate(-160 -124)"><rect x="153.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g></g><g class="e-arc"><g transform="translate(94 124) scale(1 1) translate(-94 -124)"><path d="M83 120 Q94 132 105 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(160 124) scale(1 1) translate(-160 -124)"><path d="M149 120 Q160 132 171 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g><g class="e-happy"><g transform="translate(94 124) scale(1 1) translate(-94 -124)"><path d="M83 128 Q94 115 105 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(160 124) scale(1 1) translate(-160 -124)"><path d="M149 128 Q160 115 171 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g>
+      <path d="M112 146 H146 L128 172 Z" fill="#E3B55B" stroke="#E3B55B" stroke-width="8" stroke-linejoin="round"/>
+    </g>
+  </g>
+  <path class="wing wl" style="transform-origin:46px 202px" d="M28 200 C20 174 22 150 36 126 C52 144 62 170 62 198 Q46 212 28 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/><path class="wing wr" style="transform-origin:210px 202px" d="M228 200 C236 174 234 150 220 126 C204 144 194 170 194 198 Q210 212 228 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/>
+</g>
+</svg></div>Straight · idle (before)</div></div></section>
+<section><h2>Real desktop sizes</h2><div class="sizes"><div><div data-s="working" style="width:140px"><svg class="bird" viewBox="0 0 256 280" xmlns="http://www.w3.org/2000/svg">
+<defs><clipPath id="r12"><circle cx="128" cy="142" r="100"/></clipPath></defs>
+<ellipse class="shadow" cx="128" cy="256" rx="70" ry="9" fill="#2F4236" opacity=".12"/>
+<g class="extras">
+  <g class="x-z"><path d="M196 34 H218 L196 60 H218" fill="none" stroke="#5E7F6B" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <g class="x-dots"><circle cx="180" cy="30" r="6" fill="#5E7F6B" opacity="0.45"/><circle cx="200" cy="30" r="6" fill="#5E7F6B" opacity="0.7"/><circle cx="220" cy="30" r="6" fill="#5E7F6B" opacity="1"/></g>
+  <g class="x-spark"><path d="M214 22 L219 36 L233 41 L219 46 L214 60 L209 46 L195 41 L209 36 Z" fill="#E3B55B"/><path d="M40 40 L43 48 L51 51 L43 54 L40 62 L37 54 L29 51 L37 48 Z" fill="#E3B55B"/></g>
+</g>
+<g class="body">
+  <ellipse cx="108" cy="244" rx="11" ry="6" fill="#E3B55B"/><ellipse cx="148" cy="244" rx="11" ry="6" fill="#E3B55B"/>
+  <g class="headg">
+    <circle cx="128" cy="142" r="100" fill="#F3EEE1"/>
+    <path clip-path="url(#r12)" d="M0 0 H256 V70 Q96 88 0 54 Z" fill="#D9CFB4"/>
+    <circle cx="128" cy="142" r="100" fill="none" stroke="#DCD2BB" stroke-width="4"/>
+    <g class="face">
+      <g class="e-pill"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><rect x="73.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><rect x="137.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g></g><g class="e-arc"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><path d="M69 120 Q80 132 91 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><path d="M133 120 Q144 132 155 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g><g class="e-happy"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><path d="M69 128 Q80 115 91 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><path d="M133 128 Q144 115 155 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g>
+      <path d="M96 146 H130 L106 171 Z" fill="#E3B55B" stroke="#E3B55B" stroke-width="8" stroke-linejoin="round"/>
+    </g>
+  </g>
+  <path class="wing wl" style="transform-origin:46px 202px" d="M28 200 C20 174 22 150 36 126 C52 144 62 170 62 198 Q46 212 28 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/><path class="wing wr" style="transform-origin:210px 202px" d="M228 200 C236 174 234 150 220 126 C204 144 194 170 194 198 Q210 212 228 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/>
+</g>
+</svg></div>140px</div><div><div data-s="working" style="width:110px"><svg class="bird" viewBox="0 0 256 280" xmlns="http://www.w3.org/2000/svg">
+<defs><clipPath id="r13"><circle cx="128" cy="142" r="100"/></clipPath></defs>
+<ellipse class="shadow" cx="128" cy="256" rx="70" ry="9" fill="#2F4236" opacity=".12"/>
+<g class="extras">
+  <g class="x-z"><path d="M196 34 H218 L196 60 H218" fill="none" stroke="#5E7F6B" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <g class="x-dots"><circle cx="180" cy="30" r="6" fill="#5E7F6B" opacity="0.45"/><circle cx="200" cy="30" r="6" fill="#5E7F6B" opacity="0.7"/><circle cx="220" cy="30" r="6" fill="#5E7F6B" opacity="1"/></g>
+  <g class="x-spark"><path d="M214 22 L219 36 L233 41 L219 46 L214 60 L209 46 L195 41 L209 36 Z" fill="#E3B55B"/><path d="M40 40 L43 48 L51 51 L43 54 L40 62 L37 54 L29 51 L37 48 Z" fill="#E3B55B"/></g>
+</g>
+<g class="body">
+  <ellipse cx="108" cy="244" rx="11" ry="6" fill="#E3B55B"/><ellipse cx="148" cy="244" rx="11" ry="6" fill="#E3B55B"/>
+  <g class="headg">
+    <circle cx="128" cy="142" r="100" fill="#F3EEE1"/>
+    <path clip-path="url(#r13)" d="M0 0 H256 V70 Q96 88 0 54 Z" fill="#D9CFB4"/>
+    <circle cx="128" cy="142" r="100" fill="none" stroke="#DCD2BB" stroke-width="4"/>
+    <g class="face">
+      <g class="e-pill"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><rect x="73.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><rect x="137.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g></g><g class="e-arc"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><path d="M69 120 Q80 132 91 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><path d="M133 120 Q144 132 155 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g><g class="e-happy"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><path d="M69 128 Q80 115 91 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><path d="M133 128 Q144 115 155 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g>
+      <path d="M96 146 H130 L106 171 Z" fill="#E3B55B" stroke="#E3B55B" stroke-width="8" stroke-linejoin="round"/>
+    </g>
+  </g>
+  <path class="wing wl" style="transform-origin:46px 202px" d="M28 200 C20 174 22 150 36 126 C52 144 62 170 62 198 Q46 212 28 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/><path class="wing wr" style="transform-origin:210px 202px" d="M228 200 C236 174 234 150 220 126 C204 144 194 170 194 198 Q210 212 228 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/>
+</g>
+</svg></div>110px</div><div><div data-s="working" style="width:80px"><svg class="bird" viewBox="0 0 256 280" xmlns="http://www.w3.org/2000/svg">
+<defs><clipPath id="r14"><circle cx="128" cy="142" r="100"/></clipPath></defs>
+<ellipse class="shadow" cx="128" cy="256" rx="70" ry="9" fill="#2F4236" opacity=".12"/>
+<g class="extras">
+  <g class="x-z"><path d="M196 34 H218 L196 60 H218" fill="none" stroke="#5E7F6B" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <g class="x-dots"><circle cx="180" cy="30" r="6" fill="#5E7F6B" opacity="0.45"/><circle cx="200" cy="30" r="6" fill="#5E7F6B" opacity="0.7"/><circle cx="220" cy="30" r="6" fill="#5E7F6B" opacity="1"/></g>
+  <g class="x-spark"><path d="M214 22 L219 36 L233 41 L219 46 L214 60 L209 46 L195 41 L209 36 Z" fill="#E3B55B"/><path d="M40 40 L43 48 L51 51 L43 54 L40 62 L37 54 L29 51 L37 48 Z" fill="#E3B55B"/></g>
+</g>
+<g class="body">
+  <ellipse cx="108" cy="244" rx="11" ry="6" fill="#E3B55B"/><ellipse cx="148" cy="244" rx="11" ry="6" fill="#E3B55B"/>
+  <g class="headg">
+    <circle cx="128" cy="142" r="100" fill="#F3EEE1"/>
+    <path clip-path="url(#r14)" d="M0 0 H256 V70 Q96 88 0 54 Z" fill="#D9CFB4"/>
+    <circle cx="128" cy="142" r="100" fill="none" stroke="#DCD2BB" stroke-width="4"/>
+    <g class="face">
+      <g class="e-pill"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><rect x="73.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><rect x="137.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g></g><g class="e-arc"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><path d="M69 120 Q80 132 91 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><path d="M133 120 Q144 132 155 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g><g class="e-happy"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><path d="M69 128 Q80 115 91 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><path d="M133 128 Q144 115 155 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g>
+      <path d="M96 146 H130 L106 171 Z" fill="#E3B55B" stroke="#E3B55B" stroke-width="8" stroke-linejoin="round"/>
+    </g>
+  </g>
+  <path class="wing wl" style="transform-origin:46px 202px" d="M28 200 C20 174 22 150 36 126 C52 144 62 170 62 198 Q46 212 28 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/><path class="wing wr" style="transform-origin:210px 202px" d="M228 200 C236 174 234 150 220 126 C204 144 194 170 194 198 Q210 212 228 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/>
+</g>
+</svg></div>80px</div><div><div data-s="working" style="width:56px"><svg class="bird" viewBox="0 0 256 280" xmlns="http://www.w3.org/2000/svg">
+<defs><clipPath id="r15"><circle cx="128" cy="142" r="100"/></clipPath></defs>
+<ellipse class="shadow" cx="128" cy="256" rx="70" ry="9" fill="#2F4236" opacity=".12"/>
+<g class="extras">
+  <g class="x-z"><path d="M196 34 H218 L196 60 H218" fill="none" stroke="#5E7F6B" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <g class="x-dots"><circle cx="180" cy="30" r="6" fill="#5E7F6B" opacity="0.45"/><circle cx="200" cy="30" r="6" fill="#5E7F6B" opacity="0.7"/><circle cx="220" cy="30" r="6" fill="#5E7F6B" opacity="1"/></g>
+  <g class="x-spark"><path d="M214 22 L219 36 L233 41 L219 46 L214 60 L209 46 L195 41 L209 36 Z" fill="#E3B55B"/><path d="M40 40 L43 48 L51 51 L43 54 L40 62 L37 54 L29 51 L37 48 Z" fill="#E3B55B"/></g>
+</g>
+<g class="body">
+  <ellipse cx="108" cy="244" rx="11" ry="6" fill="#E3B55B"/><ellipse cx="148" cy="244" rx="11" ry="6" fill="#E3B55B"/>
+  <g class="headg">
+    <circle cx="128" cy="142" r="100" fill="#F3EEE1"/>
+    <path clip-path="url(#r15)" d="M0 0 H256 V70 Q96 88 0 54 Z" fill="#D9CFB4"/>
+    <circle cx="128" cy="142" r="100" fill="none" stroke="#DCD2BB" stroke-width="4"/>
+    <g class="face">
+      <g class="e-pill"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><rect x="73.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><rect x="137.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g></g><g class="e-arc"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><path d="M69 120 Q80 132 91 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><path d="M133 120 Q144 132 155 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g><g class="e-happy"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><path d="M69 128 Q80 115 91 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><path d="M133 128 Q144 115 155 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g>
+      <path d="M96 146 H130 L106 171 Z" fill="#E3B55B" stroke="#E3B55B" stroke-width="8" stroke-linejoin="round"/>
+    </g>
+  </g>
+  <path class="wing wl" style="transform-origin:46px 202px" d="M28 200 C20 174 22 150 36 126 C52 144 62 170 62 198 Q46 212 28 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/><path class="wing wr" style="transform-origin:210px 202px" d="M228 200 C236 174 234 150 220 126 C204 144 194 170 194 198 Q210 212 228 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/>
+</g>
+</svg></div>56px</div><div><div data-s="working" style="width:40px"><svg class="bird" viewBox="0 0 256 280" xmlns="http://www.w3.org/2000/svg">
+<defs><clipPath id="r16"><circle cx="128" cy="142" r="100"/></clipPath></defs>
+<ellipse class="shadow" cx="128" cy="256" rx="70" ry="9" fill="#2F4236" opacity=".12"/>
+<g class="extras">
+  <g class="x-z"><path d="M196 34 H218 L196 60 H218" fill="none" stroke="#5E7F6B" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <g class="x-dots"><circle cx="180" cy="30" r="6" fill="#5E7F6B" opacity="0.45"/><circle cx="200" cy="30" r="6" fill="#5E7F6B" opacity="0.7"/><circle cx="220" cy="30" r="6" fill="#5E7F6B" opacity="1"/></g>
+  <g class="x-spark"><path d="M214 22 L219 36 L233 41 L219 46 L214 60 L209 46 L195 41 L209 36 Z" fill="#E3B55B"/><path d="M40 40 L43 48 L51 51 L43 54 L40 62 L37 54 L29 51 L37 48 Z" fill="#E3B55B"/></g>
+</g>
+<g class="body">
+  <ellipse cx="108" cy="244" rx="11" ry="6" fill="#E3B55B"/><ellipse cx="148" cy="244" rx="11" ry="6" fill="#E3B55B"/>
+  <g class="headg">
+    <circle cx="128" cy="142" r="100" fill="#F3EEE1"/>
+    <path clip-path="url(#r16)" d="M0 0 H256 V70 Q96 88 0 54 Z" fill="#D9CFB4"/>
+    <circle cx="128" cy="142" r="100" fill="none" stroke="#DCD2BB" stroke-width="4"/>
+    <g class="face">
+      <g class="e-pill"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><rect x="73.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><rect x="137.5" y="111" width="13" height="23" rx="6.5" fill="#2F4236"/></g></g><g class="e-arc"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><path d="M69 120 Q80 132 91 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><path d="M133 120 Q144 132 155 120" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g><g class="e-happy"><g transform="translate(80 124) scale(0.8 1) translate(-80 -124)"><path d="M69 128 Q80 115 91 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g><g transform="translate(144 124) scale(1 1) translate(-144 -124)"><path d="M133 128 Q144 115 155 128" fill="none" stroke="#2F4236" stroke-width="7" stroke-linecap="round"/></g></g>
+      <path d="M96 146 H130 L106 171 Z" fill="#E3B55B" stroke="#E3B55B" stroke-width="8" stroke-linejoin="round"/>
+    </g>
+  </g>
+  <path class="wing wl" style="transform-origin:46px 202px" d="M28 200 C20 174 22 150 36 126 C52 144 62 170 62 198 Q46 212 28 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/><path class="wing wr" style="transform-origin:210px 202px" d="M228 200 C236 174 234 150 220 126 C204 144 194 170 194 198 Q210 212 228 200 Z" fill="#D9CFB4" stroke="#C9BD9F" stroke-width="3" stroke-linejoin="round"/>
+</g>
+</svg></div>40px</div></div></section>
+<script>
+const desk=document.getElementById('desk'),pill=document.querySelector('#pill span');
+const txt={idle:'Ready when you are',working:'Draft the intro · 18:42',focus:'Focus · 24:10',break:'Break · 4:58',nudging:'Still on the intro?',celebrating:'+1 step done'};
+document.querySelectorAll('#btns button').forEach(b=>b.onclick=()=>{desk.dataset.s=b.dataset.k;pill.textContent=txt[b.dataset.k];
+document.querySelectorAll('#btns button').forEach(x=>x.classList.toggle('on',x===b));});
+</script></body></html>

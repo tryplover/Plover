@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "fontkit": "^2.0.4",
+    "wawoff2": "^2.0.1"
+  }
+}

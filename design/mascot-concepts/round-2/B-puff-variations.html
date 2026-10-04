@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Puff Variations</title>
+<style>
+:root{--page:#F7F3EE;--ink:#2A2238;--muted:#6B6478;--card:#FFFFFF;--line:#E7E1D8;--dark:#1B1A22}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--page);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:24px 16px 64px}
+main{max-width:1080px;margin:0 auto}
+h1{font-size:28px;margin:0 0 6px;letter-spacing:-.01em}
+h2{font-size:18px;margin:0}
+p{margin:0 0 10px}
+.lede{max-width:780px;color:#3f3850}
+button{font:inherit;cursor:pointer}
+.bar{position:sticky;top:0;z-index:20;background:rgba(247,243,238,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);margin:14px -16px 20px;padding:10px 16px}
+.bar .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;max-width:1080px;margin:0 auto}
+.bar .row+.row{margin-top:6px}
+.chip{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:4px 11px;font-size:13px}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip.tx{background:#EEEAFE;border-color:#D9D2FB;color:#3d2f9c}
+label.tog{display:inline-flex;gap:6px;align-items:center;font-size:13px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:4px 11px;cursor:pointer}
+.sep{width:1px;height:20px;background:var(--line);margin:0 4px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px}
+.card h2 small{font-weight:500;color:var(--muted);font-size:12px;margin-left:6px}
+.card .what{font-size:13px;color:var(--muted);margin:2px 0 10px;min-height:2.6em}
+.ref{display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin-bottom:22px}
+.ref .txt{flex:1;min-width:220px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:26px}
+@media (max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:560px){.grid{grid-template-columns:1fr}}
+.tiles{display:flex;gap:8px;align-items:flex-end}
+.tile{border-radius:14px;display:flex;align-items:center;justify-content:center;background:#F3EEE7;--shadow:rgba(42,34,56,.13);transition:background .3s}
+body.darkbg .tile{background:var(--dark);--shadow:rgba(0,0,0,.45)}
+.tile.lg{width:166px;height:166px}
+.tile.sm{width:64px;height:64px}
+.tile.lg .bud{width:140px;height:140px}
+.tile.sm .bud{width:40px;height:40px}
+.tag{display:inline-block;font-size:11px;border-radius:999px;padding:1px 8px;background:#F1EDF8;color:#4b3f8a;margin-right:4px}
+
+/* ---------- rig (same as B-blob Puff) ---------- */
+.bud{overflow:visible;display:block}
+.bud .hop,.bud .squash,.bud .tilt,.bud .face,.bud .eyes,.bud .lid,.bud .shadow,.bud .wingL,.bud .wingR,.bud .tuft,.bud .fxg circle,.bud .fxg text,.bud .fxg path,.bud .fxg ellipse,.bud .fx-q g{transform-box:fill-box}
+.bud .hop,.bud .squash{transform-origin:50% 100%}
+.bud .tilt{transform-origin:50% 85%}
+.bud .face,.bud .eyes{transform-origin:50% 50%}
+.bud .shadow{fill:var(--shadow,rgba(42,34,56,.13));transform-origin:50% 50%}
+.bud .lid{transform:translateY(-106%)}
+.bud .eo,.bud .eh,.bud .ec,.bud .fxg,.bud .blush{transition:opacity .25s ease}
+.bud .eh,.bud .ec,.bud .fxg{opacity:0}
+.bud .wingL{transform-origin:100% 25%}
+.bud .wingR{transform-origin:0% 25%}
+.bud .tuft{transform-origin:50% 100%}
+
+.bud[data-s=idle] .squash{animation:breathe 3.6s ease-in-out infinite}
+.bud[data-s=idle] .face{animation:look 8s ease-in-out infinite}
+.bud[data-s=idle] .lid{animation:blink 4.6s infinite}
+.bud[data-s=idle] .tuft{animation:wiggle 3.6s ease-in-out infinite}
+
+.bud[data-s=listening] .tilt{transform:rotate(-6deg);animation:think 2.4s ease-in-out infinite alternate}
+.bud[data-s=listening] .face{transform:translate(2px,-3px);animation:scan 2.4s ease-in-out infinite alternate}
+.bud[data-s=listening] .eyes{transform:scale(1.08)}
+.bud[data-s=listening] .lid{animation:blink 3.2s infinite}
+.bud[data-s=listening] .fx-think{opacity:1}
+.bud[data-s=listening] .tuft{animation:wiggle 1.2s ease-in-out infinite}
+
+.bud[data-s=working] .squash{animation:breathe 5.2s ease-in-out infinite}
+.bud[data-s=working] .face{transform:translate(-4px,3px);animation:workGlance 9s ease-in-out infinite}
+.bud[data-s=working] .lid{animation:blink 6.2s infinite}
+
+.bud[data-s=break] .tilt{animation:sway 4.6s ease-in-out infinite}
+.bud[data-s=break] .squash{transform:scale(1.04,.97)}
+.bud[data-s=break] .lid{transform:translateY(-52%);animation:blinkHalf 5.4s infinite}
+.bud[data-s=break] .fx-note{opacity:1}
+.bud[data-s=break] .tuft{transform:rotate(-8deg)}
+.bud[data-s=break] .blush{opacity:.7}
+
+.bud[data-s=checking-in] .hop{animation:hopTwice 3s ease-in-out infinite}
+.bud[data-s=checking-in] .squash{animation:hopTwiceSq 3s ease-in-out infinite}
+.bud[data-s=checking-in] .tilt{transform:rotate(7deg);animation:curious 3s ease-in-out infinite}
+.bud[data-s=checking-in] .eyes{transform:scale(1.13)}
+.bud[data-s=checking-in] .face{transform:translate(0,-1px)}
+.bud[data-s=checking-in] .lid{animation:dblBlink 3s infinite}
+.bud[data-s=checking-in] .fx-q{opacity:1}
+.bud[data-s=checking-in] .wingR{animation:wave 3s ease-in-out infinite}
+
+.bud[data-s=nudging] .hop{animation:lean 2.6s ease-in-out infinite}
+.bud[data-s=nudging] .face{animation:nudgeLook 2.6s ease-in-out infinite}
+.bud[data-s=nudging] .lid{animation:blink 5s infinite}
+.bud[data-s=nudging] .fx-halo{opacity:1}
+.bud[data-s=nudging] .fx-halo ellipse{animation:halo 2.6s ease-out infinite}
+.bud[data-s=nudging] .wingL{animation:beckon 2.6s ease-in-out infinite}
+
+.bud[data-s=celebrating] .hop{animation:jump 1.1s ease-in-out infinite}
+.bud[data-s=celebrating] .squash{animation:jumpSq 1.1s ease-in-out infinite}
+.bud[data-s=celebrating] .shadow{animation:shadowJ 1.1s ease-in-out infinite}
+.bud[data-s=celebrating] .eo{opacity:0}
+.bud[data-s=celebrating] .eh{opacity:1}
+.bud[data-s=celebrating] .blush{opacity:.85}
+.bud[data-s=celebrating] .fx-spark{opacity:1}
+.bud[data-s=celebrating] .wingL{animation:flap .55s ease-in-out infinite alternate}
+.bud[data-s=celebrating] .wingR{animation:flapR .55s ease-in-out infinite alternate}
+.bud[data-s=celebrating] .tuft{animation:wiggle .55s ease-in-out infinite}
+
+.bud[data-s=sleeping] .squash{transform:scale(1.05,.92);animation:sleepB 4.8s ease-in-out infinite}
+.bud[data-s=sleeping] .face{transform:translate(0,3px)}
+.bud[data-s=sleeping] .lid{transform:translateY(0)}
+.bud[data-s=sleeping] .ec{opacity:1}
+.bud[data-s=sleeping] .fx-zz{opacity:1}
+.bud[data-s=sleeping] .tuft{transform:rotate(14deg)}
+
+.bud.boing .squash{animation:boing .42s ease-out !important}
+
+.fx-think circle{animation:dot 1.2s ease-in-out infinite}
+.fx-think circle:nth-child(2){animation-delay:.15s}
+.fx-think circle:nth-child(3){animation-delay:.3s}
+.fx-zz text{animation:zz 3.2s ease-in-out infinite}
+.fx-zz text:nth-child(2){animation-delay:1.6s}
+.fx-spark path{transform-origin:50% 50%;animation:spark 1.1s ease-out infinite}
+.fx-spark path:nth-child(2){animation-delay:.25s}
+.fx-spark path:nth-child(3){animation-delay:.5s}
+.fx-spark path:nth-child(4){animation-delay:.75s}
+.fx-q g{animation:bob 1.5s ease-in-out infinite}
+.fx-note text{animation:note 3.4s ease-in-out infinite}
+.fx-halo ellipse{transform-origin:50% 50%}
+
+@keyframes breathe{0%,100%{transform:scale(1,1)}50%{transform:scale(1.025,.975)}}
+@keyframes sleepB{0%,100%{transform:scale(1.05,.92)}50%{transform:scale(1.08,.89)}}
+@keyframes look{0%,28%{transform:translate(0,0)}33%,48%{transform:translate(-3.5px,.5px)}53%,68%{transform:translate(3.5px,-1px)}73%,100%{transform:translate(0,0)}}
+@keyframes blink{0%,91%,100%{transform:translateY(-106%)}94.5%{transform:translateY(0)}}
+@keyframes blinkHalf{0%,88%,100%{transform:translateY(-52%)}93%{transform:translateY(0)}}
+@keyframes dblBlink{0%,60%,70%,100%{transform:translateY(-106%)}64%,74%{transform:translateY(0)}67%{transform:translateY(-106%)}}
+@keyframes think{from{transform:rotate(-8deg)}to{transform:rotate(-3deg)}}
+@keyframes scan{from{transform:translate(1px,-3px)}to{transform:translate(4px,-4px)}}
+@keyframes workGlance{0%,76%{transform:translate(-4px,3px)}81%,90%{transform:translate(0,0)}95%,100%{transform:translate(-4px,3px)}}
+@keyframes sway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+@keyframes hopTwice{0%,36%,100%{transform:translateY(0)}9%{transform:translateY(-8px)}18%{transform:translateY(0)}27%{transform:translateY(-6px)}}
+@keyframes hopTwiceSq{0%,40%,100%{transform:scale(1,1)}4%{transform:scale(1.08,.9)}9%{transform:scale(.95,1.06)}18%{transform:scale(1.07,.92)}27%{transform:scale(.97,1.04)}36%{transform:scale(1.04,.95)}}
+@keyframes curious{0%,38%{transform:rotate(0)}48%,90%{transform:rotate(8deg)}100%{transform:rotate(0)}}
+@keyframes lean{0%,100%{transform:translate(0,0)}25%{transform:translate(-5px,0) rotate(-4deg)}40%{transform:translate(-5px,-3px) rotate(-4deg)}55%{transform:translate(0,0)}65%{transform:translate(0,-3px)}75%{transform:translate(0,0)}}
+@keyframes nudgeLook{0%,100%{transform:translate(0,0)}20%,45%{transform:translate(-5px,2px)}55%,100%{transform:translate(0,0)}}
+@keyframes halo{0%{transform:scale(.85);opacity:.55}100%{transform:scale(1.08);opacity:0}}
+@keyframes jump{0%,100%{transform:translateY(0)}20%{transform:translateY(0)}50%{transform:translateY(-16px)}75%{transform:translateY(0)}}
+@keyframes jumpSq{0%,100%{transform:scale(1,1)}18%{transform:scale(1.12,.86)}40%{transform:scale(.9,1.12)}60%{transform:scale(.98,1.02)}76%{transform:scale(1.1,.88)}88%{transform:scale(.98,1.02)}}
+@keyframes shadowJ{0%,100%,20%,75%{transform:scale(1)}50%{transform:scale(.62);opacity:.6}}
+@keyframes boing{0%{transform:scale(1,1)}30%{transform:scale(1.09,.9)}62%{transform:scale(.96,1.05)}100%{transform:scale(1,1)}}
+@keyframes dot{0%,60%,100%{transform:translateY(0);opacity:.55}30%{transform:translateY(-4px);opacity:1}}
+@keyframes zz{0%{transform:translate(0,4px);opacity:0}30%{opacity:1}100%{transform:translate(6px,-10px);opacity:0}}
+@keyframes spark{0%{transform:scale(0) rotate(0);opacity:0}30%{transform:scale(1.1) rotate(20deg);opacity:1}100%{transform:scale(.4) rotate(60deg);opacity:0}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes note{0%{transform:translate(0,3px);opacity:0}25%{opacity:1}100%{transform:translate(5px,-9px);opacity:0}}
+@keyframes wiggle{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
+@keyframes wave{0%,40%,100%{transform:rotate(0)}50%{transform:rotate(-55deg)}58%{transform:rotate(-30deg)}66%{transform:rotate(-55deg)}76%{transform:rotate(0)}}
+@keyframes beckon{0%,100%{transform:rotate(0)}20%{transform:rotate(40deg)}32%{transform:rotate(15deg)}44%{transform:rotate(40deg)}56%{transform:rotate(0)}}
+@keyframes flap{from{transform:rotate(0)}to{transform:rotate(-50deg)}}
+@keyframes flapR{from{transform:rotate(0)}to{transform:rotate(50deg)}}
+
+html.rm .bud *,html.rm .bud.boing .squash{animation:none !important}
+html.rm .bud[data-s=celebrating] .hop{transform:translateY(-6px)}
+html.rm .fx-zz text,html.rm .fx-note text,html.rm .fx-spark path,html.rm .fx-think circle{opacity:1}
+html.rm .fx-halo ellipse{opacity:.4}
+html.rm .desk *{transition:none !important}
+
+/* ---------- in-context mock ---------- */
+.desk{position:relative;height:500px;border-radius:18px;overflow:hidden;background:linear-gradient(135deg,#c9d6f2 0%,#e9d7ea 50%,#f6e3cf 100%);border:1px solid var(--line)}
+.desk .menubar{height:24px;background:rgba(255,255,255,.55);backdrop-filter:blur(6px);font-size:12px;display:flex;align-items:center;padding:0 12px;gap:14px;color:#3b3550}
+.win{position:absolute;left:4%;top:44px;width:min(620px,72%);height:400px;background:#fff;border-radius:12px;box-shadow:0 18px 50px rgba(40,30,70,.18);overflow:hidden}
+.win .wbar{height:30px;background:#f4f2f7;display:flex;align-items:center;gap:6px;padding:0 10px}
+.win .wbar i{width:10px;height:10px;border-radius:50%;background:#e2dde9}
+.win .wbar span{font-size:12px;color:#7c768a;margin-left:8px}
+.doc{padding:26px 34px;filter:blur(1.6px);opacity:.85}
+.doc .h{height:16px;width:46%;background:#d9d4e3;border-radius:6px;margin-bottom:18px}
+.doc .l{height:9px;background:#e6e2ec;border-radius:5px;margin-bottom:11px}
+.bwin{position:absolute;right:28px;bottom:26px;width:140px;height:140px;transition:width .35s ease,height .35s ease}
+.bwin .ring{position:absolute;inset:0;transition:opacity .3s}
+.bwin .ring circle{fill:none;stroke-width:5;stroke-linecap:round}
+.bwin .slot{position:absolute;inset:16px;cursor:pointer;display:flex}
+.bwin .slot .bud{width:100%;height:100%}
+.bwin .ctrls{position:absolute;top:-6px;right:-6px;display:flex;gap:4px;opacity:0;transition:opacity .2s}
+.bwin:hover .ctrls,.bwin:focus-within .ctrls{opacity:1}
+.ctrls button{width:20px;height:20px;border-radius:50%;border:0;background:rgba(255,255,255,.9);box-shadow:0 1px 4px rgba(0,0,0,.15);font-size:12px;line-height:20px;padding:0;color:#4a4458}
+.bwin.mini{width:56px;height:56px}
+.bwin.mini .ring{opacity:0}
+.bwin.mini .slot{inset:8px}
+.readout{position:absolute;right:28px;bottom:6px;width:140px;text-align:center;font:600 12px ui-monospace,Consolas,monospace;color:#3b3550;transition:opacity .3s}
+.bubble{position:absolute;right:178px;bottom:110px;width:250px;background:#fff;border-radius:16px;padding:14px 14px 12px;box-shadow:0 12px 34px rgba(40,30,70,.2);font-size:14px;transform-origin:100% 100%;transition:opacity .25s,transform .25s}
+.bubble.hide{opacity:0;transform:scale(.92) translateY(6px);pointer-events:none}
+.bubble:after{content:"";position:absolute;right:-7px;bottom:22px;width:14px;height:14px;background:#fff;transform:rotate(45deg);border-radius:3px}
+.bubble .t{font-weight:600;margin-bottom:8px}
+.bubble input{width:100%;font:inherit;font-size:13px;padding:7px 9px;border:1px solid var(--line);border-radius:9px;margin-bottom:8px}
+.bubble ol{margin:0 0 10px;padding-left:20px;font-size:13px}
+.bubble .brow{display:flex;gap:6px;flex-wrap:wrap}
+.bubble .brow button{border:1px solid var(--line);background:#faf8f5;border-radius:999px;padding:5px 11px;font-size:13px;color:var(--ink)}
+.bubble .brow button.pri{background:var(--ink);color:#fff;border-color:var(--ink)}
+.stepPill{position:absolute;right:178px;bottom:32px;background:rgba(255,255,255,.85);backdrop-filter:blur(6px);border-radius:999px;padding:5px 12px;font-size:12px;color:#3b3550;transition:opacity .3s;max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mockbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:10px 0 12px}
+.status{font:12px ui-monospace,Consolas,monospace;color:var(--muted);margin-left:auto}
+@media (max-width:640px){
+  .desk{height:540px}
+  .win{width:90%;height:300px}
+  .bubble{right:16px;bottom:186px;width:min(260px,calc(100% - 32px))}
+  .bubble:after{right:40px;bottom:-7px}
+  .stepPill{right:auto;left:16px;bottom:170px;max-width:calc(100% - 32px)}
+  .tile.lg{width:146px;height:146px}.tile.lg .bud{width:126px;height:126px}
+}
+</style>
+</head>
+<body>
+<main>
+  <h1>Puff · 6 variations</h1>
+  <p class="lede">Every variation uses the same puffball, the same rig and the same 8 states as the original. Each one changes only one or two things, listed as tags, so it's clear what you're reacting to. The bar below drives every buddy at once, so you can compare them side by side in the same state.</p>
+
+  <div class="bar">
+    <div class="row" id="stateRow"></div>
+    <div class="row">
+      <button class="chip tx" id="tx1">▶ working → celebrating → break</button>
+      <button class="chip tx" id="tx2">▶ idle → listening → working</button>
+      <span class="sep"></span>
+      <label class="tog"><input type="checkbox" id="bgToggle"> Dark background</label>
+      <label class="tog"><input type="checkbox" id="rmToggle"> Reduced motion</label>
+    </div>
+  </div>
+
+  <section class="card ref" id="refCard"></section>
+  <div class="grid" id="grid"></div>
+
+  <section class="card" id="mock">
+    <h2>In context: a mini session</h2>
+    <p class="what" style="min-height:0">Click through it. Hover the buddy to minimize. 1 s = 1 min. The global state bar doesn't control this mock; it runs its own session.</p>
+    <div class="mockbar" id="mockPick"></div>
+    <div class="mockbar">
+      <button class="chip" id="skip">Skip ahead ⏭</button>
+      <button class="chip" id="reset">Reset</button>
+      <span class="status" id="mstatus">state: idle</span>
+    </div>
+    <div class="desk">
+      <div class="menubar"><b>Docs</b><span>File</span><span>Edit</span><span>View</span></div>
+      <div class="win">
+        <div class="wbar"><i></i><i></i><i></i><span>history-essay-draft.docx</span></div>
+        <div class="doc" id="doc"></div>
+      </div>
+      <div class="stepPill" id="stepPill" style="opacity:0"></div>
+      <div class="bubble hide" id="bubble"></div>
+      <div class="bwin" id="bwin">
+        <svg class="ring" viewBox="0 0 140 140"><circle cx="70" cy="70" r="64" stroke="rgba(255,255,255,.55)"/><circle id="ringFg" cx="70" cy="70" r="64" stroke="#7C9CFF" transform="rotate(-90 70 70)" stroke-dasharray="402.1" stroke-dashoffset="402.1" style="transition:stroke-dashoffset .9s linear,stroke .4s"/></svg>
+        <div class="slot" id="slot" role="button" tabindex="0" aria-label="Plover buddy"></div>
+        <div class="ctrls"><button id="minBtn" title="Minimize">–</button></div>
+      </div>
+      <div class="readout" id="readout"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function(){
+const INK='#2A2238';
+const STATES=['idle','listening','working','break','checking-in','nudging','celebrating','sleeping'];
+
+const PAL={
+  sky:  {body:'#8FCBEA',belly:'#E6F5FC',wing:'#74B5DB',tuft:'#74B5DB',beak:'#FFB23E',blush:'#FF9AA8',think:'#7FB2D6'},
+  peach:{body:'#FFC6A5',belly:'#FFF2E8',wing:'#F5A882',tuft:'#F5A882',beak:'#E9824A',blush:'#FF8F9C',think:'#E7A78A'},
+  sage: {body:'#A9D8C0',belly:'#EEF8F1',wing:'#86C1A4',tuft:'#86C1A4',beak:'#FFB23E',blush:'#FF9AA8',think:'#86C1A4'},
+  cream:{body:'#FBF5EA',edge:'#E6D6BC',belly:'#FBF5EA',wing:'#E9DAC0',tuft:'#FF9F6B',beak:'#FF9F6B',blush:'#FFB3A0',think:'#D9C7AA'}
+};
+const BODY={
+  round:{d:'M60 34C86 34 100 54 100 76C100 98 84 108 60 108C36 108 20 98 20 76C20 54 34 34 60 34Z',dy:0,eyeY:65,beakY:74,belly:[91,25,15],wingX:18,wingY:80,hl:[44,47],blushY:77},
+  squat:{d:'M60 46C89 46 105 62 105 81C105 100 87 108 60 108C33 108 15 100 15 81C15 62 31 46 60 46Z',dy:12,eyeY:73,beakY:82,belly:[96,29,11],wingX:13,wingY:87,hl:[39,57],blushY:84},
+  egg:  {d:'M60 22C82 22 95 48 95 76C95 98 81 108 60 108C39 108 25 98 25 76C25 48 38 22 60 22Z',dy:-12,eyeY:58,beakY:67,belly:[89,21,17],wingX:23,wingY:80,hl:[46,36],blushY:70}
+};
+const EYES={
+  dot:  {w:10,h:13,dx:13,sw:3.2,blush:{rx:6,ry:3.2,dx:24,op:.45}},
+  pill: {w:8,h:17,dx:12,sw:3,blush:{rx:6,ry:3.2,dx:24,op:.45}},
+  small:{w:7,h:9,dx:16,sw:2.6,blush:{rx:8.5,ry:4.4,dx:27,op:.65}}
+};
+const VARS=[
+  {key:'orig',name:'Puff (original)',what:'The round, sky-blue reference from B-blob.',tags:[],o:{}},
+  {key:'egg',name:'Egg',what:'Taller, egg-shaped body with a big forehead, and one curled feather in place of the three-feather tuft.',tags:['proportions','tuft'],o:{body:'egg',tuft:'curl'}},
+  {key:'dumpling',name:'Dumpling',what:'Squat, wide and low to the ground, with small eyes set far apart and a much bigger blush.',tags:['proportions','eyes'],o:{body:'squat',eyes:'small'}},
+  {key:'peach',name:'Peach Fluff',what:'Warm peach palette, and the hard belly patch becomes a soft gradient with three tiny fluff marks.',tags:['palette','belly'],o:{pal:'peach',belly:'fluff'}},
+  {key:'sage',name:'Sage',what:'Sage-mint palette with taller pill eyes, which look a bit more attentive and less baby-like.',tags:['palette','eyes'],o:{pal:'sage',eyes:'pill'}},
+  {key:'bare',name:'Bare',what:'No beak and no wing nubs, so the bird comes only from motion. The tuft shrinks to a tiny cowlick.',tags:['beak/wings','tuft'],o:{beak:false,wings:false,tuft:'cowlick'}},
+  {key:'cream',name:'Cream',what:'Near-monochrome cream body with a hairline edge and no belly patch. One apricot accent shared by the tuft and beak.',tags:['palette','belly'],o:{pal:'cream',belly:'none'}}
+];
+
+let uid=0;
+function eye(o){
+  const id='e'+o.u+o.s;
+  const shape=`<ellipse cx="${o.cx}" cy="${o.cy}" rx="${o.w/2}" ry="${o.h/2}"/>`;
+  return `<g class="eye">
+   <defs><clipPath id="${id}">${shape}</clipPath></defs>
+   <g class="eo" clip-path="url(#${id})">
+     <g fill="${INK}">${shape}</g>
+     <circle cx="${o.cx+o.w*.2}" cy="${o.cy-o.h*.2}" r="${Math.max(1.2,o.w*.19)}" fill="#fff"/><circle cx="${o.cx-o.w*.18}" cy="${o.cy+o.h*.24}" r="${Math.max(.6,o.w*.08)}" fill="#fff" opacity=".7"/>
+     <rect class="lid" x="${o.cx-o.w/2-1}" y="${o.cy-o.h/2-1}" width="${o.w+2}" height="${o.h+2}" fill="${o.lid}"/>
+   </g>
+   <path class="eh" d="M${o.cx-o.w/2-.5} ${o.cy+2} Q${o.cx} ${o.cy-Math.min(o.h,13)*.6} ${o.cx+o.w/2+.5} ${o.cy+2}" fill="none" stroke="${INK}" stroke-width="${o.sw}" stroke-linecap="round"/>
+   <path class="ec" d="M${o.cx-o.w/2-.5} ${o.cy+1} Q${o.cx} ${o.cy+4.5} ${o.cx+o.w/2+.5} ${o.cy+1}" fill="none" stroke="${INK}" stroke-width="${o.sw*.85}" stroke-linecap="round"/>
+  </g>`;
+}
+const star=(x,y,s)=>`<path d="M${x} ${y-s}Q${x} ${y} ${x+s} ${y}Q${x} ${y} ${x} ${y+s}Q${x} ${y} ${x-s} ${y}Q${x} ${y} ${x} ${y-s}Z"/>`;
+function tuftSvg(kind,c){
+  if(kind==='curl') return `<path d="M60 38C57 29 60 19 69 18C75 18 77 25 71 27" fill="none" stroke="${c}" stroke-width="4.2" stroke-linecap="round"/>`;
+  if(kind==='cowlick') return `<path d="M60 38C58 32 60 28 65 27C62 30 63 34 60 38Z" fill="${c}"/>`;
+  return `<path d="M60 38C55 30 56 22 61 17C63 24 65 31 60 38Z"/><path d="M58 39C51 35 47 29 47 23C53 27 58 32 58 39Z"/><path d="M62 39C67 34 72 31 75 27C73 33 69 37 62 39Z"/>`;
+}
+function puff(opts){
+  const u=++uid;
+  const o=Object.assign({body:'round',pal:'sky',eyes:'dot',tuft:'three',beak:true,wings:true,belly:'patch'},opts);
+  const b=BODY[o.body],c=PAL[o.pal],e=EYES[o.eyes];
+  const [bcy,brx,bry]=b.belly;
+  let belly='';
+  if(o.belly==='patch') belly=`<ellipse cx="60" cy="${bcy}" rx="${brx}" ry="${bry}" fill="${c.belly}"/>`;
+  if(o.belly==='fluff') belly=`<defs><radialGradient id="bg${u}" cx="50%" cy="45%" r="50%"><stop offset="0" stop-color="${c.belly}"/><stop offset=".55" stop-color="${c.belly}" stop-opacity=".75"/><stop offset="1" stop-color="${c.belly}" stop-opacity="0"/></radialGradient></defs>
+    <ellipse cx="60" cy="${bcy-3}" rx="${brx+9}" ry="${bry+10}" fill="url(#bg${u})"/>
+    <g fill="none" stroke="${c.wing}" stroke-width="1.3" stroke-linecap="round" opacity=".45"><path d="M52 ${bcy-3}q2 2 4 0"/><path d="M64 ${bcy-3}q2 2 4 0"/><path d="M58 ${bcy+3}q2 2 4 0"/></g>`;
+  const wl=b.wingX,wr=120-b.wingX,wy=b.wingY;
+  const wings=o.wings?`<g class="wingL"><g><ellipse cx="${wl}" cy="${wy}" rx="7" ry="11.5" fill="${c.wing}" transform="rotate(22 ${wl} ${wy})"/></g></g>
+   <g class="wingR"><g><ellipse cx="${wr}" cy="${wy}" rx="7" ry="11.5" fill="${c.wing}" transform="rotate(-22 ${wr} ${wy})"/></g></g>`:'';
+  const by=b.beakY-74;
+  const beak=o.beak?`<path transform="translate(0 ${by})" d="M55.5 74Q60 71.6 64.5 74Q61.6 80.5 60 80.5Q58.4 80.5 55.5 74Z" fill="${c.beak}"/>`:'';
+  const bl=e.blush;
+  const inner=`${wings}
+   <g class="tuft"><g transform="translate(0 ${b.dy})" fill="${c.tuft}">${tuftSvg(o.tuft,c.tuft)}</g></g>
+   <path d="${b.d}" fill="${c.body}"${c.edge?` stroke="${c.edge}" stroke-width="1.6"`:""}/>
+   ${belly}
+   <ellipse cx="${b.hl[0]}" cy="${b.hl[1]}" rx="8" ry="4.5" fill="#fff" opacity=".38" transform="rotate(-26 ${b.hl[0]} ${b.hl[1]})"/>
+   <g class="face">
+     <g class="blush" opacity="${bl.op}" fill="${c.blush}"><ellipse cx="${60-bl.dx}" cy="${b.blushY}" rx="${bl.rx}" ry="${bl.ry}"/><ellipse cx="${60+bl.dx}" cy="${b.blushY}" rx="${bl.rx}" ry="${bl.ry}"/></g>
+     <g class="eyes">${eye({u,s:'L',cx:60-e.dx,cy:b.eyeY,w:e.w,h:e.h,lid:c.body,sw:e.sw})}${eye({u,s:'R',cx:60+e.dx,cy:b.eyeY,w:e.w,h:e.h,lid:c.body,sw:e.sw})}</g>
+     ${beak}
+   </g>`;
+  const thinkY=Math.max(10,14+b.dy), tx=o.tuft==="curl"?-22:0;
+  return `<svg class="bud" viewBox="0 0 120 120" data-s="${cur}" aria-hidden="true">
+   <g class="fxg fx-halo"><ellipse cx="60" cy="${72+b.dy/2}" rx="46" ry="${40-b.dy/2}" fill="none" stroke="#FFB547" stroke-width="3"/></g>
+   <ellipse class="shadow" cx="60" cy="111" rx="${o.body==='squat'?33:28}" ry="3.6"/>
+   <g class="hop"><g class="squash"><g class="tilt">${inner}</g></g></g>
+   <g class="fxg fx-think" fill="${c.think}"><circle cx="${47+tx}" cy="${thinkY}" r="3.6"/><circle cx="${60+tx}" cy="${thinkY}" r="3.6"/><circle cx="${73+tx}" cy="${thinkY}" r="3.6"/></g>
+   <g class="fxg fx-zz" fill="#9C93C9" font-family="system-ui,sans-serif" font-weight="700"><text x="88" y="${34+b.dy}" font-size="13">z</text><text x="98" y="${22+b.dy}" font-size="10">z</text></g>
+   <g class="fxg fx-spark" fill="#FFD166">${star(16,34,6)}${star(104,30,7)}${star(10,66,4.5)}${star(110,62,5)}</g>
+   <g class="fxg fx-q"><g><circle cx="99" cy="${Math.max(14,26+b.dy)}" r="10" fill="#fff" stroke="#E2DCEF" stroke-width="1.5"/><text x="99" y="${Math.max(14,26+b.dy)+5}" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="800" font-size="13" fill="${INK}">?</text></g></g>
+   <g class="fxg fx-note" fill="#8E86B8" font-family="system-ui,sans-serif"><text x="94" y="${36+b.dy}" font-size="14">♪</text></g>
+  </svg>`;
+}
+
+let cur='idle';
+function setState(svg,s){
+  if(svg.getAttribute('data-s')===s) return;
+  svg.setAttribute('data-s',s);
+  svg.classList.remove('boing'); svg.getBoundingClientRect();
+  svg.classList.add('boing');
+  clearTimeout(svg._bt); svg._bt=setTimeout(()=>svg.classList.remove('boing'),430);
+}
+function tilesFor(v){return `<div class="tiles"><div class="tile lg">${puff(v.o)}</div><div class="tile sm">${puff(v.o)}</div></div>`;}
+
+const ref=VARS[0];
+document.getElementById('refCard').innerHTML=`${tilesFor(ref)}<div class="txt"><h2>Reference: ${ref.name}</h2><p class="what" style="min-height:0">Round body, sky blue, glossy dot eyes, three-feather tuft, nub beak, wing nubs, pale belly patch. Each variation below changes one or two of these.</p></div>`;
+document.getElementById('grid').innerHTML=VARS.slice(1).map((v,i)=>`<section class="card"><h2>${i+1}. ${v.name}</h2><div style="margin:4px 0">${v.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div><p class="what">${v.what}</p>${tilesFor(v)}</section>`).join('');
+
+const stateRow=document.getElementById('stateRow');
+stateRow.innerHTML='<span style="font-size:13px;color:var(--muted);margin-right:4px">State:</span>'+STATES.map(s=>`<button class="chip${s==='idle'?' on':''}" data-s="${s}">${s}</button>`).join('');
+const gridBuds=()=>document.querySelectorAll('#refCard .bud,#grid .bud');
+let timers=[];
+function go(s){cur=s;gridBuds().forEach(b=>setState(b,s));stateRow.querySelectorAll('[data-s]').forEach(b=>b.classList.toggle('on',b.dataset.s===s));}
+stateRow.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{timers.forEach(clearTimeout);go(b.dataset.s);});
+const seq=list=>{timers.forEach(clearTimeout);timers=[];let t=0;list.forEach(([s,d])=>{timers.push(setTimeout(()=>go(s),t));t+=d;});};
+document.getElementById('tx1').onclick=()=>seq([['working',1800],['celebrating',2300],['break',0]]);
+document.getElementById('tx2').onclick=()=>seq([['idle',1200],['listening',2200],['working',0]]);
+document.getElementById('bgToggle').onchange=e=>document.body.classList.toggle('darkbg',e.target.checked);
+
+const rmT=document.getElementById('rmToggle');
+const mq=window.matchMedia('(prefers-reduced-motion: reduce)');
+const applyRM=on=>{document.documentElement.classList.toggle('rm',on);rmT.checked=on;};
+applyRM(mq.matches);
+mq.addEventListener&&mq.addEventListener('change',e=>applyRM(e.matches));
+rmT.onchange=()=>applyRM(rmT.checked);
+
+/* ---------- mock session ---------- */
+document.getElementById('doc').innerHTML='<div class="h"></div>'+Array.from({length:16},(_,i)=>`<div class="l" style="width:${[96,88,92,70,0,94,90,85,97,60,0,91,87,93,78,40][i]}%;${[4,10].includes(i)?'height:4px;background:none':''}"></div>`).join('');
+const $=id=>document.getElementById(id);
+const slot=$('slot'),bubble=$('bubble'),bwin=$('bwin'),ringFg=$('ringFg'),readout=$('readout'),pill=$('stepPill'),mstatus=$('mstatus');
+const C=402.1;
+let mv=0,bud,M,iv=null,later=[];
+const STEPS=['Jot the 3 points the intro must make','Draft a hook sentence','Write the full intro paragraph'];
+$('mockPick').innerHTML='<span style="font-size:13px;color:var(--muted)">Variant:</span>'+VARS.map((v,i)=>`<button class="chip${i===0?' on':''}" data-mv="${i}">${i===0?'Original':v.name}</button>`).join('');
+
+function mountBud(){slot.innerHTML=puff(VARS[mv].o);bud=slot.querySelector('.bud');bud.setAttribute('data-s',M?M.state:'idle');}
+function S(s){M.state=s;setState(bud,s);mstatus.textContent='state: '+s;}
+function clearLater(){later.forEach(clearTimeout);later=[];}
+function after(ms,fn){later.push(setTimeout(fn,ms));}
+function say(html){bubble.innerHTML=html;bubble.classList.remove('hide');}
+function hush(){bubble.classList.add('hide');}
+function fmt(m){return String(m).padStart(2,'0')+':00';}
+function ui(){
+  const total=M.mode==='break'?5:25;
+  const running=M.phase==='work'||M.phase==='break'||M.phase==='paused';
+  ringFg.style.stroke=M.mode==='break'?'#6BD3A8':'#7C9CFF';
+  ringFg.style.strokeDashoffset=running?C*(M.min/total):C;
+  readout.style.opacity=running&&!M.mini?1:0;
+  readout.textContent=M.mode==='break'?`${fmt(5-M.min)} break`:`${fmt(25-M.min)} · step ${Math.min(M.step+1,3)}/3`;
+  const showPill=M.mode==='work'&&running&&!M.mini&&M.step<3;
+  pill.style.opacity=showPill?1:0;
+  if(showPill) pill.textContent='Now: '+STEPS[M.step];
+}
+function stopTick(){clearInterval(iv);iv=null;}
+function startTick(){stopTick();iv=setInterval(tick,1000);}
+function tick(){
+  if(M.mini) return;
+  M.min++;
+  if(M.mode==='work'){
+    if(M.min>=25){ endSession(); return; }
+    if(M.events[M.min]) { const e=M.events[M.min]; delete M.events[M.min]; e==='nudge'?nudge():checkin(); }
+  } else if(M.mode==='break' && M.min>=5){ stopTick(); M.phase='done'; S('idle'); say(`<div class="t">Break's over. Ready for another round?</div><div class="brow"><button class="pri" data-a="again">Let's go</button><button data-a="stop">Done for today</button></div>`); }
+  ui();
+}
+function intro(){
+  stopTick();clearLater();
+  M={state:'idle',phase:'intro',mode:'work',min:0,step:0,events:{6:'nudge',10:'checkin',18:'checkin'},mini:false};
+  bwin.classList.remove('mini');mountBud();S('idle');ui();
+  after(500,()=>say(`<div class="t">Hi! What are we working on?</div><input value="Write the intro section of my history essay"><div class="brow"><button class="pri" data-a="plan">Break it down</button></div>`));
+}
+function plan(){
+  M.phase='listening';S('listening');
+  say(`<div class="t">Got it. Splitting it into small steps…</div>`);
+  after(2200,()=>{M.phase='plan';S('idle');say(`<div class="t">Here's the plan:</div><ol>${STEPS.map(s=>`<li>${s}</li>`).join('')}</ol><div class="brow"><button class="pri" data-a="start">Start 25:00</button></div>`);});
+}
+function work(){hush();M.phase='work';M.mode='work';S('working');startTick();ui();}
+function nudge(){
+  S('nudging');
+  say(`<div class="t">Hey, the intro's still waiting for us. Come back?</div><div class="brow"><button class="pri" data-a="back">I'm back</button></div>`);
+  after(6000,()=>{if(M.state==='nudging'){hush();S('working');}});
+}
+function checkin(){
+  stopTick();M.phase='paused';S('checking-in');
+  say(`<div class="t">How's step ${M.step+1} going?</div><div style="font-size:12px;color:#7c768a;margin:-4px 0 8px">${STEPS[M.step]}</div><div class="brow"><button class="pri" data-a="done">Done</button><button data-a="still">Still on it</button><button data-a="stuck">Stuck</button></div>`);
+}
+function endSession(){
+  stopTick();M.phase='paused';S('celebrating');
+  say(`<div class="t">Session done! That's real progress. Take five?</div>`);
+  after(2400,()=>{hush();M.mode='break';M.min=0;M.phase='break';S('break');startTick();ui();});
+}
+bubble.addEventListener('click',e=>{
+  const a=e.target.closest('button')?.dataset.a; if(!a) return;
+  clearLater();
+  if(a==='plan') plan();
+  else if(a==='start') work();
+  else if(a==='back'){hush();S('working');}
+  else if(a==='done'){
+    M.step++;S('celebrating');
+    say(`<div class="t">${M.step>=3?'All three steps done!':'Nice! Step '+M.step+' done.'}</div>`);ui();
+    after(2000,()=>{ if(M.step>=3) endSession(); else work(); });
+  }
+  else if(a==='still'){S('working');say(`<div class="t">Got it. I'm right here.</div>`);after(1600,work);}
+  else if(a==='stuck'){S('listening');say(`<div class="t">Let's make it smaller…</div>`);
+    after(1500,()=>{S('idle');say(`<div class="t">Try just this:</div><ol><li>Write one rough sentence, ugly is fine</li><li>Read it out loud once</li></ol><div class="brow"><button class="pri" data-a="ok">Okay, on it</button></div>`);});}
+  else if(a==='ok') work();
+  else if(a==='again'){M.min=0;M.step=0;M.events={6:'nudge',10:'checkin',18:'checkin'};work();}
+  else if(a==='stop'){hush();M.phase='intro';S('sleeping');ui();}
+});
+function toggleMini(){
+  M.mini=!M.mini;bwin.classList.toggle('mini',M.mini);
+  if(M.mini){M.prev=M.state;M.bubbleWasOpen=!bubble.classList.contains('hide');hush();S('sleeping');}
+  else{S(M.prev==='sleeping'?'idle':M.prev||'idle');if(M.bubbleWasOpen)bubble.classList.remove('hide');}
+  ui();
+}
+$('minBtn').onclick=e=>{e.stopPropagation();toggleMini();};
+slot.onclick=()=>{ if(M.mini) toggleMini(); else if(M.state==='sleeping'){intro();} };
+slot.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();slot.onclick();}};
+$('skip').onclick=()=>{
+  if(M.phase==='work'){const keys=Object.keys(M.events).map(Number).filter(k=>k>M.min).sort((a,b)=>a-b);M.min=(keys[0]||25)-1;tick();}
+  else if(M.phase==='break'){M.min=4;tick();}
+  else if(M.phase==='intro'&&!bubble.classList.contains('hide')) plan();
+  else if(M.phase==='plan') work();
+};
+$('reset').onclick=intro;
+document.querySelectorAll('[data-mv]').forEach(b=>b.onclick=()=>{mv=+b.dataset.mv;document.querySelectorAll('[data-mv]').forEach(x=>x.classList.toggle('on',x===b));mountBud();});
+intro();
+})();
+</script>
+</body>
+</html>

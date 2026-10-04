@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Plover brand direction</title>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600&family=Nunito:wght@400;600;800&family=Manrope:wght@400;600;800&family=Fraunces:opsz,wght,SOFT@9..144,500;9..144,600,100&display=swap" rel="stylesheet">
+<style>
+:root{--sage:#5E7F6B;--cream:#F3EEE1;--ink:#2F4236;--sand:#D9CFB4;--beak:#E3B55B;--deep:#243329}
+*{box-sizing:border-box}
+body{margin:0;background:var(--cream);color:var(--ink);font-family:Lexend,system-ui,sans-serif;width:1400px}
+section{padding:44px 56px;border-bottom:1px solid #2F423614}
+h1{font-size:34px;margin:0 0 10px;font-weight:600}
+h2{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--sage);margin:0 0 20px;font-weight:600}
+p.lead{max-width:860px;line-height:1.6;margin:0;font-size:16px}
+.note{font-size:13px;color:#2F4236b3;line-height:1.5;margin-top:12px;max-width:860px}
+.row{display:flex;gap:24px;align-items:stretch;flex-wrap:wrap}
+
+/* palette */
+.sw{width:230px;border-radius:20px;overflow:hidden;border:1px solid #2F423614;background:var(--cream)}
+.sw .c{height:120px}
+.sw .t{padding:12px 16px;font-size:13px;line-height:1.5}
+.sw b{font-size:15px}
+.beak-note{display:flex;gap:14px;align-items:center;margin-top:22px;font-size:14px}
+.beak-note i{width:34px;height:34px;border-radius:10px;background:var(--beak);display:block}
+
+/* modes */
+.mode{flex:1;border-radius:28px;padding:32px;min-width:600px}
+.light{background:var(--cream);border:1px solid #2F423614}
+.dark{background:var(--deep);color:var(--cream)}
+.mode h3{margin:0 0 4px;font-size:22px;font-weight:600}
+.mode .sub{font-size:13px;opacity:.75;margin-bottom:22px}
+.card{border-radius:20px;padding:20px 22px;margin-bottom:14px}
+.light .card{background:#FBF8F1;border:1px solid #2F423612}
+.dark .card{background:var(--ink)}
+.chip{display:inline-flex;gap:10px;align-items:center;border-radius:999px;padding:8px 16px;font-weight:600;font-size:15px}
+.light .chip{background:var(--sage);color:var(--cream)}
+.dark .chip{background:var(--sage);color:var(--cream)}
+.btn{display:inline-block;border-radius:16px;padding:13px 22px;font-weight:600;font-size:18px;margin-right:10px}
+.light .btn.p{background:var(--sage);color:var(--cream)} .light .btn.s{background:var(--sand);color:var(--ink)}
+.dark .btn.p{background:var(--sage);color:var(--cream)} .dark .btn.s{background:transparent;color:var(--sand);border:2px solid var(--sand)}
+.steps{list-style:none;padding:0;margin:12px 0 0}
+.steps li{display:flex;gap:12px;align-items:center;padding:7px 0;font-size:15px}
+.light .muted{color:#2F4236b3} .dark .muted{color:var(--sand)}
+.contrast{font-size:12px;margin-top:6px}
+
+/* eye motif */
+.eye-demo{flex:1;min-width:300px;background:#FBF8F1;border:1px solid #2F423612;border-radius:24px;padding:26px}
+.eye-demo h4{margin:0 0 4px;font-size:17px;font-weight:600}
+.eye-demo .muted{font-size:13px;color:#2F4236b3;margin-bottom:18px;line-height:1.5}
+.blink{transform-box:fill-box;transform-origin:center 30%;animation:breathe 2.4s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.25)}}
+.check{width:28px;height:28px;flex:none}
+.bubble{background:var(--sand);border-radius:18px 18px 18px 6px;padding:12px 16px;display:inline-block;font-size:15px;margin:4px 0}
+
+/* edge motif */
+.hero{position:relative;overflow:hidden;border-radius:32px;padding:56px 56px 72px;flex:1;min-width:600px;min-height:340px}
+.hero.l{background:#FBF8F1;border:1px solid #2F423612}
+.hero.d{background:var(--deep);color:var(--cream)}
+.hero h3{font-size:44px;line-height:1.1;margin:0 0 14px;font-weight:600;max-width:420px}
+.hero p{max-width:380px;line-height:1.55;margin:0 0 26px}
+.hero.l p{color:#2F4236cc} .hero.d p{color:var(--sand)}
+.hero svg.peek{position:absolute;right:-40px;bottom:-60px;width:300px}
+.mini{position:relative;overflow:hidden;width:380px;border-radius:22px;padding:22px 22px 22px 96px;background:#FBF8F1;border:1px solid #2F423612;font-size:15px;line-height:1.5}
+.mini svg{position:absolute;left:-46px;top:50%;transform:translateY(-50%);width:120px}
+
+/* type */
+.type{flex:1;min-width:290px;background:#FBF8F1;border:1px solid #2F423612;border-radius:24px;padding:26px}
+.type .name{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--sage);font-family:Lexend;font-weight:600}
+.type .wm{font-size:52px;line-height:1.05;margin:14px 0 2px;letter-spacing:-.02em}
+.type .h{font-size:26px;margin:18px 0 8px;line-height:1.2}
+.type .b{font-size:15px;line-height:1.6;color:#2F4236cc}
+.type .ui{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap}
+.type .why{font-family:Lexend;font-size:12.5px;color:#2F4236b3;margin-top:16px;line-height:1.5;border-top:1px solid #2F423614;padding-top:12px}
+
+/* voice */
+.voice{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.voice div{background:#FBF8F1;border:1px solid #2F423612;border-radius:20px;padding:18px;font-size:15px;line-height:1.5}
+.voice small{display:block;font-size:12px;color:var(--sage);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em}
+</style>
+</head>
+<body>
+
+<section style="display:flex;gap:40px;align-items:center">
+  <svg width="150" height="150" viewBox="0 0 256 256" style="flex:none"><defs><clipPath id="t0"><rect width="256" height="256" rx="56"/></clipPath></defs><rect width="256" height="256" rx="56" fill="#5E7F6B"/><g clip-path="url(#t0)"><circle cx="168" cy="226" r="112" fill="#F3EEE1"/><path d="M108 168 Q122 182 136 168" fill="none" stroke="#2F4236" stroke-width="8" stroke-linecap="round"/><path d="M66 178 Q40 186 22 196 Q42 206 68 212 Z" fill="#E3B55B" stroke="#E3B55B" stroke-width="8" stroke-linejoin="round"/><path d="M138 260 C138 236 152 222 164 210 C176 222 190 236 190 260 Z" fill="#D9CFB4" stroke="#F3EEE1" stroke-width="5" stroke-linejoin="round"/></g></svg>
+  <div>
+    <h1>Plover brand direction, draft 1</h1>
+    <p class="lead"><b>Quiet company.</b> Plover is a small ground bird that doesn't fly off or flutter about. It settles near you,
+    the way little birds hop around close to people, and quietly watches while you work. Calm, close and on your side.
+    Everything in the brand follows that: soft round corners, a calm palette, and a voice that coaches gently, never pushes.</p>
+  </div>
+</section>
+
+<section>
+  <h2>Palette: four colours, no pure white or black</h2>
+  <div class="row">
+    <div class="sw"><div class="c" style="background:var(--sage)"></div><div class="t"><b>Sage</b> #5E7F6B<br>Brand colour. App icon, buttons, chips, key surfaces.</div></div>
+    <div class="sw"><div class="c" style="background:var(--cream);border-bottom:1px solid #2F423614"></div><div class="t"><b>Cream</b> #F3EEE1<br>Our "white". Backgrounds, text on sage or ink.</div></div>
+    <div class="sw"><div class="c" style="background:var(--ink)"></div><div class="t"><b>Ink</b> #2F4236<br>Our "black". A deep green, not black. All body text.</div></div>
+    <div class="sw"><div class="c" style="background:var(--sand)"></div><div class="t"><b>Sand</b> #D9CFB4<br>Secondary surfaces, dividers, chat bubbles, quiet details.</div></div>
+  </div>
+  <div class="beak-note"><i></i><div><b>Beak amber #E3B55B is reserved for the bird's beak only.</b> It never appears in UI, text or other graphics.</div></div>
+  <p class="note">Contrast rules: ink on cream 9.3:1 (all body text) · cream on sage 3.8:1 (large/bold text only, 18 px+ bold) ·
+  sage text on cream 3.8:1 (headings only) · ink on sage 2.4:1 (never for text).</p>
+</section>
+
+<section>
+  <h2>Light and dark mode</h2>
+  <div class="row">
+    <div class="mode light">
+      <h3>Light</h3><div class="sub">Cream page, sage actions, ink text</div>
+      <div class="card">
+        <span class="chip">Draft the intro · 18:42</span>
+        <ul class="steps">
+          <li><svg class="check" viewBox="0 0 28 28"><circle cx="14" cy="14" r="13" fill="#5E7F6B"/><path d="M8 14.5 L12.5 19 L20 10" fill="none" stroke="#F3EEE1" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="muted" style="text-decoration:line-through">Reread the prompt</span></li>
+          <li><svg class="check" viewBox="0 0 28 28"><circle cx="14" cy="14" r="12" fill="none" stroke="#5E7F6B" stroke-width="2.4"/></svg>Write the opening sentence</li>
+          <li><svg class="check" viewBox="0 0 28 28"><circle cx="14" cy="14" r="12" fill="none" stroke="#D9CFB4" stroke-width="2.4"/></svg><span class="muted">Outline three points</span></li>
+        </ul>
+      </div>
+      <span class="btn p">Start focus</span><span class="btn s">Edit steps</span>
+    </div>
+    <div class="mode dark">
+      <h3>Dark</h3><div class="sub">Deep ink page, ink cards, cream text, sand secondary</div>
+      <div class="card">
+        <span class="chip">Draft the intro · 18:42</span>
+        <ul class="steps">
+          <li><svg class="check" viewBox="0 0 28 28"><circle cx="14" cy="14" r="13" fill="#5E7F6B"/><path d="M8 14.5 L12.5 19 L20 10" fill="none" stroke="#F3EEE1" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="muted" style="text-decoration:line-through">Reread the prompt</span></li>
+          <li><svg class="check" viewBox="0 0 28 28"><circle cx="14" cy="14" r="12" fill="none" stroke="#5E7F6B" stroke-width="2.4"/></svg>Write the opening sentence</li>
+          <li><svg class="check" viewBox="0 0 28 28"><circle cx="14" cy="14" r="12" fill="none" stroke="#2F4236" stroke-width="2.4" style="stroke:#4a5e51"/></svg><span class="muted">Outline three points</span></li>
+        </ul>
+      </div>
+      <span class="btn p">Start focus</span><span class="btn s">Edit steps</span>
+    </div>
+  </div>
+  <p class="note">Dark mode adds one derived tone: <b>deep ink #243329</b> for the page, so ink cards can sit on top of it. It is ink
+  darkened, not black. Cream on deep ink is 11.5:1, sand on deep ink 8.6:1.</p>
+</section>
+
+<section>
+  <h2>The edge motif: something peeking in</h2>
+  <div class="row">
+    <div class="hero l">
+      <h3>One step at a time.</h3>
+      <p>Plover is a calm little bird that sits at the edge of your screen, breaks your task into steps and keeps you company while you do them.</p>
+      <span class="btn" style="background:var(--sage);color:var(--cream);font-size:18px;font-weight:600;padding:14px 24px;border-radius:16px">Join the waitlist</span>
+      <svg class="peek" viewBox="0 0 300 300"><circle cx="190" cy="250" r="150" fill="#F3EEE1" stroke="#D9CFB4" stroke-width="3"/><path d="M110 178 Q128 196 146 178" fill="none" stroke="#2F4236" stroke-width="9" stroke-linecap="round"/><path d="M58 190 Q30 200 8 212 Q32 224 60 230 Z" fill="#E3B55B" stroke="#E3B55B" stroke-width="9" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="hero d">
+      <h3>One step at a time.</h3>
+      <p>Plover is a calm little bird that sits at the edge of your screen, breaks your task into steps and keeps you company while you do them.</p>
+      <span class="btn" style="background:var(--sage);color:var(--cream);font-size:18px;font-weight:600;padding:14px 24px;border-radius:16px">Join the waitlist</span>
+      <svg class="peek" viewBox="0 0 300 300"><circle cx="190" cy="250" r="150" fill="#F3EEE1"/><path d="M110 178 Q128 196 146 178" fill="none" stroke="#2F4236" stroke-width="9" stroke-linecap="round"/><path d="M58 190 Q30 200 8 212 Q32 224 60 230 Z" fill="#E3B55B" stroke="#E3B55B" stroke-width="9" stroke-linejoin="round"/></svg>
+    </div>
+  </div>
+  <div class="row" style="margin-top:24px">
+    <div class="mini"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="56" fill="#F3EEE1" stroke="#D9CFB4" stroke-width="2"/><path d="M70 54 Q78 62 86 54" fill="none" stroke="#2F4236" stroke-width="5" stroke-linecap="round"/></svg><b>Still on the intro?</b><br>No rush. Just the next sentence.</div>
+    <div class="mini"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="56" fill="#F3EEE1" stroke="#D9CFB4" stroke-width="2"/><path d="M70 58 Q78 50 86 58" fill="none" stroke="#2F4236" stroke-width="5" stroke-linecap="round"/></svg><b>That's one step done.</b><br>Two to go. Want a short break first?</div>
+  </div>
+  <p class="note">The head always enters from an edge (page, card or screen) and is cropped by it, like the logo. In small cards only the
+  head and eye show, without the beak, so amber stays on the real bird.</p>
+</section>
+
+<section>
+  <h2>Loader and done mark (decided)</h2>
+  <div class="row">
+    <div class="eye-demo">
+      <h4>Loader: the bird itself</h4>
+      <div class="muted">Only when Plover is thinking (e.g. breaking a task into steps). The buddy's head with its beak blinks and bobs gently. See <b>loader-test.html</b>, variant B.</div>
+      <div style="display:flex;gap:14px;align-items:center">
+        <svg width="70" height="52" viewBox="0 0 70 52"><circle cx="44" cy="30" r="24" fill="#F3EEE1" stroke="#D9CFB4" stroke-width="2"/><path d="M32 24 Q37 29 42 24" fill="none" stroke="#2F4236" stroke-width="3" stroke-linecap="round"/><path d="M22 27 Q14 30 8 33 Q15 36 23 38 Z" fill="#E3B55B" stroke="#E3B55B" stroke-width="3" stroke-linejoin="round"/></svg>
+        <span>Breaking it into steps…</span>
+      </div>
+    </div>
+    <div class="eye-demo">
+      <h4>Done mark: a normal check</h4>
+      <div class="muted">Clear at any size. Delight on finishing comes from the buddy (a hop, wings up), not from a custom icon.</div>
+      <div style="display:flex;gap:26px;align-items:center;font-size:15px">
+        <span style="display:flex;gap:10px;align-items:center"><svg class="check" viewBox="0 0 28 28"><circle cx="14" cy="14" r="12" fill="none" stroke="#5E7F6B" stroke-width="2.4"/></svg>To do</span>
+        <span style="display:flex;gap:10px;align-items:center"><svg class="check" viewBox="0 0 28 28"><circle cx="14" cy="14" r="13" fill="#5E7F6B"/><path d="M8 14.5 L12.5 19 L20 10" fill="none" stroke="#F3EEE1" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Done</span>
+      </div>
+    </div>
+  </div>
+  <p class="note">Rule: the bird is the only mascot element and it always appears whole. The closed eye as a standalone symbol is parked (see PARKED.md).</p>
+</section>
+
+<section>
+  <h2>Type: four options, same content</h2>
+  <div class="row">
+    <div class="type" style="font-family:Lexend">
+      <div class="name">A · Lexend</div>
+      <div class="wm" style="font-weight:600">plover</div><div style="font-size:30px;font-weight:600">Plover</div>
+      <div class="h" style="font-weight:600">One step at a time.</div>
+      <div class="b">Pick the next small thing. I'll stay right here while you do it.</div>
+      <div class="ui"><span class="chip" style="background:#5E7F6B;color:#F3EEE1">Draft the intro · 18:42</span></div>
+      <div class="why">Designed to make reading easier and calmer. Wide, open letters. A strong fit for an ADHD audience.</div>
+    </div>
+    <div class="type" style="font-family:Nunito">
+      <div class="name">B · Nunito</div>
+      <div class="wm" style="font-weight:800">plover</div><div style="font-size:30px;font-weight:800">Plover</div>
+      <div class="h" style="font-weight:800">One step at a time.</div>
+      <div class="b">Pick the next small thing. I'll stay right here while you do it.</div>
+      <div class="ui"><span class="chip" style="background:#5E7F6B;color:#F3EEE1;font-family:Nunito">Draft the intro · 18:42</span></div>
+      <div class="why">Rounded ends echo the soft corners and the round bird. The friendliest, but it can lean childish.</div>
+    </div>
+    <div class="type" style="font-family:Manrope">
+      <div class="name">C · Manrope</div>
+      <div class="wm" style="font-weight:800">plover</div><div style="font-size:30px;font-weight:800">Plover</div>
+      <div class="h" style="font-weight:800">One step at a time.</div>
+      <div class="b">Pick the next small thing. I'll stay right here while you do it.</div>
+      <div class="ui"><span class="chip" style="background:#5E7F6B;color:#F3EEE1;font-family:Manrope">Draft the intro · 18:42</span></div>
+      <div class="why">Crisp and modern. The most "trustworthy product", the least warm. Feels like a tool.</div>
+    </div>
+    <div class="type" style="font-family:Lexend">
+      <div class="name">D · Fraunces Soft + Lexend</div>
+      <div class="wm" style="font-family:Fraunces;font-weight:600;font-variation-settings:'SOFT' 100">plover</div><div style="font-size:30px;font-family:Fraunces;font-weight:600;font-variation-settings:'SOFT' 100">Plover</div>
+      <div class="h" style="font-family:Fraunces;font-weight:500;font-variation-settings:'SOFT' 100">One step at a time.</div>
+      <div class="b">Pick the next small thing. I'll stay right here while you do it.</div>
+      <div class="ui"><span class="chip" style="background:#5E7F6B;color:#F3EEE1">Draft the intro · 18:42</span></div>
+      <div class="why">A soft serif for the name and headlines, Lexend for everything else. Calm and bookish, with the most character.</div>
+    </div>
+  </div>
+  <p class="note">All four are free Google Fonts under the Open Font License. The final wordmark would be custom-drawn from the chosen face.</p>
+</section>
+
+<section>
+  <h2>Voice: calm coach (default)</h2>
+  <div class="voice">
+    <div><small>Starting</small>Let's pick the first small step. Just one.</div>
+    <div><small>Nudging</small>Still on the intro? No rush. Just the next sentence.</div>
+    <div><small>Break</small>Break time. Step away from the screen for five.</div>
+    <div><small>Done</small>That's one step done. Steady work.</div>
+  </div>
+  <p class="note"><b>Open item for later:</b> make the voice customisable (e.g. calm coach, gentle friend, a little cheeky). Calm coach stays the default.</p>
+</section>
+
+</body>
+</html>

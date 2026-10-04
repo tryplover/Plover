@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Plover Gesture Concepts</title>
+<style>
+:root{
+  --paper:#F6F2EA; --night:#141821; --ink:#1E2638; --cream:#F2ECE1;
+  --apricot:#E9A178; --teal:#4FA69A; --honey:#F0C35A;
+  --sub:#5B6475; --line:#E3DCCF; --card:#FFFDF9;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1040px;margin:0 auto;padding:32px 16px 64px}
+h1{font-size:28px;letter-spacing:-.01em;margin:0 0 6px}
+h2{font-size:20px;margin:0 0 4px}
+h3{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--sub);margin:0 0 8px}
+p{margin:0 0 10px}
+.lede{color:var(--sub);margin-bottom:18px}
+.intro{display:grid;grid-template-columns:1.4fr 1fr;gap:24px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin-bottom:28px}
+@media (max-width:760px){.intro{grid-template-columns:1fr}}
+.swatches{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 12px;margin-bottom:14px}
+.sw{display:flex;align-items:center;gap:8px;font-size:13px}
+.sw i{width:22px;height:22px;border-radius:7px;border:1px solid rgba(0,0,0,.12);flex:none}
+.sw code{color:var(--sub);font-size:12px}
+.note{font-size:13.5px;color:var(--sub)}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 20px}
+.toggle{display:inline-flex;align-items:center;gap:8px;font-size:14px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer}
+.toggle input{accent-color:var(--teal)}
+button{font:inherit;cursor:pointer}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin-bottom:22px}
+.card header{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 16px;align-items:baseline;margin-bottom:6px}
+.card .desc{color:var(--sub);font-size:14px;max-width:70ch}
+.states{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 14px}
+.states button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 11px;font-size:13px;color:var(--ink);font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+.states button[aria-pressed="true"]{background:var(--ink);color:var(--cream);border-color:var(--ink)}
+.states .play{font-family:inherit;border-color:var(--teal);color:#2c6d64;background:#EEF7F5}
+.stage{display:grid;grid-template-columns:1fr 1fr 96px 96px;gap:10px}
+@media (max-width:640px){.stage{grid-template-columns:1fr 1fr;}}
+.tile{position:relative;border-radius:14px;height:180px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.tile.small{height:180px}
+.tile.light{background:var(--paper);border:1px solid var(--line);--b-ink:var(--ink);--b-eye:var(--paper);--b-soft:#8A93A3}
+.tile.dark{background:var(--night);border:1px solid #232938;--b-ink:var(--cream);--b-eye:var(--night);--b-soft:#7C8598}
+.tile .lab{position:absolute;left:10px;bottom:7px;font-size:11px;color:var(--b-soft);letter-spacing:.04em}
+.tile .mini{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;outline:1px dashed color-mix(in srgb,var(--b-soft) 45%,transparent);outline-offset:4px}
+svg.buddy{overflow:visible;display:block}
+.statecap{font-size:12.5px;color:var(--sub);margin-top:10px;min-height:1.4em}
+.statecap b{font-family:ui-monospace,Consolas,monospace;font-weight:600;color:var(--ink)}
+
+/* in-context mock */
+.mockwrap{width:100%;overflow:hidden;border-radius:16px}
+.desk{position:relative;width:880px;height:550px;transform-origin:0 0;border-radius:16px;overflow:hidden;
+  background:radial-gradient(120% 90% at 85% 100%,#E7CFB6 0%,transparent 55%),linear-gradient(140deg,#B9CAD6 0%,#D9D3CA 60%,#E9DCCB 100%);
+  --b-ink:var(--ink);--b-eye:#FBF8F2;--b-soft:#8A93A3}
+.menubar{position:absolute;inset:0 0 auto 0;height:26px;background:rgba(255,255,255,.45);backdrop-filter:blur(10px);display:flex;align-items:center;gap:18px;padding:0 14px;font-size:12px;color:#2b3242}
+.menubar b{font-weight:650}
+.menubar .r{margin-left:auto;opacity:.75}
+.win{position:absolute;left:44px;top:52px;width:600px;height:440px;background:#FFFEFB;border-radius:12px;box-shadow:0 18px 50px rgba(30,38,56,.18),0 2px 6px rgba(30,38,56,.08);overflow:hidden}
+.win .tb{height:34px;border-bottom:1px solid #EEE8DD;display:flex;align-items:center;gap:7px;padding:0 12px}
+.win .tb i{width:11px;height:11px;border-radius:50%;background:#E4DED3}
+.win .tb span{margin-left:14px;font-size:12px;color:#8a8f99}
+.doc{padding:30px 48px;filter:blur(1.6px);opacity:.85}
+.doc .t{height:16px;width:58%;background:#2B3243;border-radius:4px;margin-bottom:22px;opacity:.75}
+.doc .l{height:8px;background:#9AA1AD;border-radius:4px;margin:0 0 11px;opacity:.55}
+.dock{position:absolute;right:26px;bottom:26px;width:132px;height:150px;border-radius:30px;background:rgba(255,253,249,.72);backdrop-filter:blur(14px);
+  box-shadow:0 10px 30px rgba(30,38,56,.16);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:8px;transition:width .45s cubic-bezier(.3,.7,.2,1),height .45s cubic-bezier(.3,.7,.2,1),border-radius .45s;cursor:grab}
+.dock .ringbox{position:relative;width:116px;height:116px;transition:width .45s,height .45s}
+.dock .ring{position:absolute;inset:0}
+.dock .buddyhost{position:absolute;inset:8px;display:flex;align-items:center;justify-content:center}
+.dock .readout{font:600 13px/1 ui-monospace,Consolas,monospace;color:#2b3242;margin-top:4px;letter-spacing:.02em;transition:opacity .3s}
+.dock.min{width:56px;height:56px;border-radius:18px;padding-top:0;justify-content:center;cursor:pointer}
+.dock.min .ringbox{width:44px;height:44px}
+.dock.min .ring,.dock.min .readout{opacity:0}
+.dock.min .buddyhost{inset:2px}
+.bubble{position:absolute;right:172px;bottom:44px;width:268px;background:#FFFEFB;border-radius:18px 18px 6px 18px;box-shadow:0 12px 34px rgba(30,38,56,.18);padding:14px 16px;font-size:14px;color:#1E2638;
+  transition:opacity .3s,transform .35s cubic-bezier(.3,.7,.2,1);transform-origin:100% 100%}
+.bubble.hide{opacity:0;transform:translateY(6px) scale(.96);pointer-events:none}
+.bubble .who{font-size:11px;color:#8A93A3;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+.bubble .btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.bubble .btns button{border:1px solid #E3DCCF;background:#fff;border-radius:999px;padding:5px 12px;font-size:13px;color:#1E2638}
+.bubble .btns button.pri{background:#1E2638;color:#F2ECE1;border-color:#1E2638}
+.bubble .field{border:1px solid #E3DCCF;border-radius:10px;padding:7px 10px;font-size:13.5px;margin-top:6px;min-height:34px;background:#FBF8F2}
+.bubble .field::after{content:"";display:inline-block;width:1px;height:14px;background:#1E2638;margin-left:1px;vertical-align:-2px;animation:caret 1s steps(1) infinite}
+@keyframes caret{50%{opacity:0}}
+.bubble ol{margin:8px 0 0;padding-left:20px;font-size:13.5px}
+.bubble li{margin:2px 0}
+.bubble li.done{color:#8A93A3;text-decoration:line-through}
+.bubble li.cur{font-weight:600}
+.chip{position:absolute;right:26px;bottom:186px;background:rgba(255,253,249,.82);backdrop-filter:blur(10px);border-radius:999px;padding:5px 12px;font-size:12px;color:#2b3242;box-shadow:0 4px 14px rgba(30,38,56,.1);transition:opacity .3s}
+.chip.hide{opacity:0}
+.hint{position:absolute;right:96px;bottom:36px;font-size:12.5px;color:#2b3242;background:rgba(255,253,249,.8);padding:6px 10px;border-radius:10px;transition:opacity .3s}
+.hint.hide{opacity:0;pointer-events:none}
+.mockctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0 0}
+.mockctl button,.mockctl select{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 13px;font:inherit;font-size:13px;color:var(--ink)}
+.mockctl .now{margin-left:auto;font-size:12.5px;color:var(--sub)}
+.mockctl .now b{font-family:ui-monospace,Consolas,monospace;color:var(--ink)}
+.shimmer{background:linear-gradient(90deg,#8A93A3 0%,#1E2638 50%,#8A93A3 100%);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:sh 1.6s linear infinite}
+@keyframes sh{to{background-position:-200% 0}}
+.rm .shimmer{animation:none;color:#5B6475;background:none}
+.rm .bubble .field::after{animation:none}
+@media (prefers-reduced-motion:reduce){.shimmer{animation:none;color:#5B6475;background:none}.bubble .field::after{animation:none}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Plover, direction C: Gesture</h1>
+  <p class="lede">A bird you recognise by how it moves, not by its face.</p>
+
+  <section class="intro">
+    <div>
+      <h3>Rationale</h3>
+      <p>Gesture treats Plover as a calligraphic mark that behaves like a bird: one or two smooth strokes that perch, sway, stretch, hop and loop. With no face to read, every state has to be legible as posture. A steady sway means "I'm here with you", a hop toward the screen means "come back", a tucked head means "off". That keeps the character calm and premium enough to sit next to real work for hours, while the small bird habits (wing-shakes, double nods, a happy loop) give it the warmth of a pet. All three variants share one motion vocabulary, so the eight states feel the same whichever body wins.</p>
+      <h3 style="margin-top:14px">How I'd build it for real</h3>
+      <p class="note"><b>Rive</b>, with this prototype as its spec. Each variant here is a small parametric rig (position, tilt, squash, wing lift, head nod, tuck) driven by one pose function per state, and switching states blends from the current pose to the new one. That maps directly onto a Rive state machine with blend states and numeric inputs. The engineering side then sets <code>state</code> and Rive handles interruptible transitions, at about a 60 KB runtime. Lottie can't blend between arbitrary mid-loop poses. Hand-rolled SVG, as in this file, is a workable fallback because the rigs are tiny.</p>
+    </div>
+    <div>
+      <h3>Palette</h3>
+      <div class="swatches">
+        <div class="sw"><i style="background:#1E2638"></i><span>Ink <code>#1E2638</code></span></div>
+        <div class="sw"><i style="background:#F2ECE1"></i><span>Cream <code>#F2ECE1</code></span></div>
+        <div class="sw"><i style="background:#E9A178"></i><span>Apricot <code>#E9A178</code></span></div>
+        <div class="sw"><i style="background:#4FA69A"></i><span>Sage teal <code>#4FA69A</code></span></div>
+        <div class="sw"><i style="background:#F0C35A"></i><span>Honey <code>#F0C35A</code></span></div>
+        <div class="sw"><i style="background:#F6F2EA"></i><span>Paper <code>#F6F2EA</code></span></div>
+        <div class="sw"><i style="background:#141821"></i><span>Night <code>#141821</code></span></div>
+        <div class="sw"><i style="background:#8A93A3"></i><span>Mist <code>#8A93A3</code></span></div>
+      </div>
+      <p class="note">The body is Ink on light and Cream on dark. Apricot is the one warm accent (a wing or a tail). Teal is only for the focus ring and Honey only for celebrations. There is no red anywhere, and nudges use the same calm colours as everything else.</p>
+    </div>
+  </section>
+
+  <div class="toolbar">
+    <label class="toggle"><input type="checkbox" id="rmToggle"> Preview reduced motion</label>
+    <button class="toggle" id="playAll">▶ Play working → celebrating → break on all</button>
+  </div>
+
+  <div id="variants"></div>
+
+  <section class="card">
+    <header><h2>In context: a mini session</h2><span class="desc">Click the bird to wake it, then follow the bubbles. The timer is fast-forwarded.</span></header>
+    <div class="mockwrap" id="mockwrap">
+      <div class="desk" id="desk">
+        <div class="menubar"><b>Docs</b><span>File</span><span>Edit</span><span>View</span><span class="r">Thu 10:42</span></div>
+        <div class="win">
+          <div class="tb"><i></i><i></i><i></i><span>History essay: draft 2</span></div>
+          <div class="doc">
+            <div class="t"></div>
+            <div class="l" style="width:92%"></div><div class="l" style="width:88%"></div><div class="l" style="width:95%"></div><div class="l" style="width:60%"></div>
+            <div style="height:16px"></div>
+            <div class="l" style="width:90%"></div><div class="l" style="width:94%"></div><div class="l" style="width:85%"></div><div class="l" style="width:91%"></div><div class="l" style="width:40%"></div>
+            <div style="height:16px"></div>
+            <div class="l" style="width:93%"></div><div class="l" style="width:87%"></div><div class="l" style="width:72%"></div>
+          </div>
+        </div>
+        <div class="chip hide" id="chip"></div>
+        <div class="bubble hide" id="bubble"></div>
+        <div class="hint" id="hint">Click Plover to wake it →</div>
+        <div class="dock min" id="dock" title="Plover">
+          <div class="ringbox">
+            <svg class="ring" viewBox="0 0 116 116">
+              <circle cx="58" cy="58" r="54" fill="none" stroke="rgba(30,38,56,.08)" stroke-width="4"/>
+              <circle id="ringArc" cx="58" cy="58" r="54" fill="none" stroke="#4FA69A" stroke-width="4" stroke-linecap="round" transform="rotate(-90 58 58)" stroke-dasharray="339.3" stroke-dashoffset="339.3"/>
+            </svg>
+            <div class="buddyhost" id="mockHost"></div>
+          </div>
+          <div class="readout" id="readout">25:00</div>
+        </div>
+      </div>
+    </div>
+    <div class="mockctl">
+      <label>Variant <select id="mockVariant"><option value="0">C1 Ribbon</option><option value="1">C2 Wing pair</option><option value="2">C3 Silhouette</option></select></label>
+      <button id="mockMin">Minimize</button>
+      <button id="mockSkip">Skip ahead</button>
+      <button id="mockReset">Reset</button>
+      <span class="now">state: <b id="mockState">sleeping</b></span>
+    </div>
+  </section>
+</main>
+
+<script>
+(function(){
+const NS='http://www.w3.org/2000/svg';
+const TAU=Math.PI*2, S=Math.sin, C=Math.cos;
+const clamp=(v,a=0,b=1)=>Math.min(b,Math.max(a,v));
+const seg=(p,a,b)=>clamp((p-a)/(b-a));
+const sm=x=>x*x*(3-2*x);
+const bump=(p,a,b,c,d)=>sm(seg(p,a,b))*(1-sm(seg(p,c,d)));
+const eio=x=>x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2;
+const blinkAt=(t,per)=>bump(t%per,0,.06,.09,.16);
+const f=n=>Math.round(n*100)/100;
+function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;}
+function rotv(x,y,deg){const r=deg*Math.PI/180;return [x*C(r)-y*S(r),x*S(r)+y*C(r)];}
+function normRot(r){r=((r+180)%360+360)%360-180;return r;}
+
+const STATES=['idle','listening','working','break','checking-in','nudging','celebrating','sleeping'];
+const CAPTIONS={
+  idle:'Breathing, the odd glance around. Alive but not asking for anything.',
+  listening:'Leans in with its head cocked and gives small "mm-hm" nods while the thinking dots run.',
+  working:'A slow, steady perched sway at about 1 Hz. Easy to ignore in your peripheral vision.',
+  break:'A big stretch with the wings up, a quick wing-shake, then it settles back to rest.',
+  'checking-in':'Turns toward you, gives a polite little hop and a double nod, and lifts a wing as if to ask a question.',
+  nudging:'Hops toward the screen, beckons with a wing, then drifts back to its perch. Gentle, never alarming.',
+  celebrating:'A small loop-flight with a quick wing-flutter, a soft landing and some honey sparkles.',
+  sleeping:'Head tucked in, low and round, with slow breathing and drifting z\'s.'
+};
+
+function P(o){return Object.assign({x:0,y:0,rot:0,sx:1,sy:1,wing:0,head:0,tuck:0,blink:0,dots:0,spark:0,z:0,ripple:0},o);}
+const POSES={
+  idle(t,m){const b=S(t*1.8);const lp=(t%8)/8;const look=bump(lp,.45,.52,.68,.75);
+    return P({sy:1+m*.02*b,sx:1-m*.01*b,rot:m*1.5*S(t*.55),head:m*(4*S(t*.7)-14*look),blink:m*blinkAt(t+1,4.3)});},
+  listening(t,m){return P({rot:-5,head:-6+m*9*Math.max(0,S(t*4)),y:-m*1.2*Math.max(0,S(t*4)),wing:.08,dots:1,sy:1+m*.015*S(t*4)});},
+  working(t,m){return P({rot:m*2.4*S(t*1.05),head:5+m*2.5*S(t*2.1+.8),sy:1+m*.015*S(t*2.1),sx:1-m*.008*S(t*2.1),blink:m*blinkAt(t+2,5.1)});},
+  break(t,m){
+    const p=(t%7)/7;const st=m*bump(p,0,.12,.22,.32);const sh=m*bump(p,.16,.19,.28,.31);
+    return P({sy:.95+st*.15+m*.02*S(t*1.1),sx:1.03-st*.06,rot:5+sh*3*S(t*42),head:-6-st*16,wing:-.05+st*1.1+sh*.35*S(t*42),blink:.35*(1-st)});},
+  'checking-in'(t,m){
+    const p=(t%2.8)/2.8;const hop=m*S(Math.PI*seg(p,0,.18));
+    return P({rot:-7,y:-4*hop,sy:1+.04*hop-.05*m*bump(p,.17,.19,.2,.25),head:-12+m*(7*bump(p,.3,.36,.4,.46)+7*bump(p,.5,.56,.6,.66)),wing:.22+m*.12*S(t*5),ripple:1});},
+  nudging(t,m){
+    if(!m)return P({x:-5,rot:-8,wing:.45,head:-6,ripple:.8});
+    const p=(t%3)/3;const ant=bump(p,.02,.08,.1,.13);const q=seg(p,.1,.3);
+    const land=bump(p,.3,.33,.36,.42);const beck=bump(p,.4,.45,.72,.8);
+    return P({x:-9*sm(q)*(1-sm(seg(p,.82,1))),y:-11*S(Math.PI*q),sy:1-.12*ant-.1*land,sx:1+.06*ant+.05*land,
+      rot:-6-6*S(Math.PI*q),wing:.1+beck*(.45+.35*S(t*9)),head:-beck*8,ripple:bump(p,.38,.45,.75,.85)});},
+  celebrating(t,m){
+    if(!m)return P({wing:1.1,y:-3,head:-12,spark:1,sy:1.04});
+    const p=(t%3.2)/3.2;const crouch=bump(p,0,.08,.1,.14);const q=seg(p,.12,.78);const e=eio(q);const a=TAU*e;
+    const fl=bump(p,.1,.14,.74,.8);const land=bump(p,.78,.82,.85,.92);
+    return P({x:-14*S(a),y:-12*(1-C(a))-8*S(Math.PI*q),rot:normRot(-360*e),sy:1-.14*crouch-.12*land,sx:1+.06*land,
+      wing:fl*(.9+.55*S(t*26)),head:-10,spark:1});},
+  sleeping(t,m){return P({tuck:1,head:26,sy:.9+m*.03*S(t*1.2),sx:1.07,rot:3,y:2,blink:1,z:1,wing:-.1});}
+};
+
+/* ---------- rigs ---------- */
+let uid=0;
+const RIGS=[
+ { name:'C1 Ribbon', cy:56, blurb:'One continuous brush stroke, starting at the beak, running over the crown and down the back, flicking at the tail and curling back under the belly. It leaves an open gap at the throat, so it reads as handwriting. The wing is a swell in the stroke that rises and flutters. It shades from ink to apricot along its length. It has no eye and no fill.',
+   build(g,small,svg){
+     const id='rg'+(++uid);const defs=el('defs',{},svg);
+     const lg=el('linearGradient',{id,gradientUnits:'userSpaceOnUse',x1:-28,y1:-44,x2:34,y2:-8},defs);
+     el('stop',{offset:'0.35',style:'stop-color:var(--b-ink)'},lg);el('stop',{offset:'1',style:'stop-color:var(--apricot)'},lg);
+     const k=small?1.45:1;
+     const layers=[[2.2,0,100],[4.2,3,93],[6.4,9,80]].map(([w,o,len])=>el('path',{fill:'none',stroke:`url(#${id})`,'stroke-width':w*k,'stroke-linecap':'round','stroke-linejoin':'round',pathLength:100,'stroke-dasharray':`${len} 200`,'stroke-dashoffset':-o},g));
+     return {draw(p){
+       const pv=[-10,-34];const [rx,ry]=rotv(-18-pv[0],-44-pv[1],-p.head);const hx=pv[0]+rx+p.tuck*10,hy=pv[1]+ry+p.tuck*9;
+       const hp=(dx,dy)=>{const [a,b]=rotv(dx,dy,-p.head*.6);return f(hx+a)+' '+f(hy+b);};
+       const w=p.wing*.55;
+       const d=`M ${hp(-17,2)} C ${hp(-13,-11)} ${hp(6,-15)} ${hp(10,-1)} C ${f(2)} ${f(-38-w*24)} ${f(18)} ${f(-42-w*28)} ${f(34)} ${f(-39-w*9)} C 27 -33 25 -28 20 -23 C 12 -9 -14 -9 -19 -21 C -20 -25 -21 -28 -23 -31`;
+       layers.forEach(l=>l.setAttribute('d',d));
+     }};
+   }},
+ { name:'C2 Wing pair', cy:50, blurb:'Two crescent strokes with no body, one ink and one apricot. At rest they form the soft gull "m" everyone draws as a bird, gliding low. They lift and flutter to celebrate and fold shut into a closed seed to sleep. All the expression comes from the angle, curl and timing of the two wings, plus a dip at the point where they meet that works as a nod.',
+   build(g,small){
+     const back=el('path',{fill:'var(--apricot)'},g);const front=el('path',{fill:'var(--b-ink)'},g);
+     function cres(rx,ry,deg,len,bul,mir){
+       const r=deg*Math.PI/180;const dx=C(r),dy=S(r);const tx=rx+len*dx,ty=ry+len*dy;const mx=rx+len/2*dx,my=ry+len/2*dy;
+       const nx=-dy,ny=dx;const o=[mx+nx*bul,my+ny*bul],i=[mx+nx*bul*.12,my+ny*bul*.12];
+       const X=x=>f(mir?2*rx-x:x);
+       return `M ${X(rx)} ${f(ry)} Q ${X(o[0])} ${f(o[1])} ${X(tx)} ${f(ty)} Q ${X(i[0])} ${f(i[1])} ${X(rx)} ${f(ry)} Z`;}
+     return {draw(p){
+       const w=p.wing,tk=p.tuck;const rx=-p.head*.15,ry=-46+p.head*.18+tk*6;
+       const th=148+w*58-tk*52;const bul=(small?15:12)+tk*6;
+       back.setAttribute('d',cres(rx+1.5,ry+1.5,th-4+w*8,38-tk*8,bul,true));
+       front.setAttribute('d',cres(rx-1.5,ry,th,35-tk*8,bul,false));
+     }};
+   }},
+ { name:'C3 Silhouette', cy:62, blurb:'A plump little plover shape with an apricot wing leaf, thin legs and a single eye dot as its only face. It is the most literal of the three and the easiest to read at 40px. The eye can blink, half-close on a break and close for sleep, but the states still read from posture first.',
+   build(g,small){
+     const legs=el('g',{stroke:'var(--b-ink)','stroke-width':small?4:2.4,'stroke-linecap':'round'},g);
+     const l1=el('line',{x1:-4,y1:-9,x2:-5,y2:0},legs),l2=el('line',{x1:5,y1:-9,x2:6,y2:0},legs);
+     el('path',{fill:'var(--b-ink)',d:'M -15 -30 C -17 -13 -2 -6 10 -8 C 20 -10 28 -18 35 -27 C 27 -25 23 -28 21 -32 C 15 -43 -11 -45 -15 -30 Z'},g);
+     const head=el('g',{},g);
+     el('circle',{cx:-12,cy:-36,r:10.5,fill:'var(--b-ink)'},head);
+     el('path',{d:'M -21 -39 L -28.5 -36 L -21 -33 Z',fill:'var(--b-ink)',stroke:'var(--b-ink)','stroke-width':1.5,'stroke-linejoin':'round'},head);
+     const eye=el('ellipse',{cx:-15,cy:-38,rx:small?2.8:2.1,ry:small?2.8:2.1,fill:'var(--b-eye)'},head);
+     const wingG=el('g',{},g);
+     el('path',{d:'M 0 -30 C 10 -37 24 -31 29 -22 C 18 -19 6 -22 0 -30 Z',fill:'var(--apricot)'},wingG);
+     return {draw(p){
+       head.setAttribute('transform',`translate(${f(p.tuck*8)} ${f(p.tuck*9)}) rotate(${f(-p.head)} -6 -30)`);
+       wingG.setAttribute('transform',`rotate(${f(-p.wing*62)} 1 -29)`);
+       const r=small?2.8:2.1;eye.setAttribute('ry',f(Math.max(.45,r*(1-p.blink))));
+       const air=clamp(-p.y/9);const ly=f(-9+9*(1-air)+air*0);const tip=f(-9+9*(1-air*.75));
+       l1.setAttribute('y2',tip);l2.setAttribute('y2',tip);
+     }};
+   }}
+];
+
+/* ---------- aux (dots / sparkles / zzz / ripple) ---------- */
+function buildAux(g){
+  const dots=[0,1,2].map(i=>el('circle',{cx:-28-i*7,cy:-52-i*6,r:2.2+i*.5,fill:'var(--b-soft)',opacity:0},g));
+  const star='M 0 -5 Q .9 -.9 5 0 Q .9 .9 0 5 Q -.9 .9 -5 0 Q -.9 -.9 0 -5 Z';
+  const spots=[[-34,-50],[30,-60],[38,-30],[-30,-18],[4,-70]];
+  const sparks=spots.map(([x,y])=>el('path',{d:star,fill:'var(--honey)',transform:`translate(${x} ${y}) scale(0)`},g));
+  const zs=[0,1].map(i=>{const t=el('text',{x:0,y:0,'font-size':i?9:12,'font-weight':600,'font-family':'system-ui,sans-serif',fill:'var(--b-soft)',opacity:0},g);t.textContent='z';return t;});
+  const rip=[0,1].map(i=>el('path',{d:`M ${-30-i*6} ${-48-i*4} Q ${-37-i*8} -36 ${-30-i*6} ${-24+i*4}`,fill:'none',stroke:'var(--teal)','stroke-width':2,'stroke-linecap':'round',opacity:0},g));
+  return {draw(p,t,m){
+    dots.forEach((d,i)=>d.setAttribute('opacity',f(p.dots*(m?.2+.8*Math.max(0,S(t*5-i*1.1)):.35+.25*i))));
+    sparks.forEach((s,i)=>{const pu=m?Math.max(0,S(t*3.4+i*1.7)):.8;const k=p.spark*pu;s.setAttribute('transform',`translate(${spots[i][0]} ${spots[i][1]}) rotate(${f(m?t*40:0)}) scale(${f(k*(i%2?.9:1.3))})`);});
+    zs.forEach((z,i)=>{const o=m?((t*.32+i*.5)%1):.35+i*.4;z.setAttribute('x',f(12+o*10+i*2));z.setAttribute('y',f(-44-o*20));z.setAttribute('opacity',f(p.z*(m?Math.sin(Math.PI*o):.8)));});
+    rip.forEach((r,i)=>{const o=m?.5+.5*S(t*4-i*1.2):.7;r.setAttribute('opacity',f(p.ripple*o*.85));});
+  }};
+}
+
+/* ---------- instances ---------- */
+const insts=[];
+let reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function now(){return performance.now()/1000;}
+function makeBuddy(v,px,host,opts={}){
+  const small=px<=56;
+  const cy=RIGS[v].cy;const svg=el('svg',{viewBox:small?`22 ${cy-38} 76 76`:`0 ${cy-60} 120 120`,width:px,height:px,class:'buddy','aria-hidden':'true'});
+  const auxG=el('g',{},svg);const body=el('g',{},svg);
+  const rig=RIGS[v].build(body,small,svg);const aux=buildAux(auxG);
+  if(small)auxG.style.display='none';
+  host.appendChild(svg);
+  const inst={svg,body,auxG,rig,aux,small,travel:small?.3:1,state:opts.state||'idle',since:now(),from:null,last:null,dead:false};
+  insts.push(inst);return inst;
+}
+function setState(inst,s){inst.from=inst.last?Object.assign({},inst.last):null;inst.state=s;inst.since=now();}
+function frame(){
+  const t=now();const m=reduced?0:1;const BL=reduced?.18:.55;
+  for(const inst of insts){
+    if(inst.dead)continue;
+    const tau=t-inst.since;let p=POSES[inst.state](reduced?0:tau+.001,m);
+    if(inst.from){const k=sm(clamp(tau/BL));if(k<1){const a=inst.from,q={};for(const key in p){let av=a[key],bv=p[key];if(key==='rot'){let d=normRot(bv-av);bv=av+d;}q[key]=av+(bv-av)*k;}p=q;}else inst.from=null;}
+    inst.last=p;
+    const tr=inst.travel;
+    inst.body.setAttribute('transform',`translate(${f(60+p.x*tr)} ${f(86+p.y*tr)}) rotate(${f(p.rot)} 0 -24) scale(${f(p.sx)} ${f(p.sy)})`);
+    inst.auxG.setAttribute('transform',`translate(${f(60+p.x*tr*.6)} ${f(86+p.y*tr*.6)})`);
+    inst.rig.draw(p);inst.aux.draw(p,reduced?0:t,m);
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ---------- variant cards ---------- */
+const host=document.getElementById('variants');
+const cards=[];
+RIGS.forEach((r,v)=>{
+  const card=document.createElement('section');card.className='card';
+  card.innerHTML=`<header><h2>${r.name}</h2></header><p class="desc">${r.blurb}</p><div class="states"></div><div class="stage"></div><div class="statecap"></div>`;
+  host.appendChild(card);
+  const stage=card.querySelector('.stage'),bar=card.querySelector('.states'),cap=card.querySelector('.statecap');
+  const list=[];
+  [['light',140],['dark',140],['light',40],['dark',40]].forEach(([th,px])=>{
+    const tile=document.createElement('div');tile.className=`tile ${th}${px<100?' small':''}`;
+    let target=tile;
+    if(px<100){target=document.createElement('div');target.className='mini';tile.appendChild(target);}
+    stage.appendChild(tile);
+    const lab=document.createElement('span');lab.className='lab';lab.textContent=`${px}px · ${th}`;tile.appendChild(lab);
+    list.push(makeBuddy(v,px,target));
+  });
+  const btns={};
+  const show=s=>{list.forEach(i=>setState(i,s));Object.entries(btns).forEach(([k,b])=>b.setAttribute('aria-pressed',k===s));cap.innerHTML=`<b>${s}</b>: ${CAPTIONS[s]}`;};
+  STATES.forEach(s=>{const b=document.createElement('button');b.textContent=s;b.onclick=()=>{clearTimers(c);show(s);};bar.appendChild(b);btns[s]=b;});
+  const play=document.createElement('button');play.className='play';play.textContent='▶ working → celebrating → break';bar.appendChild(play);
+  const c={show,timers:[]};
+  play.onclick=()=>runTransition(c);
+  cards.push(c);show('idle');
+});
+function clearTimers(c){c.timers.forEach(clearTimeout);c.timers=[];}
+function runTransition(c){clearTimers(c);c.show('working');c.timers.push(setTimeout(()=>c.show('celebrating'),2200));c.timers.push(setTimeout(()=>c.show('break'),2200+3300));}
+document.getElementById('playAll').onclick=()=>cards.forEach(runTransition);
+
+const rmT=document.getElementById('rmToggle');rmT.checked=reduced;
+const applyRM=()=>{document.body.classList.toggle('rm',reduced);};applyRM();
+rmT.onchange=()=>{reduced=rmT.checked;applyRM();insts.forEach(i=>{i.from=null;});};
+
+/* ---------- in-context mock ---------- */
+const desk=document.getElementById('desk'),wrap=document.getElementById('mockwrap');
+function fit(){const s=Math.min(1,wrap.clientWidth/880);desk.style.transform=`scale(${s})`;wrap.style.height=(550*s)+'px';}
+addEventListener('resize',fit);fit();
+const dock=document.getElementById('dock'),mockHost=document.getElementById('mockHost'),bubble=document.getElementById('bubble'),hint=document.getElementById('hint'),chip=document.getElementById('chip');
+const ringArc=document.getElementById('ringArc'),readout=document.getElementById('readout'),stateLab=document.getElementById('mockState');
+let mv=0,mb=null,minimized=true;
+function mountMock(){
+  const st=mb?mb.state:'sleeping';if(mb){mb.dead=true;mb.svg.remove();}
+  mockHost.innerHTML='';const px=minimized?40:100;mb=makeBuddy(mv,px,mockHost,{state:st});
+}
+function mset(s){setState(mb,s);stateLab.textContent=s;}
+const CIRC=339.3;
+let steps,cur,phase,prog,workLen,breakLen,flags,ftimers=[];
+function ft(fn,ms){ftimers.push(setTimeout(fn,ms));}
+function clearF(){ftimers.forEach(clearTimeout);ftimers=[];}
+function bub(html,btns){
+  bubble.innerHTML=`<div class="who">Plover</div>${html}`+(btns&&btns.length?`<div class="btns">${btns.map((b,i)=>`<button data-i="${i}" class="${b.pri?'pri':''}">${b.t}</button>`).join('')}</div>`:'');
+  bubble.querySelectorAll('button').forEach(el=>el.onclick=()=>btns[+el.dataset.i].go());
+  bubble.classList.remove('hide');chip.classList.add('hide');
+}
+function hideBub(){bubble.classList.add('hide');if(phase==='work'||phase==='break')setChip();}
+function stepList(){return `<ol>${steps.map((s,i)=>`<li class="${i<cur?'done':i===cur?'cur':''}">${s}</li>`).join('')}</ol>`;}
+function setChip(){chip.textContent=`Step ${cur+1} of ${steps.length} · ${steps[cur]}`;chip.classList.remove('hide');}
+function fmt(sec){sec=Math.max(0,Math.ceil(sec));return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');}
+function reset(){
+  clearF();steps=['Reread the prompt','Draft the hook','Write the thesis line','Link to section 2'];cur=0;phase='off';prog=0;flags={};
+  minimized=true;dock.classList.add('min');mountMock();mset('sleeping');hideBub();chip.classList.add('hide');hint.classList.remove('hide');
+  ringArc.setAttribute('stroke-dashoffset',CIRC);readout.textContent='25:00';
+}
+function wake(){
+  if(!minimized)return;minimized=false;dock.classList.remove('min');hint.classList.add('hide');mountMock();
+  if(phase==='off'){mset('idle');ft(ask,500);}else{resumeFromSleep();}
+}
+dock.addEventListener('click',()=>{if(minimized)wake();});
+function ask(){
+  phase='ask';mset('listening');
+  const text='Write the intro section of my history essay';
+  bub(`What are we working on?<div class="field" id="fld"></div>`,[]);
+  const fld=document.getElementById('fld');let i=0;
+  const type=()=>{fld.textContent=text.slice(0,++i);if(i<text.length)ft(type,reduced?0:38);else{bub(`What are we working on?<div class="field">${text}</div>`,[{t:'Break it down',pri:1,go:think}]);mset('idle');}};
+  type();
+}
+function think(after){
+  phase='think';mset('listening');bub(`<span class="shimmer">Breaking it into small steps…</span>`,[]);
+  ft(()=>{if(after)after();else plan();},1900);
+}
+function plan(){phase='plan';mset('idle');bub(`Here's the plan:${stepList()}`,[{t:'Start 25:00',pri:1,go:startWork},{t:'Edit',go:()=>{}}]);}
+function startWork(){phase='work';hideBub();mset('working');ringArc.setAttribute('stroke','#4FA69A');}
+function nudge(){phase='nudge';mset('nudging');bub(`Hey, "${steps[cur].toLowerCase()}" is still waiting for you. Want to come back to it?`,[{t:'Back to it',pri:1,go:()=>{flags.nudged=true;startWork();}}]);}
+function checkin(){phase='checkin';mset('checking-in');
+  bub(`How's step ${cur+1} going?`,[{t:'Done',pri:1,go:done},{t:'Still on it',go:()=>{flags.checked=true;mset('working');phase='work';bub('Nice. Keep going, I\'m here.',[]);ft(()=>{if(phase==='work')hideBub();},1600);}},{t:'Stuck',go:stuck}]);}
+function done(){
+  cur++;flags={};phase='celebrate';mset('celebrating');
+  if(cur>=steps.length){bub(`That's the whole intro. Lovely work.${stepList()}`,[{t:'Start over',go:reset}]);chip.classList.add('hide');return;}
+  bub(`Step done!${stepList()}`,[]);
+  ft(startBreak,3200);
+}
+function stuck(){phase='stuck';mset('checking-in');bub(`That's okay. Want me to split "${steps[cur].toLowerCase()}" into smaller bits?`,[{t:'Split it',pri:1,go:()=>think(()=>{steps.splice(cur,1,'Jot 3 possible openings','Pick the strongest one');bub(`Smaller steps:${stepList()}`,[{t:'Back to it',pri:1,go:startWork}]);mset('idle');phase='plan';})},{t:'Keep going',go:startWork}]);}
+function startBreak(){phase='break';prog=0;mset('break');ringArc.setAttribute('stroke','#E9A178');bub('Stretch for five. I\'ll stretch too.',[{t:'Skip break',go:endBreak}]);}
+function endBreak(){prog=0;readout.textContent='25:00';bub(`Back to it: step ${cur+1}, "${steps[cur].toLowerCase()}".`,[]);startWork();ft(()=>{if(phase==='work')hideBub();},1800);}
+function resumeFromSleep(){
+  if(phase==='work')mset('working');else if(phase==='break')mset('break');else if(phase==='nudge')mset('nudging');else if(phase==='checkin')mset('checking-in');else if(phase==='think')mset('listening');else mset('idle');
+  if(phase==='work')setChip();else if(bubble.innerHTML)bubble.classList.remove('hide');
+}
+document.getElementById('mockMin').onclick=()=>{if(minimized)return wake();minimized=true;dock.classList.add('min');mountMock();mset('sleeping');bubble.classList.add('hide');chip.classList.add('hide');};
+document.getElementById('mockReset').onclick=reset;
+document.getElementById('mockVariant').onchange=e=>{mv=+e.target.value;mountMock();};
+document.getElementById('mockSkip').onclick=()=>{
+  if(minimized)return wake();
+  if(phase==='work'){if(!flags.nudged){prog=Math.max(prog,.35);}else prog=Math.max(prog,.7);}
+  else if(phase==='break')endBreak();
+  else if(phase==='ask'){clearF();bub(`What are we working on?<div class="field">Write the intro section of my history essay</div>`,[{t:'Break it down',pri:1,go:think}]);}
+  else if(phase==='plan')startWork();
+  else if(phase==='nudge'){flags.nudged=true;startWork();}
+  else if(phase==='checkin')done();
+};
+let lastT=now();
+function tick(){
+  const t=now(),dt=t-lastT;lastT=t;
+  if(!minimized&&phase==='work'){
+    prog=Math.min(1,prog+dt/16);
+    ringArc.setAttribute('stroke-dashoffset',f(CIRC*(1-prog)));readout.textContent=fmt(25*60*(1-prog));
+    if(prog>=.35&&!flags.nudged)nudge();
+    else if(prog>=.7&&!flags.checked)checkin();
+    else if(prog>=1){flags.checked=false;checkin();}
+  }else if(!minimized&&phase==='break'){
+    prog=Math.min(1,prog+dt/9);ringArc.setAttribute('stroke-dashoffset',f(CIRC*(1-prog)));readout.textContent=fmt(5*60*(1-prog));
+    if(prog>=1)endBreak();
+  }
+  requestAnimationFrame(tick);
+}
+reset();requestAnimationFrame(frame);requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>2 Corner sitter</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F6F3EA;--ink:#2F4236;--mut:#6a7a6f;--sage:#5E7F6B;--light:#F3EEE1;--sand:#D9CFB4;--beak:#E3B55B}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;width:1340px}
+section{padding:26px 48px}
+h1{font-size:26px;margin:0 0 10px}
+h2{font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin:0 0 16px}
+p.r{max-width:980px;line-height:1.55;font-size:14.5px;margin:0 0 8px}
+p.r b{font-weight:600}
+
+/* ---------- desktop mockup ---------- */
+.desk{position:relative;width:1280px;height:800px;background:#E4E2D3;border-radius:14px;overflow:hidden;box-shadow:0 2px 14px rgba(47,66,54,.12)}
+.win{position:absolute;background:#FBFAF5;border-radius:10px;box-shadow:0 6px 24px rgba(47,66,54,.14)}
+.tb{height:34px;border-bottom:1px solid #ECE8D8;display:flex;align-items:center;gap:7px;padding:0 14px}
+.tb i{width:11px;height:11px;border-radius:50%;background:#D6D2C0}
+.tb em{margin-left:12px;height:8px;width:120px;border-radius:4px;background:#E3DFCF}
+.ln{height:9px;border-radius:5px;background:#E6E2D2;margin:0 0 15px}
+.ln.h{height:15px;width:38%;background:#CFCAB4;margin-bottom:22px}
+.ln.hi{background:#D9E3D5}
+.task{position:absolute;left:0;right:0;bottom:0;height:48px;background:rgba(251,250,245,.78);backdrop-filter:blur(4px);border-top:1px solid #D9D5C2;display:flex;align-items:center;gap:12px;padding:0 18px}
+.task i{width:26px;height:26px;border-radius:7px;background:#CFCBB8}
+.task i.on{background:#B7C6BA}
+.task span{margin-left:auto;width:70px;height:10px;border-radius:5px;background:#CFCBB8}
+.ctl{display:flex;gap:8px;margin-top:14px}
+.ctl button{font:600 12px Inter,sans-serif;border:1px solid var(--sand);background:#fff;color:var(--ink);padding:6px 12px;border-radius:999px;cursor:pointer}
+.ctl button.on{background:var(--sage);color:var(--light);border-color:var(--sage)}
+
+/* ---------- buddy component ---------- */
+.buddy{position:relative;display:inline-block;width:var(--s);height:calc(var(--s)*1.05);vertical-align:bottom}
+.buddy svg{display:block;width:100%;height:100%;overflow:visible}
+.pill{position:absolute;right:calc(100% - 14%);bottom:calc(var(--s)*.07);display:flex;align-items:center;gap:calc(var(--s)*.035);
+ background:var(--sage);color:var(--light);font-weight:600;font-size:calc(var(--s)*.085);line-height:1;padding:calc(var(--s)*.05) calc(var(--s)*.085);
+ border-radius:999px;white-space:nowrap;font-variant-numeric:tabular-nums;transition:opacity .6s,transform .8s cubic-bezier(.4,0,.2,1)}
+.pill:before{content:"";width:calc(var(--s)*.042);height:calc(var(--s)*.042);border-radius:50%;background:var(--beak)}
+.bubble{position:absolute;right:6%;bottom:calc(100% - 4%);background:#fff;color:var(--ink);border:1px solid var(--sand);
+ font-size:calc(var(--s)*.095);font-weight:600;padding:calc(var(--s)*.06) calc(var(--s)*.1);border-radius:calc(var(--s)*.1);white-space:nowrap;
+ opacity:0;transform:translateY(6px) scale(.9);transform-origin:90% 100%;transition:opacity .35s,transform .45s cubic-bezier(.3,1.4,.5,1);pointer-events:none}
+.bubble:after{content:"";position:absolute;right:calc(var(--s)*.2);top:100%;width:calc(var(--s)*.06);height:calc(var(--s)*.06);background:#fff;
+ border-right:1px solid var(--sand);border-bottom:1px solid var(--sand);transform:translateY(-50%) rotate(45deg)}
+.buddy[data-state=nudging] .bubble{opacity:1;transform:none;transition-delay:.25s}
+.buddy[data-state=focus] .pill{opacity:.72}
+.buddy[data-state=celebrating] .pill{background:var(--beak);color:var(--ink)}
+
+/* bird parts */
+.b .sz{transform-origin:100px 188px;transition:transform .9s cubic-bezier(.4,0,.2,1)}
+.b .hop,.b .tilt,.b .br{transform-origin:100px 188px}
+.b .shadow{transform-origin:100px 190px;transition:transform .9s cubic-bezier(.4,0,.2,1),opacity .9s}
+.buddy[data-state=focus] .sz{transform:scale(.8)}
+.buddy[data-state=focus] .shadow{transform:scale(.8);opacity:.7}
+.b .wl{transform-origin:46px 98px}
+.b .wr{transform-origin:154px 98px}
+.b .eo,.b .ec,.b .eh{transition:opacity .35s}
+.b .eo{opacity:1;transform-box:fill-box;transform-origin:center}
+.b .ec,.b .eh{opacity:0}
+.buddy[data-state=focus] .eo,.buddy[data-state=break] .eo,.buddy[data-state=celebrating] .eo{opacity:0}
+.buddy[data-state=focus] .ec,.buddy[data-state=break] .ec{opacity:1}
+.buddy[data-state=celebrating] .eh{opacity:1}
+.b .z,.b .spark,.b .spark2{opacity:0;transform-box:fill-box;transform-origin:center}
+.b .look{transition:transform .5s}
+
+/* idle */
+[data-state=idle] .br{animation:breathe 4.6s ease-in-out infinite}
+[data-state=idle] .eo{animation:blink 6s infinite}
+/* working: breathing + glance at the window (up-left) */
+[data-state=working] .br{animation:breathe 4s ease-in-out infinite}
+[data-state=working] .tilt{animation:glanceT 10s ease-in-out infinite}
+[data-state=working] .look{animation:glanceL 10s ease-in-out infinite}
+[data-state=working] .eo{animation:blink 5s infinite}
+[data-state=working] .wl,[data-state=working] .wr{animation:wingBreath 4s ease-in-out infinite}
+/* focus: small, low, slow, eyes closed */
+[data-state=focus] .br{animation:breatheS 7s ease-in-out infinite}
+/* break: stretch then doze */
+[data-state=break] .br{animation:breatheS 5s ease-in-out infinite}
+[data-state=break] .wl{animation:stretchL 4.2s ease-in-out infinite}
+[data-state=break] .wr{animation:stretchR 4.2s ease-in-out infinite}
+[data-state=break] .tilt{animation:doze 4.2s ease-in-out infinite}
+[data-state=break] .z{animation:zfloat 3.2s ease-out infinite}
+[data-state=break] .z.b2{animation-delay:1.05s}
+[data-state=break] .z.b3{animation-delay:2.1s}
+/* nudging: two small hops, then wait */
+[data-state=nudging] .hop{animation:nudgeHop 3.2s cubic-bezier(.4,0,.3,1) infinite}
+[data-state=nudging] .br{animation:breathe 3.2s ease-in-out infinite}
+[data-state=nudging] .wl{animation:flutterL 3.2s ease-in-out infinite}
+[data-state=nudging] .wr{animation:flutterR 3.2s ease-in-out infinite}
+/* celebrating: happy hop + sparkle */
+[data-state=celebrating] .hop{animation:cheer 1.5s cubic-bezier(.35,0,.3,1) infinite}
+[data-state=celebrating] .wl{animation:cheerL 1.5s ease-in-out infinite}
+[data-state=celebrating] .wr{animation:cheerR 1.5s ease-in-out infinite}
+[data-state=celebrating] .spark{animation:twinkle 1.5s ease-in-out infinite}
+[data-state=celebrating] .spark2{animation:twinkle 1.5s ease-in-out infinite .5s}
+
+@keyframes breathe{0%,100%{transform:scale(1,1)}50%{transform:scale(.99,1.03)}}
+@keyframes breatheS{0%,100%{transform:scale(1,1)}50%{transform:scale(.995,1.018)}}
+@keyframes wingBreath{0%,100%{transform:rotate(0)}50%{transform:rotate(2deg)}}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.08)}}
+@keyframes glanceL{0%,28%{transform:translate(0,0)}35%,48%{transform:translate(-11px,-6px)}56%,74%{transform:translate(0,0)}80%,88%{transform:translate(5px,3px)}95%,100%{transform:translate(0,0)}}
+@keyframes glanceT{0%,28%{transform:rotate(0)}35%,48%{transform:rotate(-4deg)}56%,74%{transform:rotate(0)}80%,88%{transform:rotate(2deg)}95%,100%{transform:rotate(0)}}
+@keyframes stretchL{0%,6%{transform:rotate(0)}26%,44%{transform:rotate(58deg)}58%,100%{transform:rotate(0)}}
+@keyframes stretchR{0%,6%{transform:rotate(0)}26%,44%{transform:rotate(-58deg)}58%,100%{transform:rotate(0)}}
+@keyframes doze{0%,6%{transform:rotate(0) scale(1)}26%,44%{transform:rotate(0) scale(.98,1.06)}58%{transform:rotate(0) scale(1)}78%,100%{transform:rotate(7deg) translateY(3px)}}
+@keyframes zfloat{0%{opacity:0;transform:translate(0,8px) scale(.6)}25%{opacity:.9}100%{opacity:0;transform:translate(10px,-26px) scale(1.15)}}
+@keyframes nudgeHop{0%,100%{transform:translateY(0)}9%{transform:translateY(-14px)}18%{transform:translateY(0)}27%{transform:translateY(-10px)}36%,100%{transform:translateY(0)}}
+@keyframes flutterL{0%,4%,40%,100%{transform:rotate(0)}12%{transform:rotate(14deg)}30%{transform:rotate(10deg)}}
+@keyframes flutterR{0%,4%,40%,100%{transform:rotate(0)}12%{transform:rotate(-14deg)}30%{transform:rotate(-10deg)}}
+@keyframes cheer{0%{transform:translateY(0) scale(1.06,.92)}18%{transform:translateY(-34px) scale(.97,1.05)}38%{transform:translateY(0) scale(1.07,.9)}52%{transform:translateY(-16px) scale(1)}68%,100%{transform:translateY(0) scale(1)}}
+@keyframes cheerL{0%{transform:rotate(0)}16%,34%{transform:rotate(-36deg)}46%{transform:rotate(-8deg)}56%,66%{transform:rotate(-26deg)}80%,100%{transform:rotate(0)}}
+@keyframes cheerR{0%{transform:rotate(0)}16%,34%{transform:rotate(36deg)}46%{transform:rotate(8deg)}56%,66%{transform:rotate(26deg)}80%,100%{transform:rotate(0)}}
+@keyframes twinkle{0%,100%{opacity:0;transform:scale(.3) rotate(0)}30%,60%{opacity:1;transform:scale(1) rotate(20deg)}}
+@media (prefers-reduced-motion:reduce){.b *{animation:none!important}}
+
+/* ---------- state sheet ---------- */
+.sheet{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.cell{background:rgba(255,255,255,.55);border-radius:14px;padding:46px 24px 16px;display:flex;flex-direction:column;gap:10px}
+.cell .stage{height:176px;display:flex;align-items:flex-end;justify-content:center;padding-left:110px}
+.cell b{font-size:14px}.cell span{font-size:12px;line-height:1.4;color:var(--mut);padding-right:4px}
+.cell .meta b{display:block;margin-bottom:4px}
+
+/* ---------- close-up ---------- */
+.close{display:flex;gap:40px;align-items:flex-end}
+.stage2{position:relative;width:520px;height:420px;background:rgba(255,255,255,.55);border-radius:18px;display:flex;align-items:flex-end;justify-content:flex-end;padding:0 40px 38px 0}
+.stage2 .ground{position:absolute;left:24px;right:24px;bottom:34px;height:2px;background:#E4DFCB;border-radius:2px}
+.cap{padding-bottom:30px}
+.cap .name{font-size:28px;font-weight:600}.cap .desc{font-size:14px;color:var(--mut);margin-top:6px;max-width:300px;line-height:1.45}
+.dots{display:flex;gap:8px;margin-top:18px}.dots i{width:9px;height:9px;border-radius:50%;background:var(--sand);transition:background .3s,transform .3s}.dots i.on{background:var(--sage);transform:scale(1.35)}
+.weak li{margin-bottom:5px}
+</style></head><body>
+
+<section>
+<h1>2 - Corner sitter (full little bird)</h1>
+<p class="r"><b>Rationale.</b> The whole bird is visible, sitting in the bottom-right corner on top of the taskbar like a desk pet: one rounded egg-shaped body (head and body are a single shape) with the sand cap, the amber beak wedge, calm eyes, two pointed feather-tip wings hanging at its sides and two tiny amber feet. Having a body and feet is what makes it unmistakably a bird (the beak plus wings do the rest, and the dark collar is gone). The timer pill sits to its left on the same ground line, so the buddy reads as a small creature with a tiny status chip, not a widget. All motion is small: breathing, a glance toward your window, a hop to nudge, a bigger hop to celebrate. In <code>focus</code> it shrinks to 80%, closes its eyes and goes still.</p>
+<p class="r"><b>Honest weaknesses.</b></p>
+<ul class="r weak" style="padding-left:20px;margin:0 0 4px">
+<li>Always-visible full body costs more screen space than a peeking head (about 150 x 160 px plus the pill) and the bottom-right corner is where notifications and tray popups land, so it can collide with them.</li>
+<li>A pure front view with a one-shape body is cute but generic; the species cues are small (cap, beak, wing tips) and it can still read as a round chick at 90 px.</li>
+<li>It has to sit on the taskbar/dock edge to feel "grounded", but taskbar height and position vary (left/top docks, auto-hide, multi-monitor), so the placement logic needs a per-OS offset.</li>
+<li>The pill lives to the left, so the window needs to be about 230 px wide even though the bird is only about 110 px; the bubble adds height. The always-on-top window must be click-through in the empty areas.</li>
+<li>Glancing at "your window" is faked with a fixed up-left look; it cannot really track what you are doing (and we do not want it to).</li>
+</ul>
+</section>
+
+<section>
+<h2>1 / Desktop mockup (working, live loop)</h2>
+<div class="desk">
+  <div class="win" style="left:70px;top:56px;width:640px;height:560px">
+    <div class="tb"><i></i><i></i><i></i><em></em></div>
+    <div style="padding:34px 44px">
+      <div class="ln h"></div>
+      <div class="ln" style="width:92%"></div><div class="ln" style="width:97%"></div><div class="ln hi" style="width:84%"></div><div class="ln hi" style="width:90%"></div><div class="ln" style="width:60%"></div>
+      <div style="height:18px"></div>
+      <div class="ln" style="width:95%"></div><div class="ln" style="width:88%"></div><div class="ln" style="width:93%"></div><div class="ln" style="width:72%"></div>
+      <div style="height:18px"></div>
+      <div class="ln" style="width:90%"></div><div class="ln" style="width:96%"></div><div class="ln" style="width:44%"></div>
+    </div>
+  </div>
+  <div class="win" style="left:760px;top:120px;width:420px;height:330px">
+    <div class="tb"><i></i><i></i><i></i><em style="width:80px"></em></div>
+    <div style="padding:26px 30px">
+      <div class="ln" style="width:70%"></div><div class="ln" style="width:92%"></div><div class="ln" style="width:55%"></div><div class="ln" style="width:85%"></div><div class="ln" style="width:40%"></div>
+    </div>
+  </div>
+  <div class="task"><i class="on"></i><i></i><i></i><i></i><span></span></div>
+  <div id="mockBuddy" style="position:absolute;right:46px;bottom:44px"></div>
+</div>
+<div class="ctl" id="mockCtl"></div>
+</section>
+
+<section>
+<h2>2 / State sheet (each loops live)</h2>
+<div class="sheet" id="sheet"></div>
+</section>
+
+<section>
+<h2>3 / Close-up cycle (about 3.4 s per state)</h2>
+<div class="close">
+  <div class="stage2"><div class="ground"></div><div id="closeBuddy"></div></div>
+  <div class="cap"><div class="name" id="capName"></div><div class="desc" id="capDesc"></div><div class="dots" id="dots"></div></div>
+</div>
+</section>
+
+<script>
+var STATES=[
+ {k:'idle',d:'Nothing running. Slow breathing, soft blinks; just there.',pill:'25:00'},
+ {k:'working',d:'Timer running. Breathes, now and then glances at your window.',pill:'18:42'},
+ {k:'focus',d:'Focus mode: shrinks, settles low, eyes closed. No chatter at all.',pill:'focus 24:10'},
+ {k:'break',d:'Break: stretches its wings, then dozes with little z.',pill:'break 4:58'},
+ {k:'nudging',d:'Gentle check-in: two small hops and a quiet question.',pill:'18:42'},
+ {k:'celebrating',d:'Step or block done: happy hop, wings up, sparkle.',pill:'+1 step'}
+];
+var uid=0;
+function birdSVG(){
+ var n=++uid;
+ return '<svg class="b" viewBox="0 0 200 210" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'+
+ '<defs><clipPath id="bc'+n+'"><path d="M100 36C140 36 162 66 162 108C162 152 138 180 100 180C62 180 38 152 38 108C38 66 60 36 100 36Z"/></clipPath></defs>'+
+ '<ellipse class="shadow" cx="100" cy="191" rx="58" ry="6" fill="#2F4236" opacity=".13"/>'+
+ '<g class="sz"><g class="hop"><g class="br"><g class="tilt">'+
+  /* feet */
+  '<g fill="#E3B55B"><rect x="80" y="172" width="8" height="14" rx="4"/><rect x="112" y="172" width="8" height="14" rx="4"/>'+
+  '<ellipse cx="82" cy="187" rx="11" ry="4.5"/><ellipse cx="118" cy="187" rx="11" ry="4.5"/></g>'+
+  /* body + cap */
+  '<path d="M100 36C140 36 162 66 162 108C162 152 138 180 100 180C62 180 38 152 38 108C38 66 60 36 100 36Z" fill="#F3EEE1"/>'+
+  '<path clip-path="url(#bc'+n+')" d="M0 0H200V82Q100 64 0 82Z" fill="#D9CFB4" opacity=".9"/>'+
+  /* wings */
+  '<path class="wl" d="M48 94C34 122 36 156 54 178C62 152 64 120 58 96Z" fill="#D9CFB4" stroke="#F3EEE1" stroke-width="4" stroke-linejoin="round"/>'+
+  '<path class="wr" d="M152 94C166 122 164 156 146 178C138 152 136 120 142 96Z" fill="#D9CFB4" stroke="#F3EEE1" stroke-width="4" stroke-linejoin="round"/>'+
+  /* face */
+  '<g class="look">'+
+   '<g class="eo"><rect x="66" y="92" width="12" height="22" rx="6" fill="#2F4236"/><rect x="122" y="92" width="12" height="22" rx="6" fill="#2F4236"/></g>'+
+   '<g class="ec" fill="none" stroke="#2F4236" stroke-width="6.5" stroke-linecap="round"><path d="M63 101Q72 112 81 101"/><path d="M119 101Q128 112 137 101"/></g>'+
+   '<g class="eh" fill="none" stroke="#2F4236" stroke-width="6.5" stroke-linecap="round"><path d="M63 107Q72 94 81 107"/><path d="M119 107Q128 94 137 107"/></g>'+
+   '<path d="M86 118H114L99 143Z" fill="#E3B55B" stroke="#E3B55B" stroke-width="7" stroke-linejoin="round"/>'+
+   '<path d="M100 124L99 135" stroke="#2F4236" stroke-width="2.6" stroke-linecap="round" opacity=".5"/>'+
+  '</g>'+
+ '</g></g>'+
+  /* extras */
+  '<g fill="#5E7F6B" font-family="Inter,sans-serif" font-weight="600">'+
+   '<text class="z" x="150" y="56" font-size="22">z</text><text class="z b2" x="160" y="40" font-size="16">z</text><text class="z b3" x="168" y="26" font-size="12">z</text></g>'+
+  '<path class="spark" d="M160 40L164 52L176 56L164 60L160 72L156 60L144 56L156 52Z" fill="#E3B55B"/>'+
+  '<path class="spark2" d="M36 52L38.5 59L45.5 61.5L38.5 64L36 71L33.5 64L26.5 61.5L33.5 59Z" fill="#E3B55B"/>'+
+ '</g></g></svg>';
+}
+function makeBuddy(host,size,state,opts){
+ opts=opts||{};
+ var el=document.createElement('div');el.className='buddy';el.style.setProperty('--s',size+'px');
+ el.innerHTML=birdSVG()+'<div class="pill"></div><div class="bubble">still on the intro?</div>';
+ host.appendChild(el);
+ el.setState=function(k){el.dataset.state=k;
+  var s=STATES.filter(function(x){return x.k===k})[0];
+  if(true)el.querySelector('.pill').textContent=s.pill;};
+ el.setState(state);return el;
+}
+/* mockup */
+var mock=makeBuddy(document.getElementById('mockBuddy'),150,'working',{live:true});
+var secs=18*60+42;
+function tick(){var p=mock.querySelector('.pill');if(mock.dataset.state==='working'||mock.dataset.state==='nudging'){secs=secs>0?secs-1:0;p.textContent=Math.floor(secs/60)+':'+('0'+secs%60).slice(-2);}}
+setInterval(tick,1000);
+var ctl=document.getElementById('mockCtl');
+STATES.forEach(function(s){var b=document.createElement('button');b.textContent=s.k;if(s.k==='working')b.className='on';
+ b.onclick=function(){mock.setState(s.k);if(s.k==='working'||s.k==='nudging')mock.querySelector('.pill').textContent=Math.floor(secs/60)+':'+('0'+secs%60).slice(-2);
+  [].forEach.call(ctl.children,function(c){c.className=''});b.className='on';};ctl.appendChild(b);});
+/* sheet */
+var sheet=document.getElementById('sheet');
+STATES.forEach(function(s){
+ var c=document.createElement('div');c.className='cell';
+ c.innerHTML='<div class="stage"></div><div class="meta"><b>'+s.k+'</b><span>'+s.d+'</span></div>';
+ sheet.appendChild(c);makeBuddy(c.querySelector('.stage'),160,s.k);
+});
+/* close-up */
+var cb=makeBuddy(document.getElementById('closeBuddy'),280,'idle');
+var dots=document.getElementById('dots');
+STATES.forEach(function(){var i=document.createElement('i');dots.appendChild(i);});
+var ci=-1;
+function nextState(){ci=(ci+1)%STATES.length;var s=STATES[ci];cb.setState(s.k);
+ document.getElementById('capName').textContent=s.k;document.getElementById('capDesc').textContent=s.d;
+ [].forEach.call(dots.children,function(d,j){d.className=j===ci?'on':''});}
+ci=0;nextState();setInterval(nextState,3400);
+</script>
+</body></html>
