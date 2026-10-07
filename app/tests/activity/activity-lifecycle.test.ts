@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => {
     folder: { watch: vi.fn().mockResolvedValue(undefined), closeAllWatchers: vi.fn() },
     git: lifecycle(),
     matcher: lifecycle(),
+    matcherConstructor: vi.fn(),
     inference: lifecycle(),
     inferenceConstructor: vi.fn(),
     retention: vi.fn().mockResolvedValue(undefined),
@@ -48,7 +49,8 @@ vi.mock('../../src/main/activity/sources/git/git-commit-tracker/index', () => ({
   }),
 }));
 vi.mock('../../src/main/activity/processing/commit-task-matcher/index', () => ({
-  CommitTaskMatcher: vi.fn(function () {
+  CommitTaskMatcher: vi.fn(function (...args: unknown[]) {
+    mocks.matcherConstructor(...args);
     return mocks.matcher;
   }),
 }));
@@ -64,7 +66,7 @@ vi.mock('../../src/main/activity/processing/retention/index', () => ({
 
 import { initActivityMonitoring, stopActivityMonitoring } from '../../src/main/activity/index';
 
-const collectors = [mocks.window, mocks.subscribers, mocks.screen, mocks.git, mocks.matcher];
+const collectors = [mocks.window, mocks.subscribers, mocks.screen, mocks.git];
 const originalPlatform = process.platform;
 
 describe('activity lifecycle without automatic progress inference', () => {
@@ -92,6 +94,19 @@ describe('activity lifecycle without automatic progress inference', () => {
     }
     expect(mocks.folder.watch).toHaveBeenCalledExactlyOnceWith(['/work']);
     expect(mocks.retention).toHaveBeenCalledTimes(3);
+  });
+
+  it('never starts automatic commit matching across initialization and restart', async () => {
+    await initActivityMonitoring();
+    await initActivityMonitoring();
+    stopActivityMonitoring();
+    await initActivityMonitoring();
+    await vi.advanceTimersByTimeAsync(6 * 60 * 60 * 1000);
+
+    expect(mocks.matcherConstructor).not.toHaveBeenCalled();
+    expect(mocks.matcher.start).not.toHaveBeenCalled();
+    expect(mocks.git.start).toHaveBeenCalledTimes(2);
+    expect(mocks.git.stop).toHaveBeenCalledTimes(1);
   });
 
   it('stops collectors and retention and can restart without inference', async () => {

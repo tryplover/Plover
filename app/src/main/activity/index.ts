@@ -9,9 +9,8 @@ import { GITHUB_SUBSCRIBER_SPECS } from './sources/github/subscribers.js';
 import { ScreenCapturer } from './sources/system/screen-capturer/index.js';
 import { FolderWatcher } from './sources/system/folder-watcher/index.js';
 import { GitCommitTracker } from './sources/git/git-commit-tracker/index.js';
-import { CommitTaskMatcher } from './processing/commit-task-matcher/index.js';
 import { runRetention } from './processing/retention/index.js';
-import { settingsRepo, activityRepo, tasksRepo, summariesRepo } from '../store/index.js';
+import { settingsRepo, activityRepo } from '../store/index.js';
 import { eventBus } from '../events/bus.js';
 
 let windowTracker: WindowTracker | null = null;
@@ -19,7 +18,6 @@ let busSubscribers: ActivitySubscriberGroup | null = null;
 let screenCapturer: ScreenCapturer | null = null;
 let folderWatcher: FolderWatcher | null = null;
 let gitCommitTracker: GitCommitTracker | null = null;
-let commitTaskMatcher: CommitTaskMatcher | null = null;
 let retentionIntervalId: NodeJS.Timeout | null = null;
 
 export async function initActivityMonitoring(): Promise<void> {
@@ -64,11 +62,6 @@ export async function initActivityMonitoring(): Promise<void> {
     gitCommitTracker.start();
   }
 
-  if (!commitTaskMatcher) {
-    commitTaskMatcher = new CommitTaskMatcher(tasksRepo, summariesRepo, eventBus);
-    commitTaskMatcher.start();
-  }
-
   void runRetention({ activityRepo, settingsRepo, now: new Date() }).catch((err) =>
     console.error('[Activity] retention failed:', err),
   );
@@ -93,10 +86,6 @@ export function stopActivityMonitoring(): void {
   if (gitCommitTracker) {
     gitCommitTracker.stop();
     gitCommitTracker = null;
-  }
-  if (commitTaskMatcher) {
-    commitTaskMatcher.stop();
-    commitTaskMatcher = null;
   }
   if (windowTracker) {
     windowTracker.stop();
