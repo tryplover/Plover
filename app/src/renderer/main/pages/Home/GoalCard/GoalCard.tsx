@@ -1,8 +1,6 @@
 import { Goal, Task } from '../../../../../shared/types';
 import { StepRow } from '../../../../components/StepRow/StepRow';
 import { ProgressLine } from '../../../../components/ProgressLine/ProgressLine';
-import { PercentPop } from '../../../../components/PercentPop/PercentPop';
-import type { ProgressPop } from '../../../../hooks/useProgressPops';
 
 interface GoalCardProps {
   goal: Goal;
@@ -13,8 +11,6 @@ interface GoalCardProps {
   hasTasks: boolean;
   steps: Task[];
   activeTaskId: string | null;
-  progressPopsEnabled: boolean;
-  pops: ProgressPop[];
   finishTitle: string;
   onToggleExpand: () => void;
   onSwitch: () => void;
@@ -34,8 +30,6 @@ export function GoalCard({
   hasTasks,
   steps,
   activeTaskId,
-  progressPopsEnabled,
-  pops,
   finishTitle,
   onToggleExpand,
   onSwitch,
@@ -167,7 +161,6 @@ export function GoalCard({
                         <span className="plover-home-step-momentum__pct">
                           {Math.round(step.progress)}%
                         </span>
-                        {progressPopsEnabled && <PercentPop pops={pops} />}
                       </span>
                     ) : undefined
                   }

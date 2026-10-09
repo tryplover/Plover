@@ -3,7 +3,6 @@ import { Goal, Task } from '../../../../shared/types';
 import { pickCurrentTask, sortByScheduledStart } from '../../../../shared/current-task';
 import { goalProgress } from '../../../../shared/goal-progress';
 import { Button } from '../../../components/Button/Button';
-import { useProgressPops } from '../../../hooks/useProgressPops';
 import { useGoalsAndTasks } from '../../hooks/useGoalsAndTasks';
 import { GoalCard } from './GoalCard/GoalCard';
 import { SetupModal } from './SetupModal/SetupModal';
@@ -24,16 +23,7 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
   const [stepsExpanded, setStepsExpanded] = useState(false);
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [expandedGoalId, setExpandedGoalId] = useState<string | null>(null);
-  const [progressPopsEnabled, setProgressPopsEnabled] = useState(false);
-
-  const loadProgressPopsSetting = useCallback(async () => {
-    const settings = await window.api.getSettings();
-    setProgressPopsEnabled(settings.progressPopsEnabled ?? false);
-  }, []);
-
-  const { goals, tasks, tasksByGoal, loading, fetchData } = useGoalsAndTasks({
-    loadExtra: loadProgressPopsSetting,
-  });
+  const { goals, tasks, tasksByGoal, loading, fetchData } = useGoalsAndTasks();
 
   // Predicts (from current, pre-update state) whether completing `excludeTaskId`
   // would leave no other pending task in its goal — checked before the status
@@ -178,8 +168,6 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
 
   const activeTaskId = currentTask?.id ?? null;
 
-  const pops = useProgressPops(activeTaskId, progressPopsEnabled);
-
   const activeGoalSteps = useMemo(() => {
     if (!expandedGoalId) return [];
     return sortByScheduledStart(tasksByGoal[expandedGoalId] ?? []);
@@ -296,8 +284,6 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
             hasTasks={(tasksByGoal[goal.id] ?? []).length > 0}
             steps={activeGoalSteps}
             activeTaskId={activeTaskId}
-            progressPopsEnabled={progressPopsEnabled}
-            pops={pops}
             finishTitle={
               defaultCurrentTask ? `Finish "${defaultCurrentTask.title}"` : 'Finish current task'
             }

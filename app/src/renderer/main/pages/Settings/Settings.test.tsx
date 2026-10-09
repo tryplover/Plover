@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, act, fireEvent, within } from '@testing-library/react';
+import { render, screen, act, fireEvent } from '@testing-library/react';
 import Settings from './Settings.js';
 
 const mockUnsubscribe = vi.fn();
@@ -68,18 +68,19 @@ describe('Settings', () => {
     expect(window.api.updateSettings).toHaveBeenCalledWith({ theme: 'dark' });
   });
 
-  it('toggles progress pops', async () => {
+  it('does not expose progress pops even when the stored preference is enabled', async () => {
+    const settings = await window.api.getSettings();
+    vi.mocked(window.api.getSettings).mockResolvedValue({
+      ...settings,
+      progressPopsEnabled: true,
+    });
     render(<Settings />);
     expect(await screen.findByRole('heading', { name: 'Appearance' })).toBeTruthy();
-    const progressPopsLabel = screen.getByText('Progress pops');
-    const row = progressPopsLabel.parentElement?.parentElement;
-    expect(row).toBeTruthy();
-    const progressPopsChip = within(row as HTMLElement).getByRole('button');
     await act(async () => {
-      fireEvent.click(progressPopsChip);
       await Promise.resolve();
     });
-    expect(window.api.updateSettings).toHaveBeenCalledWith({ progressPopsEnabled: true });
+    expect(screen.queryByText('Progress pops')).toBeNull();
+    expect(window.api.updateSettings).not.toHaveBeenCalled();
   });
 
   it('renders the Account section heading', async () => {

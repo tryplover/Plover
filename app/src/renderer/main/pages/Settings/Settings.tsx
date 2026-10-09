@@ -18,7 +18,6 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
   // Matches SettingsRepo.getAll()'s default (compact) so the toggle doesn't
   // flash "Full" selected before the async getSettings() call resolves.
   const [companionMode, setCompanionMode] = useState<'full' | 'compact'>('compact');
-  const [progressPopsEnabled, setProgressPopsEnabled] = useState(false);
   const [authStatus, setAuthStatus] = useState<AuthStatus>({ signedIn: false, email: null });
   const [workingHours, setWorkingHours] = useState({ start: '09:00', end: '18:00' });
   const [horizonDays, setHorizonDays] = useState(14);
@@ -34,7 +33,6 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
       const settings = await window.api.getSettings();
       setTheme(settings.theme || 'light');
       setCompanionMode(settings.companionMode || 'compact');
-      setProgressPopsEnabled(settings.progressPopsEnabled ?? false);
       setGoogleConnected(settings.googleConnected);
       setWorkingHours(settings.workingHours || { start: '09:00', end: '18:00' });
       setHorizonDays(settings.horizonDays || 14);
@@ -142,7 +140,6 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
       pauseScheduling: boolean;
       theme: 'light' | 'dark';
       companionMode: 'full' | 'compact';
-      progressPopsEnabled?: boolean;
     }>,
   ) => {
     setSaveStatus('saving');
@@ -164,12 +161,6 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
   const handleCompanionModeChange = (newMode: 'full' | 'compact') => {
     setCompanionMode(newMode);
     void triggerAutoSave({ companionMode: newMode });
-  };
-
-  const handleProgressPopsToggle = () => {
-    const next = !progressPopsEnabled;
-    setProgressPopsEnabled(next);
-    void triggerAutoSave({ progressPopsEnabled: next });
   };
 
   const handleShowCompanion = () => {
@@ -293,8 +284,6 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
             companionMode={companionMode}
             onCompanionModeChange={handleCompanionModeChange}
             onShowCompanion={handleShowCompanion}
-            progressPopsEnabled={progressPopsEnabled}
-            onProgressPopsToggle={handleProgressPopsToggle}
           />
 
           <AccountSection
