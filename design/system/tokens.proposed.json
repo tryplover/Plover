@@ -1,0 +1,151 @@
+{
+    "status":  "proposal-for-review",
+    "agreed":  {
+                   "brand":  {
+                                 "sage":  "#5E7F6B",
+                                 "cream":  "#F3EEE1",
+                                 "ink":  "#2F4236",
+                                 "sand":  "#D9CFB4",
+                                 "beakOnly":  "#E3B55B"
+                             },
+                   "font":  {
+                                "wordmark":  "Nunito",
+                                "wordmarkWeight":  700,
+                                "text":  "Lexend"
+                            }
+               },
+    "acceptedStartingPoint":  {
+                                  "deepInk":  "#243329",
+                                  "wordmarkLockups":  "../logo-concepts/wordmark-draft/"
+                              },
+    "proposed":  {
+                     "type":  {
+                                  "display":  [
+                                                  40,
+                                                  500,
+                                                  1.15
+                                              ],
+                                  "page":  [
+                                               28,
+                                               500,
+                                               1.25
+                                           ],
+                                  "section":  [
+                                                  20,
+                                                  500,
+                                                  1.35
+                                              ],
+                                  "body":  [
+                                               16,
+                                               400,
+                                               1.6
+                                           ],
+                                  "label":  [
+                                                14,
+                                                500,
+                                                1.4
+                                            ],
+                                  "caption":  [
+                                                  12,
+                                                  400,
+                                                  1.5
+                                              ],
+                                  "brandAction":  [
+                                                      19,
+                                                      700,
+                                                      1.3
+                                                  ]
+                              },
+                     "space":  [
+                                   4,
+                                   8,
+                                   12,
+                                   16,
+                                   24,
+                                   32,
+                                   48,
+                                   64
+                               ],
+                     "radius":  {
+                                    "control":  8,
+                                    "card":  14,
+                                    "panel":  20,
+                                    "pill":  999
+                                },
+                     "size":  {
+                                  "controlMinHeight":  44,
+                                  "compactControl":  44,
+                                  "icon":  20,
+                                  "iconButton":  44,
+                                  "sidebar":  208,
+                                  "readingMaxWidthCh":  65
+                              },
+                     "light":  {
+                                   "page":  "#F3EEE1",
+                                   "surface":  "#F3EEE1",
+                                   "surfaceQuiet":  "#D9CFB4",
+                                   "text":  "#2F4236",
+                                   "textSecondary":  "#2F4236",
+                                   "borderDecorative":  "#D9CFB4",
+                                   "borderControl":  "#5E7F6B",
+                                   "action":  "#2F4236",
+                                   "actionText":  "#F3EEE1",
+                                   "focus":  "#2F4236"
+                               },
+                     "dark":  {
+                                  "page":  "#243329",
+                                  "surface":  "#2F4236",
+                                  "surfaceQuiet":  "#243329",
+                                  "text":  "#F3EEE1",
+                                  "textSecondary":  "#D9CFB4",
+                                  "borderDecorative":  "rgba(217,207,180,0.25)",
+                                  "borderControl":  "#D9CFB4",
+                                  "action":  "#F3EEE1",
+                                  "actionText":  "#2F4236",
+                                  "focus":  "#F3EEE1"
+                              },
+                     "motion":  {
+                                    "fastMs":  120,
+                                    "normalMs":  200,
+                                    "slowMs":  300,
+                                    "easing":  "cubic-bezier(0.2, 0, 0, 1)",
+                                    "buddyLoopSeconds":  [
+                                                             4,
+                                                             6
+                                                         ],
+                                    "reducedMotion":  "static bird, no bob/hop/slide; retain text status"
+                                },
+                     "errorOption":  {
+                                         "default":  "clay",
+                                         "light":  "#9A453C",
+                                         "dark":  "#E7B6AE",
+                                         "status":  "selected-by-founder"
+                                     },
+                     "cardPadding":  24
+                 },
+    "selected":  {
+                     "bodySize":  16,
+                     "cardPadding":  24,
+                     "radius":  {
+                                    "control":  8,
+                                    "card":  14,
+                                    "panel":  20
+                                },
+                     "errors":  {
+                                    "mode":  "clay",
+                                    "light":  "#9A453C",
+                                    "dark":  "#E7B6AE"
+                                },
+                     "buttons":  "balanced",
+                     "peek":  "one-featured-per-view",
+                     "motion":  {
+                                    "idle":  "gentle-breathing",
+                                    "idleSeconds":  5,
+                                    "focus":  "static",
+                                    "thinking":  "whole-bird-bob",
+                                    "completion":  "single-small-hop",
+                                    "reduced":  "static-with-text-status"
+                                },
+                     "desktopBuddy":  "round-corner-sitter"
+                 }
+}

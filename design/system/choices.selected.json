@@ -1,0 +1,33 @@
+{
+    "status":  "selected-by-founder",
+    "date":  "2026-10-04",
+    "source":  "Founder selections captured from the foundation review and completed remaining-choice review on 2026-10-04.",
+    "values":  {
+                   "bodySize":  16,
+                   "cardPadding":  24,
+                   "radius":  {
+                                  "control":  8,
+                                  "card":  14,
+                                  "panel":  20
+                              },
+                   "errors":  {
+                                  "mode":  "clay",
+                                  "light":  "#9A453C",
+                                  "dark":  "#E7B6AE"
+                              },
+                   "buttons":  "balanced",
+                   "peek":  "one-featured-per-view",
+                   "motion":  {
+                                  "idle":  "gentle-breathing",
+                                  "idleSeconds":  5,
+                                  "focus":  "static",
+                                  "thinking":  "whole-bird-bob",
+                                  "completion":  "single-small-hop",
+                                  "reduced":  "static-with-text-status"
+                              },
+                   "desktopBuddy":  "round-corner-sitter"
+               },
+    "remaining":  [
+
+                  ]
+}
