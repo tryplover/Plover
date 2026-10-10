@@ -62,9 +62,9 @@ base of the stack first and let reviewers move up.
 ## Project
 
 **Plover is pivoting** to a cute desktop work buddy: a minimalist character with
-clean animations that lives in a small always-on-top window, breaks the task
-you're about to do into steps (Gemini), runs a focus timer, gives lock-in
-reminders, and asks self-reported check-ins. It's still a local-first Electron
+clean animations that lives in a small always-on-top window. The MVP is five
+simple features: task breakdown, Pomodoro, site/tab blocking, focus mode and
+read-only Google Calendar. It's still a local-first Electron
 app; user data stays local and Gemini calls are proxied through a backend server
 to protect the developer API key. Launch is waitlist-only.
 
@@ -153,7 +153,8 @@ These are not style preferences. The core architecture doc calls them
   `progress_signal`. Never schedules. (Phase 2+)
 - **NudgeEngine** reads `Tasks` + `Summaries`, writes notifications / overlay
   events. Never mutates tasks. (Phase 2+)
-- **Sync** is the **only** module that talks to Google APIs.
+- **Sync** is the **only** module that talks to Google APIs. In the MVP only
+  its Calendar source is live.
 - Modules communicate via the in-process event bus + typed `Store` repos. No
   module imports another module's internals.
 
@@ -176,25 +177,31 @@ These are not style preferences. The core architecture doc calls them
 - **No Wispr Flow / Cluely / third-party overlay deps.** Build the overlay with
   Electron `BrowserWindow` primitives.
 
-## Scope (current: desktop buddy pivot, v1)
+## Scope (current: desktop buddy MVP, five features)
 
-**In v1:**
-- Desktop buddy window (always-on-top, frameless) with an animation-state
-  interface; placeholder art until the design lands
-- Typed task entry → Gemini step breakdown → accept/edit (reuses the Planner)
-- Focus timer with work/break cycles
-- Time-based lock-in reminders
-- Self-reported check-ins that update step status
+MVP principle: simple and not reliant on AI. Every feature works without a
+model call; Gemini only suggests steps during task breakdown.
+
+**In the MVP** (build order in [docs/plans/mvp-five-features-roadmap.md](docs/plans/mvp-five-features-roadmap.md)):
+- Buddy window (always-on-top, frameless) with an animation-state interface;
+  placeholder art until the design lands
+- Task breakdown: Gemini-suggested steps, fully editable, with a no-AI fallback
+- Pomodoro timer with one self-reported check-in per work block
+- Site/tab blocking via a companion browser extension (loopback-only bridge)
+- Focus mode: timer + blocking + quiet buddy in one switch
+- Read-only Google Calendar (`calendar.readonly` only)
 
 **Frozen — leave in place, don't extend, don't build on, don't delete yet:**
 - Activity monitoring (`app/src/main/activity/`)
 - Inference / progress signals, `+X%` pops, blended goal bar (the
   `progress-signal-rewire` plan is paused)
-- Google / GitHub sync connectors
+- Gmail, Classroom, Drive/Docs and GitHub sync sources
 - Working-hours scheduler and the Today / Goals views
 
-**Not in v1:**
-- Screen-based distraction detection
+**Not in the MVP:**
+- Gamification (planned next, after launch)
+- Screen-based distraction detection, desktop-app blocking, OS-level changes
+  (hosts file, system Do Not Disturb)
 - Voice input (`whisper.cpp`)
 - Multi-account, plugins, multi-device sync, mobile
 
