@@ -11,6 +11,7 @@ export interface TimerServiceDeps {
   sessions: Pick<SessionsRepo, 'create'>;
   bus: TypedEventBus;
   now: () => number;
+  taskExists: (id: string) => boolean;
 }
 
 export class TimerService {
@@ -18,6 +19,7 @@ export class TimerService {
   private taskId: string | null = null;
   private blockStartedAt = 0;
   private blockPlannedSeconds = 0;
+  private phasePlannedSeconds = 0;
   private lastTickAt = 0;
   private interval: ReturnType<typeof setInterval> | null = null;
 
@@ -26,10 +28,11 @@ export class TimerService {
   start(taskId: string | null): TimerSnapshot {
     if (this.state.phase !== 'idle') return this.snapshot();
     const now = this.deps.now();
-    this.taskId = taskId;
+    this.taskId = taskId !== null && this.deps.taskExists(taskId) ? taskId : null;
     this.lastTickAt = now;
+    const config = this.deps.getConfig();
     this.interval = setInterval(() => this.tick(), TICK_MS);
-    this.apply(machine.startTimer(this.deps.getConfig(), now));
+    this.apply(machine.startTimer(config, now));
     return this.snapshot();
   }
 
@@ -58,10 +61,11 @@ export class TimerService {
     const now = this.deps.now();
     const gap = now - this.lastTickAt;
     this.lastTickAt = now;
-    if (gap > SUSPEND_GAP_MS) {
+    if (gap > SUSPEND_GAP_MS || gap < 0) {
       this.apply(machine.delayPhase(this.state, gap));
       return;
     }
+    if (this.state.phase === 'idle' || this.state.pausedAt !== null || now < this.state.phaseEndsAt) return;
     this.apply(machine.tick(this.state, this.deps.getConfig(), now));
   }
 
@@ -75,6 +79,7 @@ export class TimerService {
       endsAt: idleOrPaused ? null : this.state.phaseEndsAt,
       blocksCompleted: this.state.blocksCompleted,
       taskId: this.taskId,
+      plannedSeconds: this.phasePlannedSeconds,
     };
   }
 
@@ -87,12 +92,17 @@ export class TimerService {
 
   private handle(event: TimerEvent): void {
     const now = this.deps.now();
-    if (event.type === 'phase-started' && event.phase === 'work') {
-      this.blockStartedAt = now;
-      this.blockPlannedSeconds = event.plannedSeconds;
+    if (event.type === 'phase-started') {
+      this.phasePlannedSeconds = event.plannedSeconds;
+      if (event.phase === 'work') {
+        this.blockStartedAt = now;
+        this.blockPlannedSeconds = event.plannedSeconds;
+      }
     } else if (event.type === 'work-block-completed') {
+      const taskId = this.taskId !== null && this.deps.taskExists(this.taskId) ? this.taskId : null;
+      this.taskId = taskId;
       const session = this.deps.sessions.create({
-        task_id: this.taskId,
+        task_id: taskId,
         started_at: new Date(this.blockStartedAt).toISOString(),
         ended_at: new Date(now).toISOString(),
         phase: 'work',
@@ -100,12 +110,13 @@ export class TimerService {
       });
       this.deps.bus.emit('timer.work-block-completed', {
         blocksCompleted: event.blocksCompleted,
-        taskId: this.taskId,
+        taskId,
         sessionId: session.id,
       });
     } else if (event.type === 'stopped') {
       this.clearInterval();
       this.taskId = null;
+      this.phasePlannedSeconds = 0;
     }
   }
 

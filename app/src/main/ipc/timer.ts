@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron';
 import { eventBus } from '../events/bus.js';
-import { sessionsRepo, settingsRepo } from '../store/index.js';
+import { sessionsRepo, settingsRepo, tasksRepo } from '../store/index.js';
 import { TimerService } from '../timer/service.js';
 import { broadcast } from './shared.js';
 
@@ -18,6 +18,7 @@ export function registerTimerHandlers(): void {
     sessions: sessionsRepo,
     bus: eventBus,
     now: Date.now,
+    taskExists: (id) => tasksRepo.get(id) !== null,
   });
 
   const safeBroadcast = (channel: string, payload: unknown): void => {

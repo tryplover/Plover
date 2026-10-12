@@ -15,6 +15,7 @@ const T0 = 1_000_000;
 describe('TimerService', () => {
   let db: Database.Database;
   let sessions: SessionsRepo;
+  let tasks: TasksRepo;
   let bus: TypedEventBus;
   let service: TimerService;
   let nowMs: number;
@@ -33,6 +34,7 @@ describe('TimerService', () => {
     db = new Database(':memory:');
     runMigrations(db);
     sessions = new SessionsRepo(db);
+    tasks = new TasksRepo(db);
     bus = new TypedEventBus();
     nowMs = T0;
     config = { workMinutes: 25, shortBreakMinutes: 5, longBreakMinutes: 15, blocksPerLongBreak: 4 };
@@ -40,7 +42,13 @@ describe('TimerService', () => {
     completed = [];
     bus.on('timer.changed', (snapshot) => changed.push(snapshot));
     bus.on('timer.work-block-completed', (payload) => completed.push(payload));
-    service = new TimerService({ getConfig: () => config, sessions, bus, now: () => nowMs });
+    service = new TimerService({
+      getConfig: () => config,
+      sessions,
+      bus,
+      now: () => nowMs,
+      taskExists: (id) => tasks.get(id) !== null,
+    });
   });
 
   afterEach(() => {
@@ -57,6 +65,7 @@ describe('TimerService', () => {
       endsAt: T0 + 25 * MIN,
       blocksCompleted: 0,
       taskId: null,
+      plannedSeconds: 1500,
     });
     expect(changed).toEqual([snapshot]);
   });
@@ -71,7 +80,7 @@ describe('TimerService', () => {
 
   it('records a completed work block and emits the check-in trigger', () => {
     const goal = new GoalsRepo(db).create({ title: 'Goal', status: 'active' });
-    const task = new TasksRepo(db).create({
+    const task = tasks.create({
       goal_id: goal.id,
       title: 'Task',
       estimate_minutes: 30,
@@ -108,7 +117,7 @@ describe('TimerService', () => {
     service.start(null);
     advance(2 * MIN);
     const snapshot = service.skip();
-    expect(snapshot).toMatchObject({ phase: 'shortBreak', blocksCompleted: 0 });
+    expect(snapshot).toMatchObject({ phase: 'shortBreak', blocksCompleted: 0, plannedSeconds: 300 });
     expect(sessions.list()).toHaveLength(0);
     expect(completed).toEqual([]);
   });
@@ -118,7 +127,13 @@ describe('TimerService', () => {
     service.start(null);
     expect(vi.getTimerCount()).toBe(1);
     const snapshot = service.stop();
-    expect(snapshot).toMatchObject({ phase: 'idle', paused: false, remainingSeconds: 0, endsAt: null });
+    expect(snapshot).toMatchObject({
+      phase: 'idle',
+      paused: false,
+      remainingSeconds: 0,
+      endsAt: null,
+      plannedSeconds: 0,
+    });
     expect(vi.getTimerCount()).toBe(0);
     expect(sessions.list()).toHaveLength(0);
   });
@@ -184,5 +199,83 @@ describe('TimerService', () => {
     changed.length = 0;
     advance(10 * SEC);
     expect(changed).toEqual([]);
+  });
+
+  it('records a block against a task deleted mid-block as unassigned', () => {
+    const goal = new GoalsRepo(db).create({ title: 'Goal', status: 'active' });
+    const task = tasks.create({
+      goal_id: goal.id,
+      title: 'Task',
+      estimate_minutes: 30,
+      status: 'todo',
+    });
+    service.start(task.id);
+    advance(10 * MIN);
+    tasks.delete(task.id);
+    expect(() => advance(15 * MIN)).not.toThrow();
+    const rows = sessions.list();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.task_id).toBeNull();
+    expect(completed).toEqual([{ blocksCompleted: 1, taskId: null, sessionId: rows[0]?.id }]);
+    expect(service.snapshot().taskId).toBeNull();
+  });
+
+  it('treats a nonexistent task id as unassigned', () => {
+    expect(service.start('does-not-exist').taskId).toBeNull();
+    advance(25 * MIN);
+    const rows = sessions.list();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.task_id).toBeNull();
+  });
+
+  it('does not read the config on plain ticks and still ends the phase', () => {
+    const getConfig = vi.fn(() => config);
+    service = new TimerService({
+      getConfig,
+      sessions,
+      bus,
+      now: () => nowMs,
+      taskExists: (id) => tasks.get(id) !== null,
+    });
+    service.start(null);
+    expect(getConfig).toHaveBeenCalledTimes(1);
+    advance(10 * SEC);
+    service.pause();
+    advance(10 * SEC);
+    service.resume();
+    expect(getConfig).toHaveBeenCalledTimes(1);
+    advance(25 * MIN);
+    expect(completed).toHaveLength(1);
+    expect(sessions.list()).toHaveLength(1);
+  });
+
+  it('leaves no interval and stays idle when the config read throws on start', () => {
+    vi.useFakeTimers();
+    let failing = true;
+    service = new TimerService({
+      getConfig: () => {
+        if (failing) throw new Error('bad settings');
+        return config;
+      },
+      sessions,
+      bus,
+      now: () => nowMs,
+      taskExists: () => false,
+    });
+    expect(() => service.start(null)).toThrow('bad settings');
+    expect(vi.getTimerCount()).toBe(0);
+    expect(service.snapshot().phase).toBe('idle');
+    failing = false;
+    expect(service.start(null).phase).toBe('work');
+    expect(vi.getTimerCount()).toBe(1);
+  });
+
+  it('a backwards clock change keeps the remaining time unchanged', () => {
+    service.start(null);
+    advance(10 * MIN);
+    const before = service.snapshot().remainingSeconds;
+    nowMs -= 5 * MIN;
+    service.tick();
+    expect(Math.abs(service.snapshot().remainingSeconds - before)).toBeLessThanOrEqual(1);
   });
 });

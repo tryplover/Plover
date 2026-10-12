@@ -32,4 +32,5 @@ export interface TimerSnapshot {
   endsAt: number | null;
   blocksCompleted: number;
   taskId: string | null;
+  plannedSeconds: number;
 }
