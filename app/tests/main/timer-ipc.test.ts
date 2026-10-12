@@ -65,6 +65,29 @@ describe('timer IPC', () => {
     expect(await call('timer:stop')).toMatchObject({ phase: 'idle', remainingSeconds: 0 });
   });
 
+  it('forwards timer.work-block-completed to windows as timer:workBlockCompleted', () => {
+    const payload = { blocksCompleted: 1, taskId: null, sessionId: 's1' };
+    eventBus.emit('timer.work-block-completed', payload);
+    expect(send).toHaveBeenCalledWith('timer:workBlockCompleted', payload);
+  });
+
+  it('keeps the timer running when broadcasting to a window throws', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      send.mockImplementationOnce(() => {
+        throw new Error('boom');
+      });
+      expect(await call('timer:start', null)).toMatchObject({ phase: 'work', paused: false });
+      expect(await call('timer:getSnapshot')).toMatchObject({ phase: 'work' });
+      expect(errorSpy).toHaveBeenCalledWith(
+        '[timer] failed to broadcast timer:changed',
+        expect.any(Error),
+      );
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
   it('pause while idle is a harmless no-op', async () => {
     expect(await call('timer:pause')).toMatchObject({ phase: 'idle', paused: false });
   });

@@ -28,6 +28,7 @@ const { mockSupabaseAuth } = vi.hoisted(() => {
 });
 
 vi.mock('../../src/main/auth/supabase-auth.js', () => mockSupabaseAuth);
+vi.mock('../../src/main/ipc/timer.js', () => ({ registerTimerHandlers: vi.fn() }));
 
 type IpcHandler = (event: unknown, ...args: unknown[]) => unknown;
 

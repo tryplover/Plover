@@ -20,9 +20,17 @@ export function registerTimerHandlers(): void {
     now: Date.now,
   });
 
-  eventBus.on('timer.changed', (snapshot) => broadcast('timer:changed', snapshot));
+  const safeBroadcast = (channel: string, payload: unknown): void => {
+    try {
+      broadcast(channel, payload);
+    } catch (err) {
+      console.error(`[timer] failed to broadcast ${channel}`, err);
+    }
+  };
+
+  eventBus.on('timer.changed', (snapshot) => safeBroadcast('timer:changed', snapshot));
   eventBus.on('timer.work-block-completed', (payload) =>
-    broadcast('timer:workBlockCompleted', payload),
+    safeBroadcast('timer:workBlockCompleted', payload),
   );
 
   ipcMain.handle('timer:start', async (_, taskId: string | null) => service.start(taskId));
