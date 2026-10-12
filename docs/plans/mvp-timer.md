@@ -29,6 +29,9 @@
 - One timer at a time. `start` while a timer is running is ignored.
 - `blocksPerLongBreak` is bounded 1-12 so the long-break modulo never divides by zero.
 - Typed renderer exposure of the four new settings in `preload/index.ts` and `renderer/global.d.ts` is left to the Settings UI plan. Main-side `settings:update` already accepts them.
+- Work blocks auto-continue after a break and keep recording completed blocks until the user stops the timer. Nothing here prevents an unattended machine from cycling all evening; the buddy UI plan (M2 PR 4) must add a safeguard, for example pausing the timer when an end-of-block check-in goes unanswered.
+
+Unverified risk: if macOS App Nap throttles main-process timers while every window is hidden, tick gaps over 30 s would be misread as suspends and keep pushing the deadline back; verify by hand (start a timer, hide all windows for 30+ min, confirm it still finishes) and if it fails hold powerSaveBlocker "prevent-app-suspension" while the timer is not idle.
 
 ## Review Focus
 
