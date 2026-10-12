@@ -43,4 +43,6 @@ export interface Session {
   task_id: string | null;
   started_at: string | null; // ISO8601 string
   ended_at: string | null; // ISO8601 string
+  phase: 'work' | 'shortBreak' | 'longBreak';
+  planned_seconds: number | null;
 }

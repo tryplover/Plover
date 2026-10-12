@@ -2,12 +2,11 @@ import { randomUUID } from 'node:crypto';
 import Database from 'better-sqlite3';
 import { Session } from '@shared/types.js';
 
-/**
- * SessionsRepo handles persistence for task sessions.
- * Optimization: SQL statements are pre-prepared in the constructor to reduce parsing/compilation
- * overhead during runtime. This typically improves database operation speed by 2x-5x for
- * simple queries in SQLite.
- */
+export type SessionInput = Pick<Session, 'task_id' | 'started_at' | 'ended_at'> &
+  Partial<Pick<Session, 'phase' | 'planned_seconds'>>;
+
+const COLUMNS = 'id, task_id, started_at, ended_at, phase, planned_seconds';
+
 export class SessionsRepo {
   private db: Database.Database;
   private createStmt: Database.Statement;
@@ -18,38 +17,38 @@ export class SessionsRepo {
 
   constructor(db: Database.Database) {
     this.db = db;
-    // Pre-prepare statements to optimize execution performance
     this.createStmt = this.db.prepare(`
-      INSERT INTO sessions (id, task_id, started_at, ended_at)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO sessions (${COLUMNS})
+      VALUES (?, ?, ?, ?, ?, ?)
     `);
-    this.getStmt = this.db.prepare(`
-      SELECT id, task_id, started_at, ended_at
-      FROM sessions
-      WHERE id = ?
-    `);
-    this.listStmt = this.db.prepare(`
-      SELECT id, task_id, started_at, ended_at
-      FROM sessions
-    `);
+    this.getStmt = this.db.prepare(`SELECT ${COLUMNS} FROM sessions WHERE id = ?`);
+    this.listStmt = this.db.prepare(`SELECT ${COLUMNS} FROM sessions`);
     this.updateStmt = this.db.prepare(`
       UPDATE sessions
-      SET task_id = ?, started_at = ?, ended_at = ?
+      SET task_id = ?, started_at = ?, ended_at = ?, phase = ?, planned_seconds = ?
       WHERE id = ?
     `);
     this.deleteStmt = this.db.prepare('DELETE FROM sessions WHERE id = ?');
   }
 
-  create(input: Omit<Session, 'id'>): Session {
-    const id = randomUUID();
+  create(input: SessionInput): Session {
     const session: Session = {
-      id,
+      id: randomUUID(),
       task_id: input.task_id,
       started_at: input.started_at,
       ended_at: input.ended_at,
+      phase: input.phase ?? 'work',
+      planned_seconds: input.planned_seconds ?? null,
     };
 
-    this.createStmt.run(session.id, session.task_id, session.started_at, session.ended_at);
+    this.createStmt.run(
+      session.id,
+      session.task_id,
+      session.started_at,
+      session.ended_at,
+      session.phase,
+      session.planned_seconds,
+    );
 
     return session;
   }
@@ -74,9 +73,19 @@ export class SessionsRepo {
       task_id: patch.task_id !== undefined ? patch.task_id : existing.task_id,
       started_at: patch.started_at !== undefined ? patch.started_at : existing.started_at,
       ended_at: patch.ended_at !== undefined ? patch.ended_at : existing.ended_at,
+      phase: patch.phase ?? existing.phase,
+      planned_seconds:
+        patch.planned_seconds !== undefined ? patch.planned_seconds : existing.planned_seconds,
     };
 
-    this.updateStmt.run(updated.task_id, updated.started_at, updated.ended_at, id);
+    this.updateStmt.run(
+      updated.task_id,
+      updated.started_at,
+      updated.ended_at,
+      updated.phase,
+      updated.planned_seconds,
+      id,
+    );
 
     return updated;
   }
