@@ -123,6 +123,21 @@ describe('TimerService', () => {
     expect(sessions.list()).toHaveLength(0);
   });
 
+  it('keeps ticking when a timer.changed listener throws during start', () => {
+    vi.useFakeTimers();
+    let thrown = false;
+    bus.on('timer.changed', () => {
+      if (!thrown) {
+        thrown = true;
+        throw new Error('listener failed');
+      }
+    });
+    expect(() => service.start(null)).toThrow('listener failed');
+    expect(vi.getTimerCount()).toBe(1);
+    service.stop();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('runs no interval while idle', () => {
     vi.useFakeTimers();
     service.pause();

@@ -28,8 +28,8 @@ export class TimerService {
     const now = this.deps.now();
     this.taskId = taskId;
     this.lastTickAt = now;
-    this.apply(machine.startTimer(this.deps.getConfig(), now));
     this.interval = setInterval(() => this.tick(), TICK_MS);
+    this.apply(machine.startTimer(this.deps.getConfig(), now));
     return this.snapshot();
   }
 
