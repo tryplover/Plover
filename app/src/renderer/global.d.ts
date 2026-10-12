@@ -1,4 +1,5 @@
 import { Goal, Task } from '../shared/types';
+import type { TimerSnapshot } from '../shared/timer';
 
 export interface ProposedPlan {
   goal: Omit<Goal, 'id' | 'created_at' | 'updated_at' | 'status'>;
@@ -100,6 +101,14 @@ export interface PloverAPI {
   };
   listActiveWindows(): Promise<{ app: string; title: string }[]>;
   platform: string;
+  timer: {
+    start(taskId: string | null): Promise<TimerSnapshot>;
+    pause(): Promise<TimerSnapshot>;
+    resume(): Promise<TimerSnapshot>;
+    skip(): Promise<TimerSnapshot>;
+    stop(): Promise<TimerSnapshot>;
+    getSnapshot(): Promise<TimerSnapshot>;
+  };
   companion: {
     show(): Promise<void>;
     hide(): Promise<void>;

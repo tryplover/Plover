@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { Task, Goal, SummaryRow } from '../shared/types.js';
+import { TimerSnapshot } from '../shared/timer.js';
 
 export interface ProposedPlan {
   goal: Omit<Goal, 'id' | 'created_at' | 'updated_at' | 'status'>;
@@ -20,6 +21,15 @@ export interface CompanionApi {
   setState: (kind: StateKind) => Promise<void>;
   resize: (height: number, width?: number) => Promise<void>;
   getInitialState: () => Promise<{ kind: StateKind }>;
+}
+
+export interface TimerApi {
+  start: (taskId: string | null) => Promise<TimerSnapshot>;
+  pause: () => Promise<TimerSnapshot>;
+  resume: () => Promise<TimerSnapshot>;
+  skip: () => Promise<TimerSnapshot>;
+  stop: () => Promise<TimerSnapshot>;
+  getSnapshot: () => Promise<TimerSnapshot>;
 }
 
 export interface PloverApi {
@@ -123,6 +133,7 @@ export interface PloverApi {
 
   // Companion API
   companion: CompanionApi;
+  timer: TimerApi;
 
   // Window tracking (Phase 2+ — stub returns empty list until implemented)
   listActiveWindows: () => Promise<{ app: string; title: string }[]>;
@@ -196,6 +207,15 @@ const api: PloverApi = {
     setState: (kind) => ipcRenderer.invoke('companion:setState', kind),
     resize: (height, width) => ipcRenderer.invoke('companion:resize', height, width),
     getInitialState: () => ipcRenderer.invoke('companion:getInitialState'),
+  },
+
+  timer: {
+    start: (taskId) => ipcRenderer.invoke('timer:start', taskId),
+    pause: () => ipcRenderer.invoke('timer:pause'),
+    resume: () => ipcRenderer.invoke('timer:resume'),
+    skip: () => ipcRenderer.invoke('timer:skip'),
+    stop: () => ipcRenderer.invoke('timer:stop'),
+    getSnapshot: () => ipcRenderer.invoke('timer:getSnapshot'),
   },
 
   listActiveWindows: () => ipcRenderer.invoke('window:list-active'),

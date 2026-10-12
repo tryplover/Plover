@@ -8,6 +8,7 @@ import { registerSettingsHandlers } from './settings.js';
 import { registerOverlayHandlers } from './overlay.js';
 import { registerSystemHandlers } from './system.js';
 import { registerSummariesHandlers } from './summaries.js';
+import { registerTimerHandlers } from './timer.js';
 import { broadcast } from './shared.js';
 
 export { googleAuth, githubAuth };
@@ -28,6 +29,7 @@ export function setupIpcHandlers(
   const ensureCompanion = registerOverlayHandlers(getOverlayWindow);
   registerSystemHandlers();
   registerSummariesHandlers();
+  registerTimerHandlers();
   return ensureCompanion;
 }
 
