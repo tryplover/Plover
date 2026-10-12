@@ -31,6 +31,28 @@ export interface SettingsData {
   githubConnected: boolean;
   githubTrackingEnabled: boolean;
   githubWatchedRepos: string[];
+
+  workMinutes: number;
+  shortBreakMinutes: number;
+  longBreakMinutes: number;
+  blocksPerLongBreak: number;
+}
+
+const TIMER_BOUNDS = {
+  workMinutes: { fallback: 25, min: 1, max: 180 },
+  shortBreakMinutes: { fallback: 5, min: 1, max: 60 },
+  longBreakMinutes: { fallback: 15, min: 1, max: 120 },
+  blocksPerLongBreak: { fallback: 4, min: 1, max: 12 },
+} as const;
+
+type TimerKey = keyof typeof TIMER_BOUNDS;
+
+function clampTimer(key: TimerKey, raw: number | string | undefined): number {
+  const { fallback, min, max } = TIMER_BOUNDS[key];
+  if (raw === undefined || raw === '') return fallback;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(max, Math.max(min, Math.round(n)));
 }
 
 export class SettingsRepo {
@@ -123,6 +145,11 @@ export class SettingsRepo {
     const githubWatchedReposRaw = map.get('githubWatchedRepos');
     const githubWatchedRepos = githubWatchedReposRaw ? JSON.parse(githubWatchedReposRaw) : [];
 
+    const workMinutes = clampTimer('workMinutes', map.get('workMinutes'));
+    const shortBreakMinutes = clampTimer('shortBreakMinutes', map.get('shortBreakMinutes'));
+    const longBreakMinutes = clampTimer('longBreakMinutes', map.get('longBreakMinutes'));
+    const blocksPerLongBreak = clampTimer('blocksPerLongBreak', map.get('blocksPerLongBreak'));
+
     return {
       googleConnected,
       workingHours,
@@ -151,6 +178,10 @@ export class SettingsRepo {
       githubConnected,
       githubTrackingEnabled,
       githubWatchedRepos,
+      workMinutes,
+      shortBreakMinutes,
+      longBreakMinutes,
+      blocksPerLongBreak,
     };
   }
 
@@ -255,6 +286,12 @@ export class SettingsRepo {
     }
     if (patch.githubWatchedRepos !== undefined) {
       this.set('githubWatchedRepos', JSON.stringify(patch.githubWatchedRepos));
+    }
+    for (const key of Object.keys(TIMER_BOUNDS) as TimerKey[]) {
+      const value = patch[key];
+      if (value !== undefined) {
+        this.set(key, String(clampTimer(key, value)));
+      }
     }
   }
 }
