@@ -8,7 +8,6 @@ export async function decomposeGoal(input: {
   goalText: string;
   now: Date;
   workingHours: { start: string; end: string };
-  recentActivity?: { kind: string; payload: Record<string, unknown>; ts: string }[];
 }): Promise<{
   goal: Omit<Goal, 'id' | 'created_at' | 'updated_at' | 'status'>;
   subtasks: Omit<
@@ -29,9 +28,6 @@ export async function decomposeGoal(input: {
     now: input.now.toISOString(),
     workingHours: input.workingHours,
   };
-  if (input.recentActivity && input.recentActivity.length > 0) {
-    body.recentActivity = input.recentActivity.slice(0, 200);
-  }
 
   const response = await authedFetch('/api/decompose', {
     method: 'POST',
