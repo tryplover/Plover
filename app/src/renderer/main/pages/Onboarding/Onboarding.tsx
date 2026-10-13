@@ -3,7 +3,6 @@ import { OnboardingStepper, type OnboardingPhase } from './OnboardingStepper/Onb
 import { StepWelcome } from './steps/StepWelcome/StepWelcome';
 import { StepUseCase } from './steps/StepUseCase/StepUseCase';
 import { StepPromise } from './steps/StepPromise/StepPromise';
-import { StepGrantAccess } from './steps/StepGrantAccess/StepGrantAccess';
 import { StepSetupComplete } from './steps/StepSetupComplete/StepSetupComplete';
 import { StepTaskCarousel } from './steps/StepTaskCarousel/StepTaskCarousel';
 import { StepTrialClose } from './steps/StepTrialClose/StepTrialClose';
@@ -42,20 +41,14 @@ export function Onboarding({ onComplete }: OnboardingProps) {
 
   const handleNext = () => {
     setStep((prev) => {
-      if (prev === 5) return 9;
+      if (prev === 4) return 9;
       return prev + 1;
     });
   };
 
-  const handleOpenSettingsAndRequest = () => {
-    void window.api.requestScreenRecording();
-    void window.api.openScreenRecordingSettings();
-    handleNext();
-  };
-
   const handleBack = () => {
     setStep((prev) => {
-      if (prev === 9) return 5;
+      if (prev === 9) return 4;
       return prev - 1;
     });
   };
@@ -108,13 +101,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
 
         {step === 2 && <StepPromise onBack={handleBack} onNext={handleNext} />}
 
-        {step === 3 && (
-          <StepGrantAccess onBack={handleBack} onOpenSettings={handleOpenSettingsAndRequest} />
-        )}
+        {step === 3 && <StepSetupComplete onBack={handleBack} onNext={handleNext} />}
 
-        {step === 4 && <StepSetupComplete onBack={handleBack} onNext={handleNext} />}
-
-        {step === 5 && (
+        {step === 4 && (
           <StepTaskCarousel
             slideIndex={guidedSlideIndex}
             onSlideIndexChange={setGuidedSlideIndex}
