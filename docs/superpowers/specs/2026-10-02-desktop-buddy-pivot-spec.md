@@ -139,11 +139,11 @@ one gentle thing.
    changes only: start, done, skip, undo). This is internal bookkeeping; it is
    not shown as a bar, percentage or score.
 2. A goal is **stalled** when it has at least one task that is not done or
-   skipped, and no task in it has changed status for 24 working-hour
-   equivalents. Proposed default: a working hour means 09:00–18:00 local time
-   on weekdays, using the existing working-hours settings. Confirm before
-   build.
-3. A stalled goal gets one nudge, for example "Still on 'Write the intro'?
+   skipped, and no task in it has changed status for 24 hours of wall-clock
+   time. Proposed default, to confirm before build.
+3. Checks run only during working hours (weekdays, 09:00–18:00 local time,
+   using the existing working-hours settings). A stalled goal gets one nudge at
+   the first check after it stalls, for example "Still on 'Write the intro'?
    Pick the next step, or split it." At most one nudge per goal per stall and
    at most one per day across all goals.
 4. Any status change on the goal clears the stall. The next stall can nudge
