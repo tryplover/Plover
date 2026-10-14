@@ -7,6 +7,7 @@ import {
   defaultActivitySettings,
   type ActivitySettings,
 } from './sections/ActivityTrackingSection/ActivityTrackingSection.js';
+import { Chip } from '../../../components/Chip/Chip.js';
 
 interface SettingsProps {
   'data-testid'?: string;
@@ -19,6 +20,7 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
   // flash "Full" selected before the async getSettings() call resolves.
   const [companionMode, setCompanionMode] = useState<'full' | 'compact'>('compact');
   const [progressPopsEnabled, setProgressPopsEnabled] = useState(false);
+  const [stallNudgeEnabled, setStallNudgeEnabled] = useState(true);
   const [authStatus, setAuthStatus] = useState<AuthStatus>({ signedIn: false, email: null });
   const [workingHours, setWorkingHours] = useState({ start: '09:00', end: '18:00' });
   const [horizonDays, setHorizonDays] = useState(14);
@@ -35,6 +37,7 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
       setTheme(settings.theme || 'light');
       setCompanionMode(settings.companionMode || 'compact');
       setProgressPopsEnabled(settings.progressPopsEnabled ?? false);
+      setStallNudgeEnabled(settings.stallNudgeEnabled ?? true);
       setGoogleConnected(settings.googleConnected);
       setWorkingHours(settings.workingHours || { start: '09:00', end: '18:00' });
       setHorizonDays(settings.horizonDays || 14);
@@ -143,6 +146,7 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
       theme: 'light' | 'dark';
       companionMode: 'full' | 'compact';
       progressPopsEnabled?: boolean;
+      stallNudgeEnabled?: boolean;
     }>,
   ) => {
     setSaveStatus('saving');
@@ -170,6 +174,12 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
     const next = !progressPopsEnabled;
     setProgressPopsEnabled(next);
     void triggerAutoSave({ progressPopsEnabled: next });
+  };
+
+  const handleStallNudgeToggle = () => {
+    const next = !stallNudgeEnabled;
+    setStallNudgeEnabled(next);
+    void triggerAutoSave({ stallNudgeEnabled: next });
   };
 
   const handleShowCompanion = () => {
@@ -296,6 +306,40 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
             progressPopsEnabled={progressPopsEnabled}
             onProgressPopsToggle={handleProgressPopsToggle}
           />
+
+          <div
+            style={{
+              backgroundColor: 'var(--plover-surface)',
+              borderRadius: 'var(--plover-radius-lg)',
+              padding: '24px',
+            }}
+          >
+            <h2
+              style={{
+                fontSize: '18px',
+                fontWeight: 600,
+                marginBottom: '16px',
+                color: 'var(--plover-text)',
+              }}
+            >
+              Notifications
+            </h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--plover-text)' }}>
+                  Stall nudges
+                </p>
+                <p
+                  style={{ fontSize: '13px', color: 'var(--plover-text-muted)', marginTop: '4px' }}
+                >
+                  A gentle prompt when a goal sits untouched for a day.
+                </p>
+              </div>
+              <Chip selected={stallNudgeEnabled} onClick={handleStallNudgeToggle}>
+                {stallNudgeEnabled ? 'On' : 'Off'}
+              </Chip>
+            </div>
+          </div>
 
           <AccountSection
             authStatus={authStatus}

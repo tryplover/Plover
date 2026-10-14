@@ -34,6 +34,7 @@ export interface PloverAPI {
     activityRetentionDays: number;
     planner_useRecentActivityContext: boolean;
     progressPopsEnabled: boolean;
+    stallNudgeEnabled: boolean;
   }>;
   updateSettings(
     settings: Partial<{
@@ -53,6 +54,7 @@ export interface PloverAPI {
       activityRetentionDays: number;
       planner_useRecentActivityContext: boolean;
       progressPopsEnabled: boolean;
+      stallNudgeEnabled: boolean;
     }>,
   ): Promise<{
     googleConnected: boolean;
@@ -71,6 +73,7 @@ export interface PloverAPI {
     activityRetentionDays: number;
     planner_useRecentActivityContext: boolean;
     progressPopsEnabled: boolean;
+    stallNudgeEnabled: boolean;
   }>;
   connectGoogle(): Promise<boolean>;
   disconnectGoogle(): Promise<void>;
