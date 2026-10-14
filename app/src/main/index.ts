@@ -1,8 +1,8 @@
 import './load-env.js';
-import { app, BrowserWindow, globalShortcut, nativeImage } from 'electron';
+import { app, BrowserWindow, globalShortcut, nativeImage, Notification } from 'electron';
 import { join } from 'node:path';
 import { setupIpc, googleAuth, githubAuth } from './ipc/index.js';
-import { settingsRepo, syncCursors } from './store/index.js';
+import { goalsRepo, settingsRepo, syncCursors, tasksRepo } from './store/index.js';
 import { GDocsPoller } from './sync/gdocs-poller.js';
 import { SourcePoller } from './sync/source-poller.js';
 import { GmailSource } from './sync/google/gmail-source.js';
@@ -14,6 +14,7 @@ import { GitHubPrsSource } from './sync/github/prs-source.js';
 import { GitHubReviewsSource } from './sync/github/reviews-source.js';
 import { eventBus } from './events/bus.js';
 import { clearAllTimers } from './lifecycle/periodic.js';
+import { StallNudgeEngine } from './nudge/engine.js';
 import { initActivityMonitoring, stopActivityMonitoring } from './activity/index.js';
 
 if (!app.isPackaged) {
@@ -31,6 +32,7 @@ let overlayWindow: BrowserWindow | null = null;
 let gdocsPoller: GDocsPoller | null = null;
 let googlePollers: SourcePoller[] = [];
 let githubPollers: SourcePoller[] = [];
+let stallNudgeEngine: StallNudgeEngine | null = null;
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();
@@ -178,6 +180,15 @@ if (!gotTheLock) {
     // Register all typed IPC handlers first
     const ensureCompanion = setupIpc(() => overlayWindow);
 
+    stallNudgeEngine = new StallNudgeEngine({
+      tasks: tasksRepo,
+      goals: goalsRepo,
+      settings: settingsRepo,
+      notify: (title, body) => new Notification({ title, body }).show(),
+      now: () => new Date(),
+    });
+    stallNudgeEngine.start();
+
     // Initialize all activity monitoring subsystems (trackers, retention)
     await initActivityMonitoring();
 
@@ -215,6 +226,8 @@ if (!gotTheLock) {
     googlePollers = [];
     githubPollers.forEach((p) => p.stop());
     githubPollers = [];
+    stallNudgeEngine?.stop();
+    stallNudgeEngine = null;
     clearAllTimers();
   });
 
