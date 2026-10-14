@@ -190,11 +190,12 @@ model call; Gemini only suggests steps during task breakdown.
 - Site/tab blocking via a companion browser extension (loopback-only bridge)
 - Focus mode: timer + blocking + quiet buddy in one switch
 - Read-only Google Calendar (`calendar.readonly` only)
+- Stall nudge: one gentle prompt when a goal stops moving, from manual status changes only (spec §4.7)
 
 **Frozen — leave in place, don't extend, don't build on, don't delete yet:**
 - Activity monitoring (`app/src/main/activity/`)
-- Inference / progress signals, `+X%` pops, blended goal bar (the
-  `progress-signal-rewire` plan is paused)
+- Inference / progress signals (progress percentages, pops and the goal bar are
+  removed from the UI; the `progress-signal-rewire` plan is paused)
 - Gmail, Classroom, Drive/Docs and GitHub sync sources
 - Working-hours scheduler and the Today / Goals views
 
