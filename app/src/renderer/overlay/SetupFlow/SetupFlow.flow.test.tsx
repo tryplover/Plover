@@ -47,6 +47,17 @@ describe('SetupFlow flow', () => {
     expect(screen.queryByText('Connect')).not.toBeInTheDocument();
   });
 
+  it('commits only once when Looks right is clicked twice before the commit resolves', async () => {
+    render(<SetupFlow variant="window" onClose={vi.fn()} />);
+
+    const looksRight = await goToBreakdown();
+    fireEvent.click(looksRight);
+    fireEvent.click(looksRight);
+
+    await waitFor(() => expect(commitGoal).toHaveBeenCalled());
+    expect(commitGoal).toHaveBeenCalledTimes(1);
+  });
+
   it('stays on the breakdown when the commit fails', async () => {
     const onClose = vi.fn();
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
