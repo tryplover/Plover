@@ -50,7 +50,7 @@ describe('App', () => {
   it('renders all nav tabs', async () => {
     render(<App />);
     expect(await screen.findByTestId('nav-home')).toBeTruthy();
-    expect(screen.getByTestId('nav-progress')).toBeTruthy();
+    expect(screen.queryByTestId('nav-progress')).toBeNull();
     expect(screen.getByTestId('nav-settings')).toBeTruthy();
     expect(screen.queryByTestId('nav-goals')).toBeNull();
     expect(screen.queryByTestId('nav-today')).toBeNull();
