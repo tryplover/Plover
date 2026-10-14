@@ -119,6 +119,14 @@ export const MIGRATIONS: { version: number; sql: string }[] = [
       );
     `,
   },
+  {
+    version: 8,
+    sql: `
+      ALTER TABLE tasks ADD COLUMN status_changed_at TEXT;
+
+      UPDATE tasks SET status_changed_at = created_at;
+    `,
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {

@@ -17,7 +17,7 @@ export function registerTasksHandlers(): void {
   });
 
   ipcMain.handle('tasks:updateStatus', async (_, id: string, status: Task['status']) => {
-    const task = tasksRepo.update(id, { status });
+    const task = tasksRepo.setManualStatus(id, status, new Date());
     eventBus.emit('task.updated', { task });
     if (status === 'done') {
       eventBus.emit('task.completed', task);

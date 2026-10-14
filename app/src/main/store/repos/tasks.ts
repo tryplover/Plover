@@ -12,6 +12,8 @@ export class TasksRepo {
   private listStmt: Database.Statement;
   private listActiveScheduledBeforeStmt: Database.Statement;
   private deleteByGoalStmt: Database.Statement;
+  private setManualStatusStmt: Database.Statement;
+  private listStallInputsStmt: Database.Statement;
 
   constructor(db: Database.Database) {
     this.db = db;
@@ -19,8 +21,8 @@ export class TasksRepo {
       INSERT INTO tasks (
         id, goal_id, title, estimate_minutes, depends_on,
         scheduled_start, scheduled_end, status,
-        sort_index, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        sort_index, created_at, updated_at, status_changed_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     this.getStmt = this.db.prepare(`
       SELECT id, goal_id, title, estimate_minutes, depends_on,
@@ -63,6 +65,15 @@ export class TasksRepo {
     this.deleteByGoalStmt = this.db.prepare(`
       DELETE FROM tasks
       WHERE goal_id = ?
+    `);
+    this.setManualStatusStmt = this.db.prepare(`
+      UPDATE tasks
+      SET status = ?, status_changed_at = ?, updated_at = ?
+      WHERE id = ?
+    `);
+    this.listStallInputsStmt = this.db.prepare(`
+      SELECT id, goal_id, status, status_changed_at
+      FROM tasks
     `);
   }
 
@@ -107,6 +118,7 @@ export class TasksRepo {
       task.sort_index,
       task.created_at,
       task.updated_at,
+      task.created_at,
     );
 
     return task;
@@ -210,6 +222,32 @@ export class TasksRepo {
     );
 
     return updated;
+  }
+
+  setManualStatus(id: string, status: Task['status'], at: Date): Task {
+    const info = this.setManualStatusStmt.run(status, at.toISOString(), at.toISOString(), id);
+    if (info.changes === 0) {
+      throw new Error(`Task with id ${id} not found`);
+    }
+    const updated = this.get(id);
+    if (!updated) {
+      throw new Error(`Task with id ${id} not found`);
+    }
+    return updated;
+  }
+
+  listStallInputs(): {
+    id: string;
+    goal_id: string;
+    status: Task['status'];
+    status_changed_at: string;
+  }[] {
+    return this.listStallInputsStmt.all() as {
+      id: string;
+      goal_id: string;
+      status: Task['status'];
+      status_changed_at: string;
+    }[];
   }
 
   list(): Task[] {
