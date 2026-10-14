@@ -7,19 +7,18 @@ describe('SetupFlow', () => {
   });
 
   it('step machine starts at name', () => {
-    type Step = 'name' | 'breakdown' | 'connect' | 'committed';
+    type Step = 'name' | 'breakdown' | 'committed';
     const initial: Step = 'name';
     expect(initial).toBe('name');
   });
 
-  it('transitions through all four steps in order', () => {
-    const steps = ['name', 'breakdown', 'connect', 'committed'] as const;
-    expect(steps).toHaveLength(4);
-    const [s0, s1, s2, s3] = steps;
+  it('transitions through all three steps in order', () => {
+    const steps = ['name', 'breakdown', 'committed'] as const;
+    expect(steps).toHaveLength(3);
+    const [s0, s1, s2] = steps;
     expect(s0).toBe('name');
     expect(s1).toBe('breakdown');
-    expect(s2).toBe('connect');
-    expect(s3).toBe('committed');
+    expect(s2).toBe('committed');
   });
 
   it('overlay variant is valid', () => {
@@ -62,16 +61,4 @@ describe('SetupFlow', () => {
     expect(first?.title).toBe('Research sources');
   });
 
-  it('connect step only renders when plan is set', () => {
-    const plan: ProposedPlan | null = null;
-    const showConnect = plan !== null;
-    expect(showConnect).toBe(false);
-
-    const populated: ProposedPlan = {
-      goal: { title: 'Some goal' },
-      subtasks: [],
-    };
-    const showConnectAfter = populated !== null;
-    expect(showConnectAfter).toBe(true);
-  });
 });
