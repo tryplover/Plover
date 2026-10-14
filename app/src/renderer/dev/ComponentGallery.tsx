@@ -1,5 +1,4 @@
 import { StatusIndicator } from '../components/StatusIndicator/StatusIndicator';
-import { ProgressLine } from '../components/ProgressLine/ProgressLine';
 import { Button } from '../components/Button/Button';
 import { StepRow } from '../components/StepRow/StepRow';
 import { Chip } from '../components/Chip/Chip';
@@ -24,28 +23,6 @@ export function ComponentGallery() {
           </div>
           <div>
             <StatusIndicator kind="not-sure" label="not-sure" />
-          </div>
-        </div>
-      </section>
-
-      <section className="gallery-section">
-        <h2>ProgressLine</h2>
-        <div className="gallery-grid">
-          <div>
-            <label>50% solid</label>
-            <ProgressLine value={0.5} tone="solid" />
-          </div>
-          <div>
-            <label>50% lighter</label>
-            <ProgressLine value={0.5} tone="solid" />
-          </div>
-          <div>
-            <label>70% mint</label>
-            <ProgressLine value={0.7} tone="mint" />
-          </div>
-          <div>
-            <label>50% lighter</label>
-            <ProgressLine value={0.5} tone="solid" />
           </div>
         </div>
       </section>
