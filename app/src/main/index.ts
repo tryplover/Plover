@@ -178,7 +178,7 @@ if (!gotTheLock) {
     // Register all typed IPC handlers first
     const ensureCompanion = setupIpc(() => overlayWindow);
 
-    // Initialize all activity monitoring subsystems (trackers, retention)
+    // Start the remaining activity subsystems (bus subscribers, inference, commit matching, retention)
     await initActivityMonitoring();
 
     createMainWindow();
