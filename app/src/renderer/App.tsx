@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import Home from './main/pages/Home/Home';
-import AIProgress from './main/pages/AIProgress/AIProgress';
 import Settings from './main/pages/Settings/Settings';
 import { Onboarding } from './main/pages/Onboarding/Onboarding';
 import { AccountModal } from './components/AccountModal';
-import { IconHome, IconGear, IconActivity } from './main/icons';
+import { IconHome, IconGear } from './main/icons';
 import ploverLogo from './plover-logo.png';
 
-type Tab = 'home' | 'progress' | 'settings';
+type Tab = 'home' | 'settings';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<Tab>('home');
@@ -84,15 +83,6 @@ export function App() {
               <IconHome />
               <span>Home</span>
             </button>
-
-            <button
-              className={`nav-item ${activeTab === 'progress' ? 'active' : ''}`}
-              onClick={() => setActiveTab('progress')}
-              data-testid="nav-progress"
-            >
-              <IconActivity />
-              <span>History</span>
-            </button>
           </nav>
         </div>
 
@@ -130,7 +120,6 @@ export function App() {
 
       <main className="main-content">
         {activeTab === 'home' && <Home data-testid="page-home" />}
-        {activeTab === 'progress' && <AIProgress data-testid="page-progress" />}
         {activeTab === 'settings' && <Settings data-testid="page-settings" />}
       </main>
 

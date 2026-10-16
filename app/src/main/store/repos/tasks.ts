@@ -72,7 +72,7 @@ export class TasksRepo {
       WHERE id = ?
     `);
     this.listStallInputsStmt = this.db.prepare(`
-      SELECT id, goal_id, status, status_changed_at
+      SELECT id, goal_id, status, COALESCE(status_changed_at, created_at) AS status_changed_at
       FROM tasks
     `);
   }

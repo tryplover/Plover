@@ -7,6 +7,7 @@ import {
   activityRepo,
   summariesRepo,
 } from '../../src/main/store';
+import { decomposeGoal } from '../../src/main/planner/decompose';
 import { eventBus } from '../../src/main/events/bus';
 import { ipcMain } from 'electron';
 import { ProposedPlan } from '../../src/preload/index';
@@ -125,6 +126,28 @@ describe('IPC Handlers', () => {
     expect(scheduleTasks).not.toHaveBeenCalled();
     expect(result.subtasks[0]).not.toHaveProperty('scheduled_start');
     expect(result.subtasks[0]).not.toHaveProperty('scheduled_end');
+  });
+
+  it('does not send recent activity to decomposeGoal even when the legacy setting is on', async () => {
+    settingsRepo.update({ planner_useRecentActivityContext: true });
+    activityRepo.insert({
+      kind: 'gdocs_revision',
+      payload: { fileId: 'f1', name: 'Q3 Roadmap', modifiedTime: new Date().toISOString() },
+      ts: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+    });
+
+    const calls = (ipcMain.handle as ReturnType<typeof vi.fn>).mock.calls;
+    const proposeCall = calls.find((call) => call[0] === 'goal:propose');
+    const handler = proposeCall?.[1] as (event: unknown, goalText: string) => Promise<ProposedPlan>;
+    try {
+      await handler({}, 'Write an essay on octopuses');
+
+      const arg = vi.mocked(decomposeGoal).mock.calls[0]?.[0];
+      expect(arg).toBeDefined();
+      expect(arg).not.toHaveProperty('recentActivity');
+    } finally {
+      settingsRepo.update({ planner_useRecentActivityContext: false });
+    }
   });
 
   it('handles goal:commit by saving and hiding the window', async () => {

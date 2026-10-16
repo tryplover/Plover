@@ -1,6 +1,5 @@
 import { motion } from '../lib/motion';
 import { StatusIndicator } from '../components/StatusIndicator/StatusIndicator';
-import { ProgressLine } from '../components/ProgressLine/ProgressLine';
 import './Collapsed.css';
 import type { CompanionView } from './useCompanionState';
 
@@ -28,13 +27,7 @@ export function Collapsed({ view, onExpand, companionMode = 'compact' }: Props) 
         <span className="plover-collapsed__compact-row">
           <span className="plover-collapsed__compact-left">
             <StatusIndicator kind={view.kind} label="" />
-            <ProgressLine
-              value={view.progress}
-              animate
-              tone={view.kind === 'done' ? 'mint' : 'solid'}
-            />
           </span>
-          <span className="plover-collapsed__pct">{Math.round(view.progress * 100)}%</span>
         </span>
         <button
           type="button"
@@ -57,9 +50,7 @@ export function Collapsed({ view, onExpand, companionMode = 'compact' }: Props) 
           <span className="plover-collapsed__sep" aria-hidden />
           <span className="plover-collapsed__title">{view.task?.title ?? 'No active task'}</span>
         </span>
-        <span className="plover-collapsed__pct">{Math.round(view.progress * 100)}%</span>
       </span>
-      <ProgressLine value={view.progress} animate tone={view.kind === 'done' ? 'mint' : 'solid'} />
       <button
         type="button"
         className="plover-collapsed__grabber"

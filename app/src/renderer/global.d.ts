@@ -99,7 +99,6 @@ export interface PloverAPI {
     signOut: () => Promise<{ signedIn: boolean; email: string | null }>;
     getStatus: () => Promise<{ signedIn: boolean; email: string | null }>;
   };
-  listActiveWindows(): Promise<{ app: string; title: string }[]>;
   platform: string;
   companion: {
     show(): Promise<void>;

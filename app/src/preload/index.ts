@@ -125,9 +125,6 @@ export interface PloverApi {
   // Companion API
   companion: CompanionApi;
 
-  // Window tracking (Phase 2+ — stub returns empty list until implemented)
-  listActiveWindows: () => Promise<{ app: string; title: string }[]>;
-
   // Plover Account (Supabase) API
   auth: {
     signIn: () => Promise<{ signedIn: boolean; email: string | null }>;
@@ -198,8 +195,6 @@ const api: PloverApi = {
     resize: (height, width) => ipcRenderer.invoke('companion:resize', height, width),
     getInitialState: () => ipcRenderer.invoke('companion:getInitialState'),
   },
-
-  listActiveWindows: () => ipcRenderer.invoke('window:list-active'),
 
   // Events
   on: (channel, callback) => {
