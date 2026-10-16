@@ -49,7 +49,7 @@ but on the desktop, where the work actually happens.
 
 ## 4. MVP features
 
-The buddy window is the shell. It hosts five features.
+The buddy window is the shell. It hosts six features.
 
 ### 4.1 Task breakdown
 
@@ -142,7 +142,8 @@ one gentle thing.
    skipped, and no task in it has changed status for 24 hours of wall-clock
    time. Proposed default, to confirm before build.
 3. Checks run only during working hours (weekdays, 09:00–18:00 local time,
-   using the existing working-hours settings). A stalled goal gets one nudge at
+   using the existing working-hours settings; the working-hours setting is kept
+   for this feature, an exception to the §6 freeze). A stalled goal gets one nudge at
    the first check after it stalls, for example "Still on 'Write the intro'?
    Pick the next step, or split it." At most one nudge per goal per stall and
    at most one per day across all goals.
@@ -150,8 +151,10 @@ one gentle thing.
    again.
 5. The nudge is generic text. It never names a window, file, site or screen
    content, and it never calls a model.
-6. Turning it off in Settings stops the nudges and the bookkeeping does not
-   matter, since nothing reads it.
+6. Stall nudges are suppressed while a focus session is running, so the buddy
+   stays quiet during focus mode.
+7. Turning the nudge off in Settings stops the nudges. Nothing reads the
+   timestamps while it is off.
 
 ## 5. Scope
 
@@ -196,7 +199,7 @@ one gentle thing.
 | Gmail, Classroom, Drive/Docs, GitHub sources | **Freeze** | Leave in place, not wired into MVP flows; their scopes are dropped from the OAuth request. |
 | Activity monitoring (`app/src/main/activity/`) | **Freeze** | Leave the code in place, turn it off by default, build nothing new on it. |
 | Inference / progress signals, `+X%` pops, blended goal bar | **Freeze** | The progress percentages, pops and goal bar were removed from the UI on 2026-10-13. Inference code stays frozen. The `progress-signal-rewire` plan is paused. |
-| Working-hours scheduler (`planner/schedule.ts`), Today / Goals views | **Freeze** | Replaced by the buddy's task-at-hand flow; decide later whether to delete. |
+| Working-hours scheduler (`planner/schedule.ts`), Today / Goals views | **Freeze** | Replaced by the buddy's task-at-hand flow; decide later whether to delete. The working-hours setting stays, because the stall nudge reads it. |
 
 "Freeze" means: don't extend it, don't delete it yet, and don't let new code
 depend on it. Deletion is a separate decision once the MVP is clear.
@@ -226,6 +229,7 @@ New pieces:
 - **Timer defaults**: Pomodoro 25/5 is the proposed default; offer a 50/10
   "deep work" preset too?
 - **Calendar scope**: primary calendar only, or let the user pick calendars?
+- **Stall nudge window**: confirm 24 hours without a status change and weekday 09:00–18:00 as the defaults.
 
 ## 8. Background
 
