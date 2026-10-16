@@ -142,7 +142,7 @@ describe('Onboarding', () => {
 
     // Step 0: Welcome Screen
     expect(screen.getByTestId('step-welcome')).toBeTruthy();
-    expect(screen.getByText('The Progress Bar That Works')).toBeTruthy();
+    expect(screen.getByText('A calm place for your work.')).toBeTruthy();
 
     const getStartedBtn = screen.getByTestId('btn-get-started');
     fireEvent.click(getStartedBtn);
@@ -200,14 +200,17 @@ describe('Onboarding', () => {
     const indicator2 = screen.getByTestId('carousel-indicator-2');
     fireEvent.click(indicator2);
     expect(screen.getByTestId('guided-slide-2')).toBeTruthy();
-    expect(screen.getByText('Which window should I watch?')).toBeTruthy();
+    expect(screen.getByText("What's the next step?")).toBeTruthy();
 
     // Navigate to Slide 3 using Right Arrow
     fireEvent.click(nextArrow);
 
     // Slide 3: Guided - First progress
     expect(screen.getByTestId('guided-slide-3')).toBeTruthy();
-    expect(screen.getByText("That's it. Plover's watching.")).toBeTruthy();
+    expect(screen.getByText("That's it. Tick off steps as you go.")).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(
+      /Progress Bar That Works|Plover's watching|Which window should I watch/,
+    );
 
     // Proceed using the bottom Continue button
     const continueBtn = screen.getByTestId('btn-carousel-continue');

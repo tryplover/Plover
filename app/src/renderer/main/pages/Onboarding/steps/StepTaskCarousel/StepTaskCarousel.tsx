@@ -5,8 +5,8 @@ const LAST_SLIDE_INDEX = 3;
 const slideLabels = [
   '• Name the main goal you want to accomplish.',
   '• Plover automatically breaks down your goal into clear, trackable steps.',
-  '• Connect the documents and applications you want Plover to watch.',
-  "✓ You're all set — Plover automatically fills the progress bar as you work.",
+  '• Add the first step, then start on it.',
+  "✓ You're all set. Tick off steps as you go.",
 ];
 
 interface StepTaskCarouselProps {

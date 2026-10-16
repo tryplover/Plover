@@ -22,7 +22,7 @@ export function StepWelcome({
           <img src={ploverLogo} className="plover-onboarding__brand-logo" alt="Plover Logo" />
           <span>Plover</span>
         </div>
-        <h1 className="plover-onboarding__title">The Progress Bar That Works</h1>
+        <h1 className="plover-onboarding__title">A calm place for your work.</h1>
 
         <div className="plover-onboarding__auth-container">
           <button
