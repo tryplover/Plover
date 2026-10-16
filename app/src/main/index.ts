@@ -1,8 +1,10 @@
 import './load-env.js';
-import { app, BrowserWindow, globalShortcut, nativeImage } from 'electron';
+import { app, BrowserWindow, globalShortcut, nativeImage, Notification } from 'electron';
 import { join } from 'node:path';
 import { setupIpc } from './ipc/index.js';
+import { goalsRepo, settingsRepo, tasksRepo } from './store/index.js';
 import { clearAllTimers } from './lifecycle/periodic.js';
+import { StallNudgeEngine } from './nudge/engine.js';
 import { initActivityMonitoring, stopActivityMonitoring } from './activity/index.js';
 
 if (!app.isPackaged) {
@@ -17,6 +19,7 @@ if (!app.isPackaged && process.platform === 'darwin' && !appIcon.isEmpty()) {
 
 let mainWindow: BrowserWindow | null = null;
 let overlayWindow: BrowserWindow | null = null;
+let stallNudgeEngine: StallNudgeEngine | null = null;
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();
@@ -126,6 +129,15 @@ if (!gotTheLock) {
     // Register all typed IPC handlers first
     const ensureCompanion = setupIpc(() => overlayWindow);
 
+    stallNudgeEngine = new StallNudgeEngine({
+      tasks: tasksRepo,
+      goals: goalsRepo,
+      settings: settingsRepo,
+      notify: (title, body) => new Notification({ title, body }).show(),
+      now: () => new Date(),
+    });
+    stallNudgeEngine.start();
+
     // Start the remaining activity subsystems (bus subscribers, inference, commit matching, retention)
     await initActivityMonitoring();
 
@@ -156,6 +168,8 @@ if (!gotTheLock) {
 
   app.on('before-quit', () => {
     (app as typeof app & { isQuitting?: boolean }).isQuitting = true;
+    stallNudgeEngine?.stop();
+    stallNudgeEngine = null;
     clearAllTimers();
   });
 

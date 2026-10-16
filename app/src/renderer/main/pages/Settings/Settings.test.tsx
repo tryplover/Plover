@@ -21,6 +21,7 @@ beforeEach(() => {
         horizonDays: 14,
         pauseScheduling: false,
         theme: 'light',
+        stallNudgeEnabled: true,
         pauseAllTracking: false,
         windowTrackingEnabled: true,
         gdocsPollingEnabled: true,
@@ -80,6 +81,20 @@ describe('Settings', () => {
       await Promise.resolve();
     });
     expect(window.api.updateSettings).toHaveBeenCalledWith({ progressPopsEnabled: true });
+  });
+
+  it('toggles stall nudges off when they are on', async () => {
+    render(<Settings />);
+    const stallNudgeLabel = await screen.findByText('Stall nudges');
+    const row = stallNudgeLabel.parentElement?.parentElement;
+    expect(row).toBeTruthy();
+    const stallNudgeChip = within(row as HTMLElement).getByRole('button');
+    await within(row as HTMLElement).findByText('On');
+    await act(async () => {
+      fireEvent.click(stallNudgeChip);
+      await Promise.resolve();
+    });
+    expect(window.api.updateSettings).toHaveBeenCalledWith({ stallNudgeEnabled: false });
   });
 
   it('renders the Account section heading', async () => {
