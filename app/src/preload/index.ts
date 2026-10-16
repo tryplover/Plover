@@ -62,6 +62,7 @@ export interface PloverApi {
     activityRetentionDays: number;
     planner_useRecentActivityContext: boolean;
     progressPopsEnabled: boolean;
+    stallNudgeEnabled: boolean;
   }>;
   updateSettings: (
     settings: Partial<{
@@ -81,6 +82,7 @@ export interface PloverApi {
       activityRetentionDays: number;
       planner_useRecentActivityContext: boolean;
       progressPopsEnabled: boolean;
+      stallNudgeEnabled: boolean;
     }>,
   ) => Promise<{
     googleConnected: boolean;
@@ -99,6 +101,7 @@ export interface PloverApi {
     activityRetentionDays: number;
     planner_useRecentActivityContext: boolean;
     progressPopsEnabled: boolean;
+    stallNudgeEnabled: boolean;
   }>;
 
   // Google OAuth (for Docs tracking)
