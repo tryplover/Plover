@@ -62,7 +62,7 @@ base of the stack first and let reviewers move up.
 ## Project
 
 **Plover is pivoting** to a cute desktop work buddy: a minimalist character with
-clean animations that lives in a small always-on-top window. The MVP is five
+clean animations that lives in a small always-on-top window. The MVP is six
 simple features: task breakdown, Pomodoro, site/tab blocking, focus mode and
 read-only Google Calendar. It's still a local-first Electron
 app; user data stays local and Gemini calls are proxied through a backend server
@@ -177,7 +177,7 @@ These are not style preferences. The core architecture doc calls them
 - **No Wispr Flow / Cluely / third-party overlay deps.** Build the overlay with
   Electron `BrowserWindow` primitives.
 
-## Scope (current: desktop buddy MVP, five features)
+## Scope (current: desktop buddy MVP, six features)
 
 MVP principle: simple and not reliant on AI. Every feature works without a
 model call; Gemini only suggests steps during task breakdown.
@@ -190,13 +190,15 @@ model call; Gemini only suggests steps during task breakdown.
 - Site/tab blocking via a companion browser extension (loopback-only bridge)
 - Focus mode: timer + blocking + quiet buddy in one switch
 - Read-only Google Calendar (`calendar.readonly` only)
+- Stall nudge: one gentle prompt when a goal stops moving, from manual status changes only (spec §4.7)
 
 **Frozen — leave in place, don't extend, don't build on, don't delete yet:**
 - Activity monitoring (`app/src/main/activity/`)
-- Inference / progress signals, `+X%` pops, blended goal bar (the
-  `progress-signal-rewire` plan is paused)
+- Inference / progress signals (progress percentages, pops and the goal bar are
+  removed from the UI; the `progress-signal-rewire` plan is paused)
 - Gmail, Classroom, Drive/Docs and GitHub sync sources
-- Working-hours scheduler and the Today / Goals views
+- Working-hours scheduler and the Today / Goals views (the working-hours setting
+  stays: the stall nudge reads it)
 
 **Not in the MVP:**
 - Gamification (planned next, after launch)
