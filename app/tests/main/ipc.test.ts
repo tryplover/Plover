@@ -7,11 +7,13 @@ import {
   activityRepo,
   summariesRepo,
 } from '../../src/main/store';
+import { decomposeGoal } from '../../src/main/planner/decompose';
 import { eventBus } from '../../src/main/events/bus';
 import { ipcMain } from 'electron';
 import { ProposedPlan } from '../../src/preload/index';
 import { BrowserWindow } from 'electron';
 import * as nodeFs from 'node:fs';
+import { scheduleTasks } from '../../src/main/planner/schedule';
 
 const { mockSupabaseAuth } = vi.hoisted(() => {
   return {
@@ -122,6 +124,31 @@ describe('IPC Handlers', () => {
     expect(result.goal.title).toBe('Write an essay on octopuses');
     expect(result.subtasks.length).toBeGreaterThan(0);
     expect(result.subtasks[0]?.title).toBe('Research and gather sources');
+    expect(scheduleTasks).not.toHaveBeenCalled();
+    expect(result.subtasks[0]).not.toHaveProperty('scheduled_start');
+    expect(result.subtasks[0]).not.toHaveProperty('scheduled_end');
+  });
+
+  it('does not send recent activity to decomposeGoal even when the legacy setting is on', async () => {
+    settingsRepo.update({ planner_useRecentActivityContext: true });
+    activityRepo.insert({
+      kind: 'gdocs_revision',
+      payload: { fileId: 'f1', name: 'Q3 Roadmap', modifiedTime: new Date().toISOString() },
+      ts: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+    });
+
+    const calls = (ipcMain.handle as ReturnType<typeof vi.fn>).mock.calls;
+    const proposeCall = calls.find((call) => call[0] === 'goal:propose');
+    const handler = proposeCall?.[1] as (event: unknown, goalText: string) => Promise<ProposedPlan>;
+    try {
+      await handler({}, 'Write an essay on octopuses');
+
+      const arg = vi.mocked(decomposeGoal).mock.calls[0]?.[0];
+      expect(arg).toBeDefined();
+      expect(arg).not.toHaveProperty('recentActivity');
+    } finally {
+      settingsRepo.update({ planner_useRecentActivityContext: false });
+    }
   });
 
   it('handles goal:commit by saving and hiding the window', async () => {
@@ -135,9 +162,7 @@ describe('IPC Handlers', () => {
     ) => Promise<{ goalId: string }>;
     const plan: ProposedPlan = {
       goal: { title: 'Test Goal', description: 'desc', deadline: '2026-06-01' },
-      subtasks: [
-        { title: 'Subtask 1', estimate_minutes: 30, scheduled_start: '...', scheduled_end: '...' },
-      ],
+      subtasks: [{ title: 'Subtask 1', estimate_minutes: 30 }],
     };
 
     const result = await handler({}, plan);

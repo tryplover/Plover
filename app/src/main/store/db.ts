@@ -122,6 +122,14 @@ export const MIGRATIONS: { version: number; sql: string }[] = [
   {
     version: 8,
     sql: `
+      ALTER TABLE tasks ADD COLUMN status_changed_at TEXT;
+
+      UPDATE tasks SET status_changed_at = created_at;
+    `,
+  },
+  {
+    version: 9,
+    sql: `
       ALTER TABLE sessions ADD COLUMN phase TEXT NOT NULL DEFAULT 'work';
       ALTER TABLE sessions ADD COLUMN planned_seconds INTEGER;
     `,

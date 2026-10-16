@@ -1,5 +1,8 @@
 import Database from 'better-sqlite3';
 
+export const STALL_NUDGE_LAST_BY_GOAL_KEY = 'stallNudgeLastByGoal';
+export const STALL_NUDGE_LAST_AT_KEY = 'stallNudgeLastAt';
+
 export interface SettingsData {
   googleConnected: boolean;
   workingHours: { start: string; end: string };
@@ -24,6 +27,7 @@ export interface SettingsData {
   activityRetentionDays: number;
   planner_useRecentActivityContext: boolean;
   progressPopsEnabled: boolean;
+  stallNudgeEnabled: boolean;
   gmailEnabled: boolean;
   calendarEnabled: boolean;
   classroomEnabled: boolean;
@@ -136,6 +140,7 @@ export class SettingsRepo {
     const planner_useRecentActivityContext =
       map.get('planner_useRecentActivityContext') !== 'false';
     const progressPopsEnabled = map.get('progressPopsEnabled') === 'true';
+    const stallNudgeEnabled = map.get('stallNudgeEnabled') !== 'false';
     const gmailEnabled = map.get('gmailEnabled') !== 'false';
     const calendarEnabled = map.get('calendarEnabled') !== 'false';
     const classroomEnabled = map.get('classroomEnabled') !== 'false';
@@ -172,6 +177,7 @@ export class SettingsRepo {
       activityRetentionDays,
       planner_useRecentActivityContext,
       progressPopsEnabled,
+      stallNudgeEnabled,
       gmailEnabled,
       calendarEnabled,
       classroomEnabled,
@@ -268,6 +274,9 @@ export class SettingsRepo {
     }
     if (patch.progressPopsEnabled !== undefined) {
       this.set('progressPopsEnabled', String(patch.progressPopsEnabled));
+    }
+    if (patch.stallNudgeEnabled !== undefined) {
+      this.set('stallNudgeEnabled', String(patch.stallNudgeEnabled));
     }
     if (patch.gmailEnabled !== undefined) {
       this.set('gmailEnabled', String(patch.gmailEnabled));

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Task } from '../../shared/types';
 import { pickCurrentTask } from '../../shared/current-task';
-import { goalProgress } from '../../shared/goal-progress';
 import { useAppEvents } from '../hooks/useAppEvents';
 
 export type StateKind = 'observing' | 'paused' | 'done' | 'not-sure';
@@ -9,7 +8,6 @@ export type StateKind = 'observing' | 'paused' | 'done' | 'not-sure';
 export interface CompanionView {
   kind: StateKind;
   task: Task | null;
-  progress: number;
   steps: { id: string; label: string; done: boolean; current: boolean }[];
 }
 
@@ -17,7 +15,6 @@ export function useCompanionState(): CompanionView {
   const [view, setView] = useState<CompanionView>({
     kind: 'observing',
     task: null,
-    progress: 0,
     steps: [],
   });
   const mounted = useRef(true);
@@ -27,13 +24,13 @@ export function useCompanionState(): CompanionView {
     if (!mounted.current) return;
     const task = pickCurrentTask(tasks);
     if (!task) {
-      setView((v) => ({ ...v, task: null, steps: [], progress: 0 }));
+      setView((v) => ({ ...v, task: null, steps: [] }));
       return;
     }
     const siblings = await window.api.getTasksByGoal(task.goal_id);
     if (!mounted.current) return;
     const steps = buildSteps(task, siblings);
-    setView((v) => ({ ...v, task, steps, progress: goalProgress(siblings, task.id) }));
+    setView((v) => ({ ...v, task, steps }));
   }, []);
 
   useEffect(() => {
@@ -71,15 +68,7 @@ function buildSteps(task: Task | null, all: Task[]): CompanionView['steps'] {
   if (!task) return [];
   const siblings = all
     .filter((t) => t.goal_id === task.goal_id)
-    .sort((a, b) => {
-      const aStart = a.scheduled_start;
-      const bStart = b.scheduled_start;
-      if (!aStart && !bStart) return a.id.localeCompare(b.id);
-      if (!aStart) return 1;
-      if (!bStart) return -1;
-      if (aStart !== bStart) return aStart.localeCompare(bStart);
-      return a.id.localeCompare(b.id);
-    });
+    .sort((a, b) => a.sort_index - b.sort_index || a.id.localeCompare(b.id));
   const currentIdx = siblings.findIndex((t) => t.id === task.id);
   return siblings.map((t, i) => ({
     id: t.id,

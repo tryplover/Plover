@@ -119,13 +119,22 @@ describe('Home', () => {
 
     // Wait for the empty state to appear
     expect(
-      await screen.findByText(
-        'No tasks yet. Define one, and Plover fills the bar as you actually do it — no timers, no guilt, just real progress.',
-      ),
+      await screen.findByText('No tasks yet. Define one to get started — no timers, no guilt.'),
     ).toBeTruthy();
 
     // Assert the Finish button is not present
     expect(screen.queryByLabelText('Finish current task')).toBeNull();
+  });
+
+  it('subtitle counts tasks in motion without naming a closest goal', async () => {
+    vi.mocked(window.api.getGoals).mockResolvedValue([mockGoal]);
+    vi.mocked(window.api.getTasks).mockResolvedValue([mockInProgressTask, mockTodoTask]);
+
+    render(<Home data-testid="page-home" />);
+
+    expect(await screen.findByText('Test Goal')).toBeTruthy();
+    expect(screen.getByText('2 tasks in motion today.')).toBeTruthy();
+    expect(screen.queryByText(/closest to done/)).toBeNull();
   });
 
   describe('completing the last task in a goal', () => {

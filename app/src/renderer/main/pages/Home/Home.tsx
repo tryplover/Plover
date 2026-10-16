@@ -1,9 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { Goal, Task } from '../../../../shared/types';
 import { pickCurrentTask, sortByScheduledStart } from '../../../../shared/current-task';
-import { goalProgress } from '../../../../shared/goal-progress';
 import { Button } from '../../../components/Button/Button';
-import { useProgressPops } from '../../../hooks/useProgressPops';
 import { useGoalsAndTasks } from '../../hooks/useGoalsAndTasks';
 import { GoalCard } from './GoalCard/GoalCard';
 import { SetupModal } from './SetupModal/SetupModal';
@@ -24,16 +22,8 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
   const [stepsExpanded, setStepsExpanded] = useState(false);
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [expandedGoalId, setExpandedGoalId] = useState<string | null>(null);
-  const [progressPopsEnabled, setProgressPopsEnabled] = useState(false);
 
-  const loadProgressPopsSetting = useCallback(async () => {
-    const settings = await window.api.getSettings();
-    setProgressPopsEnabled(settings.progressPopsEnabled ?? false);
-  }, []);
-
-  const { goals, tasks, tasksByGoal, loading, fetchData } = useGoalsAndTasks({
-    loadExtra: loadProgressPopsSetting,
-  });
+  const { goals, tasks, tasksByGoal, loading, fetchData } = useGoalsAndTasks();
 
   // Predicts (from current, pre-update state) whether completing `excludeTaskId`
   // would leave no other pending task in its goal — checked before the status
@@ -178,8 +168,6 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
 
   const activeTaskId = currentTask?.id ?? null;
 
-  const pops = useProgressPops(activeTaskId, progressPopsEnabled);
-
   const activeGoalSteps = useMemo(() => {
     if (!expandedGoalId) return [];
     return sortByScheduledStart(tasksByGoal[expandedGoalId] ?? []);
@@ -189,39 +177,21 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
   // design) is deferred: Goal/Task has no `frequency` field today — the
   // setup flow collects it locally but nothing persists it — so this
   // renders one flat list instead of fabricating section headers.
-  const goalCards = useMemo(() => {
-    return goals.map((goal) => {
-      const goalTasks = tasksByGoal[goal.id] ?? [];
-      const currentId = defaultCurrentTask?.goal_id === goal.id ? defaultCurrentTask.id : null;
-      const progress = goalProgress(goalTasks, currentId);
-      return { goal, progress, isActive: goal.id === activeGoalId };
-    });
-  }, [goals, tasksByGoal, activeGoalId, defaultCurrentTask]);
+  const goalCards = useMemo(
+    () => goals.map((goal) => ({ goal, isActive: goal.id === activeGoalId })),
+    [goals, activeGoalId],
+  );
 
   const inMotionCount = useMemo(
     () => tasks.filter((t) => t.status !== 'done' && t.status !== 'skipped').length,
     [tasks],
   );
 
-  const closestGoal = useMemo(() => {
-    let best: { goal: Goal; progress: number } | null = null;
-    for (const { goal, progress } of goalCards) {
-      if (progress <= 0 || progress >= 1) continue;
-      if (!best || progress > best.progress) {
-        best = { goal, progress };
-      }
-    }
-    return best?.goal ?? null;
-  }, [goalCards]);
-
   const subtitle = useMemo(() => {
     if (inMotionCount === 0) return 'Nothing in motion right now — start a task to get going.';
     const taskWord = inMotionCount === 1 ? 'task' : 'tasks';
-    if (closestGoal) {
-      return `${inMotionCount} ${taskWord} in motion today. ${closestGoal.title} is closest to done.`;
-    }
     return `${inMotionCount} ${taskWord} in motion today.`;
-  }, [inMotionCount, closestGoal]);
+  }, [inMotionCount]);
 
   const closeSetupModal = () => setShowSetupModal(false);
   const finishSetupFlow = () => {
@@ -240,18 +210,9 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
   if (goals.length === 0) {
     return (
       <div data-testid={dataTestId} className="plover-home-empty">
-        <div className="plover-home-empty__decoy" aria-hidden>
-          <div className="plover-home-empty__decoy-row">
-            <span className="plover-home-empty__decoy-dot" />
-            <span className="plover-home-empty__decoy-bar plover-home-empty__decoy-bar--title" />
-            <span className="plover-home-empty__decoy-bar plover-home-empty__decoy-bar--pct" />
-          </div>
-          <div className="plover-home-empty__decoy-track" />
-        </div>
         <h1 className="plover-home-empty__title">A calm place for your work.</h1>
         <p className="plover-home-empty__body">
-          No tasks yet. Define one, and Plover fills the bar as you actually do it — no timers, no
-          guilt, just real progress.
+          No tasks yet. Define one to get started — no timers, no guilt.
         </p>
         <Button
           variant="primary"
@@ -285,19 +246,16 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
       </Button>
 
       <div className="plover-home__list">
-        {goalCards.map(({ goal, progress, isActive }) => (
+        {goalCards.map(({ goal, isActive }) => (
           <GoalCard
             key={goal.id}
             goal={goal}
-            progress={progress}
             isActive={isActive}
             isExpanded={expandedGoalId === goal.id}
             stepsExpanded={stepsExpanded}
             hasTasks={(tasksByGoal[goal.id] ?? []).length > 0}
             steps={activeGoalSteps}
             activeTaskId={activeTaskId}
-            progressPopsEnabled={progressPopsEnabled}
-            pops={pops}
             finishTitle={
               defaultCurrentTask ? `Finish "${defaultCurrentTask.title}"` : 'Finish current task'
             }

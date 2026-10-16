@@ -12,12 +12,9 @@ export async function saveGoalAndTasks(
     | 'status'
     | 'created_at'
     | 'updated_at'
-    | 'scheduled_start'
-    | 'scheduled_end'
     | 'sort_index'
     | 'progress'
   >[],
-  scheduledSlots: { tempIndex: number; start: string; end: string }[],
 ) {
   const { goal, newTasks } = db.transaction(() => {
     const goal = goalsRepo.create({
@@ -31,7 +28,6 @@ export async function saveGoalAndTasks(
 
     const prepared = subtaskInputs.map((taskInput, index) => {
       const taskId = taskIds[index] ?? randomUUID();
-      const slot = scheduledSlots.find((s) => s.tempIndex === index);
 
       const depends_on: string[] = [];
       if (Array.isArray(taskInput.depends_on)) {
@@ -47,7 +43,7 @@ export async function saveGoalAndTasks(
         }
       }
 
-      return { taskInput, taskId, slot, depends_on };
+      return { taskInput, taskId, depends_on };
     });
 
     const created = prepared.map((p) => ({
@@ -58,9 +54,7 @@ export async function saveGoalAndTasks(
         title: p.taskInput.title,
         estimate_minutes: p.taskInput.estimate_minutes,
         depends_on: p.depends_on,
-        scheduled_start: p.slot?.start || undefined,
-        scheduled_end: p.slot?.end || undefined,
-        status: p.slot && p.slot.start ? 'scheduled' : 'todo',
+        status: 'todo',
       }),
     }));
 
@@ -70,11 +64,6 @@ export async function saveGoalAndTasks(
   })();
 
   eventBus.emit('goal.created', goal);
-  for (const t of newTasks) {
-    if (t.scheduled_start) {
-      eventBus.emit('task.scheduled', t);
-    }
-  }
 
   return { goal, tasks: newTasks };
 }
@@ -101,17 +90,6 @@ export function startEventForwarding(
 
   eventBus.on('goal.deleted', (goalId: string) => {
     broadcast('app-event', { type: 'goal.deleted', payload: { goalId } });
-  });
-
-  eventBus.on('task.scheduled', (task: Task) => {
-    broadcast('app-event', {
-      type: 'task.scheduled',
-      payload: {
-        taskId: task.id,
-        start: task.scheduled_start ?? '',
-        end: task.scheduled_end ?? '',
-      },
-    });
   });
 
   eventBus.on('task.completed', (task: Task) => {

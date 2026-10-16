@@ -7,8 +7,6 @@ export interface ProposedPlan {
     title: string;
     estimate_minutes: number;
     depends_on?: string[];
-    scheduled_start?: string;
-    scheduled_end?: string;
   }[];
 }
 
@@ -35,6 +33,7 @@ export interface PloverAPI {
     activityRetentionDays: number;
     planner_useRecentActivityContext: boolean;
     progressPopsEnabled: boolean;
+    stallNudgeEnabled: boolean;
   }>;
   updateSettings(
     settings: Partial<{
@@ -54,6 +53,7 @@ export interface PloverAPI {
       activityRetentionDays: number;
       planner_useRecentActivityContext: boolean;
       progressPopsEnabled: boolean;
+      stallNudgeEnabled: boolean;
     }>,
   ): Promise<{
     googleConnected: boolean;
@@ -72,6 +72,7 @@ export interface PloverAPI {
     activityRetentionDays: number;
     planner_useRecentActivityContext: boolean;
     progressPopsEnabled: boolean;
+    stallNudgeEnabled: boolean;
   }>;
   connectGoogle(): Promise<boolean>;
   disconnectGoogle(): Promise<void>;
@@ -99,7 +100,6 @@ export interface PloverAPI {
     signOut: () => Promise<{ signedIn: boolean; email: string | null }>;
     getStatus: () => Promise<{ signedIn: boolean; email: string | null }>;
   };
-  listActiveWindows(): Promise<{ app: string; title: string }[]>;
   platform: string;
   timer: {
     start(taskId: string | null): Promise<TimerSnapshot>;

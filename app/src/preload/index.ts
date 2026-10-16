@@ -8,8 +8,6 @@ export interface ProposedPlan {
     title: string;
     estimate_minutes: number;
     depends_on?: string[];
-    scheduled_start?: string;
-    scheduled_end?: string;
   }[];
 }
 
@@ -72,6 +70,7 @@ export interface PloverApi {
     activityRetentionDays: number;
     planner_useRecentActivityContext: boolean;
     progressPopsEnabled: boolean;
+    stallNudgeEnabled: boolean;
   }>;
   updateSettings: (
     settings: Partial<{
@@ -91,6 +90,7 @@ export interface PloverApi {
       activityRetentionDays: number;
       planner_useRecentActivityContext: boolean;
       progressPopsEnabled: boolean;
+      stallNudgeEnabled: boolean;
     }>,
   ) => Promise<{
     googleConnected: boolean;
@@ -109,6 +109,7 @@ export interface PloverApi {
     activityRetentionDays: number;
     planner_useRecentActivityContext: boolean;
     progressPopsEnabled: boolean;
+    stallNudgeEnabled: boolean;
   }>;
 
   // Google OAuth (for Docs tracking)
@@ -134,9 +135,6 @@ export interface PloverApi {
   // Companion API
   companion: CompanionApi;
   timer: TimerApi;
-
-  // Window tracking (Phase 2+ — stub returns empty list until implemented)
-  listActiveWindows: () => Promise<{ app: string; title: string }[]>;
 
   // Plover Account (Supabase) API
   auth: {
@@ -217,8 +215,6 @@ const api: PloverApi = {
     stop: () => ipcRenderer.invoke('timer:stop'),
     getSnapshot: () => ipcRenderer.invoke('timer:getSnapshot'),
   },
-
-  listActiveWindows: () => ipcRenderer.invoke('window:list-active'),
 
   // Events
   on: (channel, callback) => {

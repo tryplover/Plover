@@ -2,11 +2,7 @@ import { useState, useEffect } from 'react';
 import { AccountSection, type AuthStatus } from './sections/AccountSection/AccountSection.js';
 import { AppearanceSection } from './sections/AppearanceSection/AppearanceSection.js';
 import { SchedulingSection } from './sections/SchedulingSection/SchedulingSection.js';
-import {
-  ActivityTrackingSection,
-  defaultActivitySettings,
-  type ActivitySettings,
-} from './sections/ActivityTrackingSection/ActivityTrackingSection.js';
+import { Chip } from '../../../components/Chip/Chip.js';
 
 interface SettingsProps {
   'data-testid'?: string;
@@ -18,49 +14,23 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
   // Matches SettingsRepo.getAll()'s default (compact) so the toggle doesn't
   // flash "Full" selected before the async getSettings() call resolves.
   const [companionMode, setCompanionMode] = useState<'full' | 'compact'>('compact');
-  const [progressPopsEnabled, setProgressPopsEnabled] = useState(false);
+  const [stallNudgeEnabled, setStallNudgeEnabled] = useState(true);
   const [authStatus, setAuthStatus] = useState<AuthStatus>({ signedIn: false, email: null });
   const [workingHours, setWorkingHours] = useState({ start: '09:00', end: '18:00' });
   const [horizonDays, setHorizonDays] = useState(14);
   const [pauseScheduling, setPauseScheduling] = useState(false);
-  const [activitySettings, setActivitySettings] =
-    useState<ActivitySettings>(defaultActivitySettings);
-  const [screenPermission, setScreenPermission] = useState<string>('not-determined');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
-  const [activityMessage, setActivityMessage] = useState<string>('');
 
   const fetchSettings = async () => {
     try {
       const settings = await window.api.getSettings();
       setTheme(settings.theme || 'light');
       setCompanionMode(settings.companionMode || 'compact');
-      setProgressPopsEnabled(settings.progressPopsEnabled ?? false);
+      setStallNudgeEnabled(settings.stallNudgeEnabled ?? true);
       setGoogleConnected(settings.googleConnected);
       setWorkingHours(settings.workingHours || { start: '09:00', end: '18:00' });
       setHorizonDays(settings.horizonDays || 14);
       setPauseScheduling(settings.pauseScheduling || false);
-      setActivitySettings({
-        pauseAllTracking: settings.pauseAllTracking ?? defaultActivitySettings.pauseAllTracking,
-        windowTrackingEnabled:
-          settings.windowTrackingEnabled ?? defaultActivitySettings.windowTrackingEnabled,
-        gdocsPollingEnabled:
-          settings.gdocsPollingEnabled ?? defaultActivitySettings.gdocsPollingEnabled,
-        fileWatchingEnabled:
-          settings.fileWatchingEnabled ?? defaultActivitySettings.fileWatchingEnabled,
-        screenCaptureEnabled:
-          settings.screenCaptureEnabled ?? defaultActivitySettings.screenCaptureEnabled,
-        screenCaptureIntervalMinutes:
-          settings.screenCaptureIntervalMinutes ??
-          defaultActivitySettings.screenCaptureIntervalMinutes,
-        screenVisionInferenceEnabled:
-          settings.screenVisionInferenceEnabled ??
-          defaultActivitySettings.screenVisionInferenceEnabled,
-        activityRetentionDays:
-          settings.activityRetentionDays ?? defaultActivitySettings.activityRetentionDays,
-        planner_useRecentActivityContext:
-          settings.planner_useRecentActivityContext ??
-          defaultActivitySettings.planner_useRecentActivityContext,
-      });
     } catch (err) {
       console.error('Failed to fetch settings:', err);
     }
@@ -78,61 +48,12 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchSettings();
-    void window.api.getScreenRecordingStatus().then(setScreenPermission);
     void fetchAuthStatus();
     const unsubscribe = window.api.on('auth:status-changed', (status: unknown) => {
       setAuthStatus(status as AuthStatus);
     });
     return unsubscribe;
   }, []);
-
-  const triggerActivitySave = async (patch: Partial<ActivitySettings>): Promise<void> => {
-    const next = { ...activitySettings, ...patch };
-    setActivitySettings(next);
-    setSaveStatus('saving');
-    try {
-      await window.api.updateSettings(patch);
-      setSaveStatus('saved');
-      setTimeout(() => setSaveStatus('idle'), 1500);
-    } catch (err) {
-      console.error('Failed to update activity settings:', err);
-      setSaveStatus('idle');
-    }
-  };
-
-  const handleScreenCaptureToggle = async (enabled: boolean): Promise<void> => {
-    if (!enabled) {
-      await triggerActivitySave({ screenCaptureEnabled: false });
-      return;
-    }
-    const status = await window.api.requestScreenRecording();
-    setScreenPermission(status);
-    if (status !== 'granted') {
-      setActivityMessage(
-        'Screen Recording permission is required. Open System Settings → Privacy & Security → Screen & System Audio Recording, enable Plover, and then fully restart the app (Cmd+Q).',
-      );
-      return;
-    }
-    setActivityMessage('');
-    await triggerActivitySave({ screenCaptureEnabled: true });
-  };
-
-  const handleWindowTrackingToggle = async (enabled: boolean): Promise<void> => {
-    if (!enabled) {
-      await triggerActivitySave({ windowTrackingEnabled: false });
-      return;
-    }
-    const status = await window.api.requestScreenRecording();
-    setScreenPermission(status);
-    if (status !== 'granted') {
-      setActivityMessage(
-        'Screen Recording permission is required. Open System Settings → Privacy & Security → Screen & System Audio Recording, enable Plover, and then fully restart the app (Cmd+Q).',
-      );
-      return;
-    }
-    setActivityMessage('');
-    await triggerActivitySave({ windowTrackingEnabled: true });
-  };
 
   const triggerAutoSave = async (
     updatedSettings: Partial<{
@@ -142,7 +63,7 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
       pauseScheduling: boolean;
       theme: 'light' | 'dark';
       companionMode: 'full' | 'compact';
-      progressPopsEnabled?: boolean;
+      stallNudgeEnabled?: boolean;
     }>,
   ) => {
     setSaveStatus('saving');
@@ -166,10 +87,10 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
     void triggerAutoSave({ companionMode: newMode });
   };
 
-  const handleProgressPopsToggle = () => {
-    const next = !progressPopsEnabled;
-    setProgressPopsEnabled(next);
-    void triggerAutoSave({ progressPopsEnabled: next });
+  const handleStallNudgeToggle = () => {
+    const next = !stallNudgeEnabled;
+    setStallNudgeEnabled(next);
+    void triggerAutoSave({ stallNudgeEnabled: next });
   };
 
   const handleShowCompanion = () => {
@@ -293,17 +214,46 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
             companionMode={companionMode}
             onCompanionModeChange={handleCompanionModeChange}
             onShowCompanion={handleShowCompanion}
-            progressPopsEnabled={progressPopsEnabled}
-            onProgressPopsToggle={handleProgressPopsToggle}
           />
-
+          <div
+            style={{
+              backgroundColor: 'var(--plover-surface)',
+              borderRadius: 'var(--plover-radius-lg)',
+              padding: '24px',
+            }}
+          >
+            <h2
+              style={{
+                fontSize: '18px',
+                fontWeight: 600,
+                marginBottom: '16px',
+                color: 'var(--plover-text)',
+              }}
+            >
+              Notifications
+            </h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--plover-text)' }}>
+                  Stall nudges
+                </p>
+                <p
+                  style={{ fontSize: '13px', color: 'var(--plover-text-muted)', marginTop: '4px' }}
+                >
+                  A gentle prompt when a goal sits untouched for a day.
+                </p>
+              </div>
+              <Chip selected={stallNudgeEnabled} onClick={handleStallNudgeToggle}>
+                {stallNudgeEnabled ? 'On' : 'Off'}
+              </Chip>
+            </div>
+          </div>
           <AccountSection
             authStatus={authStatus}
             onPloverAccountToggle={() => void handlePloverAccountToggle()}
             googleConnected={googleConnected}
             onConnectGoogle={() => void handleConnectGoogle()}
           />
-
           <SchedulingSection
             workingHours={workingHours}
             onWorkingHoursChange={handleWorkingHoursChange}
@@ -311,16 +261,7 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
             onHorizonChange={handleHorizonChange}
             pauseScheduling={pauseScheduling}
             onPauseSchedulingToggle={handlePauseSchedulingToggle}
-          />
-
-          <ActivityTrackingSection
-            activitySettings={activitySettings}
-            screenPermission={screenPermission}
-            activityMessage={activityMessage}
-            onSave={(patch) => void triggerActivitySave(patch)}
-            onWindowTrackingToggle={(enabled) => void handleWindowTrackingToggle(enabled)}
-            onScreenCaptureToggle={(enabled) => void handleScreenCaptureToggle(enabled)}
-          />
+          />{' '}
         </div>
       </div>
     </div>

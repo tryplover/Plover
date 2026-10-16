@@ -159,15 +159,6 @@
   color: rgba(246, 242, 235, 0.9);
 }
 
-.plover-collapsed__pct {
-  font-family: var(--plover-font-serif);
-  font-size: 23px;
-  font-weight: 400;
-  letter-spacing: -0.46px;
-  color: #f6f2eb;
-  flex-shrink: 0;
-}
-
 .plover-collapsed .plover-status {
   background: none;
   padding: 0;
@@ -184,21 +175,6 @@
 .plover-collapsed .plover-status[data-kind='observing'] .plover-status__label,
 .plover-collapsed .plover-status[data-kind='done'] .plover-status__label {
   color: rgba(159, 225, 203, 0.85);
-}
-
-.plover-collapsed .plover-progress {
-  height: 6px;
-  background: rgba(255, 255, 255, 0.14);
-  border-radius: 3px;
-}
-
-.plover-collapsed .plover-progress__fill {
-  border-radius: 3px;
-}
-
-.plover-collapsed .plover-progress[data-tone='solid'] .plover-progress__fill {
-  background: #f3eee4;
-  opacity: 1;
 }
 
 /* Companion root window sizes. box-sizing: content-box (overriding the
@@ -284,19 +260,4 @@
 
 .plover-collapsed--compact .plover-status__label {
   display: none;
-}
-
-.plover-collapsed--compact .plover-progress {
-  width: 96px;
-  height: 6px;
-  margin: 0;
-  flex-shrink: 0;
-}
-
-.plover-collapsed--compact .plover-collapsed__pct {
-  font-size: 20px;
-  line-height: 1;
-  font-weight: 400;
-  letter-spacing: -0.4px;
-  margin-top: -2px;
 }
