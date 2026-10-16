@@ -1,4 +1,5 @@
 import { Goal, Task, SummaryRow } from './types.js';
+import type { TimerSnapshot } from './timer.js';
 
 export interface FolderEventPayload {
   path: string;
@@ -95,4 +96,10 @@ export interface EventPayloads {
   'github.commit': GitHubCommitPayload;
   'github.pr': GitHubPrPayload;
   'github.review': GitHubReviewPayload;
+  'timer.changed': TimerSnapshot;
+  'timer.work-block-completed': {
+    blocksCompleted: number;
+    taskId: string | null;
+    sessionId: string;
+  };
 }

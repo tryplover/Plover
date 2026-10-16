@@ -127,6 +127,13 @@ export const MIGRATIONS: { version: number; sql: string }[] = [
       UPDATE tasks SET status_changed_at = created_at;
     `,
   },
+  {
+    version: 9,
+    sql: `
+      ALTER TABLE sessions ADD COLUMN phase TEXT NOT NULL DEFAULT 'work';
+      ALTER TABLE sessions ADD COLUMN planned_seconds INTEGER;
+    `,
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {
