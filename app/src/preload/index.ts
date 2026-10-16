@@ -7,8 +7,6 @@ export interface ProposedPlan {
     title: string;
     estimate_minutes: number;
     depends_on?: string[];
-    scheduled_start?: string;
-    scheduled_end?: string;
   }[];
 }
 

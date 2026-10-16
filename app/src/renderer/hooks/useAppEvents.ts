@@ -6,7 +6,6 @@ const DEFAULT_EVENTS = [
   'goal.deleted',
   'task.created',
   'task.updated',
-  'task.scheduled',
   'task.completed',
   'task.deleted',
   'tasks.reordered',
