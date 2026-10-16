@@ -210,43 +210,6 @@
   margin: 0;
 }
 
-.plover-expanded__task-progress {
-  position: relative;
-  display: inline-flex;
-  font-size: 11px;
-  font-weight: 500;
-  color: rgba(183, 228, 199, 0.9);
-  margin-top: 2px;
-}
-
-.plover-expanded__pct {
-  font-family: var(--plover-font-serif);
-  font-size: 34px;
-  font-weight: 400;
-  letter-spacing: -0.68px;
-  color: #f6f2eb;
-  line-height: 1;
-  flex-shrink: 0;
-}
-
-.plover-expanded__segments {
-  display: flex;
-  gap: 5px;
-  width: 100%;
-}
-
-.plover-expanded__segments span {
-  flex: 1;
-  height: 7px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.14);
-  transition: background-color var(--plover-duration-normal);
-}
-
-.plover-expanded__segments span[data-filled='true'] {
-  background: #f3eee4;
-}
-
 .plover-expanded__steps {
   list-style: none;
   padding: 6px 17px 8px;

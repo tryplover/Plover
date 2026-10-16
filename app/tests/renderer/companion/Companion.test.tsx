@@ -19,7 +19,6 @@ describe('Companion', () => {
     const view: CompanionView = {
       kind: 'observing',
       task: null,
-      progress: 0.65,
       steps: [],
     };
     expect(view.kind).toBe('observing');
@@ -30,7 +29,6 @@ describe('Companion', () => {
     const view: CompanionView = {
       kind: 'paused',
       task: null,
-      progress: 0.65,
       steps: [],
     };
     expect(view.kind).toBe('paused');
@@ -40,62 +38,52 @@ describe('Companion', () => {
     const view: CompanionView = {
       kind: 'done',
       task: null,
-      progress: 1.0,
       steps: [],
     };
     expect(view.kind).toBe('done');
-    expect(view.progress).toBe(1.0);
   });
 
   it('not-sure state can be assigned', () => {
     const view: CompanionView = {
       kind: 'not-sure',
       task: null,
-      progress: 0.5,
       steps: [],
     };
     expect(view.kind).toBe('not-sure');
   });
 
   describe('state transitions', () => {
-    it('observing state has mint pulsing dot and mint progress', () => {
+    it('observing state has mint pulsing dot', () => {
       const view: CompanionView = {
         kind: 'observing',
         task: null,
-        progress: 0.65,
         steps: [],
       };
       expect(view.kind).toBe('observing');
-      expect(view.progress).toBe(0.65);
     });
 
     it('paused state has neutral styling and includes resume button trigger', () => {
       const view: CompanionView = {
         kind: 'paused',
         task: null,
-        progress: 0.4,
         steps: [],
       };
       expect(view.kind).toBe('paused');
-      expect(view.progress).toBe(0.4);
     });
 
-    it('done state shows 100% progress and check icon', () => {
+    it('done state shows check icon', () => {
       const view: CompanionView = {
         kind: 'done',
         task: null,
-        progress: 1.0,
         steps: [],
       };
       expect(view.kind).toBe('done');
-      expect(view.progress).toBe(1.0);
     });
 
     it('not-sure state triggers verify workflow', () => {
       const view: CompanionView = {
         kind: 'not-sure',
         task: null,
-        progress: 0.5,
         steps: [],
       };
       expect(view.kind).toBe('not-sure');
@@ -105,7 +93,6 @@ describe('Companion', () => {
       const view: CompanionView = {
         kind: 'observing',
         task: null,
-        progress: 0.65,
         steps: [
           { id: 's1', label: 'Step 1', done: false, current: false },
           { id: 's2', label: 'Step 2', done: false, current: false },
@@ -121,7 +108,6 @@ describe('Companion', () => {
       const view: CompanionView = {
         kind: 'observing',
         task: null,
-        progress: 0.3,
         steps: [
           { id: 's1', label: 'Step 1', done: false, current: false },
           { id: 's2', label: 'Step 2', done: false, current: true },
@@ -138,7 +124,6 @@ describe('Companion', () => {
       const view: CompanionView = {
         kind: 'done',
         task: null,
-        progress: 1.0,
         steps: [
           { id: 's1', label: 'Step 1', done: true, current: false },
           { id: 's2', label: 'Step 2', done: true, current: false },

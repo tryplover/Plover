@@ -51,7 +51,7 @@ describe('useCompanionState', () => {
     mockWindowApi.api.getTasksByGoal.mockResolvedValue([]);
   });
 
-  it('picks the current task and builds steps/progress on mount', async () => {
+  it('picks the current task and builds steps on mount', async () => {
     const tasks: Task[] = [
       makeTask({
         id: 'task-1',
@@ -78,7 +78,6 @@ describe('useCompanionState', () => {
     });
 
     expect(result.current.steps).toHaveLength(2);
-    expect(result.current.progress).toBe(0.5);
     const [s0, s1] = result.current.steps;
     expect(s0?.done).toBe(true);
     expect(s1?.current).toBe(true);
@@ -95,7 +94,6 @@ describe('useCompanionState', () => {
 
     expect(result.current.task).toBeNull();
     expect(result.current.steps).toEqual([]);
-    expect(result.current.progress).toBe(0);
   });
 
   it('updates kind when a companion:state event fires', async () => {
