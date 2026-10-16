@@ -107,7 +107,6 @@ describe('Onboarding', () => {
     fireEvent.click(screen.getByTestId('btn-get-started'));
     fireEvent.click(await screen.findByTestId('btn-usecase-continue'));
     fireEvent.click(await screen.findByTestId('btn-promise-continue'));
-    fireEvent.click(await screen.findByTestId('btn-grant-settings'));
     fireEvent.click(await screen.findByTestId('btn-lets-go'));
 
     expect(await screen.findByTestId('step-guided-carousel')).toBeTruthy();
@@ -138,7 +137,7 @@ describe('Onboarding', () => {
     });
   });
 
-  it('renders and walks through the 10-step wizard successfully', async () => {
+  it('renders and walks through the 6-step wizard successfully', async () => {
     render(<Onboarding onComplete={mockOnComplete} />);
 
     // Step 0: Welcome Screen
@@ -166,21 +165,14 @@ describe('Onboarding', () => {
     const promiseContinueBtn = screen.getByTestId('btn-promise-continue');
     fireEvent.click(promiseContinueBtn);
 
-    // Step 3: Permission Screen
-    expect(await screen.findByTestId('step-permission')).toBeTruthy();
-    expect(screen.getByText("Now, let's turn it on.")).toBeTruthy();
-
-    const grantSettingsBtn = screen.getByTestId('btn-grant-settings');
-    fireEvent.click(grantSettingsBtn);
-
-    // Step 4: Interstitial
+    // Step 3: Interstitial
     expect(await screen.findByTestId('step-interstitial')).toBeTruthy();
     expect(screen.getByText("Now let's start your first task.")).toBeTruthy();
 
     const letsGoBtn = screen.getByTestId('btn-lets-go');
     fireEvent.click(letsGoBtn);
 
-    // Step 5: Guided Task Walkthrough Carousel
+    // Step 4: Guided Task Walkthrough Carousel
     expect(await screen.findByTestId('step-guided-carousel')).toBeTruthy();
 
     // Slide 0: What are you working on?
@@ -233,6 +225,22 @@ describe('Onboarding', () => {
       expect(mockSaveGoalAndTasks).not.toHaveBeenCalled();
       expect(mockOnComplete).toHaveBeenCalled();
     });
+
+    expect(mockRequestScreenRecording).not.toHaveBeenCalled();
+    expect(mockOpenScreenRecordingSettings).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('step-permission')).toBeNull();
+  });
+
+  it('goes back from the interstitial to the promise step', async () => {
+    render(<Onboarding onComplete={mockOnComplete} />);
+
+    fireEvent.click(screen.getByTestId('btn-get-started'));
+    fireEvent.click(await screen.findByTestId('btn-usecase-continue'));
+    fireEvent.click(await screen.findByTestId('btn-promise-continue'));
+    expect(await screen.findByTestId('step-interstitial')).toBeTruthy();
+
+    fireEvent.click(screen.getByText('Back'));
+    expect(await screen.findByTestId('step-promise')).toBeTruthy();
   });
 
   it('allows backing navigation', async () => {
