@@ -126,7 +126,7 @@ export function CarouselMockup({ slideIndex }: CarouselMockupProps) {
               className="plover-onboarding__mockup-btn-primary"
               style={{ cursor: 'default' }}
             >
-              Start tracking →
+              Add step →
             </button>
           </div>
         </div>
