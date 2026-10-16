@@ -22,21 +22,10 @@ beforeEach(() => {
         pauseScheduling: false,
         theme: 'light',
         stallNudgeEnabled: true,
-        pauseAllTracking: false,
         windowTrackingEnabled: true,
-        gdocsPollingEnabled: true,
-        fileWatchingEnabled: true,
-        screenCaptureEnabled: false,
-        screenCaptureIntervalMinutes: 5,
-        screenVisionInferenceEnabled: false,
-        activityRetentionDays: 30,
-        planner_useRecentActivityContext: true,
+        screenCaptureEnabled: true,
       }),
       updateSettings: vi.fn().mockResolvedValue(undefined),
-      getScreenRecordingStatus: vi.fn().mockResolvedValue('not-determined'),
-      requestScreenRecording: vi.fn().mockResolvedValue('not-determined'),
-      openScreenRecordingSettings: vi.fn().mockResolvedValue(undefined),
-      purgeActivity: vi.fn().mockResolvedValue({ deleted: 0 }),
       auth: {
         getStatus: mockAuthGetStatus,
         signIn: mockAuthSignIn,
@@ -69,18 +58,20 @@ describe('Settings', () => {
     expect(window.api.updateSettings).toHaveBeenCalledWith({ theme: 'dark' });
   });
 
-  it('toggles progress pops', async () => {
+  it('shows no tracking or progress-pops controls', async () => {
     render(<Settings />);
     expect(await screen.findByRole('heading', { name: 'Appearance' })).toBeTruthy();
-    const progressPopsLabel = screen.getByText('Progress pops');
-    const row = progressPopsLabel.parentElement?.parentElement;
-    expect(row).toBeTruthy();
-    const progressPopsChip = within(row as HTMLElement).getByRole('button');
     await act(async () => {
-      fireEvent.click(progressPopsChip);
       await Promise.resolve();
     });
-    expect(window.api.updateSettings).toHaveBeenCalledWith({ progressPopsEnabled: true });
+    expect(window.api.getSettings).toHaveBeenCalled();
+    expect(screen.queryByText(/Activity tracking|Screen capture|Progress pops/i)).toBeNull();
+  });
+
+  it('keeps the stall nudge card and sign-in control', async () => {
+    render(<Settings />);
+    expect(await screen.findByText('Stall nudges')).toBeTruthy();
+    expect(await screen.findByRole('button', { name: 'Sign in with Google' })).toBeTruthy();
   });
 
   it('toggles stall nudges off when they are on', async () => {

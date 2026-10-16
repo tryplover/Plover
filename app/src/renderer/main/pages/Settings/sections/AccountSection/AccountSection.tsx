@@ -93,17 +93,6 @@ export function AccountSection({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--plover-text)' }}>Google</p>
-          {googleConnected && (
-            <p
-              style={{
-                fontSize: '13px',
-                color: 'var(--plover-text-muted)',
-                marginTop: '4px',
-              }}
-            >
-              Connect Google to enable Docs progress tracking.
-            </p>
-          )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           {googleConnected && (
