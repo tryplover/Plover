@@ -140,6 +140,7 @@ describe('TimerService', () => {
 
   it('keeps ticking when a timer.changed listener throws during start', () => {
     vi.useFakeTimers();
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     let thrown = false;
     bus.on('timer.changed', () => {
       if (!thrown) {
@@ -147,10 +148,12 @@ describe('TimerService', () => {
         throw new Error('listener failed');
       }
     });
-    expect(() => service.start(null)).toThrow('listener failed');
+    expect(() => service.start(null)).not.toThrow();
+    expect(errorSpy).toHaveBeenCalledWith('[Timer] listener failed:', expect.any(Error));
     expect(vi.getTimerCount()).toBe(1);
     service.stop();
     expect(vi.getTimerCount()).toBe(0);
+    errorSpy.mockRestore();
   });
 
   it('runs no interval while idle', () => {
@@ -277,5 +280,23 @@ describe('TimerService', () => {
     nowMs -= 5 * MIN;
     service.tick();
     expect(Math.abs(service.snapshot().remainingSeconds - before)).toBeLessThanOrEqual(1);
+  });
+
+  it('a throwing listener does not stop the rest of the tick or the timer', () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    bus.on('timer.work-block-completed', () => {
+      throw new Error('listener boom');
+    });
+    service.start(null);
+    changed.length = 0;
+    expect(() => advance(25 * MIN)).not.toThrow();
+    expect(errorSpy).toHaveBeenCalledWith('[Timer] listener failed:', expect.any(Error));
+    expect(service.snapshot().phase).toBe('shortBreak');
+    expect(service.snapshot().plannedSeconds).toBe(300);
+    expect(changed.at(-1)?.phase).toBe('shortBreak');
+    expect(completed).toHaveLength(1);
+    advance(5 * MIN);
+    expect(service.snapshot().phase).toBe('work');
+    errorSpy.mockRestore();
   });
 });

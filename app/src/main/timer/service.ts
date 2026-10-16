@@ -86,8 +86,16 @@ export class TimerService {
   private apply(transition: TimerTransition): void {
     const changed = transition.state !== this.state || transition.events.length > 0;
     this.state = transition.state;
-    for (const event of transition.events) this.handle(event);
-    if (changed) this.deps.bus.emit('timer.changed', this.snapshot());
+    for (const event of transition.events) this.guarded(() => this.handle(event));
+    if (changed) this.guarded(() => this.deps.bus.emit('timer.changed', this.snapshot()));
+  }
+
+  private guarded(fn: () => void): void {
+    try {
+      fn();
+    } catch (err) {
+      console.error('[Timer] listener failed:', err);
+    }
   }
 
   private handle(event: TimerEvent): void {
@@ -108,11 +116,13 @@ export class TimerService {
         phase: 'work',
         planned_seconds: this.blockPlannedSeconds,
       });
-      this.deps.bus.emit('timer.work-block-completed', {
-        blocksCompleted: event.blocksCompleted,
-        taskId,
-        sessionId: session.id,
-      });
+      this.guarded(() =>
+        this.deps.bus.emit('timer.work-block-completed', {
+          blocksCompleted: event.blocksCompleted,
+          taskId,
+          sessionId: session.id,
+        }),
+      );
     } else if (event.type === 'stopped') {
       this.clearInterval();
       this.taskId = null;
