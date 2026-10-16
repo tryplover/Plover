@@ -189,7 +189,7 @@ if (!gotTheLock) {
     });
     stallNudgeEngine.start();
 
-    // Initialize all activity monitoring subsystems (trackers, retention)
+    // Start the remaining activity subsystems (bus subscribers, inference, commit matching, retention)
     await initActivityMonitoring();
 
     createMainWindow();
