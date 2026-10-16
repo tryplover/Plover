@@ -26,7 +26,6 @@ describe('saveGoalAndTasks', () => {
         { title: 'Learn alphabet', estimate_minutes: 30 },
         { title: 'Learn greetings', estimate_minutes: 45, depends_on: ['0'] },
       ],
-      [],
     );
 
     expect(result.goal.title).toBe('Learn French');
@@ -68,13 +67,35 @@ describe('saveGoalAndTasks', () => {
           { title: 'Step 1', estimate_minutes: 15 },
           { title: 'Step 2', estimate_minutes: 15 },
         ],
-        [],
       ),
     ).rejects.toThrow('simulated task insert failure');
 
     expect(countRows('goals')).toBe(before.goals);
     expect(countRows('tasks')).toBe(before.tasks);
     expect(emitSpy).not.toHaveBeenCalledWith('goal.created', expect.anything());
+  });
+});
+
+describe('saveGoalAndTasks without scheduling', () => {
+  it('creates unscheduled todo tasks ordered by plan position', async () => {
+    const result = await saveGoalAndTasks(
+      { title: 'Unscheduled goal', description: '', deadline: undefined },
+      [
+        { title: 'First', estimate_minutes: 20 },
+        { title: 'Second', estimate_minutes: 25 },
+      ],
+    );
+
+    expect(result.tasks).toHaveLength(2);
+    for (const t of result.tasks) {
+      expect(t.status).toBe('todo');
+      expect(t.scheduled_start).toBeFalsy();
+    }
+    const persisted = tasksRepo.listByGoal(result.goal.id);
+    expect(persisted.map((t) => [t.title, t.sort_index])).toEqual([
+      ['First', 0],
+      ['Second', 1],
+    ]);
   });
 });
 
@@ -87,7 +108,6 @@ describe('deleteGoalAndTasks', () => {
     const { goal } = await saveGoalAndTasks(
       { title: 'Goal to delete', description: '', deadline: undefined },
       [{ title: 'Only task', estimate_minutes: 10 }],
-      [],
     );
 
     await deleteGoalAndTasks(goal.id);
@@ -100,7 +120,6 @@ describe('deleteGoalAndTasks', () => {
     const { goal } = await saveGoalAndTasks(
       { title: 'Goal that resists deletion', description: '', deadline: undefined },
       [{ title: 'Stubborn task', estimate_minutes: 10 }],
-      [],
     );
     const emitSpy = vi.spyOn(eventBus, 'emit');
 

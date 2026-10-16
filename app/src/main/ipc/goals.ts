@@ -1,8 +1,6 @@
 import { ipcMain, BrowserWindow } from 'electron';
-import { Task } from '@shared/types.js';
 import { goalsRepo, settingsRepo, activityRepo } from '../store/index.js';
 import { decomposeGoal } from '../planner/decompose.js';
-import { scheduleTasks } from '../planner/schedule.js';
 import { saveGoalAndTasks, deleteGoalAndTasks } from '../planner/goal-manager.js';
 import { ProposedPlan } from '../../preload/index.js';
 import { SettingsData } from '../store/repos/settings.js';
@@ -40,50 +38,18 @@ export function registerGoalsHandlers(getOverlayWindow: () => BrowserWindow | nu
       ...(recentActivity ? { recentActivity } : {}),
     });
 
-    const mockTasks: Task[] = result.subtasks.map((t, idx) => ({
-      id: `temp-${idx}`,
-      goal_id: 'temp-goal',
-      title: t.title,
-      estimate_minutes: t.estimate_minutes,
-      depends_on: t.depends_on,
-      status: 'todo',
-      sort_index: idx,
-      progress: 0,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }));
-
-    const slots = await scheduleTasks({
-      tasks: mockTasks,
-      workingHours: settings.workingHours,
-      horizonDays: settings.horizonDays,
-    });
-
-    const subtasksWithSlots = result.subtasks.map((t, idx) => {
-      const slot = slots.find((s) => s.taskId === `temp-${idx}`);
-      return {
+    return {
+      goal: result.goal,
+      subtasks: result.subtasks.map((t) => ({
         title: t.title,
         estimate_minutes: t.estimate_minutes,
         depends_on: t.depends_on || [],
-        scheduled_start: slot?.start.toISOString(),
-        scheduled_end: slot?.end.toISOString(),
-      };
-    });
-
-    return {
-      goal: result.goal,
-      subtasks: subtasksWithSlots,
+      })),
     };
   });
 
   ipcMain.handle('goal:commit', async (_event, plan: ProposedPlan): Promise<{ goalId: string }> => {
-    const slotsForSave = plan.subtasks.map((task, idx) => ({
-      tempIndex: idx,
-      start: task.scheduled_start || '',
-      end: task.scheduled_end || '',
-    }));
-
-    const result = await saveGoalAndTasks(plan.goal, plan.subtasks, slotsForSave);
+    const result = await saveGoalAndTasks(plan.goal, plan.subtasks);
 
     const overlayWin = getOverlayWindow();
     if (overlayWin) {

@@ -12,6 +12,7 @@ import { ipcMain } from 'electron';
 import { ProposedPlan } from '../../src/preload/index';
 import { BrowserWindow } from 'electron';
 import * as nodeFs from 'node:fs';
+import { scheduleTasks } from '../../src/main/planner/schedule';
 
 const { mockSupabaseAuth } = vi.hoisted(() => {
   return {
@@ -121,6 +122,9 @@ describe('IPC Handlers', () => {
     expect(result.goal.title).toBe('Write an essay on octopuses');
     expect(result.subtasks.length).toBeGreaterThan(0);
     expect(result.subtasks[0]?.title).toBe('Research and gather sources');
+    expect(scheduleTasks).not.toHaveBeenCalled();
+    expect(result.subtasks[0]).not.toHaveProperty('scheduled_start');
+    expect(result.subtasks[0]).not.toHaveProperty('scheduled_end');
   });
 
   it('handles goal:commit by saving and hiding the window', async () => {
@@ -134,9 +138,7 @@ describe('IPC Handlers', () => {
     ) => Promise<{ goalId: string }>;
     const plan: ProposedPlan = {
       goal: { title: 'Test Goal', description: 'desc', deadline: '2026-06-01' },
-      subtasks: [
-        { title: 'Subtask 1', estimate_minutes: 30, scheduled_start: '...', scheduled_end: '...' },
-      ],
+      subtasks: [{ title: 'Subtask 1', estimate_minutes: 30 }],
     };
 
     const result = await handler({}, plan);

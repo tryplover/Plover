@@ -84,6 +84,35 @@ describe('useCompanionState', () => {
     expect(s1?.current).toBe(true);
   });
 
+  it('orders steps by sort_index, not scheduled_start', async () => {
+    const tasks: Task[] = [
+      makeTask({
+        id: 'task-a',
+        goal_id: 'goal-1',
+        title: 'Step A',
+        sort_index: 0,
+        scheduled_start: '2026-06-20T10:00:00Z',
+      }),
+      makeTask({
+        id: 'task-b',
+        goal_id: 'goal-1',
+        title: 'Step B',
+        sort_index: 1,
+        scheduled_start: '2026-06-20T09:00:00Z',
+      }),
+    ];
+    mockWindowApi.api.getTasks.mockResolvedValue(tasks);
+    mockWindowApi.api.getTasksByGoal.mockResolvedValue(tasks);
+
+    const { result } = renderHook(() => useCompanionState());
+
+    await waitFor(() => {
+      expect(result.current.steps).toHaveLength(2);
+    });
+
+    expect(result.current.steps.map((s) => s.id)).toEqual(['task-a', 'task-b']);
+  });
+
   it('reports no task when there are no tasks', async () => {
     mockWindowApi.api.getTasks.mockResolvedValue([]);
 

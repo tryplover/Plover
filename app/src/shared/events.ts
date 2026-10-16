@@ -80,7 +80,6 @@ export interface EventPayloads {
   'goal.deleted': string;
   'task.created': { task: Task };
   'task.updated': { task: Task };
-  'task.scheduled': Task;
   'task.completed': Task;
   'task.deleted': { id: string };
   'tasks.reordered': { goal_id: string; orderedIds: string[] };

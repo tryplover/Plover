@@ -21,8 +21,6 @@ interface EditableSubtask {
   title: string;
   estimate_minutes: number;
   depends_on?: string[];
-  scheduled_start?: string;
-  scheduled_end?: string;
 }
 
 function toEditableSubtasks(plan: ProposedPlan): EditableSubtask[] {
@@ -129,8 +127,6 @@ export function StepBreakdown({ draft, plan, onBack, onNext, variant }: Props) {
       title: st.title.trim() || 'Untitled step',
       estimate_minutes: st.estimate_minutes,
       ...(st.depends_on ? { depends_on: st.depends_on } : {}),
-      ...(st.scheduled_start ? { scheduled_start: st.scheduled_start } : {}),
-      ...(st.scheduled_end ? { scheduled_end: st.scheduled_end } : {}),
     }));
     onNext({
       goal: { title: goalTitle || draft.text },
