@@ -1,13 +1,12 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { AnimatePresence, motion, ploverDuration, ploverEasing } from '../../lib/motion';
 import { Stepper } from '../steps/Stepper/Stepper';
 import { StepName } from '../steps/StepName/StepName';
 import { StepBreakdown } from '../steps/StepBreakdown/StepBreakdown';
-import { StepConnect } from '../steps/StepConnect/StepConnect';
 import type { ProposedPlan } from '../../../preload';
 import './SetupFlow.css';
 
-type Step = 'name' | 'breakdown' | 'connect' | 'committed';
+type Step = 'name' | 'breakdown' | 'committed';
 
 export function SetupFlow({
   variant = 'overlay' as const,
@@ -22,6 +21,7 @@ export function SetupFlow({
     frequency: 'one-off',
   });
   const [plan, setPlan] = useState<ProposedPlan | null>(null);
+  const committingRef = useRef(false);
 
   const close = () => {
     if (onClose) {
@@ -80,21 +80,19 @@ export function SetupFlow({
               variant={variant}
               onBack={() => setStep('name')}
               onNext={(p) => {
-                setPlan(p);
-                setStep('connect');
-              }}
-            />
-          </motion.div>
-        )}
-        {step === 'connect' && plan && (
-          <motion.div key="connect" {...slide()}>
-            <StepConnect
-              plan={plan}
-              variant={variant}
-              onBack={() => setStep('breakdown')}
-              onNext={() => {
-                setStep('committed');
-                setTimeout(close, 800);
+                if (committingRef.current) return;
+                committingRef.current = true;
+                window.api
+                  .commitGoal(p)
+                  .then(() => {
+                    setPlan(p);
+                    setStep('committed');
+                    setTimeout(close, 800);
+                  })
+                  .catch((err) => {
+                    committingRef.current = false;
+                    console.error('Failed to commit goal:', err);
+                  });
               }}
             />
           </motion.div>
@@ -105,7 +103,7 @@ export function SetupFlow({
           </motion.div>
         )}
       </AnimatePresence>
-      <Stepper current={step === 'name' ? 1 : step === 'breakdown' ? 2 : 3} />
+      <Stepper current={step === 'name' ? 1 : 2} />
     </div>
   );
 }
