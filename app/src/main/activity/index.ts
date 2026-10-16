@@ -1,4 +1,3 @@
-import { app } from 'electron';
 import { WindowTracker } from './sources/system/window-tracker/index.js';
 import {
   createActivitySubscribers,
@@ -6,7 +5,6 @@ import {
 } from './sources/activity-subscriber.js';
 import { GOOGLE_SUBSCRIBER_SPECS } from './sources/google/subscribers.js';
 import { GITHUB_SUBSCRIBER_SPECS } from './sources/github/subscribers.js';
-import { ScreenCapturer } from './sources/system/screen-capturer/index.js';
 import { FolderWatcher } from './sources/system/folder-watcher/index.js';
 import { InferenceEngine } from './processing/inference/index.js';
 import { GitCommitTracker } from './sources/git/git-commit-tracker/index.js';
@@ -17,7 +15,6 @@ import { eventBus } from '../events/bus.js';
 
 let windowTracker: WindowTracker | null = null;
 let busSubscribers: ActivitySubscriberGroup | null = null;
-let screenCapturer: ScreenCapturer | null = null;
 let folderWatcher: FolderWatcher | null = null;
 let inferenceEngine: InferenceEngine | null = null;
 let gitCommitTracker: GitCommitTracker | null = null;
@@ -44,14 +41,8 @@ export async function initActivityMonitoring(): Promise<void> {
     busSubscribers.start();
   }
 
-  if ((process.platform === 'darwin' || process.platform === 'win32') && !screenCapturer) {
-    screenCapturer = new ScreenCapturer({
-      activityRepo,
-      settingsRepo,
-      userDataDir: app.getPath('userData'),
-    });
-    screenCapturer.start();
-  }
+  // Screen capture and Vision stay off in the buddy pivot, even for profiles that saved the old
+  // flags. ScreenCapturer is kept for possible opt-in reuse; wire it back here deliberately.
 
   if (!folderWatcher) {
     folderWatcher = new FolderWatcher(activityRepo, settingsRepo, eventBus);
@@ -123,10 +114,6 @@ export function stopActivityMonitoring(): void {
   if (busSubscribers) {
     busSubscribers.stop();
     busSubscribers = null;
-  }
-  if (screenCapturer) {
-    screenCapturer.stop();
-    screenCapturer = null;
   }
   if (retentionIntervalId) {
     clearInterval(retentionIntervalId);
