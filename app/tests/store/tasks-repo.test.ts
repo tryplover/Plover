@@ -48,3 +48,63 @@ describe('TasksRepo.delete', () => {
     expect(tasks.get('a')).toBeNull();
   });
 });
+
+describe('TasksRepo status_changed_at', () => {
+  it('starts at created_at on insert', () => {
+    const { tasks, goals } = makeRepos();
+    const goal = goals.create({ title: 'g', description: '', status: 'active' });
+    const task = tasks.create({
+      id: 'a',
+      goal_id: goal.id,
+      title: 'a',
+      estimate_minutes: 10,
+      status: 'todo',
+    });
+    const row = tasks.listStallInputs().find((r) => r.id === 'a');
+    expect(row?.status_changed_at).toBe(task.created_at);
+  });
+
+  it('setManualStatus sets status and status_changed_at to the given time', () => {
+    const { tasks, goals } = makeRepos();
+    const goal = goals.create({ title: 'g', description: '', status: 'active' });
+    tasks.create({ id: 'a', goal_id: goal.id, title: 'a', estimate_minutes: 10, status: 'todo' });
+    const at = new Date('2026-10-13T09:30:00.000Z');
+
+    const updated = tasks.setManualStatus('a', 'in_progress', at);
+
+    expect(updated.status).toBe('in_progress');
+    expect(tasks.get('a')?.status).toBe('in_progress');
+    expect(tasks.listStallInputs()).toEqual([
+      {
+        id: 'a',
+        goal_id: goal.id,
+        status: 'in_progress',
+        status_changed_at: at.toISOString(),
+      },
+    ]);
+  });
+
+  it('setManualStatus throws for an unknown task id', () => {
+    const { tasks } = makeRepos();
+    expect(() => tasks.setManualStatus('missing', 'done', new Date())).toThrow(/not found/);
+  });
+
+  it('update does not touch status_changed_at', () => {
+    const { tasks, goals } = makeRepos();
+    const goal = goals.create({ title: 'g', description: '', status: 'active' });
+    const task = tasks.create({
+      id: 'a',
+      goal_id: goal.id,
+      title: 'a',
+      estimate_minutes: 10,
+      status: 'todo',
+    });
+
+    tasks.update('a', { status: 'done' });
+
+    expect(tasks.get('a')?.status).toBe('done');
+    expect(tasks.listStallInputs().find((r) => r.id === 'a')?.status_changed_at).toBe(
+      task.created_at,
+    );
+  });
+});
