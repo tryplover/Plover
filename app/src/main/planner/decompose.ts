@@ -7,7 +7,6 @@ import { authedFetch } from '../http/authed-fetch.js';
 export async function decomposeGoal(input: {
   goalText: string;
   now: Date;
-  workingHours: { start: string; end: string };
 }): Promise<{
   goal: Omit<Goal, 'id' | 'created_at' | 'updated_at' | 'status'>;
   subtasks: Omit<
@@ -26,7 +25,6 @@ export async function decomposeGoal(input: {
   const body: Record<string, unknown> = {
     goalText: input.goalText,
     now: input.now.toISOString(),
-    workingHours: input.workingHours,
   };
 
   const response = await authedFetch('/api/decompose', {

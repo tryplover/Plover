@@ -39,7 +39,7 @@ describe('decomposeGoal', () => {
         return (
           body.goalText === 'Learn French in a week' &&
           body.now === '2026-05-24T12:00:00.000Z' &&
-          body.workingHours.start === '09:00'
+          body.workingHours === undefined
         );
       })
       .reply(200, {
@@ -58,7 +58,6 @@ describe('decomposeGoal', () => {
     const result = await decomposeGoal({
       goalText: 'Learn French in a week',
       now: new Date('2026-05-24T12:00:00Z'),
-      workingHours: { start: '09:00', end: '18:00' },
     });
 
     expect(result.goal.title).toBe('Learn French');
@@ -97,7 +96,6 @@ describe('decomposeGoal', () => {
     const result = await decomposeGoal({
       goalText: 'Auth Goal',
       now: new Date(),
-      workingHours: { start: '09:00', end: '18:00' },
     });
 
     expect(result.goal.title).toBe('Auth Goal');
@@ -115,7 +113,6 @@ describe('decomposeGoal', () => {
     const result = await decomposeGoal({
       goalText: 'Mystery goal',
       now: new Date('2026-05-24T12:00:00Z'),
-      workingHours: { start: '09:00', end: '18:00' },
     });
 
     expect(result.goal.deadline).toBe('not-a-date'); // Defer validation to main process date parsers, or keep it if format allowed
@@ -136,7 +133,6 @@ describe('decomposeGoal', () => {
     const result = await decomposeGoal({
       goalText: 'Quick Goal',
       now: new Date(),
-      workingHours: { start: '09:00', end: '18:00' },
     });
 
     expect(result.subtasks[0]?.estimate_minutes).toBe(15);
@@ -159,7 +155,6 @@ describe('decomposeGoal', () => {
     const result = await decomposeGoal({
       goalText: 'Complex Goal',
       now: new Date(),
-      workingHours: { start: '09:00', end: '18:00' },
     });
 
     expect(result.subtasks[0]?.depends_on).toBeUndefined();
@@ -174,7 +169,6 @@ describe('decomposeGoal', () => {
       decomposeGoal({
         goalText: 'Fail Goal',
         now: new Date(),
-        workingHours: { start: '09:00', end: '18:00' },
       }),
     ).rejects.toThrow('Goal decomposition failed: Gemini server is overloaded');
   });
@@ -186,12 +180,11 @@ describe('decomposeGoal', () => {
       decomposeGoal({
         goalText: 'Fail Goal',
         now: new Date(),
-        workingHours: { start: '09:00', end: '18:00' },
       }),
     ).rejects.toThrow('Invalid response payload returned from decomposition backend');
   });
 
-  it('sends only goal text, time, and working hours', async () => {
+  it('sends only goal text and time', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -203,11 +196,10 @@ describe('decomposeGoal', () => {
     await decomposeGoal({
       goalText: 'Finish doc',
       now: new Date('2026-06-25T12:00:00.000Z'),
-      workingHours: { start: '09:00', end: '18:00' },
     });
     const [firstCall] = fetchMock.mock.calls;
     const body = JSON.parse(firstCall?.[1]?.body ?? '{}') as Record<string, unknown>;
-    expect(Object.keys(body).sort()).toEqual(['goalText', 'now', 'workingHours']);
+    expect(Object.keys(body).sort()).toEqual(['goalText', 'now']);
     vi.unstubAllGlobals();
   });
 });
