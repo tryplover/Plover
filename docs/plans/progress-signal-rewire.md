@@ -1,5 +1,7 @@
 # Plan: rewire the progress signal (judge → scoreboard)
 
+> **Status: paused by the desktop buddy pivot (2026-10-10 sweep). Do not implement.**
+
 ## Context
 
 Plover computes a continuous, AI-estimated per-task progress number
