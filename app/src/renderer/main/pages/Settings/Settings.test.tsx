@@ -69,8 +69,7 @@ describe('Settings', () => {
   it('shows working hours and no horizon or pause scheduling controls', async () => {
     render(<Settings />);
     expect(await screen.findByRole('heading', { name: 'Working hours' })).toBeTruthy();
-    expect(screen.queryByText('Horizon')).toBeNull();
-    expect(screen.queryByText('Pause scheduling')).toBeNull();
+    expect(screen.queryByText(/horizon|scheduling/i)).toBeNull();
   });
 
   it('saves working hours when the start time changes', async () => {

@@ -28,7 +28,7 @@
 4. `app/src/renderer/global.d.ts` and `app/src/preload/index.ts`: remove `horizonDays` and `pauseScheduling` from the settings types (each appears in several places; remove all of them).
 5. `app/src/main/store/repos/settings.ts`: remove `horizonDays` from the interface, `getAll()` (the `map.get('horizonDays')` read and the returned field), and the `update` branch. Leave `pauseScheduling` alone.
 6. `app/tests/renderer/App.test.tsx`, `app/tests/renderer/main/pages/Home.test.tsx`: remove `horizonDays` and `pauseScheduling` from mocked settings objects if present.
-7. grep check: `grep -rn "horizonDays\|Horizon\|Pause scheduling" app/src app/tests` must show only the seed `INSERT` in `app/src/main/store/db.ts`, plus frozen `planner/schedule.ts` and its test.
+7. grep check: `grep -rn "horizonDays\|Horizon\|Pause scheduling" app/src app/tests` must show only the seed `INSERT` in `app/src/main/store/db.ts`, plus frozen `planner/schedule.ts` and its test, plus the negative assertions in Settings.test.tsx and settings-repo.test.ts.
 
 ## Tests
 
