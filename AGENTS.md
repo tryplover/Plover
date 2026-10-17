@@ -22,7 +22,7 @@ Frozen (leave in place, do not extend or build on): activity monitoring
 (`app/src/main/activity/`), progress inference, every connector except Google
 Calendar (Gmail, Classroom, Drive/Docs, GitHub), the working-hours scheduler, and
 the Today/Goals views. The working-hours setting stays because the stall nudge
-reads it. Removed from the UI: progress percentages, the goal bar, and scheduling
+reads it. Removed from the UI: progress percentages, pops, the goal bar, and scheduling
 at plan creation.
 
 Deferred (do **not** add): voice input, nudge engine beyond the MVP stall nudge,
@@ -89,7 +89,7 @@ The core-architecture doc calls these "load-bearing" module boundaries. Crossing
 - **No error handling for impossible states.** Validate at boundaries (user input, Google API responses); trust internal calls.
 - **No premature abstractions.** Three similar lines beat a wrong helper.
 - **No backwards-compat shims** for code that hasn't shipped yet — just change it.
-- **New deps only when actually imported.** Especially native modules (`better-sqlite3`, `keytar`, `get-windows`) — those need to be added to `pnpm.onlyBuiltDependencies` in the root `package.json` (see the `plover-native-modules` and `plover-pnpm-workspace` skills in `.claude/skills/`).
+- **New deps only when actually imported.** Especially native modules (`keytar`, `get-windows`) — a native module that runs install scripts must be listed in `pnpm-workspace.yaml` under `onlyBuiltDependencies`, or its postinstall is skipped (see the `plover-native-modules` skill).
 - **Tests:** TDD is required for Planner, Scheduler, and Store. UI scaffolding can skip TDD.
 - **No real network in tests.** Use `nock` with recorded fixtures.
 
@@ -119,12 +119,12 @@ These are the subset an automated agent is most likely to trip on:
 - **pnpm filter must be path-based** (`--filter ./app`), not name-based.
 - **Colon-named scripts** require the explicit `run` keyword under `--filter`.
 - **Native modules must be rebuilt** for the running V8/Electron ABI — `setup.sh` does this (`pnpm --filter ./app rebuild better-sqlite3 keytar`). Electron is pinned to `^43.3.0` in `app/package.json`; rebuild after any Electron bump, or better-sqlite3/keytar load with an ABI mismatch at dev runtime.
-- **`pnpm.onlyBuiltDependencies`** gates postinstall for `electron`, `esbuild`, `better-sqlite3`, `keytar`, `get-windows`. Adding a new native dep? Add it here too or its postinstall will silently skip.
+- **`pnpm.onlyBuiltDependencies`** lives in `pnpm-workspace.yaml`, not `package.json`. It gates postinstall for `electron`, `esbuild`, `get-windows`, `keytar`. Do not add `better-sqlite3`; v13 ships prebuilds (see the `plover-native-modules` skill).
 - **`process.loadEnvFile()` in the body of `index.ts` is too late** — ESM imports evaluate first. Use `app/src/main/load-env.ts` as the first import.
 - **Preload output must be `.js`, not `.mjs`.** `electron.vite.config.ts` configures preload as `format: 'cjs'` with `entryFileNames: '[name].js'`.
 - **Don't declare `const __dirname`** — the ESM bundler injects one; use `import.meta.dirname` directly (Node 20.11+).
 - **Corepack behind a corporate registry can hang.** If `pnpm install` blocks on `registry.npmjs.org`, the fix is to prepend a globally-installed pnpm to `PATH`.
-- **Backend port must match `PLOVER_BACKEND_URL`.** The standalone `plover-server` listens on `PORT` (default `8080`; see its README). If `app/.env` points at a port where a different process is listening, decomposition requests fail with 404.
+- **Backend port must match `PLOVER_BACKEND_URL`.** The standalone `plover-server` listens on `PORT` (see its README). The app's dev fallback is http://localhost:3000, so `PORT` and `PLOVER_BACKEND_URL` must match. If the port is occupied, local decomposition requests fail with 404.
 
 ## Verification before claiming done
 

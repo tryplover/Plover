@@ -1,6 +1,6 @@
 # Plan: rewire the progress signal (judge → scoreboard)
 
-> **Status: paused and superseded by the desktop buddy pivot (2026-10-10 sweep). Do not implement.**
+> **Status: paused by the desktop buddy pivot (2026-10-10 sweep). Do not implement.**
 
 ## Context
 
