@@ -5,26 +5,33 @@
 
 ## TL;DR — what this repo is
 
-**Plover** is a local-first Electron desktop productivity agent. It turns
-vague goals into a schedule and shepherds the user to finish them. It is a
-pnpm workspace with one package:
+**Plover** is a local-first Electron desktop buddy: a small, always-on-top
+character that works alongside the user. It is a pnpm workspace with one package:
 
 - `app/` — the Electron app (`name: "plover"`, main/preload/renderer + tests)
 
-The backend Express proxy server (`plover-server`) that fronts the Gemini API is now maintained in a standalone repository and hosted on Google Cloud Run.
+The MVP is: task breakdown (Gemini-suggested steps, fully editable, with a no-AI
+fallback), a Pomodoro timer, site/tab blocking via a companion browser extension,
+focus mode, read-only Google Calendar, and a stall nudge. Current direction is in
+the pivot spec below.
 
-The core covers: typed goal capture, Gemini-powered subtask decomposition, local
-subtask scheduling into working-hours windows, the Today/Goals/Settings views,
-and an overlay quick-add hotkey. The Sync module polls connected context sources
-— Google (Docs/Drive, Gmail, Calendar, Classroom) and GitHub. Activity
-monitoring and inference/progress signals have also landed.
+The Gemini backend (`plover-server`) is a Python/FastAPI service in a standalone
+repository, deployed on Google Cloud Run. It is not part of this repo.
 
-Deferred (do **not** add): voice input, nudge engine, Windows port,
-multi-account/plugins/multi-device sync.
+Frozen (leave in place, do not extend or build on): activity monitoring
+(`app/src/main/activity/`), progress inference, every connector except Google
+Calendar (Gmail, Classroom, Drive/Docs, GitHub), the working-hours scheduler, and
+the Today/Goals views. The working-hours setting stays because the stall nudge
+reads it. Removed from the UI: progress percentages, the goal bar, and scheduling
+at plan creation.
+
+Deferred (do **not** add): voice input, nudge engine beyond the MVP stall nudge,
+Windows port, multi-account/plugins/multi-device sync.
 
 Authoritative specs:
-- Product spec: [docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md](docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md)
-- Phase 1 architecture: [docs/superpowers/specs/phase-1/core-architecture.md](docs/superpowers/specs/phase-1/core-architecture.md)
+- Pivot spec (current direction, defines MVP scope): [docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md](docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md)
+- Phase 1 architecture (still defines module boundaries and file layout): [docs/superpowers/specs/phase-1/core-architecture.md](docs/superpowers/specs/phase-1/core-architecture.md)
+- Superseded, history only: [docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md](docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md)
 
 ## Environment expectations (agent-specific)
 
@@ -82,7 +89,7 @@ The core-architecture doc calls these "load-bearing" module boundaries. Crossing
 - **No error handling for impossible states.** Validate at boundaries (user input, Google API responses); trust internal calls.
 - **No premature abstractions.** Three similar lines beat a wrong helper.
 - **No backwards-compat shims** for code that hasn't shipped yet — just change it.
-- **New deps only when actually imported.** Especially native modules (`better-sqlite3`, `keytar`, `get-windows`) — those need to be added to `pnpm.onlyBuiltDependencies` in the root `package.json` (see Lesson #4).
+- **New deps only when actually imported.** Especially native modules (`better-sqlite3`, `keytar`, `get-windows`) — those need to be added to `pnpm.onlyBuiltDependencies` in the root `package.json` (see the `plover-native-modules` and `plover-pnpm-workspace` skills in `.claude/skills/`).
 - **Tests:** TDD is required for Planner, Scheduler, and Store. UI scaffolding can skip TDD.
 - **No real network in tests.** Use `nock` with recorded fixtures.
 
@@ -111,13 +118,13 @@ These are the subset an automated agent is most likely to trip on:
 
 - **pnpm filter must be path-based** (`--filter ./app`), not name-based.
 - **Colon-named scripts** require the explicit `run` keyword under `--filter`.
-- **Native modules must be rebuilt** for the running V8/Electron ABI — `setup.sh` does this. Electron is pinned to `^43.2.0` in `app/package.json`; the `@electron/rebuild -v` flag in the root `dev` script and `setup.sh` MUST match that version, or better-sqlite3/keytar load with an ABI mismatch at dev runtime.
+- **Native modules must be rebuilt** for the running V8/Electron ABI — `setup.sh` does this (`pnpm --filter ./app rebuild better-sqlite3 keytar`). Electron is pinned to `^43.3.0` in `app/package.json`; rebuild after any Electron bump, or better-sqlite3/keytar load with an ABI mismatch at dev runtime.
 - **`pnpm.onlyBuiltDependencies`** gates postinstall for `electron`, `esbuild`, `better-sqlite3`, `keytar`, `get-windows`. Adding a new native dep? Add it here too or its postinstall will silently skip.
 - **`process.loadEnvFile()` in the body of `index.ts` is too late** — ESM imports evaluate first. Use `app/src/main/load-env.ts` as the first import.
 - **Preload output must be `.js`, not `.mjs`.** `electron.vite.config.ts` configures preload as `format: 'cjs'` with `entryFileNames: '[name].js'`.
 - **Don't declare `const __dirname`** — the ESM bundler injects one; use `import.meta.dirname` directly (Node 20.11+).
 - **Corepack behind a corporate registry can hang.** If `pnpm install` blocks on `registry.npmjs.org`, the fix is to prepend a globally-installed pnpm to `PATH`.
-- **Port 3000 collisions** break the Gemini proxy. The backend server by default runs on `PORT=3000` (or `PORT=3001` if configured via `.env` in the standalone `plover-server`). If port 3000 is occupied, local decomposition requests will fail with 404.
+- **Backend port must match `PLOVER_BACKEND_URL`.** The standalone `plover-server` listens on `PORT` (default `8080`; see its README). If `app/.env` points at a port where a different process is listening, decomposition requests fail with 404.
 
 ## Verification before claiming done
 
