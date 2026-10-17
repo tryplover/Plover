@@ -18,8 +18,6 @@ beforeEach(() => {
       getSettings: vi.fn().mockResolvedValue({
         googleConnected: false,
         workingHours: { start: '09:00', end: '18:00' },
-        horizonDays: 14,
-        pauseScheduling: false,
         theme: 'light',
         stallNudgeEnabled: true,
         windowTrackingEnabled: true,
@@ -66,6 +64,24 @@ describe('Settings', () => {
     });
     expect(window.api.getSettings).toHaveBeenCalled();
     expect(screen.queryByText(/Activity tracking|Screen capture|Progress pops/i)).toBeNull();
+  });
+
+  it('shows working hours and no horizon or pause scheduling controls', async () => {
+    render(<Settings />);
+    expect(await screen.findByRole('heading', { name: 'Working hours' })).toBeTruthy();
+    expect(screen.queryByText(/horizon|scheduling/i)).toBeNull();
+  });
+
+  it('saves working hours when the start time changes', async () => {
+    render(<Settings />);
+    const startInput = await screen.findByDisplayValue('09:00');
+    await act(async () => {
+      fireEvent.change(startInput, { target: { value: '08:30' } });
+      await Promise.resolve();
+    });
+    expect(window.api.updateSettings).toHaveBeenCalledWith({
+      workingHours: { start: '08:30', end: '18:00' },
+    });
   });
 
   it('keeps the stall nudge card and sign-in control', async () => {

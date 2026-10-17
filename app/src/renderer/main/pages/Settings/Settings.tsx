@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AccountSection, type AuthStatus } from './sections/AccountSection/AccountSection.js';
 import { AppearanceSection } from './sections/AppearanceSection/AppearanceSection.js';
-import { SchedulingSection } from './sections/SchedulingSection/SchedulingSection.js';
+import { WorkingHoursSection } from './sections/WorkingHoursSection/WorkingHoursSection.js';
 import { Chip } from '../../../components/Chip/Chip.js';
 
 interface SettingsProps {
@@ -17,8 +17,6 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
   const [stallNudgeEnabled, setStallNudgeEnabled] = useState(true);
   const [authStatus, setAuthStatus] = useState<AuthStatus>({ signedIn: false, email: null });
   const [workingHours, setWorkingHours] = useState({ start: '09:00', end: '18:00' });
-  const [horizonDays, setHorizonDays] = useState(14);
-  const [pauseScheduling, setPauseScheduling] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   const fetchSettings = async () => {
@@ -29,8 +27,6 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
       setStallNudgeEnabled(settings.stallNudgeEnabled ?? true);
       setGoogleConnected(settings.googleConnected);
       setWorkingHours(settings.workingHours || { start: '09:00', end: '18:00' });
-      setHorizonDays(settings.horizonDays || 14);
-      setPauseScheduling(settings.pauseScheduling || false);
     } catch (err) {
       console.error('Failed to fetch settings:', err);
     }
@@ -59,8 +55,6 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
     updatedSettings: Partial<{
       googleConnected: boolean;
       workingHours: { start: string; end: string };
-      horizonDays: number;
-      pauseScheduling: boolean;
       theme: 'light' | 'dark';
       companionMode: 'full' | 'compact';
       stallNudgeEnabled?: boolean;
@@ -130,18 +124,6 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
     const updatedHours = { ...workingHours, [field]: value };
     setWorkingHours(updatedHours);
     void triggerAutoSave({ workingHours: updatedHours });
-  };
-
-  const handleHorizonChange = (value: number) => {
-    const val = Math.max(1, value);
-    setHorizonDays(val);
-    void triggerAutoSave({ horizonDays: val });
-  };
-
-  const handlePauseSchedulingToggle = () => {
-    const nextVal = !pauseScheduling;
-    setPauseScheduling(nextVal);
-    void triggerAutoSave({ pauseScheduling: nextVal });
   };
 
   return (
@@ -254,14 +236,10 @@ export default function Settings({ 'data-testid': dataTestId }: SettingsProps) {
             googleConnected={googleConnected}
             onConnectGoogle={() => void handleConnectGoogle()}
           />
-          <SchedulingSection
+          <WorkingHoursSection
             workingHours={workingHours}
             onWorkingHoursChange={handleWorkingHoursChange}
-            horizonDays={horizonDays}
-            onHorizonChange={handleHorizonChange}
-            pauseScheduling={pauseScheduling}
-            onPauseSchedulingToggle={handlePauseSchedulingToggle}
-          />{' '}
+          />
         </div>
       </div>
     </div>

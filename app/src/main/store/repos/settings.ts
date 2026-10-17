@@ -6,7 +6,6 @@ export const STALL_NUDGE_LAST_AT_KEY = 'stallNudgeLastAt';
 export interface SettingsData {
   googleConnected: boolean;
   workingHours: { start: string; end: string };
-  horizonDays: number;
   pauseScheduling: boolean;
   watchedFolders: string[];
   lastInferenceTs: string | null;
@@ -103,7 +102,6 @@ export class SettingsRepo {
     const workingHours = workingHoursRaw
       ? JSON.parse(workingHoursRaw)
       : { start: '09:00', end: '18:00' };
-    const horizonDays = Number(map.get('horizonDays') ?? '14');
     const pauseScheduling = map.get('pauseScheduling') === 'true';
     const watchedFoldersRaw = map.get('watchedFolders');
     const watchedFolders = watchedFoldersRaw ? JSON.parse(watchedFoldersRaw) : [];
@@ -158,7 +156,6 @@ export class SettingsRepo {
     return {
       googleConnected,
       workingHours,
-      horizonDays,
       pauseScheduling,
       watchedFolders,
       lastInferenceTs,
@@ -197,9 +194,6 @@ export class SettingsRepo {
     }
     if (patch.workingHours !== undefined) {
       this.set('workingHours', JSON.stringify(patch.workingHours));
-    }
-    if (patch.horizonDays !== undefined) {
-      this.set('horizonDays', String(patch.horizonDays));
     }
     if (patch.pauseScheduling !== undefined) {
       this.set('pauseScheduling', String(patch.pauseScheduling));

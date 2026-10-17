@@ -53,8 +53,6 @@ beforeEach(() => {
       getSettings: vi.fn().mockResolvedValue({
         googleConnected: false,
         workingHours: { start: '09:00', end: '18:00' },
-        horizonDays: 14,
-        pauseScheduling: false,
         theme: 'light',
       }),
       companion: {

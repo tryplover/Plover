@@ -130,3 +130,22 @@ describe('SettingsRepo — Phase 2 activity tracking keys', () => {
     expect(s.githubWatchedRepos).toEqual(['o/r1', 'o/r2']);
   });
 });
+
+describe('SettingsRepo — scheduling keys', () => {
+  let db: Database.Database;
+  let repo: SettingsRepo;
+
+  beforeEach(() => {
+    db = new Database(':memory:');
+    runMigrations(db);
+    repo = new SettingsRepo(db);
+  });
+
+  it('omits horizonDays and still roundtrips pauseScheduling', () => {
+    expect(repo.getAll()).not.toHaveProperty('horizonDays');
+    repo.update({ pauseScheduling: true });
+    expect(repo.getAll().pauseScheduling).toBe(true);
+    repo.update({ pauseScheduling: false });
+    expect(repo.getAll().pauseScheduling).toBe(false);
+  });
+});

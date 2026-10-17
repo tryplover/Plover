@@ -19,8 +19,6 @@ export interface PloverAPI {
   getSettings(): Promise<{
     googleConnected: boolean;
     workingHours: { start: string; end: string };
-    horizonDays: number;
-    pauseScheduling: boolean;
     theme: 'light' | 'dark';
     companionMode: 'full' | 'compact';
     pauseAllTracking: boolean;
@@ -39,8 +37,6 @@ export interface PloverAPI {
     settings: Partial<{
       googleConnected: boolean;
       workingHours: { start: string; end: string };
-      horizonDays: number;
-      pauseScheduling: boolean;
       theme: 'light' | 'dark';
       companionMode: 'full' | 'compact';
       pauseAllTracking: boolean;
@@ -58,8 +54,6 @@ export interface PloverAPI {
   ): Promise<{
     googleConnected: boolean;
     workingHours: { start: string; end: string };
-    horizonDays: number;
-    pauseScheduling: boolean;
     theme: 'light' | 'dark';
     companionMode: 'full' | 'compact';
     pauseAllTracking: boolean;
