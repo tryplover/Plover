@@ -67,7 +67,6 @@ export interface PloverApi {
     screenVisionInferenceEnabled: boolean;
     activityRetentionDays: number;
     planner_useRecentActivityContext: boolean;
-    progressPopsEnabled: boolean;
     stallNudgeEnabled: boolean;
   }>;
   updateSettings: (
@@ -85,7 +84,6 @@ export interface PloverApi {
       screenVisionInferenceEnabled: boolean;
       activityRetentionDays: number;
       planner_useRecentActivityContext: boolean;
-      progressPopsEnabled: boolean;
       stallNudgeEnabled: boolean;
     }>,
   ) => Promise<{
@@ -102,7 +100,6 @@ export interface PloverApi {
     screenVisionInferenceEnabled: boolean;
     activityRetentionDays: number;
     planner_useRecentActivityContext: boolean;
-    progressPopsEnabled: boolean;
     stallNudgeEnabled: boolean;
   }>;
 

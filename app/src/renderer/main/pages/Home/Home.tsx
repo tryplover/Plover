@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { Goal, Task } from '../../../../shared/types';
-import { pickCurrentTask, sortByScheduledStart } from '../../../../shared/current-task';
+import { pickCurrentTask, sortByPlanOrder } from '../../../../shared/current-task';
 import { Button } from '../../../components/Button/Button';
 import { useGoalsAndTasks } from '../../hooks/useGoalsAndTasks';
 import { GoalCard } from './GoalCard/GoalCard';
@@ -170,7 +170,7 @@ export default function Home({ 'data-testid': dataTestId }: HomeProps) {
 
   const activeGoalSteps = useMemo(() => {
     if (!expandedGoalId) return [];
-    return sortByScheduledStart(tasksByGoal[expandedGoalId] ?? []);
+    return sortByPlanOrder(tasksByGoal[expandedGoalId] ?? []);
   }, [expandedGoalId, tasksByGoal]);
 
   // Frequency grouping (One-off / Daily / Weekly headers from the Figma
