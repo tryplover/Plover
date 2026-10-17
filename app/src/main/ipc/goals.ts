@@ -1,5 +1,5 @@
 import { ipcMain, BrowserWindow } from 'electron';
-import { goalsRepo, settingsRepo } from '../store/index.js';
+import { goalsRepo } from '../store/index.js';
 import { decomposeGoal } from '../planner/decompose.js';
 import { saveGoalAndTasks, deleteGoalAndTasks } from '../planner/goal-manager.js';
 import { ProposedPlan } from '../../preload/index.js';
@@ -16,11 +16,9 @@ export function registerGoalsHandlers(getOverlayWindow: () => BrowserWindow | nu
 
   // Overlay API
   ipcMain.handle('goal:propose', async (_event, goalText: string): Promise<ProposedPlan> => {
-    const settings = settingsRepo.getAll();
     const result = await decomposeGoal({
       goalText,
       now: new Date(),
-      workingHours: settings.workingHours,
     });
 
     return {
