@@ -35,6 +35,14 @@ describe('SettingsRepo — Phase 2 activity tracking keys', () => {
     expect(repo.getAll().theme).toBe('light');
   });
 
+  it('omits horizonDays and still roundtrips pauseScheduling', () => {
+    expect(repo.getAll()).not.toHaveProperty('horizonDays');
+    repo.update({ pauseScheduling: true });
+    expect(repo.getAll().pauseScheduling).toBe(true);
+    repo.update({ pauseScheduling: false });
+    expect(repo.getAll().pauseScheduling).toBe(false);
+  });
+
   it('roundtrips companionMode setting', () => {
     repo.update({ companionMode: 'compact' });
     expect(repo.getAll().companionMode).toBe('compact');
