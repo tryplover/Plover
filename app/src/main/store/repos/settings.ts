@@ -25,7 +25,6 @@ export interface SettingsData {
   lastVisionInferenceWindowKey: string | null;
   activityRetentionDays: number;
   planner_useRecentActivityContext: boolean;
-  progressPopsEnabled: boolean;
   stallNudgeEnabled: boolean;
   gmailEnabled: boolean;
   calendarEnabled: boolean;
@@ -137,7 +136,6 @@ export class SettingsRepo {
     );
     const planner_useRecentActivityContext =
       map.get('planner_useRecentActivityContext') !== 'false';
-    const progressPopsEnabled = map.get('progressPopsEnabled') === 'true';
     const stallNudgeEnabled = map.get('stallNudgeEnabled') !== 'false';
     const gmailEnabled = map.get('gmailEnabled') !== 'false';
     const calendarEnabled = map.get('calendarEnabled') !== 'false';
@@ -173,7 +171,6 @@ export class SettingsRepo {
       lastVisionInferenceWindowKey,
       activityRetentionDays,
       planner_useRecentActivityContext,
-      progressPopsEnabled,
       stallNudgeEnabled,
       gmailEnabled,
       calendarEnabled,
@@ -265,9 +262,6 @@ export class SettingsRepo {
     }
     if (patch.planner_useRecentActivityContext !== undefined) {
       this.set('planner_useRecentActivityContext', String(patch.planner_useRecentActivityContext));
-    }
-    if (patch.progressPopsEnabled !== undefined) {
-      this.set('progressPopsEnabled', String(patch.progressPopsEnabled));
     }
     if (patch.stallNudgeEnabled !== undefined) {
       this.set('stallNudgeEnabled', String(patch.stallNudgeEnabled));

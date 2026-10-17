@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { pickCurrentTask, sortByScheduledStart } from '../../src/shared/current-task';
+import { pickCurrentTask, sortByPlanOrder } from '../../src/shared/current-task';
 import type { Task } from '../../src/shared/types';
 
 function makeTask(overrides: Partial<Task>): Task {
@@ -22,7 +22,7 @@ describe('current-task ordering', () => {
   const stepB = makeTask({ id: '0b7e44aa-aaaa', title: 'B', sort_index: 1 });
 
   it('orders unscheduled steps by sort_index, not id', () => {
-    expect(sortByScheduledStart([stepB, stepA]).map((t) => t.title)).toEqual(['A', 'B']);
+    expect(sortByPlanOrder([stepB, stepA]).map((t) => t.title)).toEqual(['A', 'B']);
   });
 
   it('picks the first plan step as current when nothing is scheduled', () => {
@@ -32,7 +32,7 @@ describe('current-task ordering', () => {
   it('falls back to id when sort_index ties', () => {
     const x = makeTask({ id: 'b', sort_index: 2 });
     const y = makeTask({ id: 'a', sort_index: 2 });
-    expect(sortByScheduledStart([x, y]).map((t) => t.id)).toEqual(['a', 'b']);
+    expect(sortByPlanOrder([x, y]).map((t) => t.id)).toEqual(['a', 'b']);
   });
 
   it('still prefers in_progress over earlier plan steps', () => {

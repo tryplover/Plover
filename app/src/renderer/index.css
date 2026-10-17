@@ -519,35 +519,6 @@ a,
   color: var(--plover-text-muted);
 }
 
-.goal-progress-container {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 200px;
-}
-
-.goal-progress-bar {
-  flex-grow: 1;
-  height: 6px;
-  background-color: var(--plover-surface-raised);
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.goal-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--plover-mint), var(--plover-mint));
-  border-radius: 3px;
-  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.goal-progress-text {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--plover-text-muted);
-  white-space: nowrap;
-}
-
 .chevron-icon {
   width: 20px;
   height: 20px;
@@ -920,22 +891,6 @@ input:checked + .slider:before {
   flex-direction: column;
   overflow: hidden;
   border-radius: var(--radius-md);
-}
-
-.plover-progress-track {
-  flex: 1;
-  height: 5px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 9999px;
-  overflow: hidden;
-  margin: 0 10px;
-}
-
-.plover-progress-fill {
-  height: 100%;
-  background: #9fe1cb;
-  border-radius: 9999px;
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .plover-pulse-dot {
