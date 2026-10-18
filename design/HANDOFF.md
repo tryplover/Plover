@@ -24,6 +24,7 @@ Work so far was done with the `logo-design:logo-design` skill in one long sessio
 | Primary actions | **Balanced**: compact Ink/Cream buttons; Sage reserved for larger brand actions | `design/system/choices.selected.json` |
 | Peek frequency | **One featured peek per view**, with reserved space and clear task controls | same |
 | Character motion | **Quiet idle breathing**, static focus, whole-bird thinking and one small completion hop; reduced motion stays static | same |
+| Character motion (website, superseding the row above) | Built out far past the original spec in `plover-website/src/components/landing/buddyMotion.js`: a full Disney-12-principles rig (anticipation, squash/stretch that conserves volume, arcs with apex hang, wing/head follow-through, a shadow that tracks the ground and never lifts with the bird) driven by Web Animations API, not CSS loops. Ambient idle is a breathing squash/stretch plus a randomised blink loop (open/closed/happy/sleepy eye sets). Each site section gets its own authored scene (`hero`, `step1`–`step3`, `about`, `faq`, `waitlist`) with its own cycle and click reaction, played only while that illustration is on screen (`IntersectionObserver`) and only when `prefers-reduced-motion` is off. Core moves: `hopTo` (parabolic arc hop with crouch/land squash and a shrinking shadow), `bounce` (on-the-spot, no air time), `wave`, `wingPump`, `look`, and a `sparkleHop` celebration used for the waitlist-joined reaction. The desktop buddy's wings point up and trail each other by ~30ms; head tilt and gaze use `composite: 'add'` so reactions layer over ambient motion instead of replacing it | `plover-website/src/components/landing/buddyMotion.js`, `Buddy.jsx`, `useBuddyMotion.js` |
 | Desktop buddy | **Round corner sitter replaces Puff**, selected on 2026-10-04 | same |
 
 ## Current priority
@@ -37,7 +38,7 @@ The founder completed both review boards on 2026-10-04. All eight offered decisi
 3. **16 px favicon:** the side peek collapses to a blob + beak at 16 px and needs its own simplified drawing.
 4. Then the rest of the kit (logo-design skill Phase 7): one-colour/reversed versions, favicon/app-icon/social set via
    `export_variants.py`, usage guide.
-5. **Desktop buddy selected:** the round corner sitter replaces Puff, confirmed through the remaining-choice review on 2026-10-04. The full six-state character rig remains implementation work.
+5. **Desktop buddy selected:** the round corner sitter replaces Puff, confirmed through the remaining-choice review on 2026-10-04. ~~The full six-state character rig remains implementation work.~~ **Done, and then some** — the marketing site (`plover-website`) shipped a full per-scene motion rig well past the original "static focus + one hop" spec; see the new handoff row under Locked decisions and `plover-website/src/components/landing/buddyMotion.js`. That implementation, not this doc, is now the source of truth for buddy motion — the app's own six-state rig (idle/working/focus/break/nudging/celebrating) should draw on its physics (squash/stretch, arcs, wing follow-through) rather than rebuilding motion from scratch.
 
 ## Practical notes
 
