@@ -5,31 +5,30 @@
 
 ## TL;DR — what this repo is
 
-**Plover** is a local-first Electron desktop buddy: a small, always-on-top
-character that works alongside the user. It is a pnpm workspace with one package:
+**Plover** is pivoting (2026-10-19) to a Chromium browser extension (Manifest
+V3): a small, cute character that floats on every web page, plus a toolbar
+popup. The extension isn't built yet; it will be a new `extension/` workspace
+package. Today the pnpm workspace has one package:
 
-- `app/` — the Electron app (`name: "plover"`, main/preload/renderer + tests)
+- `app/` — the **frozen** Electron app (`name: "plover"`, main/preload/renderer + tests)
 
 The MVP is: task breakdown (Gemini-suggested steps, fully editable, with a no-AI
-fallback), a Pomodoro timer, site/tab blocking via a companion browser extension,
-focus mode, read-only Google Calendar, and a stall nudge. Current direction is in
-the pivot spec below.
+fallback), a Pomodoro timer, site/tab blocking, focus mode and read-only Google
+Calendar, all inside the extension, with required Supabase sign-in. The stall
+nudge was dropped. Current direction is in the spec below.
 
 The Gemini backend (`plover-server`) is a Python/FastAPI service in a standalone
 repository, deployed on Google Cloud Run. It is not part of this repo.
 
-Frozen (leave in place, do not extend or build on): activity monitoring
-(`app/src/main/activity/`), progress inference, every connector except Google
-Calendar (Gmail, Classroom, Drive/Docs, GitHub), the working-hours scheduler, and
-the Today/Goals views. The working-hours setting stays because the stall nudge
-reads it. Removed from the UI: progress percentages, pops, the goal bar, and scheduling
-at plan creation.
+Frozen (leave in place, do not extend or build on): the whole Electron app in
+`app/`. Pure logic such as the timer state machine may be ported into
+`extension/`; new code must not import from `app/`.
 
 Deferred (do **not** add): voice input, nudge engine beyond the MVP stall nudge,
 Windows port, multi-account/plugins/multi-device sync.
 
 Authoritative specs:
-- Pivot spec (current direction, defines MVP scope): [docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md](docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md)
+- Product spec (current direction, defines MVP scope; filename predates the extension pivot): [docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md](docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md)
 - Phase 1 architecture (still defines module boundaries and file layout): [docs/superpowers/specs/phase-1/core-architecture.md](docs/superpowers/specs/phase-1/core-architecture.md)
 - Superseded, history only: [docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md](docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md)
 
