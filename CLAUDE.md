@@ -61,14 +61,19 @@ base of the stack first and let reviewers move up.
 
 ## Project
 
-**Plover is pivoting** to a cute desktop work buddy: a minimalist character with
-clean animations that lives in a small always-on-top window. The MVP is six
-simple features: task breakdown, Pomodoro, site/tab blocking, focus mode and
-read-only Google Calendar. It's still a local-first Electron
-app; user data stays local and Gemini calls are proxied through a backend server
-to protect the developer API key. Launch is waitlist-only.
+**Plover is pivoting** (rev. 2026-10-19) to a cute work buddy that ships as a
+**Chromium browser extension** (Manifest V3), not an Electron desktop app: a
+minimalist character with clean animations that floats on every web page, plus
+a toolbar popup. The MVP is five simple features: task breakdown, Pomodoro,
+site/tab blocking, focus mode and read-only Google Calendar. Sign-in (Supabase)
+is required; tasks stay in `chrome.storage.local`, settings sync via
+`chrome.storage.sync`, and Gemini calls are proxied through `plover-server` to
+protect the developer API key. Launch is waitlist-only via an unlisted Chrome
+Web Store listing. The extension is not built yet; it will live in a new
+`extension/` workspace package. The Electron app in `app/` is **frozen as a
+whole**.
 
-- **Pivot spec (current direction):** [docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md](docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md)
+- **Product spec (current direction, extension):** [docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md](docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md) (filename kept for links)
 - **Original product spec (superseded):** [docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md](docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md)
 - **Phase 1 core architecture (module boundaries):** [docs/superpowers/specs/phase-1/core-architecture.md](docs/superpowers/specs/phase-1/core-architecture.md)
 - **Background research:** [reports/](reports/) and [research_notes/](research_notes/)
@@ -99,7 +104,8 @@ invent art.
 │           ├── core-architecture.md
 │           └── store-layer.md
 ├── reports/, research_notes/       # background research (progress visibility, competitors)
-└── app/                            # the Electron app (single workspace pkg)
+├── extension/                      # (planned) Chromium MV3 extension — the product
+└── app/                            # the frozen Electron app (single workspace pkg today)
     ├── package.json                # name: "plover"
     ├── electron.vite.config.ts
     ├── tsconfig.json               # strict TS, path aliases
@@ -141,6 +147,10 @@ walkthrough), see [docs/RUNNING.md](docs/RUNNING.md).
 
 ## Architecture rules (load-bearing)
 
+These describe the frozen Electron app. The extension's architecture
+(background worker owns all state; content script, popup and options page are
+thin views) is in spec §6.
+
 These are not style preferences. The core architecture doc calls them
 "load-bearing" module boundaries. Violating them defeats the point of the design.
 
@@ -160,7 +170,11 @@ These are not style preferences. The core architecture doc calls them
 
 ## Hard constraints
 
-- **Local-only data.** SQLite + local filesystem. User data is strictly stored locally. No cloud sync.
+- **Local-only data.** Tasks and history stay on the device (SQLite in the
+  frozen app; `chrome.storage.local` in the extension). Only settings may use
+  the browser's own `chrome.storage.sync`. No Plover cloud sync.
+- **The content script reads nothing from the page.** It only draws the buddy.
+  No browsing-history logging.
 - **Backend API Proxy.** Outbound Gemini API calls are proxied through a secure backend server to protect developer API keys in production.
 
 - **Outbound HTTP allowlist:** `generativelanguage.googleapis.com`,
@@ -177,35 +191,36 @@ These are not style preferences. The core architecture doc calls them
 - **No Wispr Flow / Cluely / third-party overlay deps.** Build the overlay with
   Electron `BrowserWindow` primitives.
 
-## Scope (current: desktop buddy MVP, six features)
+## Scope (current: browser extension MVP, five features)
 
-MVP principle: simple and not reliant on AI. Every feature works without a
-model call; Gemini only suggests steps during task breakdown.
+MVP principle: simple and not reliant on AI. Timer, blocking and focus work
+without a model call; Gemini only suggests steps during task breakdown.
 
-**In the MVP** (build order in [docs/plans/mvp-five-features-roadmap.md](docs/plans/mvp-five-features-roadmap.md)):
-- Buddy window (always-on-top, frameless) with an animation-state interface;
-  placeholder art until the design lands
+**In the MVP** (spec §4; no extension roadmap written yet — the desktop
+[mvp-five-features-roadmap](docs/plans/mvp-five-features-roadmap.md) is superseded):
+- Floating buddy on every page (content script, Shadow DOM) plus a toolbar
+  popup with the same panel; drag to move, hide per site, hide everywhere,
+  auto-hide in fullscreen; animation-state interface with placeholder art
 - Task breakdown: Gemini-suggested steps, fully editable, with a no-AI fallback
-- Pomodoro timer with one self-reported check-in per work block
-- Site/tab blocking via a companion browser extension (loopback-only bridge)
+- Pomodoro timer with one self-reported check-in per work block (MV3:
+  `chrome.alarms` + stored end timestamps, never a ticking worker)
+- Site/tab blocking built into the extension (`declarativeNetRequest`)
 - Focus mode: timer + blocking + quiet buddy in one switch
-- Read-only Google Calendar (`calendar.readonly` only)
-- Stall nudge: one gentle prompt when a goal stops moving, from manual status changes only (spec §4.7)
+- Read-only Google Calendar (`calendar.readonly`, via
+  `chrome.identity.launchWebAuthFlow` so it works in all Chromium browsers)
+- Required Supabase sign-in; all Chromium browsers (Chrome, Edge, Brave, Arc)
 
 **Frozen — leave in place, don't extend, don't build on, don't delete yet:**
-- Activity monitoring (`app/src/main/activity/`)
-- Inference / progress signals (progress percentages, pops and the goal bar are
-  removed from the UI; the `progress-signal-rewire` plan is paused)
-- Gmail, Classroom, Drive/Docs and GitHub sync sources
-- Working-hours scheduler and the Today / Goals views (the working-hours setting
-  stays: the stall nudge reads it)
+- The whole Electron app in `app/` (store, companion window, renderer views,
+  timer IPC, stall nudge, activity monitoring, inference, connectors,
+  scheduler). Pure logic such as the timer state machine may be *ported* into
+  `extension/` (spec §6); new code must not import from `app/`.
 
 **Not in the MVP:**
-- Gamification (planned next, after launch)
-- Screen-based distraction detection, desktop-app blocking, OS-level changes
-  (hosts file, system Do Not Disturb)
-- Voice input (`whisper.cpp`)
-- Multi-account, plugins, multi-device sync, mobile
+- Stall nudge (dropped 2026-10-19), gamification (planned next, after launch)
+- Reading page content or browsing history, screen capture, blocking outside
+  the browser
+- Firefox/Safari, voice input, multi-account, plugins, mobile
 
 ## Code conventions
 

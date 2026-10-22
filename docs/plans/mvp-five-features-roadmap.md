@@ -1,5 +1,10 @@
 # Plan: MVP roadmap (five simple features)
 
+> **Superseded 2026-10-19.** Plover is now a Chromium browser extension, not
+> an Electron desktop app (see the [spec](../superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md)).
+> This roadmap targets the frozen Electron app; don't start new milestones
+> from it. An extension roadmap hasn't been written yet.
+
 ## Context
 
 The [pivot spec](../superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md)
