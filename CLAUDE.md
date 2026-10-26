@@ -280,6 +280,7 @@ symptom — grep an error string or symptom and invoke the matching skill:
 | `plover-store-schema` | vestigial `calendar_event_id`, `created_at`/`updated_at` not an age signal |
 | `plover-gemini` | `functionCalls()` method, 429 model fallback |
 | `plover-auth` | Auth unified on Supabase — no separate plover-token/`plover://` system; `AuthPanel` is the one sign-in/sign-up UI |
+| `plover-extension-wxt` | WXT vitest plugin import path, tsconfig include breaking auto-imports/JSX, `wxt prepare` on first install, no-empty-function in background stub |
 
 **Contract (replaces the old "add a lesson" rule):** when you hit an error,
 surprise, or wrong-first-attempt a future Claude could avoid, add it to the most
