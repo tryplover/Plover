@@ -1,5 +1,6 @@
 packages:
   - app
+  - extension
 
 onlyBuiltDependencies:
   - electron

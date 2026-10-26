@@ -9,13 +9,15 @@
   },
   "scripts": {
     "prepare": "husky",
-    "typecheck": "pnpm --filter ./app typecheck",
-    "lint": "pnpm --filter ./app lint",
-    "test": "pnpm --filter ./app test",
-    "test:coverage": "pnpm --filter ./app run test:coverage",
+    "typecheck": "pnpm --filter ./app --filter ./extension typecheck",
+    "lint": "pnpm --filter ./app --filter ./extension lint",
+    "test": "pnpm --filter ./app --filter ./extension test",
+    "test:coverage": "pnpm --filter ./app --filter ./extension run test:coverage",
     "dev": "pnpm --filter ./app dev",
     "build": "pnpm --filter ./app build",
-    "package": "pnpm build && pnpm --filter ./app run dist"
+    "package": "pnpm build && pnpm --filter ./app run dist",
+    "dev:extension": "pnpm --filter ./extension dev",
+    "build:extension": "pnpm --filter ./extension build"
   },
   "devDependencies": {
     "husky": "^9.1.7",
@@ -29,6 +31,13 @@
     ],
     "app/**/*.{json,md,yml,yaml,css,html}": [
       "pnpm --filter ./app exec prettier --write"
+    ],
+    "extension/**/*.{ts,tsx}": [
+      "pnpm --filter ./extension exec eslint --fix",
+      "pnpm --filter ./extension exec prettier --write"
+    ],
+    "extension/**/*.{json,md,yml,yaml,css,html}": [
+      "pnpm --filter ./extension exec prettier --write"
     ]
   }
 }
