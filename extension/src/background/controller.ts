@@ -18,6 +18,7 @@ export function registerHandler<T extends Command["type"]>(
 
 const UNQUEUED_COMMANDS: ReadonlySet<Command["type"]> = new Set([
   "auth/google",
+  "task/decompose",
 ]);
 
 export function dispatch(cmd: Command): Promise<CommandResult> {

@@ -22,12 +22,16 @@ export async function suggestSteps(
   text: string,
   fetchImpl: typeof fetch = fetch,
 ): Promise<string[]> {
-  const token = await getAccessToken();
-  if (!token) throw new DecomposeError("not signed in", 401);
-
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
+    const aborted = new Promise<never>((_, reject) => {
+      controller.signal.addEventListener("abort", () =>
+        reject(new DecomposeError("decompose timed out", null)),
+      );
+    });
+    const token = await Promise.race([getAccessToken(), aborted]);
+    if (!token) throw new DecomposeError("not signed in", 401);
     const res = await fetchImpl(`${backendUrl()}/api/decompose`, {
       method: "POST",
       headers: {

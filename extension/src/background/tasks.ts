@@ -2,6 +2,7 @@ import { browser } from "wxt/browser";
 import { DecomposeError, suggestSteps } from "@/lib/api/decompose";
 import { getLocal, setLocal } from "@/lib/storage";
 import { registerHandler } from "./controller";
+import { enqueue } from "./queue";
 
 const CELEBRATE_MS = 3000;
 
@@ -11,7 +12,7 @@ export function registerTaskHandlers(): void {
       return { ok: true, data: { steps: await suggestSteps(text) } };
     } catch (e) {
       if (e instanceof DecomposeError && e.status === 401) {
-        await setLocal({ needsSignIn: true });
+        await enqueue(() => setLocal({ needsSignIn: true }));
       }
       return { ok: true, data: { steps: [], aiFailed: true } };
     }

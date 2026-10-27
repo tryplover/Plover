@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { browser } from "wxt/browser";
 import { DEFAULT_LOCAL, DEFAULT_SETTINGS, getSettings } from "@/lib/storage";
 import type { LocalState, Settings } from "@/lib/types";
@@ -20,12 +20,14 @@ export function useExtensionState(): ExtensionState {
   const [local, setLocalState] = useState<LocalState>(DEFAULT_LOCAL);
   const [now, setNow] = useState(() => Date.now());
   const [ready, setReady] = useState(false);
+  const loadSeq = useRef(0);
 
   useEffect(() => {
     let alive = true;
     const refresh = () => {
+      const seq = ++loadSeq.current;
       void Promise.all([getSettings(), loadLocal()]).then(([s, l]) => {
-        if (!alive) return;
+        if (!alive || seq !== loadSeq.current) return;
         setSettings(s);
         setLocalState(l);
         setReady(true);

@@ -81,3 +81,19 @@ describe("task/decompose", () => {
     vi.useRealTimers();
   });
 });
+
+describe("task/decompose does not block the queue", () => {
+  it("timer alarm and timer/pause proceed while fetch is pending", async () => {
+    const { registerTimerHandlers } = await import("@/background/timer");
+    registerTimerHandlers();
+    await dispatch({ type: "timer/start" });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise(() => undefined)),
+    );
+    void dispatch({ type: "task/decompose", text: "g" });
+    const res = await dispatch({ type: "timer/pause" });
+    expect(res.ok).toBe(true);
+    expect((await getLocal("timer")).pausedAt).not.toBeNull();
+  });
+});
