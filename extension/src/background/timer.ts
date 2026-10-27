@@ -16,6 +16,7 @@ import { updateBadge } from "./badge";
 import { registerHandler } from "./controller";
 
 const PHASE_ALARM = "timer-phase";
+const CHECKIN_NOTIFICATION = "checkin";
 
 const PLACEHOLDER_ICON =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
@@ -26,7 +27,7 @@ export async function notifyCheckIn(): Promise<void> {
     lastFocusedWindow: true,
   });
   if (isBuddyVisible(tab?.url, await getSettings())) return;
-  await browser.notifications.create("checkin", {
+  await browser.notifications.create(CHECKIN_NOTIFICATION, {
     type: "basic",
     iconUrl: PLACEHOLDER_ICON,
     title: "Which step did you finish?",
@@ -56,6 +57,7 @@ export async function applyTransition(
   const completedBlock = t.events.some(
     (e) => e.type === "work-block-completed",
   );
+  const stopped = t.events.some((e) => e.type === "stopped");
   const nextSessions = [...sessions];
   if (prev.phase === "work" && t.state.phase !== "work") {
     const session: Session = {
@@ -80,8 +82,11 @@ export async function applyTransition(
     sessions: nextSessions,
     transient: completedBlock
       ? { ...transient, checkInPending: true }
-      : transient,
+      : stopped
+        ? { ...transient, checkInPending: false }
+        : transient,
   });
+  if (stopped) await browser.notifications.clear(CHECKIN_NOTIFICATION);
 
   if (t.state.phase === "idle" || t.state.pausedAt !== null) {
     await browser.alarms.clear(PHASE_ALARM);
@@ -111,7 +116,21 @@ export async function resumeTimerNow(): Promise<void> {
   await applyTransition(resumeTimer(await getLocal("timer"), now), now);
 }
 
+async function openCheckIn(): Promise<void> {
+  try {
+    await browser.action.openPopup();
+  } catch {
+    await browser.runtime.openOptionsPage();
+  }
+}
+
 export function registerTimerHandlers(): void {
+  browser.notifications.onClicked.addListener((id) => {
+    if (id !== CHECKIN_NOTIFICATION) return;
+    void browser.notifications.clear(CHECKIN_NOTIFICATION);
+    void openCheckIn();
+  });
+
   registerHandler("timer/start", async (cmd) => {
     await startTimerNow(cmd.endBy);
     return { ok: true };

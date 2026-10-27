@@ -9,20 +9,11 @@ import { CheckIn } from "./CheckIn";
 import { SignIn } from "./SignIn";
 import { TaskBreakdown } from "./TaskBreakdown";
 import { TimerControls } from "./TimerControls";
-import { useExtensionState, type ExtensionState } from "./useExtensionState";
+import { useExtensionState } from "./useExtensionState";
 import "./Panel.css";
 
-export function Panel({
-  surface,
-  state,
-}: {
-  surface: "popup" | "buddy";
-  state?: ExtensionState;
-}) {
-  const own = useExtensionState(
-    state ? "none" : surface === "buddy" ? "port" : "storage",
-  );
-  const { local, settings, now, ready } = state ?? own;
+export function Panel({ surface }: { surface: "popup" | "buddy" }) {
+  const { local, settings, now, ready } = useExtensionState();
   const [reauth, setReauth] = useState(false);
   const [focusConflict, setFocusConflict] = useState<CalendarEvent | null>(
     null,
@@ -66,6 +57,18 @@ export function Panel({
         />
         Focus mode
       </label>
+      {!local.focus.on && (
+        <label className="plover-focus">
+          <input
+            type="checkbox"
+            checked={local.blockingOn}
+            onChange={() =>
+              void sendCommand({ type: "blocking/set", on: !local.blockingOn })
+            }
+          />
+          Block sites now
+        </label>
+      )}
       {focusConflict && (
         <ConflictOffer
           event={focusConflict}
@@ -78,8 +81,13 @@ export function Panel({
   );
 
   const showSignIn = local.needsSignIn && idle;
+  const nudge =
+    local.transient.nudgeUntil > now ? local.transient.nudgeText : null;
+  const currentStep = activeTask?.steps.find((s) => !s.done);
   const body = (
     <>
+      {nudge && <p className="plover-nudge">{nudge}</p>}
+      {local.transient.checkInPending && <CheckIn task={activeTask} />}
       {showSignIn && <SignIn />}
       {local.needsSignIn && !idle && (
         <div className="plover-banner">
@@ -106,9 +114,35 @@ export function Panel({
       ) : (
         <>
           {activeTask && <p className="plover-task">{activeTask.title}</p>}
+          {activeTask && activeTask.steps.length > 0 && (
+            <ul className="plover-steps">
+              {activeTask.steps.map((s) => (
+                <li
+                  key={s.id}
+                  className={
+                    s.id === currentStep?.id ? "plover-step-current" : undefined
+                  }
+                >
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={s.done}
+                      onChange={() =>
+                        void sendCommand({
+                          type: "step/toggle",
+                          taskId: activeTask.id,
+                          stepId: s.id,
+                        })
+                      }
+                    />
+                    {s.title}
+                  </label>
+                </li>
+              ))}
+            </ul>
+          )}
           <TimerControls timer={local.timer} now={now} />
           {focusSwitch}
-          {local.transient.checkInPending && <CheckIn task={activeTask} />}
         </>
       )}
     </>

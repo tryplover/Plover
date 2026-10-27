@@ -6,16 +6,27 @@
   gap: 8px;
   pointer-events: auto;
 }
-.plover-buddy-panel {
-  width: 320px;
-  background: #fffdf9;
-  color: #2d2a26;
-  border-radius: 12px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
-}
 .plover-below {
   order: 2;
 }
 .plover-buddy-menu {
-  padding: 0 12px 12px;
+  height: 28px;
+  padding: 0;
+}
+.plover-bubble {
+  max-width: 220px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 10px;
+  background: #fffdf9;
+  color: #2d2a26;
+  font:
+    13px system-ui,
+    sans-serif;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+}
+.plover-row {
+  display: flex;
+  gap: 6px;
 }

@@ -6,9 +6,11 @@ import { sessionKeys } from "@/lib/auth/session";
 import { registerHandler } from "./controller";
 import { enqueue } from "./queue";
 
-async function signedIn(): Promise<CommandResult> {
-  await setLocal({ needsSignIn: false });
-  return { ok: true };
+function signedIn(): Promise<CommandResult> {
+  return enqueue(async () => {
+    await setLocal({ needsSignIn: false });
+    return { ok: true };
+  });
 }
 
 export function registerAuthHandlers(): void {
@@ -27,11 +29,9 @@ export function registerAuthHandlers(): void {
     });
     const code = returned ? new URL(returned).searchParams.get("code") : null;
     if (!code) return { ok: false, error: "Sign-in was cancelled" };
-    return enqueue(async () => {
-      const exchanged = await getSupabase().auth.exchangeCodeForSession(code);
-      if (exchanged.error) return { ok: false, error: exchanged.error.message };
-      return signedIn();
-    });
+    const exchanged = await getSupabase().auth.exchangeCodeForSession(code);
+    if (exchanged.error) return { ok: false, error: exchanged.error.message };
+    return signedIn();
   });
 
   registerHandler("auth/password", async (cmd) => {
@@ -53,8 +53,10 @@ export function registerAuthHandlers(): void {
     } catch {
       /* offline: local session is cleared below regardless */
     }
-    await browser.storage.local.remove(await sessionKeys());
-    await setLocal({ needsSignIn: true });
-    return { ok: true };
+    return enqueue(async () => {
+      await browser.storage.local.remove(await sessionKeys());
+      await setLocal({ needsSignIn: true });
+      return { ok: true };
+    });
   });
 }

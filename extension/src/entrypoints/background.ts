@@ -7,11 +7,10 @@ import { registerFocusHandlers } from "@/background/focus";
 import { dispatch } from "@/background/controller";
 import { registerStatePort } from "@/background/state-port";
 import { registerTaskHandlers } from "@/background/tasks";
-import { enqueue } from "@/background/queue";
+import { reconcile } from "@/background/reconcile";
 import {
   notifyCheckIn,
   onTimerEvent,
-  reconcileTimer,
   registerTimerHandlers,
 } from "@/background/timer";
 
@@ -32,8 +31,8 @@ export default defineBackground(() => {
     await notifyCheckIn();
   });
 
-  browser.runtime.onStartup.addListener(() => void enqueue(reconcileTimer));
-  browser.runtime.onInstalled.addListener(() => void enqueue(reconcileTimer));
+  browser.runtime.onStartup.addListener(() => void reconcile());
+  browser.runtime.onInstalled.addListener(() => void reconcile());
 
   browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (!isCommand(message)) return false;

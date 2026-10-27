@@ -22,4 +22,14 @@ describe("manifest", () => {
       "Alt+Shift+P",
     );
   });
+
+  it("exposes blocked.html and panel.html only via dynamic urls", () => {
+    expect(manifest.web_accessible_resources).toEqual([
+      {
+        resources: ["blocked.html", "panel.html"],
+        matches: ["<all_urls>"],
+        use_dynamic_url: true,
+      },
+    ]);
+  });
 });

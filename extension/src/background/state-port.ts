@@ -1,32 +1,60 @@
 import { browser } from "wxt/browser";
-import { getSettings, loadLocalState } from "@/lib/storage";
-import type { LocalState, Settings } from "@/lib/types";
+import {
+  STATE_PORT,
+  deriveBuddyState,
+  type BuddySnapshot,
+} from "@/lib/buddy-state";
+import { getLocal } from "@/lib/storage";
 
-export const STATE_PORT = "plover-state";
+export { STATE_PORT };
 
-export interface StateSnapshot {
-  local: LocalState;
-  settings: Settings;
+async function snapshotAt(
+  now: number,
+): Promise<{ snap: BuddySnapshot; expiresIn: number | null }> {
+  const [timer, focus, transient] = await Promise.all([
+    getLocal("timer"),
+    getLocal("focus"),
+    getLocal("transient"),
+  ]);
+  const windows = [transient.nudgeUntil, transient.celebrateUntil].filter(
+    (t) => t > now,
+  );
+  return {
+    snap: {
+      buddyState: deriveBuddyState({ timer, focus, transient }, now),
+      nudgeText: transient.nudgeUntil > now ? transient.nudgeText : null,
+      checkInPending: transient.checkInPending,
+    },
+    expiresIn: windows.length ? Math.min(...windows) - now : null,
+  };
 }
 
-export async function buildSnapshot(): Promise<StateSnapshot> {
-  return { local: await loadLocalState(), settings: await getSettings() };
+export async function buildSnapshot(): Promise<BuddySnapshot> {
+  return (await snapshotAt(Date.now())).snap;
 }
 
 export function registerStatePort(): void {
   browser.runtime.onConnect.addListener((port) => {
     if (port.name !== STATE_PORT) return;
     let open = true;
+    let expiry: ReturnType<typeof setTimeout> | undefined;
     const push = () => {
-      void buildSnapshot().then((snap) => {
-        if (open) port.postMessage(snap);
+      void snapshotAt(Date.now()).then(({ snap, expiresIn }) => {
+        if (!open) return;
+        port.postMessage(snap);
+        clearTimeout(expiry);
+        if (expiresIn !== null) expiry = setTimeout(push, expiresIn);
       });
+    };
+    const onChanged = (_changes: unknown, area: string) => {
+      if (area === "local") push();
     };
     port.onDisconnect.addListener(() => {
       open = false;
-      browser.storage.onChanged.removeListener(push);
+      clearTimeout(expiry);
+      browser.storage.onChanged.removeListener(onChanged);
     });
-    browser.storage.onChanged.addListener(push);
+    browser.storage.onChanged.addListener(onChanged);
     push();
   });
 }

@@ -243,3 +243,68 @@ describe("check-in notification", () => {
     expect(create).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("check-in cleanup", () => {
+  it("timer/stop clears a pending check-in and its notification", async () => {
+    await dispatch({ type: "timer/start" });
+    await setLocal({
+      transient: {
+        checkInPending: true,
+        nudgeText: null,
+        nudgeUntil: 0,
+        celebrateUntil: 0,
+      },
+    });
+    await fakeBrowser.notifications.create("checkin", {
+      type: "basic",
+      iconUrl: "x",
+      title: "t",
+      message: "m",
+    });
+    await dispatch({ type: "timer/stop" });
+    expect((await getLocal("transient")).checkInPending).toBe(false);
+    expect(fakeBrowser.notifications.getAllCreateOptions()).toEqual({});
+  });
+});
+
+describe("check-in notification click", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  async function create() {
+    await fakeBrowser.notifications.create("checkin", {
+      type: "basic",
+      iconUrl: "x",
+      title: "t",
+      message: "m",
+    });
+  }
+
+  it("opens the popup and clears the notification", async () => {
+    const openPopup = vi.fn(async () => undefined);
+    Object.assign(fakeBrowser.action, { openPopup });
+    await create();
+    await fakeBrowser.notifications.onClicked.trigger("checkin");
+    await vi.waitFor(() => expect(openPopup).toHaveBeenCalled());
+    expect(fakeBrowser.notifications.getAllCreateOptions()).toEqual({});
+  });
+
+  it("falls back to the options page when the popup cannot open", async () => {
+    Object.assign(fakeBrowser.action, {
+      openPopup: vi.fn(async () => {
+        throw new Error("no window");
+      }),
+    });
+    const openOptionsPage = vi.fn(async () => undefined);
+    Object.assign(fakeBrowser.runtime, { openOptionsPage });
+    await create();
+    await fakeBrowser.notifications.onClicked.trigger("checkin");
+    await vi.waitFor(() => expect(openOptionsPage).toHaveBeenCalled());
+  });
+
+  it("ignores other notifications", async () => {
+    const openPopup = vi.fn(async () => undefined);
+    Object.assign(fakeBrowser.action, { openPopup });
+    await fakeBrowser.notifications.onClicked.trigger("other");
+    expect(openPopup).not.toHaveBeenCalled();
+  });
+});

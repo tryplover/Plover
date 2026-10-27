@@ -15,7 +15,7 @@
 }
 .plover-buddy--focus {
   background: #7e8fd6;
-  animation: plover-pulse 3s ease-in-out infinite;
+  transform: scale(0.75);
 }
 .plover-buddy--break {
   background: #a8d98f;

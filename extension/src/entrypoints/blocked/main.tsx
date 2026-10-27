@@ -11,6 +11,14 @@ function Blocked() {
   const { local, now, ready } = useExtensionState();
   if (!ready) return null;
   const running = local.timer.phase !== "idle";
+  if (!local.blockingOn) {
+    return (
+      <main className="blocked">
+        <Buddy state={deriveBuddyState(local, now)} />
+        <h1>Focus is over — you&apos;re free to go.</h1>
+      </main>
+    );
+  }
   return (
     <main className="blocked">
       <Buddy state={deriveBuddyState(local, now)} />

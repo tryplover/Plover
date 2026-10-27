@@ -302,3 +302,48 @@ describe("sign-in gate", () => {
     expect((await dispatch({ type: "timer/start" })).ok).toBe(false);
   });
 });
+
+describe("auth network calls run outside the queue", () => {
+  async function queueStillMoves() {
+    await signedIn(true);
+    await dispatch({ type: "timer/start" });
+    expect((await dispatch({ type: "timer/pause" })).ok).toBe(true);
+  }
+
+  it("auth/password does not hold the queue while supabase is pending", async () => {
+    let finish: (v: { error: null }) => void = () => undefined;
+    sb.signInWithPassword.mockReturnValue(
+      new Promise((r) => {
+        finish = r;
+      }),
+    );
+    const pending = dispatch({
+      type: "auth/password",
+      mode: "signIn",
+      email: "a@b.co",
+      password: "pw",
+    });
+    await vi.waitFor(() => expect(sb.signInWithPassword).toHaveBeenCalled());
+    await queueStillMoves();
+    finish({ error: null });
+    expect((await pending).ok).toBe(true);
+    expect(await getLocal("needsSignIn")).toBe(false);
+  });
+
+  it("auth/signOut does not hold the queue while supabase is pending", async () => {
+    let finish: (v: { error: null }) => void = () => undefined;
+    sb.signOut.mockReturnValue(
+      new Promise((r) => {
+        finish = r;
+      }),
+    );
+    await signedIn(true);
+    const pending = dispatch({ type: "auth/signOut" });
+    await vi.waitFor(() => expect(sb.signOut).toHaveBeenCalled());
+    await dispatch({ type: "timer/start" });
+    expect((await dispatch({ type: "timer/pause" })).ok).toBe(true);
+    finish({ error: null });
+    expect((await pending).ok).toBe(true);
+    expect(await getLocal("needsSignIn")).toBe(true);
+  });
+});
