@@ -9,13 +9,20 @@ import { CheckIn } from "./CheckIn";
 import { SignIn } from "./SignIn";
 import { TaskBreakdown } from "./TaskBreakdown";
 import { TimerControls } from "./TimerControls";
-import { useExtensionState } from "./useExtensionState";
+import { useExtensionState, type ExtensionState } from "./useExtensionState";
 import "./Panel.css";
 
-export function Panel({ surface }: { surface: "popup" | "buddy" }) {
-  const { local, settings, now, ready } = useExtensionState(
-    surface === "buddy" ? "port" : "storage",
+export function Panel({
+  surface,
+  state,
+}: {
+  surface: "popup" | "buddy";
+  state?: ExtensionState;
+}) {
+  const own = useExtensionState(
+    state ? "none" : surface === "buddy" ? "port" : "storage",
   );
+  const { local, settings, now, ready } = state ?? own;
   const [reauth, setReauth] = useState(false);
   const [focusConflict, setFocusConflict] = useState<CalendarEvent | null>(
     null,

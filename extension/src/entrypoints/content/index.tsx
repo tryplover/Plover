@@ -3,8 +3,9 @@ import type { CSSProperties, PointerEvent } from "react";
 import { createRoot } from "react-dom/client";
 import { normalizeDomain } from "@/lib/blocking/domains";
 import { deriveBuddyState } from "@/lib/buddy-state";
-import { updateSettings } from "@/lib/storage";
-import type { BuddyCorner } from "@/lib/types";
+import { browser } from "wxt/browser";
+import { getSettings, updateSettings } from "@/lib/storage";
+import type { BuddyCorner, Settings } from "@/lib/types";
 import { isBuddyVisible, nearestCorner } from "@/lib/visibility";
 import { Buddy } from "@/ui/Buddy";
 import { Panel } from "@/ui/Panel";
@@ -23,14 +24,26 @@ function cornerStyle(corner: BuddyCorner): CSSProperties {
   };
 }
 
+function useSyncedSettings(): Settings | null {
+  const [settings, setSettings] = useState<Settings | null>(null);
+  useEffect(() => {
+    let alive = true;
+    const load = () => void getSettings().then((s) => alive && setSettings(s));
+    load();
+    browser.storage.onChanged.addListener(load);
+    return () => {
+      alive = false;
+      browser.storage.onChanged.removeListener(load);
+    };
+  }, []);
+  return settings;
+}
+
 function BuddyApp() {
-  const { local, settings, now, ready } = useExtensionState("port");
-  const [open, setOpen] = useState(false);
+  const settings = useSyncedSettings();
   const [fullscreen, setFullscreen] = useState(
     () => document.fullscreenElement !== null,
   );
-  const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
-  const start = useRef<{ x: number; y: number; moved: boolean } | null>(null);
 
   useEffect(() => {
     const onChange = () => setFullscreen(document.fullscreenElement !== null);
@@ -38,10 +51,22 @@ function BuddyApp() {
     return () => document.removeEventListener("fullscreenchange", onChange);
   }, []);
 
-  if (!ready || fullscreen || !isBuddyVisible(location.href, settings))
+  if (!settings || fullscreen || !isBuddyVisible(location.href, settings))
     return null;
+  return <BuddyView />;
+}
+
+function BuddyView() {
+  const state = useExtensionState("port");
+  const { local, settings, now, ready } = state;
+  const [open, setOpen] = useState(false);
+  const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
+  const start = useRef<{ x: number; y: number; moved: boolean } | null>(null);
+
+  if (!ready) return null;
 
   function onPointerDown(e: PointerEvent) {
+    if (e.button !== 0) return;
     e.currentTarget.setPointerCapture(e.pointerId);
     start.current = { x: e.clientX, y: e.clientY, moved: false };
   }
@@ -77,6 +102,11 @@ function BuddyApp() {
     }
   }
 
+  function onPointerCancel() {
+    start.current = null;
+    setDrag(null);
+  }
+
   const host = normalizeDomain(location.hostname);
   const style: CSSProperties = drag
     ? { left: drag.x, top: drag.y }
@@ -89,7 +119,7 @@ function BuddyApp() {
         <div
           className={`plover-buddy-panel ${panelBelow ? "plover-below" : "plover-above"}`}
         >
-          <Panel surface="buddy" />
+          <Panel surface="buddy" state={state} />
           <div className="plover-row plover-buddy-menu">
             {host && (
               <button
@@ -116,6 +146,7 @@ function BuddyApp() {
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
+        onPointerCancel={onPointerCancel}
       >
         <Buddy state={deriveBuddyState(local, now)} />
       </div>
@@ -139,5 +170,6 @@ export default defineContentScript({
       onRemove: (root) => root?.unmount(),
     });
     ui.mount();
+    ctx.onInvalidated(() => ui.remove());
   },
 });

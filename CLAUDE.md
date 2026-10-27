@@ -136,8 +136,8 @@ and `extension/`.
 | `pnpm test` | Vitest run (no coverage) |
 | `pnpm --filter ./app run test:coverage` | Vitest run + v8 coverage report |
 | `pnpm --filter ./app exec <tool>` | Run a tool binary inside the app workspace |
-| `pnpm dev:extension` | WXT dev mode for the extension (writes `extension/.output/chrome-mv3`) |
-| `pnpm build:extension` | Production build of the extension |
+| `pnpm dev:extension` | WXT dev mode for the extension (writes `extension/.output/chrome-mv3-dev`) |
+| `pnpm build:extension` | Production build of the extension (writes `extension/.output/chrome-mv3`) |
 | `pnpm --filter ./extension test` | Vitest for the extension only |
 
 **Always use path-based filters (`--filter ./app`)**, not name-based

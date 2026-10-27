@@ -16,9 +16,9 @@ import {
 } from "@/background/timer";
 
 export default defineBackground(() => {
-  void browser.storage.local.setAccessLevel({
-    accessLevel: "TRUSTED_CONTEXTS",
-  });
+  browser.storage.local
+    .setAccessLevel({ accessLevel: "TRUSTED_CONTEXTS" })
+    .catch((e: unknown) => console.error("setAccessLevel failed", e));
   registerStatePort();
   registerTimerHandlers();
   registerTaskHandlers();

@@ -204,7 +204,7 @@ pnpm dev:extension          # or: pnpm --filter ./extension dev
 pnpm build:extension        # production build
 ```
 
-In Chrome/Edge/Brave/Arc open `chrome://extensions`, enable Developer mode, **Load unpacked**, and pick `extension/.output/chrome-mv3`. Dev mode (`wxt`) rebuilds into that folder; reload the extension after manifest changes.
+In Chrome/Edge/Brave/Arc open `chrome://extensions`, enable Developer mode, **Load unpacked**, and pick `extension/.output/chrome-mv3` (production build). `pnpm dev:extension` writes `extension/.output/chrome-mv3-dev` instead (load that folder when developing); `pnpm build:extension` writes `chrome-mv3`. Reload the extension after manifest changes.
 
 **Redirect URL.** Sign-in and Calendar use `launchWebAuthFlow`, whose redirect is `https://<extension-id>.chromiumapp.org/` (the ID is shown on `chrome://extensions`). Add that exact URL to:
 
