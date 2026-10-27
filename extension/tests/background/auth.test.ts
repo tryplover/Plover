@@ -1,5 +1,5 @@
 import { fakeBrowser } from "wxt/testing/fake-browser";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const sb = vi.hoisted(() => ({
   signInWithOAuth: vi.fn(),
@@ -13,6 +13,7 @@ vi.mock("@supabase/supabase-js", () => ({
   createClient: () => ({ auth: sb }),
 }));
 
+import type { Command } from "@/lib/messages";
 import { registerAuthHandlers } from "@/background/auth";
 import { dispatch } from "@/background/controller";
 import { registerTimerHandlers } from "@/background/timer";
@@ -21,14 +22,16 @@ import { getLocal, setLocal } from "@/lib/storage";
 const REDIRECT = "https://abc.chromiumapp.org/";
 const launchWebAuthFlow = vi.fn();
 
-function signedIn(on: boolean) {
-  sb.getSession.mockResolvedValue({
-    data: { session: on ? { access_token: "tok" } : null },
-  });
+async function signedIn(on: boolean) {
+  await fakeBrowser.storage.local.remove("sb-x-auth-token");
+  if (on) await fakeBrowser.storage.local.set({ "sb-x-auth-token": "{}" });
+  await setLocal({ needsSignIn: !on });
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   fakeBrowser.reset();
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(1_700_000_000_000);
   Object.values(sb).forEach((m) => m.mockReset());
   launchWebAuthFlow.mockReset();
   Object.assign(fakeBrowser.identity, {
@@ -37,7 +40,11 @@ beforeEach(() => {
   });
   registerAuthHandlers();
   registerTimerHandlers();
-  signedIn(false);
+  await signedIn(false);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("auth/google", () => {
@@ -87,6 +94,48 @@ describe("auth/google", () => {
     });
     launchWebAuthFlow.mockResolvedValue(undefined);
     expect((await dispatch({ type: "auth/google" })).ok).toBe(false);
+  });
+
+  it("fails when launchWebAuthFlow rejects", async () => {
+    sb.signInWithOAuth.mockResolvedValue({
+      data: { url: "https://sb.example/authorize" },
+      error: null,
+    });
+    launchWebAuthFlow.mockRejectedValue(new Error("user closed window"));
+    expect(await dispatch({ type: "auth/google" })).toEqual({
+      ok: false,
+      error: "user closed window",
+    });
+  });
+
+  it("does not block the queue while the interactive flow is pending", async () => {
+    await signedIn(true);
+    await dispatch({ type: "timer/start" });
+    const before = await getLocal("timer");
+    sb.signInWithOAuth.mockResolvedValue({
+      data: { url: "https://sb.example/authorize" },
+      error: null,
+    });
+    let finish: (v: string) => void = () => undefined;
+    launchWebAuthFlow.mockReturnValue(
+      new Promise<string>((r) => {
+        finish = r;
+      }),
+    );
+    sb.exchangeCodeForSession.mockResolvedValue({ error: null });
+    const pending = dispatch({ type: "auth/google" });
+    await vi.waitFor(() => expect(launchWebAuthFlow).toHaveBeenCalled());
+
+    vi.setSystemTime(before.phaseEndsAt + 1);
+    await fakeBrowser.alarms.onAlarm.trigger({
+      name: "timer-phase",
+      scheduledTime: before.phaseEndsAt,
+      persistAcrossSessions: false,
+    });
+    expect((await getLocal("timer")).phase).not.toBe("work");
+
+    finish(`${REDIRECT}?code=CODE`);
+    expect((await pending).ok).toBe(true);
   });
 
   it("surfaces exchange errors", async () => {
@@ -169,13 +218,27 @@ describe("auth/password", () => {
 
 describe("auth/signOut", () => {
   it("signs out and leaves a running timer alone", async () => {
-    signedIn(true);
+    await signedIn(true);
     await dispatch({ type: "timer/start" });
     sb.signOut.mockResolvedValue({ error: null });
     const r = await dispatch({ type: "auth/signOut" });
     expect(r.ok).toBe(true);
     expect(sb.signOut).toHaveBeenCalled();
     expect((await getLocal("timer")).phase).toBe("work");
+    expect(await getLocal("needsSignIn")).toBe(true);
+  });
+
+  it("clears the local session and succeeds even if supabase signOut throws", async () => {
+    await signedIn(true);
+    sb.signOut.mockRejectedValue(new Error("offline"));
+    const r = await dispatch({ type: "auth/signOut" });
+    expect(r.ok).toBe(true);
+    expect(await getLocal("needsSignIn")).toBe(true);
+    expect(
+      (await fakeBrowser.storage.local.get("sb-x-auth-token"))[
+        "sb-x-auth-token"
+      ],
+    ).toBeUndefined();
   });
 });
 
@@ -187,18 +250,18 @@ describe("sign-in gate", () => {
   });
 
   it("lets timer/stop through when signed out so a running session ends", async () => {
-    signedIn(true);
+    await signedIn(true);
     await dispatch({ type: "timer/start" });
-    signedIn(false);
+    await signedIn(false);
     const r = await dispatch({ type: "timer/stop" });
     expect(r.ok).toBe(true);
     expect((await getLocal("timer")).phase).toBe("idle");
   });
 
   it("lets pause/resume/skip through when signed out", async () => {
-    signedIn(true);
+    await signedIn(true);
     await dispatch({ type: "timer/start" });
-    signedIn(false);
+    await signedIn(false);
     expect((await dispatch({ type: "timer/pause" })).ok).toBe(true);
     expect((await dispatch({ type: "timer/resume" })).ok).toBe(true);
   });
@@ -207,8 +270,35 @@ describe("sign-in gate", () => {
     { type: "focus/set", on: true },
     { type: "blocking/set", on: true },
     { type: "task/decompose", text: "x" },
+    { type: "task/save", task: { id: "t" } },
     { type: "calendar/connect" },
-  ] as const)("blocks $type when signed out", async (cmd) => {
+  ] as unknown as Command[])("blocks $type when signed out", async (cmd) => {
+    await setLocal({ needsSignIn: false });
     expect(await dispatch(cmd)).toEqual({ ok: false, error: "not signed in" });
+    expect(await getLocal("needsSignIn")).toBe(true);
+  });
+
+  it.each([
+    { type: "focus/set", on: false },
+    { type: "blocking/set", on: false },
+  ] as const)("lets $type off through when signed out", async (cmd) => {
+    await setLocal({ needsSignIn: false });
+    expect(await dispatch(cmd)).not.toEqual({
+      ok: false,
+      error: "not signed in",
+    });
+    expect(await getLocal("needsSignIn")).toBe(false);
+  });
+
+  it("allows timer/start with a stored session even if refresh would fail", async () => {
+    await signedIn(true);
+    sb.getSession.mockRejectedValue(new Error("offline"));
+    expect((await dispatch({ type: "timer/start" })).ok).toBe(true);
+  });
+
+  it("refuses when a session is stored but needsSignIn is true", async () => {
+    await signedIn(true);
+    await setLocal({ needsSignIn: true });
+    expect((await dispatch({ type: "timer/start" })).ok).toBe(false);
   });
 });

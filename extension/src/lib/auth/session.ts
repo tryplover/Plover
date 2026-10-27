@@ -1,4 +1,6 @@
+import { browser } from "wxt/browser";
 import type { Command } from "@/lib/messages";
+import { getLocal } from "@/lib/storage";
 import { getSupabase } from "./supabase";
 
 export const GATED_COMMANDS: Command["type"][] = [
@@ -19,6 +21,21 @@ export async function getAccessToken(): Promise<string | null> {
   }
 }
 
+export function isGated(cmd: Command): boolean {
+  if (!GATED_COMMANDS.includes(cmd.type)) return false;
+  if (cmd.type === "focus/set" || cmd.type === "blocking/set") return cmd.on;
+  return true;
+}
+
+const SESSION_KEY = /^sb-.+-auth-token$/;
+
+export async function sessionKeys(): Promise<string[]> {
+  const all = await browser.storage.local.get(null);
+  return Object.keys(all).filter((k) => SESSION_KEY.test(k));
+}
+
 export async function isSignedIn(): Promise<boolean> {
-  return (await getAccessToken()) !== null;
+  if (await getLocal("needsSignIn")) return false;
+  const all = await browser.storage.local.get(null);
+  return Object.entries(all).some(([k, v]) => SESSION_KEY.test(k) && !!v);
 }

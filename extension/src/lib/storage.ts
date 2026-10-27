@@ -29,7 +29,7 @@ export const DEFAULT_LOCAL: LocalState = {
     nudgeUntil: 0,
     celebrateUntil: 0,
   },
-  needsSignIn: false,
+  needsSignIn: true,
   calendar: { events: [], fetchedAt: 0 },
   calendarConnected: false,
 };

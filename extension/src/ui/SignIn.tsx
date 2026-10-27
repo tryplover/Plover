@@ -13,8 +13,14 @@ export function SignIn() {
     setBusy(true);
     setError(null);
     setNotice(null);
-    const result = await action();
-    setBusy(false);
+    let result: CommandResult;
+    try {
+      result = await action();
+    } catch (e) {
+      result = { ok: false, error: e instanceof Error ? e.message : String(e) };
+    } finally {
+      setBusy(false);
+    }
     if (!result.ok) {
       setError(result.error);
       return;
