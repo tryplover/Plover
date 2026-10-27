@@ -1,5 +1,10 @@
 import { fakeBrowser } from "wxt/testing/fake-browser";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@/lib/auth/session", async (orig) => ({
+  ...(await orig<typeof import("@/lib/auth/session")>()),
+  isSignedIn: async () => true,
+}));
 import { dispatch } from "@/background/controller";
 import { registerTaskHandlers } from "@/background/tasks";
 import { getLocal, setLocal } from "@/lib/storage";
