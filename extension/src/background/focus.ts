@@ -66,6 +66,12 @@ export function registerFocusHandlers(): void {
     if (area !== "sync" || !changes["settings"]) return;
     void enqueue(async () => {
       if (await getLocal("blockingOn")) await reapplyBlocking();
+      if ((await getLocal("focus")).on) {
+        const { focusNudgeMinutes } = await getSettings();
+        await browser.alarms.create(NUDGE_ALARM, {
+          periodInMinutes: focusNudgeMinutes,
+        });
+      }
     });
   });
 }

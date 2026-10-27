@@ -1,8 +1,8 @@
-const HOST = /^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/;
+const HOST = /^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+([a-z]{2,}|xn--[a-z0-9-]+)$/;
 
 export function normalizeDomain(input: string): string | null {
   const trimmed = input.trim().toLowerCase();
-  if (!trimmed || /\s/.test(trimmed)) return null;
+  if (!trimmed || /[\s@]/.test(trimmed)) return null;
   let host: string;
   try {
     host = new URL(trimmed.includes("://") ? trimmed : `https://${trimmed}`)
@@ -10,7 +10,7 @@ export function normalizeDomain(input: string): string | null {
   } catch {
     return null;
   }
-  host = host.replace(/^www\./, "");
+  host = host.replace(/\.$/, "").replace(/^www\./, "");
   return HOST.test(host) ? host : null;
 }
 
@@ -24,5 +24,14 @@ export function isBlockedUrl(url: string, blocklist: string[]): boolean {
   } catch {
     return false;
   }
-  return blocklist.some((d) => host === d || host.endsWith(`.${d}`));
+  return cleanBlocklist(blocklist).some(
+    (d) => host === d || host.endsWith(`.${d}`),
+  );
+}
+
+export function cleanBlocklist(blocklist: string[]): string[] {
+  return blocklist.flatMap((entry) => {
+    const d = normalizeDomain(entry);
+    return d ? [d] : [];
+  });
 }

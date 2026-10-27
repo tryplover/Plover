@@ -31,6 +31,14 @@ describe("buildRules", () => {
     ]);
   });
 
+  it("normalises entries and drops invalid ones", () => {
+    const rules = buildRules(["WWW.X.com", "junk entry", "reddit.com"]);
+    expect(rules.map((r) => [r.id, r.condition.requestDomains])).toEqual([
+      [1, ["x.com"]],
+      [2, ["reddit.com"]],
+    ]);
+  });
+
   it("returns no rules for an empty blocklist", () => {
     expect(buildRules([])).toEqual([]);
   });

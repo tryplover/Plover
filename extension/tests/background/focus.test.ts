@@ -1,9 +1,10 @@
 import { fakeBrowser } from "wxt/testing/fake-browser";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+const auth = vi.hoisted(() => ({ signedIn: true }));
 vi.mock("@/lib/auth/session", async (orig) => ({
   ...(await orig<typeof import("@/lib/auth/session")>()),
-  isSignedIn: async () => true,
+  isSignedIn: async () => auth.signedIn,
 }));
 import { dispatch } from "@/background/controller";
 import { registerFocusHandlers } from "@/background/focus";
@@ -13,8 +14,16 @@ import { getLocal, setLocal, updateSettings } from "@/lib/storage";
 const MIN = 60_000;
 const T0 = 1_700_000_000_000;
 
-const updateDynamicRules = vi.fn(async () => undefined);
-const getDynamicRules = vi.fn(async () => [] as { id: number }[]);
+let installed: { id: number }[] = [];
+const updateDynamicRules = vi.fn(
+  async (arg: { removeRuleIds: number[]; addRules: { id: number }[] }) => {
+    installed = [
+      ...installed.filter((r) => !arg.removeRuleIds.includes(r.id)),
+      ...arg.addRules,
+    ];
+  },
+);
+const getDynamicRules = vi.fn(async () => installed);
 const tabsQuery = vi.fn();
 const tabsUpdate = vi.fn(async () => undefined);
 
@@ -30,7 +39,8 @@ beforeEach(async () => {
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(T0);
   updateDynamicRules.mockClear();
-  getDynamicRules.mockReset().mockResolvedValue([]);
+  installed = [];
+  auth.signedIn = true;
   tabsQuery.mockReset().mockResolvedValue([]);
   tabsUpdate.mockClear();
   vi.stubGlobal("browser", fakeBrowser);
@@ -131,7 +141,6 @@ describe("focus mode", () => {
 
   it("focus off removes rules, blocking and the nudge alarm but keeps the timer", async () => {
     await dispatch({ type: "focus/set", on: true });
-    getDynamicRules.mockResolvedValue([{ id: 1 }, { id: 2 }]);
     updateDynamicRules.mockClear();
     await dispatch({ type: "focus/set", on: false });
     expect(updateDynamicRules).toHaveBeenCalledWith({
@@ -146,30 +155,66 @@ describe("focus mode", () => {
 
   it("timer stop ends focus and blocking", async () => {
     await dispatch({ type: "focus/set", on: true });
-    getDynamicRules.mockResolvedValue([{ id: 1 }, { id: 2 }]);
     await dispatch({ type: "timer/stop" });
     expect(await getLocal("blockingOn")).toBe(false);
     expect((await getLocal("focus")).on).toBe(false);
     expect(await fakeBrowser.alarms.get("focus-nudge")).toBeUndefined();
-    expect(updateDynamicRules).toHaveBeenLastCalledWith({
-      removeRuleIds: [1, 2],
-      addRules: [],
-    });
+    expect(installed).toHaveLength(0);
   });
 
-  it("needsSignIn mid-focus leaves blocking on", async () => {
+  it("a refused gated command mid-focus leaves focus and blocking on", async () => {
     await dispatch({ type: "focus/set", on: true });
-    await setLocal({ needsSignIn: true });
+    auth.signedIn = false;
+    const res = await dispatch({ type: "timer/start" });
+    expect(res.ok).toBe(false);
+    expect(await getLocal("needsSignIn")).toBe(true);
     expect(await getLocal("blockingOn")).toBe(true);
     expect((await getLocal("focus")).on).toBe(true);
+    expect(installed).toHaveLength(2);
   });
 
-  it("ending focus works while signed out", async () => {
+  it("ending focus and blocking works while signed out", async () => {
     await dispatch({ type: "focus/set", on: true });
-    await setLocal({ needsSignIn: true });
-    const res = await dispatch({ type: "focus/set", on: false });
-    expect(res.ok).toBe(true);
+    auth.signedIn = false;
+    expect((await dispatch({ type: "focus/set", on: false })).ok).toBe(true);
     expect(await getLocal("blockingOn")).toBe(false);
+    expect(installed).toHaveLength(0);
+  });
+
+  it("manual blocking can be turned off while signed out", async () => {
+    await dispatch({ type: "blocking/set", on: true });
+    expect(installed).toHaveLength(2);
+    auth.signedIn = false;
+    expect((await dispatch({ type: "blocking/set", on: false })).ok).toBe(true);
+    expect(installed).toHaveLength(0);
+  });
+
+  it("focus on with a running timer keeps its phaseEndsAt", async () => {
+    await dispatch({ type: "timer/start" });
+    const before = await getLocal("timer");
+    vi.setSystemTime(T0 + MIN);
+    await dispatch({ type: "focus/set", on: true });
+    expect((await getLocal("timer")).phaseEndsAt).toBe(before.phaseEndsAt);
+    expect(await getLocal("blockingOn")).toBe(true);
+  });
+
+  it("blocking stays on through a break", async () => {
+    await dispatch({ type: "focus/set", on: true });
+    vi.setSystemTime(T0 + 25 * MIN);
+    await fireAlarm("timer-phase");
+    expect((await getLocal("timer")).phase).toBe("shortBreak");
+    expect(await getLocal("blockingOn")).toBe(true);
+    expect(installed).toHaveLength(2);
+  });
+
+  it("recreates the nudge alarm when the interval changes", async () => {
+    await dispatch({ type: "focus/set", on: true });
+    await updateSettings({ focusNudgeMinutes: 30 });
+    await vi.waitFor(async () =>
+      expect(
+        (await fakeBrowser.alarms.get("focus-nudge"))?.periodInMinutes,
+      ).toBe(30),
+    );
   });
 });
 

@@ -1,9 +1,11 @@
+import { cleanBlocklist } from "./domains";
+
 export const BLOCKED_PAGE = "/blocked.html";
 
 export function buildRules(
   blocklist: string[],
 ): chrome.declarativeNetRequest.Rule[] {
-  return blocklist.map((domain, i) => ({
+  return cleanBlocklist(blocklist).map((domain, i) => ({
     id: i + 1,
     priority: 1,
     action: {
