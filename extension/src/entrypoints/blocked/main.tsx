@@ -5,6 +5,7 @@ import { formatClock } from "@/ui/components/TimerControls";
 import { Buddy } from "@/ui/components/Buddy";
 import { deriveBuddyState } from "@/features/buddy/buddy-state";
 import { useExtensionState } from "@/ui/hooks/useExtensionState";
+import "@/ui/base.css";
 import "./blocked.css";
 
 function Blocked() {

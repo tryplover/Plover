@@ -2,6 +2,7 @@ import { useState } from "react";
 import { browser } from "wxt/browser";
 import { conflictDuring } from "@/features/calendar/events";
 import { deriveBuddyState } from "@/features/buddy/buddy-state";
+import { findActiveTask, firstOpenStep } from "@/features/tasks/active-step";
 import { sendCommand } from "@/shared/messages";
 import type { CalendarEvent } from "@/shared/types";
 import { CalendarNext, ConflictOffer } from "@/ui/components/CalendarNext";
@@ -23,7 +24,7 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
     return <div className={`plover-panel plover-surface-${surface}`} />;
 
   const idle = local.timer.phase === "idle";
-  const activeTask = local.tasks.find((t) => t.id === local.activeTaskId);
+  const activeTask = findActiveTask(local.tasks, local.activeTaskId);
   const buddy = deriveBuddyState(local, now);
 
   function toggleFocus() {
@@ -83,7 +84,7 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
   const showSignIn = local.needsSignIn && idle;
   const nudge =
     local.transient.nudgeUntil > now ? local.transient.nudgeText : null;
-  const currentStep = activeTask?.steps.find((s) => !s.done);
+  const currentStep = firstOpenStep(activeTask);
   const body = (
     <>
       {nudge && <p className="plover-nudge">{nudge}</p>}

@@ -1,4 +1,5 @@
 import { getAccessToken } from "@/features/auth/session";
+import { withTimeout } from "@/shared/with-timeout";
 
 const MAX_STEPS = 12;
 const TIMEOUT_MS = 15_000;
@@ -22,11 +23,9 @@ export async function suggestSteps(
   text: string,
   fetchImpl: typeof fetch = fetch,
 ): Promise<string[]> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-  try {
+  return withTimeout(TIMEOUT_MS, async (signal) => {
     const aborted = new Promise<never>((_, reject) => {
-      controller.signal.addEventListener("abort", () =>
+      signal.addEventListener("abort", () =>
         reject(new DecomposeError("decompose timed out", null)),
       );
     });
@@ -42,7 +41,7 @@ export async function suggestSteps(
         goalText: text,
         now: new Date().toISOString(),
       }),
-      signal: controller.signal,
+      signal,
     });
     if (!res.ok) {
       throw new DecomposeError(`decompose failed: ${res.status}`, res.status);
@@ -55,7 +54,5 @@ export async function suggestSteps(
       .map((s) => (typeof s?.title === "string" ? s.title.trim() : ""))
       .filter((t) => t.length > 0)
       .slice(0, MAX_STEPS);
-  } finally {
-    clearTimeout(timer);
-  }
+  });
 }

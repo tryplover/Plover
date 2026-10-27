@@ -1,3 +1,5 @@
+import { hostMatchesDomain, httpHostname } from "@/shared/host";
+
 const HOST = /^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+([a-z]{2,}|xn--[a-z0-9-]+)$/;
 
 export function normalizeDomain(input: string): string | null {
@@ -15,18 +17,9 @@ export function normalizeDomain(input: string): string | null {
 }
 
 export function isBlockedUrl(url: string, blocklist: string[]): boolean {
-  let host: string;
-  try {
-    const parsed = new URL(url);
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:")
-      return false;
-    host = parsed.hostname.toLowerCase();
-  } catch {
-    return false;
-  }
-  return cleanBlocklist(blocklist).some(
-    (d) => host === d || host.endsWith(`.${d}`),
-  );
+  const host = httpHostname(url);
+  if (!host) return false;
+  return cleanBlocklist(blocklist).some((d) => hostMatchesDomain(host, d));
 }
 
 export function cleanBlocklist(blocklist: string[]): string[] {

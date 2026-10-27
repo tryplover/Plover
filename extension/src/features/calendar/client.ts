@@ -1,5 +1,6 @@
 import { browser } from "wxt/browser";
 import type { CalendarEvent } from "@/shared/types";
+import { withTimeout } from "@/shared/with-timeout";
 import { parseEvents } from "@/features/calendar/events";
 
 export const CALENDAR_SCOPE =
@@ -30,20 +31,16 @@ export async function fetchUpcoming(
     orderBy: "startTime",
     maxResults: "20",
   });
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-  try {
+  return withTimeout(FETCH_TIMEOUT_MS, async (signal) => {
     const res = await fetchImpl(`${EVENTS_URL}?${params}`, {
       headers: { Authorization: `Bearer ${token}` },
-      signal: controller.signal,
+      signal,
     });
     if (res.status === 401)
       throw new CalendarAuthError("Calendar token rejected");
     if (!res.ok) throw new Error(`Calendar request failed: ${res.status}`);
     return parseEvents(await res.json());
-  } finally {
-    clearTimeout(timer);
-  }
+  });
 }
 
 export async function requestToken(

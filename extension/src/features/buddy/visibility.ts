@@ -1,3 +1,4 @@
+import { hostMatchesDomain, httpHostname } from "@/shared/host";
 import type { Settings } from "@/shared/types";
 
 export function isBuddyVisible(
@@ -5,18 +6,9 @@ export function isBuddyVisible(
   settings: Settings,
 ): boolean {
   if (!url || settings.hideEverywhere) return false;
-  let host: string;
-  try {
-    const parsed = new URL(url);
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:")
-      return false;
-    host = parsed.hostname.toLowerCase();
-  } catch {
-    return false;
-  }
-  return !settings.hiddenSites.some(
-    (d) => host === d || host.endsWith(`.${d}`),
-  );
+  const host = httpHostname(url);
+  if (!host) return false;
+  return !settings.hiddenSites.some((d) => hostMatchesDomain(host, d));
 }
 
 export function nearestCorner(

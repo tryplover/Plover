@@ -1,4 +1,5 @@
 import { browser } from "wxt/browser";
+import { findActiveTask, firstOpenStep } from "@/features/tasks/active-step";
 import { getLocal, getSettings, setLocal } from "@/shared/storage";
 import { onAlarm } from "@/worker/alarms";
 import {
@@ -71,9 +72,7 @@ export function registerFocusHandlers(): void {
       getLocal("activeTaskId"),
       getLocal("transient"),
     ]);
-    const step = tasks
-      .find((t) => t.id === activeTaskId)
-      ?.steps.find((s) => !s.done);
+    const step = firstOpenStep(findActiveTask(tasks, activeTaskId));
     await setLocal({
       transient: {
         ...transient,

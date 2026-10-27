@@ -5,6 +5,7 @@ import { sendCommand } from "@/shared/messages";
 import { updateSettings } from "@/shared/storage";
 import type { Settings } from "@/shared/types";
 import { useExtensionState } from "@/ui/hooks/useExtensionState";
+import "@/ui/base.css";
 import "./options.css";
 
 type NumberKey =
