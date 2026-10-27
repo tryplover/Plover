@@ -9,9 +9,23 @@ import { setLocal } from "@/shared/storage";
 const MIN = 60_000;
 const T0 = 1_700_000_000_000;
 const fetchMock = vi.fn();
+const scripting = {
+  getRegisteredContentScripts: vi.fn(),
+  registerContentScripts: vi.fn(),
+  updateContentScripts: vi.fn(),
+  unregisterContentScripts: vi.fn(),
+};
+const getAllPermissions = vi.fn();
 
 beforeEach(async () => {
   fakeBrowser.reset();
+  for (const fn of [...Object.values(scripting), getAllPermissions])
+    fn.mockReset();
+  scripting.getRegisteredContentScripts.mockResolvedValue([]);
+  getAllPermissions.mockResolvedValue({ origins: [] });
+  const fb = fakeBrowser as unknown as Record<string, unknown>;
+  fb.scripting = scripting;
+  fb.permissions = { getAll: getAllPermissions };
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(T0);
   fetchMock.mockReset();
@@ -82,5 +96,13 @@ describe("reconcile", () => {
     expect(names).not.toContain("calendar-refresh");
     expect(names).not.toContain("calendar-headsup");
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("registers the buddy script when all sites are granted", async () => {
+    getAllPermissions.mockResolvedValue({ origins: ["<all_urls>"] });
+    await reconcile();
+    expect(scripting.registerContentScripts).toHaveBeenCalledWith([
+      expect.objectContaining({ id: "plover-buddy", matches: ["<all_urls>"] }),
+    ]);
   });
 });
