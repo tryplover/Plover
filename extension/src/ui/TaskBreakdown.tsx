@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { conflictDuring } from "@/lib/calendar/events";
 import { sendCommand } from "@/lib/messages";
-import type { Task } from "@/lib/types";
+import type { CalendarEvent, Task } from "@/lib/types";
+import { ConflictOffer } from "./CalendarNext";
 
 interface DraftStep {
   key: string;
@@ -9,11 +11,20 @@ interface DraftStep {
 
 const newKey = () => crypto.randomUUID();
 
-export function TaskBreakdown() {
+export function TaskBreakdown({
+  events,
+  workMinutes,
+  now,
+}: {
+  events: CalendarEvent[];
+  workMinutes: number;
+  now: number;
+}) {
   const [title, setTitle] = useState("");
   const [steps, setSteps] = useState<DraftStep[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [conflict, setConflict] = useState<CalendarEvent | null>(null);
 
   async function suggest() {
     const text = title.trim();
@@ -51,9 +62,18 @@ export function TaskBreakdown() {
     });
   }
 
-  async function start() {
+  async function start(endBy?: number, checked = false) {
     const text = title.trim();
     if (!text || !steps) return;
+    if (!checked) {
+      const now = Date.now();
+      const clash = conflictDuring(events, now, now + workMinutes * 60_000);
+      if (clash) {
+        setConflict(clash);
+        return;
+      }
+    }
+    setConflict(null);
     const task: Task = {
       id: newKey(),
       title: text,
@@ -71,7 +91,7 @@ export function TaskBreakdown() {
       ? await sendCommand({ type: "task/setActive", taskId: task.id })
       : saved;
     const started = active.ok
-      ? await sendCommand({ type: "timer/start" })
+      ? await sendCommand({ type: "timer/start", endBy })
       : active;
     setBusy(false);
     if (!started.ok) setNotice(started.error);
@@ -155,6 +175,14 @@ export function TaskBreakdown() {
             </button>
           </div>
         </>
+      )}
+      {conflict && (
+        <ConflictOffer
+          event={conflict}
+          now={now}
+          onShorten={(endBy) => void start(endBy, true)}
+          onAnyway={() => void start(undefined, true)}
+        />
       )}
       {notice && <p role="status">{notice}</p>}
     </div>

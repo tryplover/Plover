@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { browser } from "wxt/browser";
+import { conflictDuring } from "@/lib/calendar/events";
 import { deriveBuddyState } from "@/lib/buddy-state";
 import { sendCommand } from "@/lib/messages";
+import type { CalendarEvent } from "@/lib/types";
+import { CalendarNext, ConflictOffer } from "./CalendarNext";
 import { CheckIn } from "./CheckIn";
 import { SignIn } from "./SignIn";
 import { TaskBreakdown } from "./TaskBreakdown";
@@ -10,8 +13,11 @@ import { useExtensionState } from "./useExtensionState";
 import "./Panel.css";
 
 export function Panel({ surface }: { surface: "popup" | "buddy" }) {
-  const { local, now, ready } = useExtensionState();
+  const { local, settings, now, ready } = useExtensionState();
   const [reauth, setReauth] = useState(false);
+  const [focusConflict, setFocusConflict] = useState<CalendarEvent | null>(
+    null,
+  );
 
   if (!ready) return <div className={`plover-panel plover-${surface}`} />;
 
@@ -19,17 +25,46 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
   const activeTask = local.tasks.find((t) => t.id === local.activeTaskId);
   const buddy = deriveBuddyState(local, now);
 
+  function toggleFocus() {
+    if (!local.focus.on && idle) {
+      const clash = conflictDuring(
+        local.calendar.events,
+        Date.now(),
+        Date.now() + settings.workMinutes * 60_000,
+      );
+      if (clash) {
+        setFocusConflict(clash);
+        return;
+      }
+    }
+    setFocusConflict(null);
+    void sendCommand({ type: "focus/set", on: !local.focus.on });
+  }
+
+  function startFocus(endBy?: number) {
+    setFocusConflict(null);
+    void sendCommand({ type: "focus/set", on: true, endBy });
+  }
+
   const focusSwitch = (
-    <label className="plover-focus">
-      <input
-        type="checkbox"
-        checked={local.focus.on}
-        onChange={() =>
-          void sendCommand({ type: "focus/set", on: !local.focus.on })
-        }
-      />
-      Focus mode
-    </label>
+    <>
+      <label className="plover-focus">
+        <input
+          type="checkbox"
+          checked={local.focus.on}
+          onChange={toggleFocus}
+        />
+        Focus mode
+      </label>
+      {focusConflict && (
+        <ConflictOffer
+          event={focusConflict}
+          now={now}
+          onShorten={(endBy) => startFocus(endBy)}
+          onAnyway={() => startFocus()}
+        />
+      )}
+    </>
   );
 
   const showSignIn = local.needsSignIn && idle;
@@ -44,9 +79,18 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
           {reauth && <SignIn />}
         </div>
       )}
+      <CalendarNext
+        events={local.calendar.events}
+        connected={local.calendarConnected}
+        now={now}
+      />
       {idle ? (
         <div hidden={showSignIn}>
-          <TaskBreakdown />
+          <TaskBreakdown
+            events={local.calendar.events}
+            workMinutes={settings.workMinutes}
+            now={now}
+          />
           {focusSwitch}
         </div>
       ) : (

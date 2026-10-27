@@ -1,6 +1,7 @@
 import { browser } from "wxt/browser";
 import { isCommand } from "@/lib/messages";
 import { registerAuthHandlers } from "@/background/auth";
+import { registerCalendarHandlers } from "@/background/calendar";
 import { registerBadge } from "@/background/badge";
 import { registerFocusHandlers } from "@/background/focus";
 import { dispatch } from "@/background/controller";
@@ -20,6 +21,7 @@ export default defineBackground(() => {
   registerTaskHandlers();
   registerFocusHandlers();
   registerAuthHandlers();
+  registerCalendarHandlers();
   registerBadge();
 
   onTimerEvent(async (e) => {
