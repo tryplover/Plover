@@ -7,7 +7,7 @@ export default defineConfig({
     include: ["tests/**/*.test.{ts,tsx}"],
     coverage: {
       provider: "v8",
-      include: ["src/lib/**"],
+      include: ["src/features/**", "src/shared/**", "src/worker/**"],
       reporter: ["text", "lcov"],
       thresholds: {
         lines: 60,

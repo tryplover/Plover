@@ -1,18 +1,18 @@
 import { browser } from "wxt/browser";
-import { isCommand } from "@/lib/messages";
-import { registerAuthHandlers } from "@/background/auth";
-import { registerCalendarHandlers } from "@/background/calendar";
-import { registerBadge } from "@/background/badge";
-import { registerFocusHandlers } from "@/background/focus";
-import { dispatch } from "@/background/controller";
-import { registerStatePort } from "@/background/state-port";
-import { registerTaskHandlers } from "@/background/tasks";
-import { reconcile } from "@/background/reconcile";
+import { isCommand } from "@/shared/messages";
+import { registerAuthHandlers } from "@/features/auth/worker";
+import { registerCalendarHandlers } from "@/features/calendar/worker";
+import { registerBadge } from "@/features/timer/badge";
+import { registerFocusHandlers } from "@/features/focus/worker";
+import { dispatch } from "@/worker/controller";
+import { registerStatePort } from "@/worker/state-port";
+import { registerTaskHandlers } from "@/features/tasks/worker";
+import { reconcile } from "@/worker/reconcile";
 import {
   notifyCheckIn,
   onTimerEvent,
   registerTimerHandlers,
-} from "@/background/timer";
+} from "@/features/timer/worker";
 
 export default defineBackground(() => {
   browser.storage.local
