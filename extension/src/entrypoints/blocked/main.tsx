@@ -2,6 +2,8 @@ import { createRoot } from "react-dom/client";
 import { sendCommand } from "@/lib/messages";
 import { remainingSeconds } from "@/lib/timer/machine";
 import { formatClock } from "@/ui/TimerControls";
+import { Buddy } from "@/ui/Buddy";
+import { deriveBuddyState } from "@/lib/buddy-state";
 import { useExtensionState } from "@/ui/useExtensionState";
 import "./blocked.css";
 
@@ -11,7 +13,7 @@ function Blocked() {
   const running = local.timer.phase !== "idle";
   return (
     <main className="blocked">
-      <div className="blocked-buddy" aria-hidden="true" />
+      <Buddy state={deriveBuddyState(local, now)} />
       <h1>This one&apos;s blocked until your focus block ends.</h1>
       {running && (
         <p className="blocked-clock">

@@ -1,0 +1,36 @@
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #f4f1ec;
+  color: #2d2a26;
+}
+.options {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 24px;
+}
+.options section {
+  margin-bottom: 24px;
+}
+.options h2 {
+  font-size: 16px;
+  margin: 0 0 8px;
+}
+.options .field {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.options .field input[type="number"] {
+  width: 72px;
+}
+.options .row {
+  display: flex;
+  gap: 6px;
+}
+.options [role="alert"] {
+  color: #b3261e;
+  margin: 4px 0;
+}

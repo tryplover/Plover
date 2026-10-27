@@ -7,7 +7,7 @@
   font-size: 14px;
   box-sizing: border-box;
 }
-.plover-popup {
+.plover-surface-popup {
   width: 320px;
 }
 .plover-panel input[type="text"],

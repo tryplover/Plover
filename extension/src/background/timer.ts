@@ -1,4 +1,5 @@
 import { browser } from "wxt/browser";
+import { isBuddyVisible } from "@/lib/visibility";
 import { getLocal, getSettings, setLocal, timerConfig } from "@/lib/storage";
 import {
   pauseTimer,
@@ -15,6 +16,23 @@ import { updateBadge } from "./badge";
 import { registerHandler } from "./controller";
 
 const PHASE_ALARM = "timer-phase";
+
+const PLACEHOLDER_ICON =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+
+export async function notifyCheckIn(): Promise<void> {
+  const [tab] = await browser.tabs.query({
+    active: true,
+    lastFocusedWindow: true,
+  });
+  if (isBuddyVisible(tab?.url, await getSettings())) return;
+  await browser.notifications.create("checkin", {
+    type: "basic",
+    iconUrl: PLACEHOLDER_ICON,
+    title: "Which step did you finish?",
+    message: "Open Plover to check in.",
+  });
+}
 
 const listeners: ((e: TimerEvent) => Promise<void>)[] = [];
 

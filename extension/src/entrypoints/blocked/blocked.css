@@ -13,12 +13,6 @@ body {
   gap: 16px;
   text-align: center;
 }
-.blocked-buddy {
-  width: 96px;
-  height: 96px;
-  border-radius: 50%;
-  background: #9ad0c2;
-}
 .blocked h1 {
   font-size: 20px;
   font-weight: 500;

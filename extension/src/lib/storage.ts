@@ -59,6 +59,16 @@ export async function getLocal<K extends keyof LocalState>(
   return (stored[key] as LocalState[K] | undefined) ?? DEFAULT_LOCAL[key];
 }
 
+export async function loadLocalState(): Promise<LocalState> {
+  const keys = Object.keys(DEFAULT_LOCAL) as (keyof LocalState)[];
+  const stored = (await browser.storage.local.get(keys)) as Partial<LocalState>;
+  const out = { ...DEFAULT_LOCAL } as Record<string, unknown>;
+  for (const key of keys) {
+    if (stored[key] !== undefined) out[key] = stored[key];
+  }
+  return out as unknown as LocalState;
+}
+
 export async function setLocal(patch: Partial<LocalState>): Promise<void> {
   await browser.storage.local.set(patch);
 }

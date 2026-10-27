@@ -13,13 +13,16 @@ import { useExtensionState } from "./useExtensionState";
 import "./Panel.css";
 
 export function Panel({ surface }: { surface: "popup" | "buddy" }) {
-  const { local, settings, now, ready } = useExtensionState();
+  const { local, settings, now, ready } = useExtensionState(
+    surface === "buddy" ? "port" : "storage",
+  );
   const [reauth, setReauth] = useState(false);
   const [focusConflict, setFocusConflict] = useState<CalendarEvent | null>(
     null,
   );
 
-  if (!ready) return <div className={`plover-panel plover-${surface}`} />;
+  if (!ready)
+    return <div className={`plover-panel plover-surface-${surface}`} />;
 
   const idle = local.timer.phase === "idle";
   const activeTask = local.tasks.find((t) => t.id === local.activeTaskId);
@@ -105,7 +108,10 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
   );
 
   return (
-    <div className={`plover-panel plover-${surface}`} data-buddy={buddy}>
+    <div
+      className={`plover-panel plover-surface-${surface}`}
+      data-buddy={buddy}
+    >
       {body}
       <button
         type="button"

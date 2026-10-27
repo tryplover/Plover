@@ -1,0 +1,40 @@
+.plover-buddy {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #9ad0c2;
+  cursor: grab;
+  touch-action: none;
+  transition:
+    background 0.3s,
+    transform 0.3s;
+}
+.plover-buddy--working {
+  background: #f2b880;
+  animation: plover-pulse 2s ease-in-out infinite;
+}
+.plover-buddy--focus {
+  background: #7e8fd6;
+  animation: plover-pulse 3s ease-in-out infinite;
+}
+.plover-buddy--break {
+  background: #a8d98f;
+  transform: scale(0.9);
+}
+.plover-buddy--nudging {
+  background: #f2a0a0;
+  animation: plover-pulse 0.8s ease-in-out infinite;
+}
+.plover-buddy--celebrating {
+  background: #f5d76e;
+  animation: plover-pulse 0.5s ease-in-out infinite;
+}
+@keyframes plover-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+}

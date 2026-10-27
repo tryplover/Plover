@@ -1,6 +1,6 @@
 ---
 name: plover-extension-wxt
-description: Use when working in extension/ (WXT MV3 package) and hitting 'Missing "./testing" specifier in "wxt" package' from vitest.config.ts, TS2304 "Cannot find name 'defineBackground'" / 'defineContentScript' / 'createShadowRootUi' or TS17004 "Cannot use JSX unless the '--jsx' flag is provided" from tsc, a missing extension/.wxt directory after the first pnpm add/install, or eslint "@typescript-eslint/no-empty-function" on defineBackground(() => {}).
+description: Use when working in extension/ (WXT MV3 package), pnpm hangs on the corporate network, content script needs extension state, or when hitting 'Missing "./testing" specifier in "wxt" package' from vitest.config.ts, TS2304 "Cannot find name 'defineBackground'" / 'defineContentScript' / 'createShadowRootUi' or TS17004 "Cannot use JSX unless the '--jsx' flag is provided" from tsc, a missing extension/.wxt directory after the first pnpm add/install, or eslint "@typescript-eslint/no-empty-function" on defineBackground(() => {}).
 ---
 
 # Plover extension (WXT) footguns
@@ -23,6 +23,12 @@ Footguns specific to `extension/` (package `plover-extension`, WXT 0.21, Vitest 
 | `browser.declarativeNetRequest` undefined in tests | `fakeBrowser` does not implement it | In `beforeEach`: `(fakeBrowser as unknown as Record<string, unknown>).declarativeNetRequest = { updateDynamicRules: vi.fn(), getDynamicRules: vi.fn(async () => []) }`; `vi.spyOn(fakeBrowser.tabs, "query")` for tabs |
 | Calendar token parse returns null / interactive OAuth blocks every command | Implicit flow puts `access_token` in the URL fragment (`#`), not `?`; `calendar/connect` runs `launchWebAuthFlow` interactively for minutes | Parse `returned.split("#")[1]` with `URLSearchParams`; keep `calendar/connect` in `UNQUEUED_COMMANDS` and `enqueue` only the writes; alarm refresh uses `getCalendarToken(false)` plus a 10 s AbortController |
 | `No projects matched the filters` for `pnpm --filter ./extension ...` | `./extension` resolves relative to cwd; shell was already inside `extension/` | Run from repo root, or inside `extension/` use `pnpm exec <tool>` |
+| Content script can read the Supabase session; or buddy shows nothing / `storage.local` access errors in the content script | `storage.local` holds `sb-*-auth-token` and defaults to being readable from content scripts | Worker calls `browser.storage.local.setAccessLevel({ accessLevel: "TRUSTED_CONTEXTS" })` at startup; content script reads state through the `plover-state` port (`background/state-port.ts`), never `storage.local` |
+| `fakeBrowser.runtime.onConnect.trigger` is not a function / `addListener not implemented` | fakeBrowser has no in-memory `runtime.onConnect` | `vi.spyOn(fakeBrowser.runtime.onConnect, "addListener").mockImplementation(fn => void (onConnect = fn))` and call the captured listener with a stub port; `vi.restoreAllMocks()` afterwards |
+| Settings/tasks arrive `undefined` in tests after `storage.local.get(keys)` | fakeBrowser returns missing keys as `undefined`, so `{ ...DEFAULT, ...stored }` overwrites defaults | Use `loadLocalState()` in `lib/storage.ts` (skips undefined values) |
+| Buddy circle (56px) renders on the whole panel | Panel root class `plover-buddy` collided with the `Buddy` art class | Panel surface classes are `plover-surface-<surface>`; `plover-buddy*` is reserved for `Buddy` |
+| `pnpm` hangs / ConnectTimeoutError on corporate network | corepack `pnpm` shim fetches from npm | `export PATH=~/Library/pnpm:$PATH` before pnpm commands (see `plover-pnpm-workspace`) |
+| `sed -i 's/.../'` fails "undefined label" on macOS | BSD sed takes the next arg as the backup suffix | `sed -i '' 's/.../'` or edit with a script |
 
 ## Details
 
@@ -64,3 +70,8 @@ Footguns specific to `extension/` (package `plover-extension`, WXT 0.21, Vitest 
 **Symptom:** token never found after `launchWebAuthFlow`, or the whole command queue stalls while the consent window is open.
 **Root cause:** Google's `response_type=token` redirect carries `#access_token=...&expires_in=...` (fragment). Interactive flows can take minutes.
 **Fix:** `requestToken` in `lib/calendar/client.ts` parses the fragment; `calendar/connect` is unqueued and enqueues only the token/state writes. `launchWebAuthFlow` failures (closed window, interaction required) resolve to `null`, never throw.
+
+### Content script must not read storage.local
+**Symptom:** risk, not an error: any page-injected script context could read `sb-*-auth-token`.
+**Root cause:** `storage.local` defaults to `TRUSTED_AND_UNTRUSTED_CONTEXTS`.
+**Fix:** `setAccessLevel({ accessLevel: "TRUSTED_CONTEXTS" })` at the top of `defineBackground`, every start. The buddy gets `{ local, settings }` snapshots over a long-lived port (`plover-state`), built only from `DEFAULT_LOCAL` keys; `useExtensionState("port")` reconnects on `onDisconnect` because the worker can be suspended. `storage.sync` settings stay directly readable/writable.

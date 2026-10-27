@@ -8,6 +8,7 @@ vi.mock("@/lib/auth/session", async (orig) => ({
 import { registerBadge } from "@/background/badge";
 import { dispatch } from "@/background/controller";
 import {
+  notifyCheckIn,
   onTimerEvent,
   reconcileTimer,
   registerTimerHandlers,
@@ -208,5 +209,37 @@ describe("timer commands", () => {
     expect(sessions[0]?.completed).toBe(true);
     expect((await getLocal("transient")).checkInPending).toBe(true);
     expect((await getLocal("timer")).phase).toBe("work");
+  });
+});
+
+describe("check-in notification", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  async function run(url: string | undefined) {
+    const create = vi.spyOn(fakeBrowser.notifications, "create");
+    const tabs = (url === undefined ? [] : [{ url }]) as chrome.tabs.Tab[];
+    vi.spyOn(fakeBrowser.tabs, "query").mockImplementation(
+      (async () => tabs) as never,
+    );
+    await notifyCheckIn();
+    return create;
+  }
+
+  it("is skipped when the buddy is visible on the active tab", async () => {
+    const create = await run("https://example.com/");
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it("is created on chrome:// pages", async () => {
+    const create = await run("chrome://newtab");
+    expect(create).toHaveBeenCalledWith(
+      "checkin",
+      expect.objectContaining({ type: "basic" }),
+    );
+  });
+
+  it("is created when there is no active tab", async () => {
+    const create = await run(undefined);
+    expect(create).toHaveBeenCalledTimes(1);
   });
 });
