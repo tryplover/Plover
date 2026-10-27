@@ -2,7 +2,7 @@ import { browser } from "wxt/browser";
 import { isCommand } from "@/shared/messages";
 import { registerAuthHandlers } from "@/features/auth/worker";
 import { registerCalendarHandlers } from "@/features/calendar/worker";
-import { registerSiteAccess } from "@/features/site-access/worker";
+import { openWelcome, registerSiteAccess } from "@/features/site-access/worker";
 import { registerBadge } from "@/features/timer/badge";
 import { registerFocusHandlers } from "@/features/focus/worker";
 import { dispatch } from "@/worker/controller";
@@ -34,7 +34,10 @@ export default defineBackground(() => {
   });
 
   browser.runtime.onStartup.addListener(() => void reconcile());
-  browser.runtime.onInstalled.addListener(() => void reconcile());
+  browser.runtime.onInstalled.addListener(({ reason }) => {
+    void reconcile();
+    if (reason === "install") void openWelcome();
+  });
 
   browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (!isCommand(message)) return false;
