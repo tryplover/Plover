@@ -4,6 +4,7 @@ import {
   nextEvent,
   nextUpcoming,
   parseEvents,
+  resolveShorten,
   shortenTarget,
 } from "@/lib/calendar/events";
 
@@ -133,5 +134,23 @@ describe("nextUpcoming / shortenTarget", () => {
     );
     expect(shortenTarget(ev("c", T0 + 90_000, T0 + 9 * MIN), T0)).toBeNull();
     expect(shortenTarget(ev("d", T0 + 30_000, T0 + 9 * MIN), T0)).toBeNull();
+  });
+});
+
+describe("resolveShorten", () => {
+  const ev = {
+    id: "m",
+    title: "Meeting",
+    start: T0 + 10 * MIN,
+    end: T0 + 40 * MIN,
+    allDay: false,
+  };
+
+  it("returns endBy while there is room", () => {
+    expect(resolveShorten(ev, T0)).toEqual({ endBy: T0 + 9 * MIN });
+  });
+
+  it("reports tooClose for a click 30 s before the event", () => {
+    expect(resolveShorten(ev, ev.start - 30_000)).toEqual({ tooClose: true });
   });
 });

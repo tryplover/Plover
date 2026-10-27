@@ -89,6 +89,7 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
           <TaskBreakdown
             events={local.calendar.events}
             workMinutes={settings.workMinutes}
+            now={now}
           />
           {focusSwitch}
         </div>

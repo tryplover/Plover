@@ -74,3 +74,11 @@ export function shortenTarget(
   const endBy = event.start - MIN_MS;
   return endBy - nowMs >= MIN_MS ? endBy : null;
 }
+
+export function resolveShorten(
+  event: CalendarEvent,
+  nowMs: number,
+): { endBy: number } | { tooClose: true } {
+  const endBy = shortenTarget(event, nowMs);
+  return endBy === null ? { tooClose: true } : { endBy };
+}

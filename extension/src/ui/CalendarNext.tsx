@@ -1,4 +1,9 @@
-import { nextEvent, shortenTarget } from "@/lib/calendar/events";
+import { useState } from "react";
+import {
+  nextEvent,
+  resolveShorten,
+  shortenTarget,
+} from "@/lib/calendar/events";
 import type { CalendarEvent } from "@/lib/types";
 
 export function CalendarNext({
@@ -31,15 +36,24 @@ export function ConflictOffer({
   onShorten: (endBy: number) => void;
   onAnyway: () => void;
 }) {
+  const [tooClose, setTooClose] = useState(false);
+  const canShorten = !tooClose && shortenTarget(event, now) !== null;
+
+  function shorten() {
+    const r = resolveShorten(event, Date.now());
+    if ("endBy" in r) onShorten(r.endBy);
+    else setTooClose(true);
+  }
+
   return (
     <div className="plover-conflict" role="alert">
       <p>{event.title} starts during your block.</p>
+      {!canShorten && (tooClose || shortenTarget(event, now) === null) && (
+        <p>Too close to {event.title} to shorten.</p>
+      )}
       <div className="plover-row">
-        {shortenTarget(event, now) !== null && (
-          <button
-            type="button"
-            onClick={() => onShorten(shortenTarget(event, now) as number)}
-          >
+        {canShorten && (
+          <button type="button" onClick={shorten}>
             Shorten to end before {event.title}
           </button>
         )}
