@@ -1,0 +1,56 @@
+.plover-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  font-family: system-ui, sans-serif;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+.plover-popup {
+  width: 320px;
+}
+.plover-panel input[type="text"],
+.plover-panel input[type="email"],
+.plover-panel input[type="password"] {
+  width: 100%;
+  box-sizing: border-box;
+}
+.plover-row {
+  display: flex;
+  gap: 6px;
+}
+.plover-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.plover-steps li {
+  display: flex;
+  gap: 4px;
+}
+.plover-clock {
+  font-size: 36px;
+  font-variant-numeric: tabular-nums;
+  margin: 0;
+}
+.plover-phase,
+.plover-task {
+  margin: 0;
+}
+.plover-checkin {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.plover-link {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 0;
+  text-decoration: underline;
+  cursor: pointer;
+}

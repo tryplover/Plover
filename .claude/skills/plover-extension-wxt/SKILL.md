@@ -19,6 +19,7 @@ Footguns specific to `extension/` (package `plover-extension`, WXT 0.21, Vitest 
 | Alarm/message handlers silently stop firing in tests after the first test | `fakeBrowser.reset()` removes all event listeners, including the `alarms.onAlarm` router | Re-register in `beforeEach` after reset; `onAlarm()` in `background/alarms.ts` re-adds the router when `hasListener` is false |
 | `TypeError: object is not iterable` from `Promise.all(fakeBrowser.alarms.onAlarm.trigger(...))`; TS2345 missing `persistAcrossSessions` | `trigger()` already returns a Promise; `Alarm` requires `persistAcrossSessions` | `await fakeBrowser.alarms.onAlarm.trigger({ name, scheduledTime, persistAcrossSessions: false })` |
 | Previously green dispatch tests fail with `supabaseUrl is required` or `not signed in` | `dispatch` gates `GATED_COMMANDS` via `isSignedIn()`, which builds a real Supabase client (env vars are empty in tests) | In tests of gated commands: `vi.mock("@/lib/auth/session", async (orig) => ({ ...(await orig<typeof import("@/lib/auth/session")>()), isSignedIn: async () => true }))` |
+| `No projects matched the filters` for `pnpm --filter ./extension ...` | `./extension` resolves relative to cwd; shell was already inside `extension/` | Run from repo root, or inside `extension/` use `pnpm exec <tool>` |
 
 ## Details
 
@@ -50,3 +51,8 @@ Footguns specific to `extension/` (package `plover-extension`, WXT 0.21, Vitest 
 **Symptom:** timer/task/focus tests that dispatch `timer/start`, `task/save`, etc. fail with `supabaseUrl is required` or `{ ok: false, error: 'not signed in' }`.
 **Root cause:** `dispatch` in `background/controller.ts` checks `isSignedIn()` for every type in `GATED_COMMANDS`; `getSupabase()` reads `import.meta.env.WXT_SUPABASE_*`, empty under Vitest.
 **Fix:** mock `isSignedIn` (see table) or mock `@supabase/supabase-js` with `vi.hoisted` and stub `auth.getSession`. Never `await dispatch()`/`enqueue()` from inside a handler or alarm/timer listener: they run inside the single queue and would deadlock.
+
+### Path filters are cwd-relative
+**Symptom:** `No projects matched the filters` for `pnpm --filter ./extension exec vitest ...`.
+**Root cause:** `./extension` is resolved from the current directory; after `cd extension` it does not exist.
+**Fix:** run filtered commands from the repo root, or use plain `pnpm exec <tool>` inside `extension/`.

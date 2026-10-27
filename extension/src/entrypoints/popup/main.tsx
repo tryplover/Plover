@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
+import { Panel } from "@/ui/Panel";
 
 const root = document.getElementById("root");
 if (root) {
-  createRoot(root).render(<p>Plover</p>);
+  createRoot(root).render(<Panel surface="popup" />);
 }

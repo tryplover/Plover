@@ -1,10 +1,22 @@
 import { browser } from "wxt/browser";
+import { DecomposeError, suggestSteps } from "@/lib/api/decompose";
 import { getLocal, setLocal } from "@/lib/storage";
 import { registerHandler } from "./controller";
 
 const CELEBRATE_MS = 3000;
 
 export function registerTaskHandlers(): void {
+  registerHandler("task/decompose", async ({ text }) => {
+    try {
+      return { ok: true, data: { steps: await suggestSteps(text) } };
+    } catch (e) {
+      if (e instanceof DecomposeError && e.status === 401) {
+        await setLocal({ needsSignIn: true });
+      }
+      return { ok: true, data: { steps: [], aiFailed: true } };
+    }
+  });
+
   registerHandler("task/save", async ({ task }) => {
     const tasks = await getLocal("tasks");
     const exists = tasks.some((t) => t.id === task.id);
