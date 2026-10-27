@@ -7,6 +7,7 @@ import { sendCommand } from "@/shared/messages";
 import type { CalendarEvent } from "@/shared/types";
 import { CalendarNext, ConflictOffer } from "@/ui/components/CalendarNext";
 import { CheckIn } from "@/ui/components/CheckIn";
+import { SiteAccess } from "@/ui/components/SiteAccess";
 import { SignIn } from "@/ui/components/SignIn";
 import { TaskBreakdown } from "@/ui/components/TaskBreakdown";
 import { TimerControls } from "@/ui/components/TimerControls";
@@ -154,6 +155,7 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
       className={`plover-panel plover-surface-${surface}`}
       data-buddy={buddy}
     >
+      {surface === "popup" && <SiteAccess />}
       {body}
       <button
         type="button"

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
+import { browser } from "wxt/browser";
 import { normalizeDomain } from "@/features/blocking/domains";
+import { siteOrigin } from "@/features/site-access/origins";
 import { sendCommand } from "@/shared/messages";
 import { updateSettings } from "@/shared/storage";
 import type { Settings } from "@/shared/types";
@@ -27,10 +29,12 @@ function DomainList({
   title,
   items,
   onChange,
+  onAdd,
 }: {
   title: string;
   items: string[];
   onChange: (next: string[]) => void;
+  onAdd?: (domain: string) => void;
 }) {
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -43,6 +47,7 @@ function DomainList({
     }
     setError(null);
     setDraft("");
+    onAdd?.(domain);
     if (!items.includes(domain)) onChange([...items, domain]);
   }
 
@@ -123,6 +128,9 @@ function Options() {
         title="Blocked sites"
         items={settings.blocklist}
         onChange={(blocklist) => save({ blocklist })}
+        onAdd={(d) =>
+          void browser.permissions.request({ origins: [siteOrigin(d)] })
+        }
       />
 
       <section>

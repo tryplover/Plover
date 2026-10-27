@@ -5,6 +5,7 @@ import {
   registerSiteAccess,
   syncBuddyScript,
 } from "@/features/site-access/worker";
+import { setLocal, updateSettings } from "@/shared/storage";
 import { enqueue } from "@/worker/queue";
 
 type PermsListener = (p: { origins?: string[] }) => void;
@@ -22,6 +23,8 @@ const permissions = {
   onRemoved: { addListener: vi.fn() },
 };
 const tabsQuery = vi.fn();
+const updateDynamicRules = vi.fn();
+const getDynamicRules = vi.fn();
 
 beforeEach(() => {
   fakeBrowser.reset();
@@ -31,15 +34,20 @@ beforeEach(() => {
     permissions.onAdded.addListener,
     permissions.onRemoved.addListener,
     tabsQuery,
+    updateDynamicRules,
+    getDynamicRules,
   ])
     fn.mockReset();
   scripting.getRegisteredContentScripts.mockResolvedValue([]);
   scripting.executeScript.mockResolvedValue([]);
   permissions.getAll.mockResolvedValue({ origins: [] });
   tabsQuery.mockResolvedValue([]);
+  getDynamicRules.mockResolvedValue([]);
+  updateDynamicRules.mockResolvedValue(undefined);
   const fb = fakeBrowser as unknown as Record<string, unknown>;
   fb.scripting = scripting;
   fb.permissions = permissions;
+  fb.declarativeNetRequest = { updateDynamicRules, getDynamicRules };
   (fakeBrowser.tabs as unknown as Record<string, unknown>).query = tabsQuery;
 });
 
@@ -113,6 +121,29 @@ describe("registerSiteAccess", () => {
       target: { tabId: 3 },
       files: ["content-scripts/content.js"],
     });
+  });
+
+  it("re-applies blocking with redirects when blocking is on", async () => {
+    await updateSettings({ blocklist: ["x.com"] });
+    await setLocal({ blockingOn: true });
+    permissions.getAll.mockResolvedValue({ origins: ["*://*.x.com/*"] });
+    listeners().added({ origins: ["*://*.x.com/*"] });
+    await vi.waitFor(() => expect(updateDynamicRules).toHaveBeenCalled());
+    const arg = updateDynamicRules.mock.calls[0]?.[0] as {
+      addRules: { action: { type: string } }[];
+    };
+    expect(arg.addRules.map((r) => r.action.type)).toEqual(["redirect"]);
+  });
+
+  it("leaves rules alone when blocking is off", async () => {
+    await updateSettings({ blocklist: ["x.com"] });
+    permissions.getAll.mockResolvedValue({ origins: ["*://*.x.com/*"] });
+    listeners().added({ origins: ["*://*.x.com/*"] });
+    await vi.waitFor(() =>
+      expect(scripting.registerContentScripts).toHaveBeenCalled(),
+    );
+    await enqueue(async () => undefined);
+    expect(updateDynamicRules).not.toHaveBeenCalled();
   });
 
   it("ignores added events without origins", async () => {

@@ -6,6 +6,7 @@ describe("manifest", () => {
     expect(manifest.permissions).toEqual([
       "storage",
       "alarms",
+      "activeTab",
       "declarativeNetRequest",
       "identity",
       "notifications",

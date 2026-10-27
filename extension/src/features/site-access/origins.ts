@@ -13,3 +13,20 @@ export function originForUrl(url: string | undefined): string | null {
   const host = url ? httpHostname(url) : null;
   return host ? `*://${host}/*` : null;
 }
+
+export function siteOrigin(domain: string): string {
+  return `*://*.${domain}/*`;
+}
+
+export function hasHostAccess(domain: string, origins: string[]): boolean {
+  return origins.some((o) => {
+    if (o === ALL_SITES) return true;
+    const m = /^\*:\/\/([^/]+)\/\*$/.exec(o);
+    const host = m?.[1];
+    if (!host) return false;
+    if (host === "*") return true;
+    if (!host.startsWith("*.")) return false;
+    const base = host.slice(2);
+    return domain === base || domain.endsWith(`.${base}`);
+  });
+}

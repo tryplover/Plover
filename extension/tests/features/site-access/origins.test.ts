@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { buddyMatches, originForUrl } from "@/features/site-access/origins";
+import {
+  buddyMatches,
+  hasHostAccess,
+  originForUrl,
+  siteOrigin,
+} from "@/features/site-access/origins";
 
 describe("buddyMatches", () => {
   it("collapses everything to all_urls when all sites are granted", () => {
@@ -32,5 +37,30 @@ describe("originForUrl", () => {
     expect(originForUrl("chrome://newtab")).toBeNull();
     expect(originForUrl(undefined)).toBeNull();
     expect(originForUrl("junk")).toBeNull();
+  });
+});
+
+describe("siteOrigin", () => {
+  it("covers the domain and its subdomains on any scheme", () => {
+    expect(siteOrigin("youtube.com")).toBe("*://*.youtube.com/*");
+  });
+});
+
+describe("hasHostAccess", () => {
+  it.each([
+    ["<all_urls>", "youtube.com", true],
+    ["*://*/*", "youtube.com", true],
+    ["*://*.youtube.com/*", "youtube.com", true],
+    ["*://*.youtube.com/*", "m.youtube.com", true],
+    ["*://*.com/*", "youtube.com", true],
+    ["*://youtube.com/*", "youtube.com", false],
+    ["https://*.youtube.com/*", "youtube.com", false],
+    ["*://*.reddit.com/*", "youtube.com", false],
+  ])("%s for %s -> %s", (origin, domain, expected) => {
+    expect(hasHostAccess(domain, [origin])).toBe(expected);
+  });
+
+  it("is false with no origins", () => {
+    expect(hasHostAccess("youtube.com", [])).toBe(false);
   });
 });
