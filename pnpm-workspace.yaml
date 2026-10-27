@@ -1,9 +1,5 @@
 packages:
-  - app
   - extension
 
 onlyBuiltDependencies:
-  - electron
   - esbuild
-  - get-windows
-  - keytar
