@@ -2,6 +2,7 @@ import { browser } from "wxt/browser";
 import { isCommand } from "@/lib/messages";
 import { registerAuthHandlers } from "@/background/auth";
 import { registerBadge } from "@/background/badge";
+import { registerFocusHandlers } from "@/background/focus";
 import { dispatch } from "@/background/controller";
 import { registerTaskHandlers } from "@/background/tasks";
 import { enqueue } from "@/background/queue";
@@ -17,6 +18,7 @@ const PLACEHOLDER_ICON =
 export default defineBackground(() => {
   registerTimerHandlers();
   registerTaskHandlers();
+  registerFocusHandlers();
   registerAuthHandlers();
   registerBadge();
 
