@@ -1,9 +1,11 @@
 import { browser } from "wxt/browser";
+import { enqueue } from "./queue";
 
 const handlers = new Map<string, () => Promise<void>>();
 
 async function route(alarm: { name: string }): Promise<void> {
-  await handlers.get(alarm.name)?.();
+  const fn = handlers.get(alarm.name);
+  if (fn) await enqueue(fn);
 }
 
 export function onAlarm(name: string, fn: () => Promise<void>): void {

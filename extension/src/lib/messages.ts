@@ -37,3 +37,32 @@ export async function sendCommand(cmd: Command): Promise<CommandResult> {
     return { ok: false, error: e instanceof Error ? e.message : String(e) };
   }
 }
+
+const COMMAND_TYPES: ReadonlySet<string> = new Set<Command["type"]>([
+  "timer/start",
+  "timer/pause",
+  "timer/resume",
+  "timer/skip",
+  "timer/stop",
+  "checkin/answer",
+  "task/decompose",
+  "task/save",
+  "task/setActive",
+  "step/toggle",
+  "auth/google",
+  "auth/password",
+  "auth/signOut",
+  "focus/set",
+  "blocking/set",
+  "calendar/connect",
+  "calendar/disconnect",
+]);
+
+export function isCommand(msg: unknown): msg is Command {
+  return (
+    typeof msg === "object" &&
+    msg !== null &&
+    typeof (msg as { type?: unknown }).type === "string" &&
+    COMMAND_TYPES.has((msg as { type: string }).type)
+  );
+}

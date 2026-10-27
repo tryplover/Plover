@@ -22,32 +22,18 @@ export function onTimerEvent(fn: (e: TimerEvent) => Promise<void>): void {
   listeners.push(fn);
 }
 
-function plannedMs(
-  phase: "work" | "shortBreak" | "longBreak",
-  cfg: ReturnType<typeof timerConfig>,
-) {
-  const minutes =
-    phase === "work"
-      ? cfg.workMinutes
-      : phase === "shortBreak"
-        ? cfg.shortBreakMinutes
-        : cfg.longBreakMinutes;
-  return minutes * 60_000;
-}
-
 export async function applyTransition(
   t: TimerTransition,
   nowMs: number,
 ): Promise<void> {
-  const [prev, activeTaskId, sessions, transient, settings] = await Promise.all(
-    [
+  const [prev, phaseStartedAt, activeTaskId, sessions, transient] =
+    await Promise.all([
       getLocal("timer"),
+      getLocal("phaseStartedAt"),
       getLocal("activeTaskId"),
       getLocal("sessions"),
       getLocal("transient"),
-      getSettings(),
-    ],
-  );
+    ]);
 
   const completedBlock = t.events.some(
     (e) => e.type === "work-block-completed",
@@ -58,11 +44,8 @@ export async function applyTransition(
       id: crypto.randomUUID(),
       taskId: activeTaskId,
       phase: "work",
-      startedAt: Math.max(
-        0,
-        prev.phaseEndsAt - plannedMs("work", timerConfig(settings)),
-      ),
-      endedAt: completedBlock ? prev.phaseEndsAt : nowMs,
+      startedAt: phaseStartedAt ?? nowMs,
+      endedAt: completedBlock ? prev.phaseEndsAt : (prev.pausedAt ?? nowMs),
       completed: completedBlock,
     };
     nextSessions.push(session);
@@ -70,6 +53,12 @@ export async function applyTransition(
 
   await setLocal({
     timer: t.state,
+    phaseStartedAt:
+      t.state.phase === "idle"
+        ? null
+        : t.events.some((e) => e.type === "phase-started")
+          ? nowMs
+          : phaseStartedAt,
     sessions: nextSessions,
     transient: completedBlock
       ? { ...transient, checkInPending: true }
@@ -131,4 +120,10 @@ export function registerTimerHandlers(): void {
     const config = timerConfig(await getSettings());
     await applyTransition(tick(await getLocal("timer"), config, now), now);
   });
+}
+
+export async function reconcileTimer(): Promise<void> {
+  const now = Date.now();
+  const config = timerConfig(await getSettings());
+  await applyTransition(tick(await getLocal("timer"), config, now), now);
 }

@@ -1,9 +1,14 @@
 import { browser } from "wxt/browser";
-import type { Command } from "@/lib/messages";
+import { isCommand } from "@/lib/messages";
 import { registerBadge } from "@/background/badge";
 import { dispatch } from "@/background/controller";
 import { registerTaskHandlers } from "@/background/tasks";
-import { onTimerEvent, registerTimerHandlers } from "@/background/timer";
+import { enqueue } from "@/background/queue";
+import {
+  onTimerEvent,
+  reconcileTimer,
+  registerTimerHandlers,
+} from "@/background/timer";
 
 const PLACEHOLDER_ICON =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
@@ -23,7 +28,12 @@ export default defineBackground(() => {
     });
   });
 
-  browser.runtime.onMessage.addListener((message: Command) =>
-    dispatch(message),
-  );
+  browser.runtime.onStartup.addListener(() => void enqueue(reconcileTimer));
+  browser.runtime.onInstalled.addListener(() => void enqueue(reconcileTimer));
+
+  browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (!isCommand(message)) return false;
+    void dispatch(message).then(sendResponse);
+    return true;
+  });
 });

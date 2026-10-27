@@ -62,6 +62,7 @@ export interface LocalState {
   tasks: Task[];
   activeTaskId: string | null;
   timer: TimerState;
+  phaseStartedAt: number | null;
   sessions: Session[];
   focus: FocusState;
   blockingOn: boolean;

@@ -2,7 +2,12 @@ import { fakeBrowser } from "wxt/testing/fake-browser";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { registerBadge } from "@/background/badge";
 import { dispatch } from "@/background/controller";
-import { onTimerEvent, registerTimerHandlers } from "@/background/timer";
+import {
+  onTimerEvent,
+  reconcileTimer,
+  registerTimerHandlers,
+} from "@/background/timer";
+import { setLocal } from "@/lib/storage";
 import { getLocal } from "@/lib/storage";
 import type { TimerEvent } from "@/lib/timer/types";
 
@@ -129,5 +134,74 @@ describe("timer commands", () => {
   it("returns ok:false for an unknown command", async () => {
     const result = await dispatch({ type: "calendar/connect" });
     expect(result.ok).toBe(false);
+  });
+
+  it("endBy session starts at the real start time", async () => {
+    await dispatch({ type: "timer/start", endBy: T0 + 10 * MIN });
+    vi.setSystemTime(T0 + 4 * MIN);
+    await dispatch({ type: "timer/stop" });
+    const [session] = await getLocal("sessions");
+    expect(session).toMatchObject({ startedAt: T0, endedAt: T0 + 4 * MIN });
+  });
+
+  it("pause then stop records the real start and excludes paused time", async () => {
+    await dispatch({ type: "timer/start" });
+    vi.setSystemTime(T0 + 5 * MIN);
+    await dispatch({ type: "timer/pause" });
+    vi.setSystemTime(T0 + 20 * MIN);
+    await dispatch({ type: "timer/resume" });
+    vi.setSystemTime(T0 + 22 * MIN);
+    await dispatch({ type: "timer/pause" });
+    vi.setSystemTime(T0 + 40 * MIN);
+    await dispatch({ type: "timer/stop" });
+    const [session] = await getLocal("sessions");
+    expect(session).toMatchObject({ startedAt: T0, endedAt: T0 + 22 * MIN });
+  });
+
+  it("reconcile advances an overdue stored timer once and recreates alarms", async () => {
+    await setLocal({
+      timer: {
+        phase: "work",
+        phaseEndsAt: T0 - MIN,
+        blocksCompleted: 0,
+        pausedAt: null,
+      },
+      phaseStartedAt: T0 - 26 * MIN,
+    });
+    await reconcileTimer();
+    const timer = await getLocal("timer");
+    expect(timer.phase).toBe("shortBreak");
+    expect(timer.blocksCompleted).toBe(1);
+    expect(await getLocal("sessions")).toHaveLength(1);
+    expect((await fakeBrowser.alarms.get("timer-phase"))?.scheduledTime).toBe(
+      timer.phaseEndsAt,
+    );
+    expect(await fakeBrowser.alarms.get("badge")).toBeDefined();
+  });
+
+  it("reconcile recreates alarms for a running timer without transitioning", async () => {
+    await dispatch({ type: "timer/start" });
+    await fakeBrowser.alarms.clearAll();
+    await reconcileTimer();
+    expect((await getLocal("timer")).phase).toBe("work");
+    expect(await fakeBrowser.alarms.get("timer-phase")).toBeDefined();
+  });
+
+  it("serialises an alarm and a command fired together", async () => {
+    await dispatch({ type: "timer/start" });
+    vi.setSystemTime(T0 + 25 * MIN + 1000);
+    await Promise.all([
+      fakeBrowser.alarms.onAlarm.trigger({
+        name: "timer-phase",
+        scheduledTime: Date.now(),
+        persistAcrossSessions: false,
+      }),
+      dispatch({ type: "timer/skip" }),
+    ]);
+    const sessions = await getLocal("sessions");
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0]?.completed).toBe(true);
+    expect((await getLocal("transient")).checkInPending).toBe(true);
+    expect((await getLocal("timer")).phase).toBe("work");
   });
 });
