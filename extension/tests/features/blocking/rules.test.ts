@@ -3,7 +3,7 @@ import { buildRules } from "@/features/blocking/rules";
 
 describe("buildRules", () => {
   it("builds one main-frame redirect rule per domain with ids 1..n", () => {
-    expect(buildRules(["youtube.com", "reddit.com"])).toEqual([
+    expect(buildRules(["youtube.com", "reddit.com"], ["<all_urls>"])).toEqual([
       {
         id: 1,
         priority: 1,
@@ -32,7 +32,7 @@ describe("buildRules", () => {
   });
 
   it("normalises entries and drops invalid ones", () => {
-    const rules = buildRules(["WWW.X.com", "junk entry", "reddit.com"]);
+    const rules = buildRules(["WWW.X.com", "junk entry", "reddit.com"], []);
     expect(rules.map((r) => [r.id, r.condition.requestDomains])).toEqual([
       [1, ["x.com"]],
       [2, ["reddit.com"]],
@@ -40,6 +40,23 @@ describe("buildRules", () => {
   });
 
   it("returns no rules for an empty blocklist", () => {
-    expect(buildRules([])).toEqual([]);
+    expect(buildRules([], [])).toEqual([]);
+  });
+
+  it("uses a plain block when no host access is granted", () => {
+    const rules = buildRules(["youtube.com", "reddit.com"], []);
+    expect(rules.map((r) => r.action)).toEqual([
+      { type: "block" },
+      { type: "block" },
+    ]);
+    expect(rules.map((r) => r.id)).toEqual([1, 2]);
+  });
+
+  it("chooses redirect or block per domain", () => {
+    const rules = buildRules(
+      ["youtube.com", "reddit.com"],
+      ["*://*.youtube.com/*"],
+    );
+    expect(rules.map((r) => r.action.type)).toEqual(["redirect", "block"]);
   });
 });

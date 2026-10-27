@@ -4,10 +4,11 @@ import { BLOCKED_PAGE, buildRules } from "@/features/blocking/rules";
 import { getSettings, setLocal } from "@/shared/storage";
 
 async function installRules(blocklist: string[]): Promise<void> {
+  const { origins = [] } = await browser.permissions.getAll();
   const existing = await browser.declarativeNetRequest.getDynamicRules();
   await browser.declarativeNetRequest.updateDynamicRules({
     removeRuleIds: existing.map((r) => r.id),
-    addRules: buildRules(blocklist),
+    addRules: buildRules(blocklist, origins),
   });
 }
 
