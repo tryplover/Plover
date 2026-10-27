@@ -8,9 +8,7 @@ context, conventions, and known footguns.
 
 1. **Spec is authoritative.** The
    [desktop buddy pivot spec](docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md)
-   defines current product scope; the Phase 1 specs under
-   [docs/superpowers/specs/](docs/superpowers/specs/) still define module
-   boundaries and file layout. Do not scope-creep beyond the pivot's v1.
+   defines current product scope and the extension architecture (§6). Do not scope-creep beyond the pivot's v1.
 2. **Footgun knowledge is a contract.** If you hit an error, surprise, or
    wrong-first-attempt that a future Claude could avoid, capture it **before
    reporting completion** — but NOT in this file. Add it to the most relevant
@@ -28,7 +26,7 @@ context, conventions, and known footguns.
    stays focused on design, dispatch, and review.
 4. **Verify before claiming.** Run `pnpm typecheck && pnpm lint && pnpm test`
    from the repo root and confirm green output before saying anything is done.
-5. **Use the docs to avoid re-reading code.** This file + the two spec docs
+5. **Use the docs to avoid re-reading code.** This file + the pivot spec
    should be enough to start a session. Open code only when you need a specific
    detail.
 
@@ -40,7 +38,7 @@ For any non-trivial changes, follow this structured cycle:
 - **Delegate implementation** → Dispatch Haiku subagent(s) (or Sonnet/Opus for tricky tasks) to implement the plan, using one agent per independent task. Use the `subagent-driven-development` / `executing-plans` flow.
 - **Review + verify** → The orchestrator reviews the subagent diffs and runs `pnpm typecheck && pnpm lint && pnpm test` before claiming completion.
 
-Note: `docs/plans/` contains *generated implementation plans* used as input to subagents. It is distinct from `docs/superpowers/specs/`, which remains the authoritative product and phase specification.
+Note: `docs/plans/` contains _generated implementation plans_ used as input to subagents. It is distinct from `docs/superpowers/specs/`, which remains the authoritative product and phase specification.
 
 ## Prefer stacked PRs
 
@@ -61,21 +59,19 @@ base of the stack first and let reviewers move up.
 
 ## Project
 
-**Plover is pivoting** (rev. 2026-10-19) to a cute work buddy that ships as a
-**Chromium browser extension** (Manifest V3), not an Electron desktop app: a
+**Plover** is a cute work buddy that ships as a
+**Chromium browser extension** (Manifest V3; the Electron desktop app was deleted 2026-10-26): a
 minimalist character with clean animations that floats on every web page, plus
 a toolbar popup. The MVP is five simple features: task breakdown, Pomodoro,
 site/tab blocking, focus mode and read-only Google Calendar. Sign-in (Supabase)
 is required; tasks stay in `chrome.storage.local`, settings sync via
 `chrome.storage.sync`, and Gemini calls are proxied through `plover-server` to
 protect the developer API key. Launch is waitlist-only via an unlisted Chrome
-Web Store listing. The extension is not built yet; it will live in a new
-`extension/` workspace package. The Electron app in `app/` is **frozen as a
-whole**.
+Web Store listing. The product lives in the `extension/` workspace package; the
+Gemini backend `plover-server` is a separate repo.
 
 - **Product spec (current direction, extension):** [docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md](docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md) (filename kept for links)
 - **Original product spec (superseded):** [docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md](docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md)
-- **Phase 1 core architecture (module boundaries):** [docs/superpowers/specs/phase-1/core-architecture.md](docs/superpowers/specs/phase-1/core-architecture.md)
 - **Background research:** [reports/](reports/) and [research_notes/](research_notes/)
 
 The character design and animations are being designed separately and are
@@ -88,7 +84,7 @@ invent art.
 .
 ├── CLAUDE.md                       # ← you are here
 ├── package.json                    # pnpm workspace root, husky/lint-staged
-├── pnpm-workspace.yaml             # packages: [app]
+├── pnpm-workspace.yaml             # packages: [extension]
 ├── .nvmrc                          # Node 22 (LTS)
 ├── .husky/pre-commit               # runs lint-staged
 ├── .github/
@@ -97,85 +93,56 @@ invent art.
 │   └── PULL_REQUEST_TEMPLATE.md
 ├── docs/
 │   ├── plans/                      # generated implementation plans (input to subagents)
-│   └── superpowers/specs/          # pivot spec + phase specs (authoritative)
+│   └── superpowers/specs/          # pivot spec (authoritative) + history
 │       ├── 2026-10-02-desktop-buddy-pivot-spec.md   # current direction
-│       ├── 2026-05-24-task-tracker-agent-product-spec.md  # superseded
-│       └── phase-1/
-│           ├── core-architecture.md
-│           └── store-layer.md
+│       └── 2026-05-24-task-tracker-agent-product-spec.md  # superseded
 ├── reports/, research_notes/       # background research (progress visibility, competitors)
-├── extension/                      # Chromium MV3 extension (WXT + React) — the product, built
-└── app/                            # the frozen Electron app (single workspace pkg today)
-    ├── package.json                # name: "plover"
-    ├── electron.vite.config.ts
-    ├── tsconfig.json               # strict TS, path aliases
-    ├── eslint.config.js            # flat config
-    ├── vitest.config.ts            # v8 coverage, scoped 60% thresholds
-    ├── src/
-    │   ├── main/                   # Electron main process
-    │   ├── preload/
-    │   ├── renderer/               # React UI
-    │   └── shared/                 # cross-process types
-    └── tests/
+└── extension/                      # Chromium MV3 extension (WXT + React), the product
 ```
 
 ## Commands
 
-All commands run from the **repo root**. The root scripts delegate into `app/`
-via `pnpm --filter ./app`. Root `typecheck`, `lint` and `test` cover both `app/`
-and `extension/`.
+All commands run from the **repo root**. The root scripts delegate into
+`extension/` via `pnpm --filter ./extension`.
 
-| Command | What it does |
-|---|---|
-| `pnpm install` | Install everything + run husky `prepare` |
-| `pnpm dev` | Launch Electron in dev mode (HMR for renderer) |
-| `pnpm build` | electron-vite production build |
-| `pnpm package` | Compile app and package standalone macOS `.dmg` installer |
-| `pnpm typecheck` | `tsc --noEmit` on the app |
-| `pnpm lint` | ESLint on the app |
-| `pnpm test` | Vitest run (no coverage) |
-| `pnpm --filter ./app run test:coverage` | Vitest run + v8 coverage report |
-| `pnpm --filter ./app exec <tool>` | Run a tool binary inside the app workspace |
-| `pnpm dev:extension` | WXT dev mode for the extension (writes `extension/.output/chrome-mv3-dev`) |
-| `pnpm build:extension` | Production build of the extension (writes `extension/.output/chrome-mv3`) |
-| `pnpm --filter ./extension test` | Vitest for the extension only |
+| Command                                 | What it does                                             |
+| --------------------------------------- | -------------------------------------------------------- |
+| `pnpm install`                          | Install everything + run husky `prepare`                 |
+| `pnpm dev`                              | WXT dev mode (writes `extension/.output/chrome-mv3-dev`) |
+| `pnpm build`                            | Production build (writes `extension/.output/chrome-mv3`) |
+| `pnpm typecheck`                        | `tsc --noEmit` on the extension                          |
+| `pnpm lint`                             | ESLint on the extension                                  |
+| `pnpm test`                             | Vitest run (no coverage)                                 |
+| `pnpm test:coverage`                    | Vitest run + v8 coverage report                          |
+| `pnpm --filter ./extension exec <tool>` | Run a tool binary inside the extension workspace         |
 
-**Always use path-based filters (`--filter ./app`)**, not name-based
+**Always use path-based filters (`--filter ./extension`)**, not name-based
 (`-F plover`). See the `plover-pnpm-workspace` skill.
 
-**Always use `pnpm --filter ./app run <script>`** when the script name contains
+**Always use `pnpm --filter ./extension run <script>`** when the script name contains
 a colon (e.g. `test:coverage`). See the `plover-pnpm-workspace` skill.
 
-To run the app end-to-end locally (API keys, Google Docs/Drive OAuth setup, manual test
+To run the extension locally (env vars, Supabase/Google OAuth redirect setup, manual
 walkthrough), see [docs/RUNNING.md](docs/RUNNING.md).
 
 ## Architecture rules (load-bearing)
 
-These describe the frozen Electron app. The extension's architecture
-(background worker owns all state; content script, popup and options page are
-thin views) is in spec §6.
+These are not style preferences (spec §6). Violating them defeats the point of
+the design.
 
-These are not style preferences. The core architecture doc calls them
-"load-bearing" module boundaries. Violating them defeats the point of the design.
-
-- **Store** (`app/src/main/store/`) exposes typed repos: `Goals`, `Tasks`,
-  `Sessions`, `Activity`, `Summaries`. No module reaches into raw SQLite.
-- **Planner** is a pure function: `(goal_text, context) → {goal, subtasks[]}`.
-  Side effects only via `Store` and `Sync`.
-- **Monitor** writes to `Activity` only. Never reads other tables. (Phase 2+)
-- **Inference** reads `Activity` + `Tasks`, writes `Summaries` +
-  `progress_signal`. Never schedules. (Phase 2+)
-- **NudgeEngine** reads `Tasks` + `Summaries`, writes notifications / overlay
-  events. Never mutates tasks. (Phase 2+)
-- **Sync** is the **only** module that talks to Google APIs. In the MVP only
-  its Calendar source is live.
-- Modules communicate via the in-process event bus + typed `Store` repos. No
-  module imports another module's internals.
+- **The background service worker owns all state** (timer, focus, blocking,
+  tasks, calendar) and processes every mutation through a **single command
+  queue**. Nothing else writes state.
+- **The content script draws only the buddy blob and reads nothing from the
+  page.** It holds no state and relays clicks to the worker.
+- **Popup, options page, in-page panel and blocked page are thin, trusted
+  views** that read and change state through the worker.
+- **Secrets are never reachable from content scripts** (Supabase session,
+  OAuth tokens); only the worker and extension pages touch them.
 
 ## Hard constraints
 
-- **Local-only data.** Tasks and history stay on the device (SQLite in the
-  frozen app; `chrome.storage.local` in the extension). Only settings may use
+- **Local-only data.** Tasks and history stay on the device (`chrome.storage.local`). Only settings may use
   the browser's own `chrome.storage.sync`. No Plover cloud sync.
 - **The content script reads nothing from the page.** It only draws the buddy.
   No browsing-history logging.
@@ -184,16 +151,10 @@ These are not style preferences. The core architecture doc calls them
 - **Outbound HTTP allowlist:** `generativelanguage.googleapis.com`,
   `www.googleapis.com`, `gmail.googleapis.com`, `calendar.googleapis.com`,
   `classroom.googleapis.com`, `oauth2.googleapis.com`, `accounts.google.com`,
-  `api.github.com`. An allowlist helper lives in `app/src/main/http/allowlist.ts`
-  (`assertAllowedHost`); it is not yet wired into the HTTP client, so this
-  remains a documented constraint rather than a runtime-enforced gate.
+  `api.github.com`. This is a documented constraint, not a runtime-enforced gate.
 - **Never capture keystroke content.** Counts only.
 - **Never upload screenshots** anywhere except (later) Gemini Vision with
   explicit user consent surfaced in Settings.
-- **Phase 1 does not request** Screen Recording / Accessibility permissions.
-  Those are deferred to the Monitor milestone.
-- **No Wispr Flow / Cluely / third-party overlay deps.** Build the overlay with
-  Electron `BrowserWindow` primitives.
 
 ## Scope (current: browser extension MVP, five features)
 
@@ -202,6 +163,7 @@ without a model call; Gemini only suggests steps during task breakdown.
 
 **In the MVP** (spec §4; no extension roadmap written yet — the desktop
 [mvp-five-features-roadmap](docs/plans/mvp-five-features-roadmap.md) is superseded):
+
 - Floating buddy on every page (content script, Shadow DOM) plus a toolbar
   popup with the same panel; drag to move, hide per site, hide everywhere,
   auto-hide in fullscreen; animation-state interface with placeholder art
@@ -214,13 +176,8 @@ without a model call; Gemini only suggests steps during task breakdown.
   `chrome.identity.launchWebAuthFlow` so it works in all Chromium browsers)
 - Required Supabase sign-in; all Chromium browsers (Chrome, Edge, Brave, Arc)
 
-**Frozen — leave in place, don't extend, don't build on, don't delete yet:**
-- The whole Electron app in `app/` (store, companion window, renderer views,
-  timer IPC, stall nudge, activity monitoring, inference, connectors,
-  scheduler). Pure logic such as the timer state machine may be *ported* into
-  `extension/` (spec §6); new code must not import from `app/`.
-
 **Not in the MVP:**
+
 - Stall nudge (dropped 2026-10-19), gamification (planned next, after launch)
 - Reading page content or browsing history, screen capture, blocking outside
   the browser
@@ -237,15 +194,13 @@ without a model call; Gemini only suggests steps during task breakdown.
 - **No premature abstractions.** Three similar lines is better than a wrong
   helper. Build what the current phase needs.
 - **No backwards-compat shims** for code that hasn't shipped yet. Just change it.
-- **No new deps unless used.** Native modules (`better-sqlite3`, `keytar`) are
-  added in the task that first imports them, not pre-emptively.
+- **No new deps unless used.** Add a dependency in the task that first imports it.
 - **Keep coupled deps in version lockstep.** `react`/`react-dom`/`@types/react-dom`
   must share a major; a Dependabot bump to one and not the other renders a blank
-  white screen. Watch Dependabot PRs that touch `react*`, `electron`, or native
-  modules — see the `plover-electron-vite-build` / `plover-native-modules` skills.
-- **Tests:** TDD the parts the core architecture doc names (Planner, Scheduler,
-  Store). Skip TDD for UI scaffolding.
-- **No real network in tests.** Use recorded fixtures with `nock`.
+  white screen. Watch Dependabot PRs that touch `react*`.
+- **Tests:** TDD the pure logic in `extension/src/lib/` (timer state machine,
+  blocking rules, command queue). Skip TDD for UI scaffolding.
+- **No real network in tests.** Stub `fetch` and use WXT's `fakeBrowser`; never hit a real endpoint.
 
 ## CI / dev tooling
 
@@ -253,15 +208,15 @@ without a model call; Gemini only suggests steps during task breakdown.
   PR + push to `main`: install → typecheck → lint → test. Coverage
   instrumentation + the coverage artifact upload only run on the `pull_request`
   trigger (that's the only place the 60% gate can still block a merge); the
-  `push: main` run does a plain `pnpm --filter ./app test` to avoid paying for
+  `push: main` run does a plain `pnpm test` to avoid paying for
   coverage overhead on a run with no PR left to gate. Ubuntu-only for now (add
   macOS/Windows when packaging matters).
 - **Pre-commit** runs `lint-staged` via husky → eslint --fix + prettier --write
-  on staged `app/**/*.{ts,tsx,json,md,yml,yaml,css,html}`.
+  on staged `extension/**/*.{ts,tsx,json,md,yml,yaml,css,html}`.
 - **Coverage gate:** soft 60% (lines/branches/functions/statements) **only on**
-  `src/main/planner/**` and `src/main/store/**`. UI and other code measured but
+  `extension/src/lib/**`. UI and other code measured but
   not gated.
-- **Dependabot** weekly PRs (npm root + npm app/ + github-actions), minor/patch
+- **Dependabot** weekly PRs (npm root + npm extension/ + github-actions), minor/patch
   grouped, max 5 open per ecosystem.
 
 ## Known footguns → skills
@@ -272,19 +227,14 @@ skills** under [`.claude/skills/plover-*`](.claude/skills/). Claude Code surface
 each by its trigger `description`, so the relevant one loads only when you hit its
 symptom — grep an error string or symptom and invoke the matching skill:
 
-| Skill | Covers |
-|---|---|
-| `plover-pnpm-workspace` | pnpm `--filter` form, colon-scripts, `--coverage`, `onlyBuiltDependencies`, corepack-vs-corporate-registry |
-| `plover-native-modules` | better-sqlite3/keytar ABI, `@electron/rebuild`, electron version pin, tslib/electron-builder |
-| `plover-electron-vite-build` | dep externalization, `__dirname`, preload `.mjs`, react/react-dom mismatch, dev/prod window URL |
-| `plover-electron-windows-overlay` | overlay/setup window variant routing, transparent-window black-box, positioning |
-| `plover-env-and-backend` | `load-env` ordering, `PLOVER_BACKEND_URL` vite bake, backend port |
-| `plover-testing` | vitest `vi.hoisted`, FK fixtures, `noUncheckedIndexedAccess` pattern, rebuild-ABI-before-tests, GUI-verify limits, pre-existing renderer fails |
-| `plover-git-safety` | subagent-worktree file tools, concurrent-checkout HEAD swaps, second checkout, PR base-branch |
-| `plover-store-schema` | vestigial `calendar_event_id`, `created_at`/`updated_at` not an age signal |
-| `plover-gemini` | `functionCalls()` method, 429 model fallback |
-| `plover-auth` | Auth unified on Supabase — no separate plover-token/`plover://` system; `AuthPanel` is the one sign-in/sign-up UI |
-| `plover-extension-wxt` | WXT vitest plugin import path, tsconfig include breaking auto-imports/JSX, `wxt prepare` on first install, no-empty-function in background stub, storage.local access level + state port, fakeBrowser gaps, corepack pnpm timeout |
+| Skill                    | Covers                                                                                                                                                                                                                            |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `plover-pnpm-workspace`  | pnpm `--filter` form, colon-scripts, `--coverage`, `onlyBuiltDependencies`, corepack-vs-corporate-registry                                                                                                                        |
+| `plover-env-and-backend` | `WXT_*` env vars, backend port collision (404 on `/api/decompose`)                                                                                                                                                                |
+| `plover-testing`         | vitest `vi.hoisted`, `noUncheckedIndexedAccess` destructure pattern, no-empty-function in mock classes                                                                                                                            |
+| `plover-git-safety`      | subagent-worktree file tools, concurrent-checkout HEAD swaps, second checkout, PR base-branch                                                                                                                                     |
+| `plover-auth`            | Auth unified on Supabase (Bearer token to `plover-server`); 401 sequencing across repos                                                                                                                                           |
+| `plover-extension-wxt`   | WXT vitest plugin import path, tsconfig include breaking auto-imports/JSX, `wxt prepare` on first install, no-empty-function in background stub, storage.local access level + state port, fakeBrowser gaps, corepack pnpm timeout |
 
 **Contract (replaces the old "add a lesson" rule):** when you hit an error,
 surprise, or wrong-first-attempt a future Claude could avoid, add it to the most

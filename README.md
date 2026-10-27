@@ -20,42 +20,38 @@ Gamification and more come later. Your tasks stay in your browser; only your
 settings sync (through your browser's own sync), and only step-suggestion
 requests leave it, proxied through the hosted backend.
 
-> **Status: pivoting to a browser extension.** As of 2026-10-19 Plover is a Chrome (Chromium) extension instead of an Electron desktop app; see the [product spec](docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md). The extension hasn't been built yet. The Electron app in `app/` is frozen: it still builds and runs, but nothing new is built on it. Launch is waitlist-only on tryplover.com, through an unlisted Chrome Web Store listing. The Gemini proxy lives in the standalone [plover-server](https://github.com/tryplover/plover-server) repo on Google Cloud Run (see [GCP & GitHub Setup Details](docs/plans/gcp-setup-details.md)).
+> **Status.** Plover is a Chrome (Chromium) extension. The earlier Electron desktop app was deleted on 2026-10-26; see the [product spec](docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md). Launch is waitlist-only on tryplover.com, through an unlisted Chrome Web Store listing. The Gemini proxy lives in the standalone [plover-server](https://github.com/tryplover/plover-server) repo on Google Cloud Run (see [GCP & GitHub Setup Details](docs/plans/gcp-setup-details.md)).
 
-## Quickstart (frozen Electron app)
-
-The extension package doesn't exist yet. Until it does, these commands run the
-frozen desktop app.
+## Quickstart
 
 **Prerequisites**
 
 - Node 22 (or whatever's in [`.nvmrc`](.nvmrc) — `nvm use` picks it up)
 - pnpm 10+ (`npm i -g pnpm` if you don't have it)
-- macOS or Windows
+- A Chromium browser (Chrome, Edge, Brave, Arc)
 
 **Install and run**
 
 ```bash
 pnpm install        # one-time setup + git hooks
-pnpm dev            # launches the Electron app in dev mode
+pnpm dev            # WXT dev mode; load extension/.output/chrome-mv3-dev unpacked
 ```
 
-To exercise step suggestions and Google Calendar you'll need Gemini/Google
-credentials (see [docs/RUNNING.md](docs/RUNNING.md)).
+Step suggestions, sign-in and Google Calendar need Supabase, backend and Google
+OAuth config; see [docs/RUNNING.md](docs/RUNNING.md).
 
 ## Common commands
 
 All commands run from the repo root.
 
-| Command | What it does |
-|---|---|
-| `pnpm dev` | Launch Electron in dev mode (HMR for renderer) |
-| `pnpm build` | Production build via electron-vite |
-| `pnpm typecheck` | `tsc --noEmit` on the app |
-| `pnpm lint` | ESLint |
-| `pnpm test` | Vitest (no coverage) |
-| `pnpm --filter ./app run test:coverage` | Vitest + v8 coverage report |
-| `pnpm --filter ./app format` | Prettier write across the app |
+| Command              | What it does                                      |
+| -------------------- | ------------------------------------------------- |
+| `pnpm dev`           | WXT dev mode for the extension                    |
+| `pnpm build`         | Production build (`extension/.output/chrome-mv3`) |
+| `pnpm typecheck`     | `tsc --noEmit` on the extension                   |
+| `pnpm lint`          | ESLint                                            |
+| `pnpm test`          | Vitest (no coverage)                              |
+| `pnpm test:coverage` | Vitest + v8 coverage report                       |
 
 CI runs typecheck → lint → test+coverage on every PR. Husky runs
 eslint+prettier on staged files at commit time.
@@ -66,40 +62,25 @@ eslint+prettier on staged files at commit time.
 .
 ├── CLAUDE.md                       # context for Claude sessions
 ├── README.md                       # ← you are here
-├── docs/superpowers/specs/         # product spec, original spec, phase architecture
+├── docs/superpowers/specs/         # product spec and history
 ├── reports/, research_notes/       # background research
 ├── .github/                        # CI workflow, Dependabot, PR template
-├── extension/                      # (planned) the Chromium MV3 extension
-└── app/                            # the frozen Electron app
-    ├── src/
-    │   ├── main/                   # Electron main process
-    │   ├── preload/
-    │   ├── renderer/               # React UI
-    │   └── shared/                 # cross-process types
-    └── tests/
+└── extension/                      # the Chromium MV3 extension (WXT + React)
 ```
-
-The `app/` directory is a pnpm workspace package named `plover`.
 
 ## Documentation
 
 - **[Product spec](docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md)** —
   current direction: the browser buddy, its MVP features, the extension
-  architecture, and what carries over from the Electron app
-- **[Desktop MVP roadmap](docs/plans/mvp-five-features-roadmap.md)**: the
-  milestone plan for the desktop app; superseded by the extension pivot
+  architecture, and what was carried over from the deleted Electron app
 - **[Original product spec](docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md)** —
   superseded; kept for history
 - **[Research](reports/)** — progress-visibility motivation evidence and the
   competitive landscape ([notes](research_notes/))
-- **[Phase 1 core architecture](docs/superpowers/specs/phase-1/core-architecture.md)** and
-  **[store layer](docs/superpowers/specs/phase-1/store-layer.md)** — module
-  boundaries of the frozen Electron app
 - **[CLAUDE.md](CLAUDE.md)** — conventions and footguns; useful for humans too,
   not just Claude
 
-Read the product spec before opening a PR — its scope and "what carries over"
-table set what to build and what not to touch.
+Read the product spec before opening a PR; its scope sets what to build and what not to touch.
 
 ## Privacy posture
 
@@ -121,14 +102,12 @@ Plover is local-first by design.
 
 ## Tech stack
 
-**Extension (planned):** Chromium Manifest V3 · TypeScript (strict) · React ·
+**Extension:** Chromium Manifest V3 · TypeScript (strict) · React ·
 `chrome.storage` · `declarativeNetRequest` · `chrome.alarms` ·
 `chrome.identity` · Supabase auth · Gemini via the standalone `plover-server`
 proxy.
 
-**Frozen Electron app:** Electron · TypeScript · React · electron-vite ·
-better-sqlite3 · `googleapis` · `keytar` · Vitest · ESLint · Prettier · pnpm
-workspace · GitHub Actions.
+Vitest · ESLint · Prettier · pnpm workspace · GitHub Actions.
 
 ## Contributing
 

@@ -1,16 +1,14 @@
 # AGENTS.md — context for autonomous coding agents
 
 > This file is the single-source briefing for automated agents working in this repo.
-> This file is intentionally trimmed to what an agent needs *before touching code in a sandbox*.
+> This file is intentionally trimmed to what an agent needs _before touching code in a sandbox_.
 
 ## TL;DR — what this repo is
 
-**Plover** is pivoting (2026-10-19) to a Chromium browser extension (Manifest
-V3): a small, cute character that floats on every web page, plus a toolbar
-popup. The extension isn't built yet; it will be a new `extension/` workspace
-package. Today the pnpm workspace has one package:
-
-- `app/` — the **frozen** Electron app (`name: "plover"`, main/preload/renderer + tests)
+**Plover** is a Chromium browser extension (Manifest V3): a small, cute
+character that floats on every web page, plus a toolbar popup. The pnpm
+workspace has one package, `extension/` (WXT + React). The former Electron
+desktop app was deleted on 2026-10-26.
 
 The MVP is: task breakdown (Gemini-suggested steps, fully editable, with a no-AI
 fallback), a Pomodoro timer, site/tab blocking, focus mode and read-only Google
@@ -20,110 +18,94 @@ nudge was dropped. Current direction is in the spec below.
 The Gemini backend (`plover-server`) is a Python/FastAPI service in a standalone
 repository, deployed on Google Cloud Run. It is not part of this repo.
 
-Frozen (leave in place, do not extend or build on): the whole Electron app in
-`app/`. Pure logic such as the timer state machine may be ported into
-`extension/`; new code must not import from `app/`.
-
-Deferred (do **not** add): voice input, nudge engine beyond the MVP stall nudge,
-Windows port, multi-account/plugins/multi-device sync.
+Deferred (do **not** add): voice input, stall nudge, Firefox/Safari,
+multi-account/plugins/multi-device sync.
 
 Authoritative specs:
+
 - Product spec (current direction, defines MVP scope; filename predates the extension pivot): [docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md](docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md)
-- Phase 1 architecture (still defines module boundaries and file layout): [docs/superpowers/specs/phase-1/core-architecture.md](docs/superpowers/specs/phase-1/core-architecture.md)
 - Superseded, history only: [docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md](docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md)
 
 ## Environment expectations (agent-specific)
 
 - **Node 22** (see `.nvmrc`). `package.json#engines` accepts >= 20 but CI runs 22 — match that.
 - **pnpm 10.26.0**, pinned via `packageManager` in the root `package.json`. Use corepack (`corepack enable && corepack prepare pnpm@10.26.0 --activate`) — do **not** install pnpm from `npm i -g` or you'll drift.
-- **Setup script:** `./setup.sh` at the repo root does the whole install + native-module rebuild.
-- **What agents can run:** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm --filter ./app run test:coverage`, `pnpm build`.
-- **What agents cannot run:** `pnpm dev` and `pnpm package`. Both require a GUI and either Electron-launchable env or code-signing tooling. Don't try.
-- **No secrets available.** `GEMINI_API_KEY`, `GOOGLE_CLIENT_ID` are absent in the sandbox. Any code path that hits the real network in a test is a bug — see the "no real network" convention below.
+- **Setup script:** `./setup.sh` at the repo root does the install.
+- **What agents can run:** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:coverage`, `pnpm build`.
+- **What agents cannot run:** `pnpm dev` (needs a GUI browser to load the extension). Don't try.
+- **No secrets available.** Supabase and `WXT_GOOGLE_CLIENT_ID` values are absent in the sandbox. Any code path that hits the real network in a test is a bug — see the "no real network" convention below.
 
 ## Commands cheat-sheet
 
 Run everything from the repo root.
 
-| Command | Purpose |
-|---|---|
-| `pnpm install` | Install workspace deps + husky prepare |
-| `pnpm typecheck` | `tsc --noEmit` on `app/` |
-| `pnpm lint` | ESLint on `app/` |
-| `pnpm test` | Vitest run (auto-rebuilds native modules first) |
-| `pnpm --filter ./app run test:coverage` | Vitest + v8 coverage |
-| `pnpm --filter ./app exec <tool>` | Run a tool binary inside `app/` |
+| Command                                 | Purpose                                |
+| --------------------------------------- | -------------------------------------- |
+| `pnpm install`                          | Install workspace deps + husky prepare |
+| `pnpm typecheck`                        | `tsc --noEmit` on `extension/`         |
+| `pnpm lint`                             | ESLint on `extension/`                 |
+| `pnpm test`                             | Vitest run                             |
+| `pnpm test:coverage`                    | Vitest + v8 coverage                   |
+| `pnpm build`                            | Production extension build             |
+| `pnpm --filter ./extension exec <tool>` | Run a tool binary inside `extension/`  |
 
 Two footguns baked into these commands (learned the hard way — see Lessons):
 
-1. **Always use path-based filters** (`--filter ./app`), never name-based (`-F plover` / `-F app`). Name filters break refactors and directory filters break because the package name isn't `app`.
-2. **Colon scripts need explicit `run`.** Use `pnpm --filter ./app run test:coverage`, not `pnpm --filter ./app test:coverage`.
+1. **Always use path-based filters** (`--filter ./extension`), never name-based (`-F plover` / `-F extension`).
+2. **Colon scripts need explicit `run`.** Use `pnpm --filter ./extension run test:coverage`, not `pnpm --filter ./extension test:coverage`.
 
 ## Architecture rules (load-bearing — do not violate)
 
-The core-architecture doc calls these "load-bearing" module boundaries. Crossing them defeats the whole design.
+See spec §6. Crossing these defeats the whole design.
 
-- **Store** (`app/src/main/store/`) exposes typed repos: `Goals`, `Tasks`, `Sessions`, `Activity`, `Summaries`. **No module reaches into raw SQLite.**
-- **Planner** is a pure function: `(goal_text, context) → {goal, subtasks[]}`. Side effects only via `Store` and `Sync`.
-- **Monitor** (Phase 2+) writes to `Activity` only. Never reads other tables.
-- **Inference** (Phase 2+) reads `Activity` + `Tasks`, writes `Summaries` + `progress_signal`. Never schedules.
-- **NudgeEngine** (Phase 2+) reads `Tasks` + `Summaries`, writes notifications / overlay events. Never mutates tasks.
-- **Sync** is the **only** module that talks to Google APIs.
-- Modules communicate via the in-process event bus + typed `Store` repos. Never import another module's internals.
+- **The background service worker owns all state** and processes every mutation through a single command queue.
+- **The content script draws only the buddy blob and reads nothing from the page.**
+- **Popup, options page, in-page panel and blocked page are thin, trusted views** over the worker.
+- **Secrets are never reachable from content scripts.**
 
 ## Hard constraints (privacy / security)
 
-- **Local-only user data.** SQLite + local filesystem. No cloud sync.
-- **Backend proxy for Gemini.** Outbound Gemini calls go through the standalone `plover-server` backend proxy so the API key isn't shipped in the Electron bundle. Do not inline API keys into `app/`.
-- **HTTP allowlist:** `generativelanguage.googleapis.com`, `www.googleapis.com`, `gmail.googleapis.com`, `calendar.googleapis.com`, `classroom.googleapis.com`, `api.github.com`, and Google OAuth (`oauth2.googleapis.com`, `accounts.google.com`). Documented in `app/src/main/http/allowlist.ts` (`assertAllowedHost`); not yet wired into the HTTP client.
+- **Local-only user data.** `chrome.storage.local` (settings may use `chrome.storage.sync`). No Plover cloud sync.
+- **Backend proxy for Gemini.** Outbound Gemini calls go through the standalone `plover-server` backend proxy so the API key isn't shipped in the extension. Do not inline API keys into `extension/`.
+- **HTTP allowlist:** `generativelanguage.googleapis.com`, `www.googleapis.com`, `gmail.googleapis.com`, `calendar.googleapis.com`, `classroom.googleapis.com`, `api.github.com`, and Google OAuth (`oauth2.googleapis.com`, `accounts.google.com`). Documented constraint, not runtime-enforced.
 - **Never capture keystroke content.** Counts only.
 - **Never upload screenshots** anywhere (Vision integration is future work and gated on explicit user consent).
-- **Phase 1 does not request Screen Recording / Accessibility.** Don't add those entitlements.
-- **No Wispr Flow / Cluely / third-party overlay deps.** Build the overlay with Electron `BrowserWindow` primitives.
 
 ## Code conventions
 
 - **TypeScript strict** with `noUncheckedIndexedAccess`, `noImplicitOverride`, `noFallthroughCasesInSwitch`. Do **not** loosen these to make an edit compile — restructure the code instead.
-- **No comments** unless the *why* is non-obvious. Don't explain *what* — the code does that. Don't reference the current task/PR/issue in a comment.
+- **No comments** unless the _why_ is non-obvious. Don't explain _what_ — the code does that. Don't reference the current task/PR/issue in a comment.
 - **No error handling for impossible states.** Validate at boundaries (user input, Google API responses); trust internal calls.
 - **No premature abstractions.** Three similar lines beat a wrong helper.
 - **No backwards-compat shims** for code that hasn't shipped yet — just change it.
-- **New deps only when actually imported.** Especially native modules (`keytar`, `get-windows`) — a native module that runs install scripts must be listed in `pnpm-workspace.yaml` under `onlyBuiltDependencies`, or its postinstall is skipped (see the `plover-native-modules` skill).
-- **Tests:** TDD is required for Planner, Scheduler, and Store. UI scaffolding can skip TDD.
-- **No real network in tests.** Use `nock` with recorded fixtures.
+- **New deps only when actually imported.** A package that runs install scripts must be listed in `pnpm-workspace.yaml` under `onlyBuiltDependencies`, or its postinstall is skipped.
+- **Tests:** TDD the pure logic in `extension/src/lib/`. UI scaffolding can skip TDD.
+- **No real network in tests.** Stub `fetch`; use WXT's `fakeBrowser`.
 
 ## Testing patterns agents will encounter
 
-Two idioms show up all over `app/tests/` and are worth internalizing before authoring new tests:
+Idioms that show up all over `extension/tests/` and are worth internalizing before authoring new tests:
 
 **Destructure + optional-chain, not `!`.** `noUncheckedIndexedAccess` makes `arr[0]` possibly-`undefined`, and ESLint's `no-non-null-assertion` blocks `arr[0]!`. Do this instead:
 
 ```ts
-const result = repo.listSomething();
+const result = listSomething();
 expect(result).toHaveLength(2);
 const [r0, r1] = result;
-expect(r0?.kind).toBe('file_added');
+expect(r0?.kind).toBe("file_added");
 ```
-
-**Seed FKs before inserting.** `summaries.task_id` is a real FK to `tasks(id)`. Any test that inserts a summary with a non-null `taskId` must first create a goal and task. See `app/tests/store/summaries-repo.test.ts` `seedTask` helper.
 
 **`vi.hoisted` for mock vars.** `vi.mock` is hoisted; anything it captures from the enclosing file must be declared via `vi.hoisted(() => ({...}))` or you'll get `ReferenceError: Cannot access 'x' before initialization`.
 
-**`removeAllListeners()` with no args.** Passing `removeAllListeners(undefined)` clears nothing — Node checks `arguments.length`. Branch on `event !== undefined`.
-
-## Lessons learned that matter *for automated runs*
+## Lessons learned that matter _for automated runs_
 
 These are the subset an automated agent is most likely to trip on:
 
-- **pnpm filter must be path-based** (`--filter ./app`), not name-based.
+- **pnpm filter must be path-based** (`--filter ./extension`), not name-based.
 - **Colon-named scripts** require the explicit `run` keyword under `--filter`.
-- **Native modules must be rebuilt** for the running V8/Electron ABI — `setup.sh` does this (`pnpm --filter ./app rebuild better-sqlite3 keytar`). Electron is pinned to `^43.3.0` in `app/package.json`; rebuild after any Electron bump, or better-sqlite3/keytar load with an ABI mismatch at dev runtime.
-- **`pnpm.onlyBuiltDependencies`** lives in `pnpm-workspace.yaml`, not `package.json`. It gates postinstall for `electron`, `esbuild`, `get-windows`, `keytar`. Do not add `better-sqlite3`; v13 ships prebuilds (see the `plover-native-modules` skill).
-- **`process.loadEnvFile()` in the body of `index.ts` is too late** — ESM imports evaluate first. Use `app/src/main/load-env.ts` as the first import.
-- **Preload output must be `.js`, not `.mjs`.** `electron.vite.config.ts` configures preload as `format: 'cjs'` with `entryFileNames: '[name].js'`.
-- **Don't declare `const __dirname`** — the ESM bundler injects one; use `import.meta.dirname` directly (Node 20.11+).
+- **`onlyBuiltDependencies`** lives in `pnpm-workspace.yaml`, not `package.json`. It currently gates postinstall for `esbuild`.
 - **Corepack behind a corporate registry can hang.** If `pnpm install` blocks on `registry.npmjs.org`, the fix is to prepend a globally-installed pnpm to `PATH`.
-- **Backend port must match `PLOVER_BACKEND_URL`.** The standalone `plover-server` listens on `PORT` (see its README). The app's dev fallback is http://localhost:3000, so `PORT` and `PLOVER_BACKEND_URL` must match. If the port is occupied, local decomposition requests fail with 404.
+- **Backend port must match `WXT_PLOVER_BACKEND_URL`.** The standalone `plover-server` listens on `PORT` (see its README). If the port is occupied, local decomposition requests fail with 404.
 
 ## Verification before claiming done
 
@@ -133,10 +115,8 @@ Before saying a change is complete, run — and confirm green output for — all
 pnpm typecheck && pnpm lint && pnpm test
 ```
 
-If a test needs a native module you just touched, run `pnpm --filter ./app rebuild better-sqlite3 keytar` first.
-
 ## When in doubt
 
-1. Re-read the Phase 1 core architecture at `docs/superpowers/specs/phase-1/core-architecture.md`.
+1. Re-read the product spec at `docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md`.
 2. Grep the tests — they encode the invariants the code must preserve.
 3. If a design decision isn't in the specs and isn't obvious from the code, leave a `TODO(scope):` in the PR body (not the code) and ask.
