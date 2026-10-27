@@ -35,7 +35,11 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ["@/worker/*", "@/features/*/worker"],
+              group: [
+                "@/worker/*",
+                "@/features/*/worker",
+                "@/features/timer/badge",
+              ],
               message:
                 "Page and UI code must not import worker modules; they register handlers and alarms. Talk to the worker via @/shared/messages.",
             },
