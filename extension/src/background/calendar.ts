@@ -2,32 +2,34 @@ import { browser } from "wxt/browser";
 import {
   CalendarAuthError,
   fetchUpcoming,
+  clearToken,
   getCalendarToken,
   requestToken,
+  storeToken,
 } from "@/lib/calendar/client";
-import { nextEvent } from "@/lib/calendar/events";
+import { nextUpcoming } from "@/lib/calendar/events";
 import { DEFAULT_LOCAL, getLocal, setLocal } from "@/lib/storage";
 import { onAlarm } from "./alarms";
 import { registerHandler } from "./controller";
 import { enqueue } from "./queue";
 
+export const CALENDAR_HEADSUP_ALARM = "calendar-headsup";
 const REFRESH_ALARM = "calendar-refresh";
-const HEADSUP_ALARM = "calendar-headsup";
 const HEADSUP_LEAD_MS = 5 * 60_000;
 const NUDGE_VISIBLE_MS = 60_000;
 
 async function clearConnection(): Promise<void> {
   await browser.alarms.clear(REFRESH_ALARM);
-  await browser.alarms.clear(HEADSUP_ALARM);
+  await browser.alarms.clear(CALENDAR_HEADSUP_ALARM);
+  await clearToken();
   await setLocal({
-    googleToken: null,
     calendar: DEFAULT_LOCAL.calendar,
     calendarConnected: false,
   });
 }
 
 export async function scheduleHeadsUp(): Promise<void> {
-  await browser.alarms.clear(HEADSUP_ALARM);
+  await browser.alarms.clear(CALENDAR_HEADSUP_ALARM);
   const [focus, connected, calendar] = await Promise.all([
     getLocal("focus"),
     getLocal("calendarConnected"),
@@ -35,11 +37,11 @@ export async function scheduleHeadsUp(): Promise<void> {
   ]);
   if (!focus.on || !connected) return;
   const now = Date.now();
-  const next = nextEvent(calendar.events, now);
-  if (!next || next.start <= now) return;
+  const next = nextUpcoming(calendar.events, now);
+  if (!next) return;
   const when = next.start - HEADSUP_LEAD_MS;
   if (when <= now) return;
-  await browser.alarms.create(HEADSUP_ALARM, { when });
+  await browser.alarms.create(CALENDAR_HEADSUP_ALARM, { when });
 }
 
 async function refreshCalendar(): Promise<void> {
@@ -52,7 +54,7 @@ async function refreshCalendar(): Promise<void> {
       events = await fetchUpcoming(token, Date.now());
     } catch (e) {
       if (!(e instanceof CalendarAuthError)) throw e;
-      await setLocal({ googleToken: null });
+      await clearToken();
       token = await getCalendarToken(false);
       if (!token) return clearConnection();
       events = await fetchUpcoming(token, Date.now());
@@ -70,7 +72,8 @@ export function registerCalendarHandlers(): void {
     const token = await requestToken(true);
     if (!token) return { ok: false, error: "Calendar sign-in was cancelled" };
     return enqueue(async () => {
-      await setLocal({ googleToken: token, calendarConnected: true });
+      await storeToken(token);
+      await setLocal({ calendarConnected: true });
       await browser.alarms.create(REFRESH_ALARM, { periodInMinutes: 15 });
       await refreshCalendar();
       return { ok: true };
@@ -84,7 +87,7 @@ export function registerCalendarHandlers(): void {
 
   onAlarm(REFRESH_ALARM, refreshCalendar);
 
-  onAlarm(HEADSUP_ALARM, async () => {
+  onAlarm(CALENDAR_HEADSUP_ALARM, async () => {
     const [focus, calendar, transient] = await Promise.all([
       getLocal("focus"),
       getLocal("calendar"),
@@ -92,7 +95,7 @@ export function registerCalendarHandlers(): void {
     ]);
     if (!focus.on) return;
     const now = Date.now();
-    const next = nextEvent(calendar.events, now);
+    const next = nextUpcoming(calendar.events, now);
     if (!next) return;
     await setLocal({
       transient: {

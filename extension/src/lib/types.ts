@@ -70,7 +70,6 @@ export interface LocalState {
   needsSignIn: boolean;
   calendar: { events: CalendarEvent[]; fetchedAt: number };
   calendarConnected: boolean;
-  googleToken: { accessToken: string; expiresAt: number } | null;
 }
 
 export type BuddyAnimationState =

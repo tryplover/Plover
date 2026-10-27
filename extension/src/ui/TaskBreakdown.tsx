@@ -22,7 +22,10 @@ export function TaskBreakdown({
   const [steps, setSteps] = useState<DraftStep[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-  const [conflict, setConflict] = useState<CalendarEvent | null>(null);
+  const [conflict, setConflict] = useState<{
+    event: CalendarEvent;
+    at: number;
+  } | null>(null);
 
   async function suggest() {
     const text = title.trim();
@@ -67,7 +70,7 @@ export function TaskBreakdown({
       const now = Date.now();
       const clash = conflictDuring(events, now, now + workMinutes * 60_000);
       if (clash) {
-        setConflict(clash);
+        setConflict({ event: clash, at: now });
         return;
       }
     }
@@ -176,8 +179,9 @@ export function TaskBreakdown({
       )}
       {conflict && (
         <ConflictOffer
-          event={conflict}
-          onShorten={() => void start(conflict.start - 60_000, true)}
+          event={conflict.event}
+          now={conflict.at}
+          onShorten={(endBy) => void start(endBy, true)}
           onAnyway={() => void start(undefined, true)}
         />
       )}

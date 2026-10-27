@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { conflictDuring, nextEvent, parseEvents } from "@/lib/calendar/events";
+import {
+  conflictDuring,
+  nextEvent,
+  nextUpcoming,
+  parseEvents,
+  shortenTarget,
+} from "@/lib/calendar/events";
 
 const MIN = 60_000;
 const T0 = Date.parse("2026-10-26T15:00:00Z");
@@ -99,5 +105,33 @@ describe("nextEvent / conflictDuring", () => {
     expect(
       conflictDuring([ev("inside", T0 + 10 * MIN, end + MIN)], T0, end)?.id,
     ).toBe("inside");
+  });
+});
+
+describe("nextUpcoming / shortenTarget", () => {
+  const ev = (id: string, start: number, end: number) => ({
+    id,
+    title: id,
+    start,
+    end,
+    allDay: false,
+  });
+
+  it("nextUpcoming skips in-progress events", () => {
+    const running = ev("run", T0 - 5 * MIN, T0 + 5 * MIN);
+    const later = ev("later", T0 + 20 * MIN, T0 + 30 * MIN);
+    expect(nextUpcoming([running, later], T0)?.id).toBe("later");
+    expect(nextUpcoming([running], T0)).toBeNull();
+  });
+
+  it("shortenTarget needs at least a 1 minute block", () => {
+    expect(shortenTarget(ev("a", T0 + 30 * MIN, T0 + 40 * MIN), T0)).toBe(
+      T0 + 29 * MIN,
+    );
+    expect(shortenTarget(ev("b", T0 + 2 * MIN, T0 + 9 * MIN), T0)).toBe(
+      T0 + MIN,
+    );
+    expect(shortenTarget(ev("c", T0 + 90_000, T0 + 9 * MIN), T0)).toBeNull();
+    expect(shortenTarget(ev("d", T0 + 30_000, T0 + 9 * MIN), T0)).toBeNull();
   });
 });

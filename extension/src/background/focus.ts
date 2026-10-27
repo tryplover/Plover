@@ -1,7 +1,7 @@
 import { browser } from "wxt/browser";
 import { getLocal, getSettings, setLocal } from "@/lib/storage";
 import { onAlarm } from "./alarms";
-import { scheduleHeadsUp } from "./calendar";
+import { CALENDAR_HEADSUP_ALARM, scheduleHeadsUp } from "./calendar";
 import { setBlocking, reapplyBlocking } from "./blocking";
 import { registerHandler } from "./controller";
 import { enqueue } from "./queue";
@@ -25,7 +25,7 @@ async function setFocus(on: boolean, endBy?: number): Promise<void> {
     return;
   }
   await browser.alarms.clear(NUDGE_ALARM);
-  await browser.alarms.clear("calendar-headsup");
+  await browser.alarms.clear(CALENDAR_HEADSUP_ALARM);
   await setLocal({ focus: { on: false, startedAt: null } });
   await setBlocking(false);
 }

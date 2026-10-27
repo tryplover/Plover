@@ -1,5 +1,4 @@
 import { browser } from "wxt/browser";
-import { getLocal, setLocal } from "@/lib/storage";
 import type { CalendarEvent } from "@/lib/types";
 import { parseEvents } from "./events";
 
@@ -73,15 +72,30 @@ export async function requestToken(
   return { accessToken, expiresAt: Date.now() + expiresIn * 1000 };
 }
 
+const TOKEN_KEY = "googleToken";
+
+async function readToken(): Promise<GoogleToken | null> {
+  const stored = await browser.storage.session.get(TOKEN_KEY);
+  return (stored[TOKEN_KEY] as GoogleToken | undefined) ?? null;
+}
+
+export async function storeToken(token: GoogleToken): Promise<void> {
+  await browser.storage.session.set({ [TOKEN_KEY]: token });
+}
+
+export async function clearToken(): Promise<void> {
+  await browser.storage.session.remove(TOKEN_KEY);
+}
+
 export async function getCalendarToken(
   interactive: boolean,
 ): Promise<string | null> {
-  const cached = await getLocal("googleToken");
+  const cached = await readToken();
   if (cached && cached.expiresAt - EXPIRY_SLACK_MS > Date.now()) {
     return cached.accessToken;
   }
   const fresh = await requestToken(interactive);
   if (!fresh) return null;
-  await setLocal({ googleToken: fresh });
+  await storeToken(fresh);
   return fresh.accessToken;
 }

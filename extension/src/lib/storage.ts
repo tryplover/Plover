@@ -32,7 +32,6 @@ export const DEFAULT_LOCAL: LocalState = {
   needsSignIn: true,
   calendar: { events: [], fetchedAt: 0 },
   calendarConnected: false,
-  googleToken: null,
 };
 
 const SETTINGS_KEY = "settings";

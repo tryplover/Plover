@@ -1,4 +1,4 @@
-import { nextEvent } from "@/lib/calendar/events";
+import { nextEvent, shortenTarget } from "@/lib/calendar/events";
 import type { CalendarEvent } from "@/lib/types";
 
 export function CalendarNext({
@@ -22,20 +22,27 @@ export function CalendarNext({
 
 export function ConflictOffer({
   event,
+  now,
   onShorten,
   onAnyway,
 }: {
   event: CalendarEvent;
-  onShorten: () => void;
+  now: number;
+  onShorten: (endBy: number) => void;
   onAnyway: () => void;
 }) {
   return (
     <div className="plover-conflict" role="alert">
       <p>{event.title} starts during your block.</p>
       <div className="plover-row">
-        <button type="button" onClick={onShorten}>
-          Shorten to end before {event.title}
-        </button>
+        {shortenTarget(event, now) !== null && (
+          <button
+            type="button"
+            onClick={() => onShorten(shortenTarget(event, now) as number)}
+          >
+            Shorten to end before {event.title}
+          </button>
+        )}
         <button type="button" onClick={onAnyway}>
           Start anyway
         </button>

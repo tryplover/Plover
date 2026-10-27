@@ -14,6 +14,8 @@ const T0 = 1_700_000_000_000;
 const REDIRECT = "https://abc.chromiumapp.org/";
 const launchWebAuthFlow = vi.fn();
 const fetchMock = vi.fn();
+const sessionToken = async () =>
+  (await fakeBrowser.storage.session.get("googleToken"))["googleToken"] ?? null;
 
 const redirectWith = (token: string, expiresIn = 3599) =>
   `${REDIRECT}#access_token=${token}&token_type=Bearer&expires_in=${expiresIn}`;
@@ -80,10 +82,13 @@ describe("calendar/connect", () => {
       redirect_uri: REDIRECT,
       scope: "https://www.googleapis.com/auth/calendar.readonly",
     });
-    expect(await getLocal("googleToken")).toEqual({
+    expect(await sessionToken()).toEqual({
       accessToken: "tok",
       expiresAt: T0 + 3599_000,
     });
+    expect(
+      (await fakeBrowser.storage.local.get("googleToken"))["googleToken"],
+    ).toBeUndefined();
     expect(await getLocal("calendarConnected")).toBe(true);
     expect((await getLocal("calendar")).events).toHaveLength(1);
     expect(
@@ -99,7 +104,7 @@ describe("calendar/connect", () => {
     launchWebAuthFlow.mockRejectedValue(new Error("closed"));
     expect((await dispatch({ type: "calendar/connect" })).ok).toBe(false);
     expect(await getLocal("calendarConnected")).toBe(false);
-    expect(await getLocal("googleToken")).toBeNull();
+    expect(await sessionToken()).toBeNull();
   });
 
   it("does not hold the queue while the interactive flow is open", async () => {
@@ -153,7 +158,7 @@ describe("calendar-refresh", () => {
     launchWebAuthFlow.mockRejectedValue(new Error("interaction required"));
     await fireAlarm("calendar-refresh");
     expect(await getLocal("calendarConnected")).toBe(false);
-    expect(await getLocal("googleToken")).toBeNull();
+    expect(await sessionToken()).toBeNull();
     expect((await getLocal("calendar")).events).toEqual([]);
   });
 
@@ -164,7 +169,7 @@ describe("calendar-refresh", () => {
     await fireAlarm("calendar-refresh");
     expect(launchWebAuthFlow).toHaveBeenCalledTimes(1);
     expect(await getLocal("calendarConnected")).toBe(false);
-    expect(await getLocal("googleToken")).toBeNull();
+    expect(await sessionToken()).toBeNull();
   });
 
   it("on 401 recovers with a silently obtained token", async () => {
@@ -197,7 +202,7 @@ describe("calendar/disconnect", () => {
     respondWith([apiEvent("a", "A", T0 + 20 * MIN)]);
     await dispatch({ type: "calendar/connect" });
     await dispatch({ type: "calendar/disconnect" });
-    expect(await getLocal("googleToken")).toBeNull();
+    expect(await sessionToken()).toBeNull();
     expect(await getLocal("calendarConnected")).toBe(false);
     expect((await getLocal("calendar")).events).toEqual([]);
     expect(await fakeBrowser.alarms.get("calendar-refresh")).toBeUndefined();
@@ -232,6 +237,23 @@ describe("heads-up", () => {
     const t = await getLocal("transient");
     expect(t.nudgeText).toBe("Stand-up starts in 5 min");
     expect(t.nudgeUntil).toBe(T0 + 16 * MIN);
+  });
+
+  it("targets the next upcoming event, not one already in progress", async () => {
+    await setLocal({ focus: { on: true, startedAt: T0 } });
+    launchWebAuthFlow.mockResolvedValue(redirectWith("tok"));
+    respondWith([
+      apiEvent("run", "Running", T0 - 10 * MIN, 60),
+      apiEvent("later", "Later", T0 + 30 * MIN),
+    ]);
+    await dispatch({ type: "calendar/connect" });
+    const alarm = await fakeBrowser.alarms.get("calendar-headsup");
+    expect(alarm?.scheduledTime).toBe(T0 + 25 * MIN);
+    vi.setSystemTime(T0 + 25 * MIN);
+    await fireAlarm("calendar-headsup");
+    expect((await getLocal("transient")).nudgeText).toBe(
+      "Later starts in 5 min",
+    );
   });
 
   it("does nothing if focus ended before the alarm fired", async () => {

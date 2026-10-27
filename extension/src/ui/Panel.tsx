@@ -59,7 +59,8 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
       {focusConflict && (
         <ConflictOffer
           event={focusConflict}
-          onShorten={() => startFocus(focusConflict.start - 60_000)}
+          now={now}
+          onShorten={(endBy) => startFocus(endBy)}
           onAnyway={() => startFocus()}
         />
       )}

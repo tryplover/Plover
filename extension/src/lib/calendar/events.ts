@@ -57,3 +57,20 @@ export function conflictDuring(
     null
   );
 }
+
+export function nextUpcoming(
+  events: CalendarEvent[],
+  nowMs: number,
+): CalendarEvent | null {
+  return events.find((e) => !e.allDay && e.start > nowMs) ?? null;
+}
+
+const MIN_MS = 60_000;
+
+export function shortenTarget(
+  event: CalendarEvent,
+  nowMs: number,
+): number | null {
+  const endBy = event.start - MIN_MS;
+  return endBy - nowMs >= MIN_MS ? endBy : null;
+}
