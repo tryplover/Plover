@@ -9,29 +9,18 @@
   },
   "scripts": {
     "prepare": "husky",
-    "typecheck": "pnpm --filter ./app --filter ./extension typecheck",
-    "lint": "pnpm --filter ./app --filter ./extension lint",
-    "test": "pnpm --filter ./app --filter ./extension test",
-    "test:coverage": "pnpm --filter ./app --filter ./extension run test:coverage",
-    "dev": "pnpm --filter ./app dev",
-    "build": "pnpm --filter ./app build",
-    "package": "pnpm build && pnpm --filter ./app run dist",
-    "dev:extension": "pnpm --filter ./extension dev",
-    "build:extension": "pnpm --filter ./extension build"
+    "dev": "pnpm --filter ./extension dev",
+    "build": "pnpm --filter ./extension build",
+    "typecheck": "pnpm --filter ./extension typecheck",
+    "lint": "pnpm --filter ./extension lint",
+    "test": "pnpm --filter ./extension test",
+    "test:coverage": "pnpm --filter ./extension run test:coverage"
   },
   "devDependencies": {
     "husky": "^9.1.7",
-    "lint-staged": "^17.3.0",
-    "tslib": "^2.8.1"
+    "lint-staged": "^17.3.0"
   },
   "lint-staged": {
-    "app/**/*.{ts,tsx}": [
-      "pnpm --filter ./app exec eslint --fix",
-      "pnpm --filter ./app exec prettier --write"
-    ],
-    "app/**/*.{json,md,yml,yaml,css,html}": [
-      "pnpm --filter ./app exec prettier --write"
-    ],
     "extension/**/*.{ts,tsx}": [
       "pnpm --filter ./extension exec eslint --fix",
       "pnpm --filter ./extension exec prettier --write"

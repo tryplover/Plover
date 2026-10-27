@@ -7,7 +7,6 @@ node_modules/
 dist/
 out/
 build/
-!app/build/
 .vite/
 
 # test / coverage
@@ -32,13 +31,6 @@ Thumbs.db
 npm-debug.log*
 pnpm-debug.log*
 yarn-debug.log*
-
-# database
-*.db
-*.db-shm
-*.db-wal
-*.sqlite
-*.sqlite3
 
 # subagent-driven-development scratch
 .superpowers/

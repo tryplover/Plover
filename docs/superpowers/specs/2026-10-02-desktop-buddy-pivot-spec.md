@@ -1,6 +1,6 @@
 # Plover — Browser Buddy Spec (Chrome extension)
 
-**Date:** 2026-10-02 (rev. 2026-10-03: MVP narrowed to five simple features; rev. 2026-10-13: stall nudge added, progress percentages and the goal bar removed; **rev. 2026-10-19: Plover becomes a Chromium browser extension instead of an Electron desktop app; stall nudge dropped**)
+**Date:** 2026-10-02 (rev. 2026-10-03: MVP narrowed to five simple features; rev. 2026-10-13: stall nudge added, progress percentages and the goal bar removed; **rev. 2026-10-19: Plover becomes a Chromium browser extension instead of an Electron desktop app; stall nudge dropped**; **rev. 2026-10-26: Electron app deleted**)
 **Status:** Draft v3. Supersedes the [2026-05-24 product spec](2026-05-24-task-tracker-agent-product-spec.md) as the product direction. The filename still says "desktop buddy" so existing links keep working.
 **Launch:** waitlist-only on tryplover.com, distributed as an unlisted Chrome Web Store listing (downloads of the desktop app paused since 2026-09-20).
 
@@ -216,25 +216,24 @@ a separate Edge Add-ons listing is optional.
 
 ## 6. What carries over from the Electron app
 
-The Electron app in `app/` is **frozen as a whole**: leave it in place,
-don't extend it, don't delete it yet. The extension is a new workspace
-package (`extension/`). Ideas and pure logic can be ported; Electron-only
-code can't.
+The Electron app in `app/` was **deleted on 2026-10-26**; pure logic was
+ported into `extension/`. The table below is kept as history: the Fate
+column records the decision made at the pivot, not the current state.
 
-| Area | Fate | Notes |
-|---|---|---|
-| Pomodoro state machine (`app/src/main/timer/`) | **Port** | Pure and clock-injected, so it moves into the extension's background worker. The ticking `TimerService` doesn't port: MV3 needs alarms plus timestamps (§4.3). |
-| Step suggestions (`app/src/main/planner/decompose.ts`) | **Port the request** | The extension calls the same `plover-server` endpoint directly. |
-| Gemini proxy (`plover-server`) and Supabase auth | **Keep** | Unchanged. The extension signs in with Supabase and sends the session token to `plover-server`. |
-| Google OAuth (`google-auth.ts`) + `CalendarSource` | **Re-do in the extension** | Same scope and behaviour, rebuilt on `chrome.identity` and `fetch`. |
-| Store (SQLite + typed repos) | **Freeze** | Replaced by `chrome.storage` (§4.8). |
-| Companion window, renderer views, onboarding | **Freeze** | Replaced by the floating buddy, popup and options page. React components may be copied over where useful. |
-| Timer IPC, sessions migration, stall nudge engine | **Freeze** | Built for the desktop app before rev. 2026-10-19. |
-| Activity monitoring, inference, connectors, scheduler | **Freeze** | As before. |
+| Area                                                   | Fate at pivot              | Notes                                                                                                                                                          |
+| ------------------------------------------------------ | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pomodoro state machine (`app/src/main/timer/`)         | **Port**                   | Pure and clock-injected, so it moves into the extension's background worker. The ticking `TimerService` doesn't port: MV3 needs alarms plus timestamps (§4.3). |
+| Step suggestions (`app/src/main/planner/decompose.ts`) | **Port the request**       | The extension calls the same `plover-server` endpoint directly.                                                                                                |
+| Gemini proxy (`plover-server`) and Supabase auth       | **Keep**                   | Unchanged. The extension signs in with Supabase and sends the session token to `plover-server`.                                                                |
+| Google OAuth (`google-auth.ts`) + `CalendarSource`     | **Re-do in the extension** | Same scope and behaviour, rebuilt on `chrome.identity` and `fetch`.                                                                                            |
+| Store (SQLite + typed repos)                           | **Freeze**                 | Replaced by `chrome.storage` (§4.8).                                                                                                                           |
+| Companion window, renderer views, onboarding           | **Freeze**                 | Replaced by the floating buddy, popup and options page. React components may be copied over where useful.                                                      |
+| Timer IPC, sessions migration, stall nudge engine      | **Freeze**                 | Built for the desktop app before rev. 2026-10-19.                                                                                                              |
+| Activity monitoring, inference, connectors, scheduler  | **Freeze**                 | As before.                                                                                                                                                     |
 
-"Freeze" means: don't extend it, don't delete it yet, and don't let new code
-depend on it. Deleting `app/` is a separate decision once the extension
-ships.
+"Freeze" meant: don't extend it and don't let new code depend on it. The
+whole app, including the frozen rows, was removed on 2026-10-26; it remains
+in git history.
 
 Extension architecture (MV3):
 

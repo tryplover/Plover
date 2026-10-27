@@ -19,9 +19,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Install libsecret (required by keytar)
-        run: sudo apt-get update && sudo apt-get install -y libsecret-1-dev
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v6.0.10
 
@@ -35,26 +32,24 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Typecheck
-        run: pnpm --filter ./app --filter ./extension typecheck
+        run: pnpm typecheck
 
       - name: Lint
-        run: pnpm --filter ./app --filter ./extension lint
+        run: pnpm lint
 
       - name: Test (with coverage)
         if: github.event_name == 'pull_request'
-        run: pnpm --filter ./app --filter ./extension run test:coverage
+        run: pnpm test:coverage
 
       - name: Test
         if: github.event_name != 'pull_request'
-        run: pnpm --filter ./app --filter ./extension test
+        run: pnpm test
 
       - name: Upload coverage
         if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v7
         with:
           name: coverage
-          path: |
-            app/coverage/
-            extension/coverage/
+          path: extension/coverage/
           if-no-files-found: ignore
           retention-days: 14

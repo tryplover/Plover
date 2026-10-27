@@ -13,6 +13,6 @@
 
 ## Scope check
 
-- [ ] Changes stay within the current phase per [the Phase 1 core architecture](../docs/superpowers/specs/phase-1/core-architecture.md)
-- [ ] No new outbound network destinations beyond the allowlist (`generativelanguage.googleapis.com`, `www.googleapis.com`, Google OAuth)
-- [ ] No new permissions requested (Screen Recording / Accessibility deferred to later phases)
+- [ ] Changes stay within the current phase per [the product spec](../docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md)
+- [ ] No new outbound network destinations beyond the allowlist (`plover-server`, Supabase, `www.googleapis.com`, Google OAuth)
+- [ ] No new extension permissions or host permissions requested without discussion
