@@ -77,16 +77,25 @@ export async function applyTransition(
   }
 }
 
+export async function startTimerNow(endBy?: number): Promise<void> {
+  const timer = await getLocal("timer");
+  if (timer.phase !== "idle") return;
+  const now = Date.now();
+  const t = startTimer(timerConfig(await getSettings()), now);
+  if (endBy !== undefined && endBy > now) {
+    t.state = { ...t.state, phaseEndsAt: endBy };
+  }
+  await applyTransition(t, now);
+}
+
+export async function resumeTimerNow(): Promise<void> {
+  const now = Date.now();
+  await applyTransition(resumeTimer(await getLocal("timer"), now), now);
+}
+
 export function registerTimerHandlers(): void {
   registerHandler("timer/start", async (cmd) => {
-    const timer = await getLocal("timer");
-    if (timer.phase !== "idle") return { ok: true };
-    const now = Date.now();
-    const t = startTimer(timerConfig(await getSettings()), now);
-    if (cmd.endBy !== undefined && cmd.endBy > now) {
-      t.state = { ...t.state, phaseEndsAt: cmd.endBy };
-    }
-    await applyTransition(t, now);
+    await startTimerNow(cmd.endBy);
     return { ok: true };
   });
 
@@ -97,8 +106,7 @@ export function registerTimerHandlers(): void {
   });
 
   registerHandler("timer/resume", async () => {
-    const now = Date.now();
-    await applyTransition(resumeTimer(await getLocal("timer"), now), now);
+    await resumeTimerNow();
     return { ok: true };
   });
 

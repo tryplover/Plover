@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { browser } from "wxt/browser";
 import { deriveBuddyState } from "@/lib/buddy-state";
+import { sendCommand } from "@/lib/messages";
 import { CheckIn } from "./CheckIn";
 import { SignIn } from "./SignIn";
 import { TaskBreakdown } from "./TaskBreakdown";
@@ -18,6 +19,19 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
   const activeTask = local.tasks.find((t) => t.id === local.activeTaskId);
   const buddy = deriveBuddyState(local, now);
 
+  const focusSwitch = (
+    <label className="plover-focus">
+      <input
+        type="checkbox"
+        checked={local.focus.on}
+        onChange={() =>
+          void sendCommand({ type: "focus/set", on: !local.focus.on })
+        }
+      />
+      Focus mode
+    </label>
+  );
+
   const showSignIn = local.needsSignIn && idle;
   const body = (
     <>
@@ -33,15 +47,13 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
       {idle ? (
         <div hidden={showSignIn}>
           <TaskBreakdown />
+          {focusSwitch}
         </div>
       ) : (
         <>
           {activeTask && <p className="plover-task">{activeTask.title}</p>}
           <TimerControls timer={local.timer} now={now} />
-          <label className="plover-focus">
-            <input type="checkbox" disabled checked={local.focus.on} readOnly />
-            Focus mode
-          </label>
+          {focusSwitch}
           {local.transient.checkInPending && <CheckIn task={activeTask} />}
         </>
       )}

@@ -1,0 +1,31 @@
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #f4f1ec;
+  color: #2d2a26;
+}
+.blocked {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+}
+.blocked-buddy {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: #9ad0c2;
+}
+.blocked h1 {
+  font-size: 20px;
+  font-weight: 500;
+  margin: 0;
+}
+.blocked-clock {
+  font-size: 40px;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
