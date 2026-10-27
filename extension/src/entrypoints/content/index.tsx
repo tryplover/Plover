@@ -194,7 +194,7 @@ function placeFrame(wrapper: HTMLElement, corner: BuddyCorner): void {
 }
 
 export default defineContentScript({
-  matches: ["<all_urls>"],
+  registration: "runtime",
   cssInjectionMode: "ui",
   async main(ctx) {
     const frame = createIframeUi(ctx, {

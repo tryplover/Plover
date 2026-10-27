@@ -9,9 +9,9 @@ export const manifest = {
     "declarativeNetRequest",
     "identity",
     "notifications",
-    "tabs",
+    "scripting",
   ],
-  host_permissions: ["<all_urls>"],
+  optional_host_permissions: ["<all_urls>"],
   commands: {
     _execute_action: {
       suggested_key: { default: "Alt+Shift+P" },
@@ -22,6 +22,11 @@ export const manifest = {
     { resources: ["blocked.html"], matches: ["<all_urls>"] },
     {
       resources: ["panel.html"],
+      matches: ["<all_urls>"],
+      use_dynamic_url: true,
+    },
+    {
+      resources: ["content-scripts/content.css"],
       matches: ["<all_urls>"],
       use_dynamic_url: true,
     },

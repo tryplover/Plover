@@ -19,6 +19,7 @@
 - `defineContentScript({ registration: "runtime" })` keeps the script out of `manifest.content_scripts` but **adds its `matches` to `host_permissions`** (`wxt/dist/core/utils/manifest.mjs`). So the runtime script must declare **no `matches`** (validation allows that only for runtime registration).
 - The built file is `content-scripts/content.js` (entrypoint `src/entrypoints/content/index.tsx`). `cssInjectionMode: "ui"` inlines CSS into the shadow root, so no CSS file needs registering.
 - `ContentScriptContext` posts `wxt:content-script-started` on start and older instances of the same script invalidate themselves, so injecting into a tab that already runs the buddy replaces it rather than doubling it.
+- WXT's auto web-accessible entry for `content-scripts/content.css` (fetched by `createShadowRootUi` in `ui` mode) also copies the script's `matches`, so with none it gets `matches: []`. Add an explicit `{ resources: ["content-scripts/content.css"], matches: ["<all_urls>"], use_dynamic_url: true }` WAR entry.
 - Dev mode (`wxt` serve) always adds `tabs` + `scripting` permissions; only check `pnpm build` output for permissions.
 
 ## Stack
@@ -101,7 +102,7 @@ export async function injectBuddy(origins: string[]): Promise<void> {
   for (const tab of tabs) {
     if (tab.id === undefined) continue;
     await browser.scripting
-      .executeScript({ target: { tabId: tab.id }, files: [BUDDY_SCRIPT_FILE] })
+      .executeScript({ target: { tabId: tab.id }, files: [BUDDY_SCRIPT_FILE as ScriptPublicPath] })
       .catch(() => undefined);
   }
 }
