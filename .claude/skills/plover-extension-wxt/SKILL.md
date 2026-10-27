@@ -21,6 +21,7 @@ Footguns specific to `extension/` (package `plover-extension`, WXT 0.21, Vitest 
 | Previously green dispatch tests fail with `supabaseUrl is required` or `not signed in` | `dispatch` gates `GATED_COMMANDS` via `isSignedIn()`, which builds a real Supabase client (env vars are empty in tests) | In tests of gated commands: `vi.mock("@/lib/auth/session", async (orig) => ({ ...(await orig<typeof import("@/lib/auth/session")>()), isSignedIn: async () => true }))` |
 | TS2322 on `declarativeNetRequest` rule literals (`type: "redirect"`, `resourceTypes: ["main_frame"]`) | `@types/chrome` models these as enums, string literals are not assignable | Cast: `"main_frame" as chrome.declarativeNetRequest.ResourceType`, `"redirect" as chrome.declarativeNetRequest.RuleActionType` |
 | `browser.declarativeNetRequest` undefined in tests | `fakeBrowser` does not implement it | In `beforeEach`: `(fakeBrowser as unknown as Record<string, unknown>).declarativeNetRequest = { updateDynamicRules: vi.fn(), getDynamicRules: vi.fn(async () => []) }`; `vi.spyOn(fakeBrowser.tabs, "query")` for tabs |
+| Calendar token parse returns null / interactive OAuth blocks every command | Implicit flow puts `access_token` in the URL fragment (`#`), not `?`; `calendar/connect` runs `launchWebAuthFlow` interactively for minutes | Parse `returned.split("#")[1]` with `URLSearchParams`; keep `calendar/connect` in `UNQUEUED_COMMANDS` and `enqueue` only the writes; alarm refresh uses `getCalendarToken(false)` plus a 10 s AbortController |
 | `No projects matched the filters` for `pnpm --filter ./extension ...` | `./extension` resolves relative to cwd; shell was already inside `extension/` | Run from repo root, or inside `extension/` use `pnpm exec <tool>` |
 
 ## Details
@@ -58,3 +59,8 @@ Footguns specific to `extension/` (package `plover-extension`, WXT 0.21, Vitest 
 **Symptom:** `No projects matched the filters` for `pnpm --filter ./extension exec vitest ...`.
 **Root cause:** `./extension` is resolved from the current directory; after `cd extension` it does not exist.
 **Fix:** run filtered commands from the repo root, or use plain `pnpm exec <tool>` inside `extension/`.
+
+### Calendar OAuth (implicit flow) in the worker
+**Symptom:** token never found after `launchWebAuthFlow`, or the whole command queue stalls while the consent window is open.
+**Root cause:** Google's `response_type=token` redirect carries `#access_token=...&expires_in=...` (fragment). Interactive flows can take minutes.
+**Fix:** `requestToken` in `lib/calendar/client.ts` parses the fragment; `calendar/connect` is unqueued and enqueues only the token/state writes. `launchWebAuthFlow` failures (closed window, interaction required) resolve to `null`, never throw.
