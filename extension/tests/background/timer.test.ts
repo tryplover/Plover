@@ -1,0 +1,133 @@
+import { fakeBrowser } from "wxt/testing/fake-browser";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { registerBadge } from "@/background/badge";
+import { dispatch } from "@/background/controller";
+import { onTimerEvent, registerTimerHandlers } from "@/background/timer";
+import { getLocal } from "@/lib/storage";
+import type { TimerEvent } from "@/lib/timer/types";
+
+const MIN = 60_000;
+const T0 = 1_700_000_000_000;
+
+async function fireAlarm(name: string) {
+  const alarm = await fakeBrowser.alarms.get(name);
+  await fakeBrowser.alarms.onAlarm.trigger(
+    alarm ?? { name, scheduledTime: Date.now(), persistAcrossSessions: false },
+  );
+}
+
+beforeEach(() => {
+  fakeBrowser.reset();
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(T0);
+  registerTimerHandlers();
+  registerBadge();
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+describe("timer commands", () => {
+  it("start enters work and schedules the phase alarm at phaseEndsAt", async () => {
+    await dispatch({ type: "timer/start" });
+    const timer = await getLocal("timer");
+    expect(timer.phase).toBe("work");
+    expect(timer.phaseEndsAt).toBe(T0 + 25 * MIN);
+    const alarm = await fakeBrowser.alarms.get("timer-phase");
+    expect(alarm?.scheduledTime).toBe(timer.phaseEndsAt);
+  });
+
+  it("start with endBy shortens the first phase", async () => {
+    const endBy = T0 + 10 * MIN;
+    await dispatch({ type: "timer/start", endBy });
+    expect((await getLocal("timer")).phaseEndsAt).toBe(endBy);
+    expect((await fakeBrowser.alarms.get("timer-phase"))?.scheduledTime).toBe(
+      endBy,
+    );
+  });
+
+  it("start while running is a no-op", async () => {
+    await dispatch({ type: "timer/start" });
+    vi.setSystemTime(T0 + MIN);
+    await dispatch({ type: "timer/start" });
+    expect((await getLocal("timer")).phaseEndsAt).toBe(T0 + 25 * MIN);
+  });
+
+  it("alarm after the end moves to a short break, flags check-in and records a session", async () => {
+    const events: TimerEvent[] = [];
+    onTimerEvent(async (e) => void events.push(e));
+    await dispatch({ type: "timer/start" });
+    vi.setSystemTime(T0 + 25 * MIN + 1000);
+    await fireAlarm("timer-phase");
+
+    const timer = await getLocal("timer");
+    expect(timer.phase).toBe("shortBreak");
+    expect(timer.blocksCompleted).toBe(1);
+    expect((await getLocal("transient")).checkInPending).toBe(true);
+    const sessions = await getLocal("sessions");
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0]).toMatchObject({
+      phase: "work",
+      completed: true,
+      startedAt: T0,
+      endedAt: T0 + 25 * MIN,
+    });
+    expect(events.map((e) => e.type)).toContain("work-block-completed");
+    expect((await fakeBrowser.alarms.get("timer-phase"))?.scheduledTime).toBe(
+      timer.phaseEndsAt,
+    );
+  });
+
+  it("pause clears the phase alarm and resume recreates it shifted", async () => {
+    await dispatch({ type: "timer/start" });
+    vi.setSystemTime(T0 + 5 * MIN);
+    await dispatch({ type: "timer/pause" });
+    expect(await fakeBrowser.alarms.get("timer-phase")).toBeUndefined();
+    vi.setSystemTime(T0 + 15 * MIN);
+    await dispatch({ type: "timer/resume" });
+    const alarm = await fakeBrowser.alarms.get("timer-phase");
+    expect(alarm?.scheduledTime).toBe(T0 + 35 * MIN);
+  });
+
+  it("stop clears alarms and records an incomplete session", async () => {
+    await dispatch({ type: "timer/start" });
+    vi.setSystemTime(T0 + 7 * MIN);
+    await dispatch({ type: "timer/stop" });
+    expect((await getLocal("timer")).phase).toBe("idle");
+    expect(await fakeBrowser.alarms.getAll()).toEqual([]);
+    const sessions = await getLocal("sessions");
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0]).toMatchObject({
+      completed: false,
+      startedAt: T0,
+      endedAt: T0 + 7 * MIN,
+    });
+  });
+
+  it("skip from work records an incomplete session and enters a break", async () => {
+    await dispatch({ type: "timer/start" });
+    vi.setSystemTime(T0 + MIN);
+    await dispatch({ type: "timer/skip" });
+    expect((await getLocal("timer")).phase).toBe("shortBreak");
+    expect((await getLocal("sessions"))[0]?.completed).toBe(false);
+  });
+
+  it("shows remaining minutes on the badge and clears it when idle", async () => {
+    const spy = vi.spyOn(fakeBrowser.action, "setBadgeText");
+    await dispatch({ type: "timer/start" });
+    expect(spy).toHaveBeenLastCalledWith({ text: "25" });
+    expect((await fakeBrowser.alarms.get("badge"))?.periodInMinutes).toBe(1);
+    vi.setSystemTime(T0 + 10 * MIN);
+    await fireAlarm("badge");
+    expect(spy).toHaveBeenLastCalledWith({ text: "15" });
+    await dispatch({ type: "timer/stop" });
+    expect(spy).toHaveBeenLastCalledWith({ text: "" });
+    expect(await fakeBrowser.alarms.get("badge")).toBeUndefined();
+  });
+
+  it("returns ok:false for an unknown command", async () => {
+    const result = await dispatch({ type: "calendar/connect" });
+    expect(result.ok).toBe(false);
+  });
+});
