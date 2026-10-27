@@ -16,6 +16,8 @@ Footguns specific to `extension/` (package `plover-extension`, WXT 0.21, Vitest 
 | TS17004 `Cannot use JSX unless the '--jsx' flag` | `.wxt/tsconfig.json` sets no `jsx` | Add `"jsx": "react-jsx"` to compilerOptions |
 | No `extension/.wxt` after first `pnpm add` | `postinstall: wxt prepare` ran before `wxt.config.ts` existed | Run `pnpm --filter ./extension exec wxt prepare` once (later installs and CI are fine) |
 | eslint `no-empty-function` on `defineBackground(() => {})` | typescript-eslint strict | Use `defineBackground(() => undefined)` |
+| Alarm/message handlers silently stop firing in tests after the first test | `fakeBrowser.reset()` removes all event listeners, including the `alarms.onAlarm` router | Re-register in `beforeEach` after reset; `onAlarm()` in `background/alarms.ts` re-adds the router when `hasListener` is false |
+| `TypeError: object is not iterable` from `Promise.all(fakeBrowser.alarms.onAlarm.trigger(...))`; TS2345 missing `persistAcrossSessions` | `trigger()` already returns a Promise; `Alarm` requires `persistAcrossSessions` | `await fakeBrowser.alarms.onAlarm.trigger({ name, scheduledTime, persistAcrossSessions: false })` |
 
 ## Details
 
@@ -37,3 +39,8 @@ Footguns specific to `extension/` (package `plover-extension`, WXT 0.21, Vitest 
 ### no-empty-function
 **Symptom:** `@typescript-eslint/no-empty-function` on a stub `defineBackground(() => {})`.
 **Fix:** return `undefined` explicitly: `defineBackground(() => undefined)`.
+
+### fakeBrowser reset drops listeners; trigger is async
+**Symptom:** the second and later tests never see alarm handlers run; or `Promise.all(trigger(...))` throws "object is not iterable".
+**Root cause:** `fakeBrowser.reset()` calls `removeAllListeners()` on every event; `trigger()` returns one awaited Promise, not an array.
+**Fix:** register handlers (`registerTimerHandlers()` etc.) in `beforeEach` after `reset()`, and `await fakeBrowser.alarms.onAlarm.trigger(alarm)`. Use `vi.useFakeTimers({ toFake: ['Date'] })` plus `vi.setSystemTime` for time; fakeBrowser alarms read `Date.now()`.
