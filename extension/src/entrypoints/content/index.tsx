@@ -2,12 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent } from "react";
 import { createRoot } from "react-dom/client";
 import { browser } from "wxt/browser";
-import { normalizeDomain } from "@/lib/blocking/domains";
-import { getSettings, updateSettings } from "@/lib/storage";
-import type { BuddyCorner, Settings } from "@/lib/types";
-import { isBuddyVisible, nearestCorner } from "@/lib/visibility";
-import { Buddy } from "@/ui/Buddy";
-import { useBuddySnapshot } from "@/ui/useBuddySnapshot";
+import { normalizeDomain } from "@/features/blocking/domains";
+import { getSettings, updateSettings } from "@/shared/storage";
+import type { BuddyCorner, Settings } from "@/shared/types";
+import { isBuddyVisible, nearestCorner } from "@/features/buddy/visibility";
+import { Buddy } from "@/ui/components/Buddy";
+import { useBuddySnapshot } from "@/ui/hooks/useBuddySnapshot";
 import "./buddy.css";
 
 const MARGIN = 16;

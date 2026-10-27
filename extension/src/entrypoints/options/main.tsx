@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
-import { normalizeDomain } from "@/lib/blocking/domains";
-import { sendCommand } from "@/lib/messages";
-import { updateSettings } from "@/lib/storage";
-import type { Settings } from "@/lib/types";
-import { useExtensionState } from "@/ui/useExtensionState";
+import { normalizeDomain } from "@/features/blocking/domains";
+import { sendCommand } from "@/shared/messages";
+import { updateSettings } from "@/shared/storage";
+import type { Settings } from "@/shared/types";
+import { useExtensionState } from "@/ui/hooks/useExtensionState";
+import "@/ui/base.css";
 import "./options.css";
 
 type NumberKey =

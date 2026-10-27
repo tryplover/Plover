@@ -1,10 +1,11 @@
 import { createRoot } from "react-dom/client";
-import { sendCommand } from "@/lib/messages";
-import { remainingSeconds } from "@/lib/timer/machine";
-import { formatClock } from "@/ui/TimerControls";
-import { Buddy } from "@/ui/Buddy";
-import { deriveBuddyState } from "@/lib/buddy-state";
-import { useExtensionState } from "@/ui/useExtensionState";
+import { sendCommand } from "@/shared/messages";
+import { remainingSeconds } from "@/features/timer/machine";
+import { formatClock } from "@/ui/components/TimerControls";
+import { Buddy } from "@/ui/components/Buddy";
+import { deriveBuddyState } from "@/features/buddy/buddy-state";
+import { useExtensionState } from "@/ui/hooks/useExtensionState";
+import "@/ui/base.css";
 import "./blocked.css";
 
 function Blocked() {

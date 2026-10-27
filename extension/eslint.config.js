@@ -24,5 +24,29 @@ export default tseslint.config(
     plugins: { "react-hooks": reactHooks },
     rules: reactHooks.configs.recommended.rules,
   },
+  {
+    files: [
+      "src/ui/**/*.{ts,tsx}",
+      "src/entrypoints/{content,popup,options,panel,blocked}/**/*.{ts,tsx}",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "@/worker/*",
+                "@/features/*/worker",
+                "@/features/timer/badge",
+              ],
+              message:
+                "Page and UI code must not import worker modules; they register handlers and alarms. Talk to the worker via @/shared/messages.",
+            },
+          ],
+        },
+      ],
+    },
+  },
   prettier,
 );

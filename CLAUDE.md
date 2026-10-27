@@ -98,6 +98,12 @@ invent art.
 │       └── 2026-05-24-task-tracker-agent-product-spec.md  # superseded
 ├── reports/, research_notes/       # background research (progress visibility, competitors)
 └── extension/                      # Chromium MV3 extension (WXT + React), the product
+    ├── src/entrypoints/            # thin WXT entrypoints: background.ts, content/, popup/, options/, panel/, blocked/
+    ├── src/worker/                 # service-worker infra: controller, queue, alarms, reconcile, state-port
+    ├── src/features/<name>/        # timer, tasks, auth, blocking, focus, calendar, buddy: pure logic + worker.ts handlers
+    ├── src/shared/                 # cross-context: types, storage, messages, reconnect, host, with-timeout
+    ├── src/ui/{components,hooks}/  # React views shared by popup, panel and options
+    └── tests/                      # mirrors src/ (tests/worker, tests/features/<name>, tests/shared)
 ```
 
 ## Commands
@@ -139,6 +145,11 @@ the design.
   views** that read and change state through the worker.
 - **Secrets are never reachable from content scripts** (Supabase session,
   OAuth tokens); only the worker and extension pages touch them.
+- **`worker.ts` files and `src/worker/*` are worker-only.** They register
+  handlers and alarms and touch the command queue, so `src/ui/**` and the
+  popup/options/panel/blocked/content entrypoints must never import them
+  (ESLint `no-restricted-imports` enforces it). Pages talk to the worker via
+  `@/shared/messages`.
 
 ## Hard constraints
 
@@ -198,7 +209,7 @@ without a model call; Gemini only suggests steps during task breakdown.
 - **Keep coupled deps in version lockstep.** `react`/`react-dom`/`@types/react-dom`
   must share a major; a Dependabot bump to one and not the other renders a blank
   white screen. Watch Dependabot PRs that touch `react*`.
-- **Tests:** TDD the pure logic in `extension/src/lib/` (timer state machine,
+- **Tests:** TDD the pure logic in `extension/src/features/` and `src/shared/` (timer state machine,
   blocking rules, command queue). Skip TDD for UI scaffolding.
 - **No real network in tests.** Stub `fetch` and use WXT's `fakeBrowser`; never hit a real endpoint.
 
@@ -214,7 +225,7 @@ without a model call; Gemini only suggests steps during task breakdown.
 - **Pre-commit** runs `lint-staged` via husky → eslint --fix + prettier --write
   on staged `extension/**/*.{ts,tsx,json,md,yml,yaml,css,html}`.
 - **Coverage gate:** soft 60% (lines/branches/functions/statements) **only on**
-  `extension/src/lib/**`. UI and other code measured but
+  `extension/src/{features,shared,worker}/**`. UI and other code measured but
   not gated.
 - **Dependabot** weekly PRs (npm root + npm extension/ + github-actions), minor/patch
   grouped, max 5 open per ecosystem.
