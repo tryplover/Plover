@@ -27,7 +27,7 @@ export default tseslint.config(
   {
     files: [
       "src/ui/**/*.{ts,tsx}",
-      "src/entrypoints/{content,popup,options,panel,blocked}/**/*.{ts,tsx}",
+      "src/entrypoints/{content,popup,options,panel,blocked,welcome}/**/*.{ts,tsx}",
     ],
     rules: {
       "no-restricted-imports": [
