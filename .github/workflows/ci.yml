@@ -35,24 +35,26 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Typecheck
-        run: pnpm --filter ./app typecheck
+        run: pnpm --filter ./app --filter ./extension typecheck
 
       - name: Lint
-        run: pnpm --filter ./app lint
+        run: pnpm --filter ./app --filter ./extension lint
 
       - name: Test (with coverage)
         if: github.event_name == 'pull_request'
-        run: pnpm --filter ./app run test:coverage
+        run: pnpm --filter ./app --filter ./extension run test:coverage
 
       - name: Test
         if: github.event_name != 'pull_request'
-        run: pnpm --filter ./app test
+        run: pnpm --filter ./app --filter ./extension test
 
       - name: Upload coverage
         if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v7
         with:
           name: coverage
-          path: app/coverage/
+          path: |
+            app/coverage/
+            extension/coverage/
           if-no-files-found: ignore
           retention-days: 14

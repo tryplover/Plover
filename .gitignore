@@ -47,3 +47,8 @@ yarn-debug.log*
 .firecrawl/
 .claude/worktrees/
 origin/
+
+# extension
+extension/.output
+extension/.wxt
+extension/.env
