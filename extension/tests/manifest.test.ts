@@ -23,10 +23,11 @@ describe("manifest", () => {
     );
   });
 
-  it("exposes blocked.html and panel.html only via dynamic urls", () => {
+  it("keeps blocked.html static for DNR and panel.html dynamic", () => {
     expect(manifest.web_accessible_resources).toEqual([
+      { resources: ["blocked.html"], matches: ["<all_urls>"] },
       {
-        resources: ["blocked.html", "panel.html"],
+        resources: ["panel.html"],
         matches: ["<all_urls>"],
         use_dynamic_url: true,
       },
