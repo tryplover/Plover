@@ -22,4 +22,15 @@ describe("manifest", () => {
       "Alt+Shift+P",
     );
   });
+
+  it("keeps blocked.html static for DNR and panel.html dynamic", () => {
+    expect(manifest.web_accessible_resources).toEqual([
+      { resources: ["blocked.html"], matches: ["<all_urls>"] },
+      {
+        resources: ["panel.html"],
+        matches: ["<all_urls>"],
+        use_dynamic_url: true,
+      },
+    ]);
+  });
 });

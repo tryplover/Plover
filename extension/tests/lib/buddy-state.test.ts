@@ -37,6 +37,27 @@ describe("deriveBuddyState", () => {
     ).toBe("nudging");
   });
 
+  it("a pending check-in shows as nudging over the timer state", () => {
+    const transient = { ...calm, checkInPending: true };
+    expect(
+      deriveBuddyState({ timer: running("work"), focus: on, transient }, NOW),
+    ).toBe("nudging");
+    expect(
+      deriveBuddyState({ timer: IDLE_TIMER, focus: off, transient }, NOW),
+    ).toBe("nudging");
+  });
+
+  it("celebrating beats a pending check-in", () => {
+    const transient = {
+      ...calm,
+      checkInPending: true,
+      celebrateUntil: NOW + 1,
+    };
+    expect(
+      deriveBuddyState({ timer: running("work"), focus: on, transient }, NOW),
+    ).toBe("celebrating");
+  });
+
   it("ignores expired celebrate and nudge windows", () => {
     const transient = { ...calm, celebrateUntil: NOW, nudgeUntil: NOW - 1 };
     expect(

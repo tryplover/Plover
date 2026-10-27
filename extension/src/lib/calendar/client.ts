@@ -7,6 +7,7 @@ export const CALENDAR_SCOPE =
 const EVENTS_URL =
   "https://www.googleapis.com/calendar/v3/calendars/primary/events";
 const FETCH_TIMEOUT_MS = 10_000;
+const SILENT_AUTH_TIMEOUT_MS = 10_000;
 const EXPIRY_SLACK_MS = 60_000;
 const DAY_MS = 24 * 60 * 60_000;
 
@@ -58,6 +59,9 @@ export async function requestToken(
     returned = await browser.identity.launchWebAuthFlow({
       url: url.toString(),
       interactive,
+      ...(interactive
+        ? {}
+        : { timeoutMsForNonInteractive: SILENT_AUTH_TIMEOUT_MS }),
     });
   } catch {
     return null;

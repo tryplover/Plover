@@ -5,18 +5,20 @@ import { registerCalendarHandlers } from "@/background/calendar";
 import { registerBadge } from "@/background/badge";
 import { registerFocusHandlers } from "@/background/focus";
 import { dispatch } from "@/background/controller";
+import { registerStatePort } from "@/background/state-port";
 import { registerTaskHandlers } from "@/background/tasks";
-import { enqueue } from "@/background/queue";
+import { reconcile } from "@/background/reconcile";
 import {
+  notifyCheckIn,
   onTimerEvent,
-  reconcileTimer,
   registerTimerHandlers,
 } from "@/background/timer";
 
-const PLACEHOLDER_ICON =
-  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
-
 export default defineBackground(() => {
+  browser.storage.local
+    .setAccessLevel({ accessLevel: "TRUSTED_CONTEXTS" })
+    .catch((e: unknown) => console.error("setAccessLevel failed", e));
+  registerStatePort();
   registerTimerHandlers();
   registerTaskHandlers();
   registerFocusHandlers();
@@ -26,16 +28,11 @@ export default defineBackground(() => {
 
   onTimerEvent(async (e) => {
     if (e.type !== "work-block-completed") return;
-    await browser.notifications.create("checkin", {
-      type: "basic",
-      iconUrl: PLACEHOLDER_ICON,
-      title: "Which step did you finish?",
-      message: "Open Plover to check in.",
-    });
+    await notifyCheckIn();
   });
 
-  browser.runtime.onStartup.addListener(() => void enqueue(reconcileTimer));
-  browser.runtime.onInstalled.addListener(() => void enqueue(reconcileTimer));
+  browser.runtime.onStartup.addListener(() => void reconcile());
+  browser.runtime.onInstalled.addListener(() => void reconcile());
 
   browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (!isCommand(message)) return false;

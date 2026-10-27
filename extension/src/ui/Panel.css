@@ -7,7 +7,7 @@
   font-size: 14px;
   box-sizing: border-box;
 }
-.plover-popup {
+.plover-surface-popup {
   width: 320px;
 }
 .plover-panel input[type="text"],
@@ -53,4 +53,16 @@
   padding: 0;
   text-decoration: underline;
   cursor: pointer;
+}
+.plover-surface-buddy {
+  min-height: 100vh;
+}
+.plover-nudge {
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: #fbe7d4;
+}
+.plover-step-current {
+  font-weight: 600;
 }

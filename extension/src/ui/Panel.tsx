@@ -19,7 +19,8 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
     null,
   );
 
-  if (!ready) return <div className={`plover-panel plover-${surface}`} />;
+  if (!ready)
+    return <div className={`plover-panel plover-surface-${surface}`} />;
 
   const idle = local.timer.phase === "idle";
   const activeTask = local.tasks.find((t) => t.id === local.activeTaskId);
@@ -56,6 +57,18 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
         />
         Focus mode
       </label>
+      {!local.focus.on && (
+        <label className="plover-focus">
+          <input
+            type="checkbox"
+            checked={local.blockingOn}
+            onChange={() =>
+              void sendCommand({ type: "blocking/set", on: !local.blockingOn })
+            }
+          />
+          Block sites now
+        </label>
+      )}
       {focusConflict && (
         <ConflictOffer
           event={focusConflict}
@@ -68,8 +81,13 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
   );
 
   const showSignIn = local.needsSignIn && idle;
+  const nudge =
+    local.transient.nudgeUntil > now ? local.transient.nudgeText : null;
+  const currentStep = activeTask?.steps.find((s) => !s.done);
   const body = (
     <>
+      {nudge && <p className="plover-nudge">{nudge}</p>}
+      {local.transient.checkInPending && <CheckIn task={activeTask} />}
       {showSignIn && <SignIn />}
       {local.needsSignIn && !idle && (
         <div className="plover-banner">
@@ -96,16 +114,45 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
       ) : (
         <>
           {activeTask && <p className="plover-task">{activeTask.title}</p>}
+          {activeTask && activeTask.steps.length > 0 && (
+            <ul className="plover-steps">
+              {activeTask.steps.map((s) => (
+                <li
+                  key={s.id}
+                  className={
+                    s.id === currentStep?.id ? "plover-step-current" : undefined
+                  }
+                >
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={s.done}
+                      onChange={() =>
+                        void sendCommand({
+                          type: "step/toggle",
+                          taskId: activeTask.id,
+                          stepId: s.id,
+                        })
+                      }
+                    />
+                    {s.title}
+                  </label>
+                </li>
+              ))}
+            </ul>
+          )}
           <TimerControls timer={local.timer} now={now} />
           {focusSwitch}
-          {local.transient.checkInPending && <CheckIn task={activeTask} />}
         </>
       )}
     </>
   );
 
   return (
-    <div className={`plover-panel plover-${surface}`} data-buddy={buddy}>
+    <div
+      className={`plover-panel plover-surface-${surface}`}
+      data-buddy={buddy}
+    >
       {body}
       <button
         type="button"

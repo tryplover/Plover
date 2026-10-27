@@ -104,7 +104,7 @@ invent art.
 │           ├── core-architecture.md
 │           └── store-layer.md
 ├── reports/, research_notes/       # background research (progress visibility, competitors)
-├── extension/                      # (planned) Chromium MV3 extension — the product
+├── extension/                      # Chromium MV3 extension (WXT + React) — the product, built
 └── app/                            # the frozen Electron app (single workspace pkg today)
     ├── package.json                # name: "plover"
     ├── electron.vite.config.ts
@@ -122,7 +122,8 @@ invent art.
 ## Commands
 
 All commands run from the **repo root**. The root scripts delegate into `app/`
-via `pnpm --filter ./app`.
+via `pnpm --filter ./app`. Root `typecheck`, `lint` and `test` cover both `app/`
+and `extension/`.
 
 | Command | What it does |
 |---|---|
@@ -135,6 +136,9 @@ via `pnpm --filter ./app`.
 | `pnpm test` | Vitest run (no coverage) |
 | `pnpm --filter ./app run test:coverage` | Vitest run + v8 coverage report |
 | `pnpm --filter ./app exec <tool>` | Run a tool binary inside the app workspace |
+| `pnpm dev:extension` | WXT dev mode for the extension (writes `extension/.output/chrome-mv3-dev`) |
+| `pnpm build:extension` | Production build of the extension (writes `extension/.output/chrome-mv3`) |
+| `pnpm --filter ./extension test` | Vitest for the extension only |
 
 **Always use path-based filters (`--filter ./app`)**, not name-based
 (`-F plover`). See the `plover-pnpm-workspace` skill.
@@ -280,7 +284,7 @@ symptom — grep an error string or symptom and invoke the matching skill:
 | `plover-store-schema` | vestigial `calendar_event_id`, `created_at`/`updated_at` not an age signal |
 | `plover-gemini` | `functionCalls()` method, 429 model fallback |
 | `plover-auth` | Auth unified on Supabase — no separate plover-token/`plover://` system; `AuthPanel` is the one sign-in/sign-up UI |
-| `plover-extension-wxt` | WXT vitest plugin import path, tsconfig include breaking auto-imports/JSX, `wxt prepare` on first install, no-empty-function in background stub |
+| `plover-extension-wxt` | WXT vitest plugin import path, tsconfig include breaking auto-imports/JSX, `wxt prepare` on first install, no-empty-function in background stub, storage.local access level + state port, fakeBrowser gaps, corepack pnpm timeout |
 
 **Contract (replaces the old "add a lesson" rule):** when you hit an error,
 surprise, or wrong-first-attempt a future Claude could avoid, add it to the most

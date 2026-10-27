@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { browser } from "wxt/browser";
-import { DEFAULT_LOCAL, DEFAULT_SETTINGS, getSettings } from "@/lib/storage";
+import {
+  DEFAULT_LOCAL,
+  DEFAULT_SETTINGS,
+  getSettings,
+  loadLocalState,
+} from "@/lib/storage";
 import type { LocalState, Settings } from "@/lib/types";
 
 export interface ExtensionState {
@@ -8,11 +13,6 @@ export interface ExtensionState {
   local: LocalState;
   now: number;
   ready: boolean;
-}
-
-async function loadLocal(): Promise<LocalState> {
-  const stored = await browser.storage.local.get(Object.keys(DEFAULT_LOCAL));
-  return { ...DEFAULT_LOCAL, ...(stored as Partial<LocalState>) };
 }
 
 export function useExtensionState(): ExtensionState {
@@ -24,9 +24,11 @@ export function useExtensionState(): ExtensionState {
 
   useEffect(() => {
     let alive = true;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+
     const refresh = () => {
       const seq = ++loadSeq.current;
-      void Promise.all([getSettings(), loadLocal()]).then(([s, l]) => {
+      void Promise.all([getSettings(), loadLocalState()]).then(([s, l]) => {
         if (!alive || seq !== loadSeq.current) return;
         setSettings(s);
         setLocalState(l);
@@ -35,7 +37,6 @@ export function useExtensionState(): ExtensionState {
     };
     refresh();
     browser.storage.onChanged.addListener(refresh);
-    const id = setInterval(() => setNow(Date.now()), 1000);
     return () => {
       alive = false;
       browser.storage.onChanged.removeListener(refresh);

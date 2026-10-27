@@ -144,7 +144,10 @@ describe("calendar-refresh", () => {
     launchWebAuthFlow.mockResolvedValue(redirectWith("tok2"));
     await fireAlarm("calendar-refresh");
     expect(launchWebAuthFlow).toHaveBeenCalledWith(
-      expect.objectContaining({ interactive: false }),
+      expect.objectContaining({
+        interactive: false,
+        timeoutMsForNonInteractive: 10_000,
+      }),
     );
     const init = fetchMock.mock.calls[0]?.[1] as {
       headers: Record<string, string>;
@@ -183,6 +186,23 @@ describe("calendar-refresh", () => {
     await fireAlarm("calendar-refresh");
     expect(await getLocal("calendarConnected")).toBe(true);
     expect((await getLocal("calendar")).events[0]?.id).toBe("b");
+  });
+
+  it("does not hold the queue while fetching", async () => {
+    await connected();
+    let finish: (r: Response) => void = () => undefined;
+    fetchMock.mockReturnValue(
+      new Promise<Response>((r) => {
+        finish = r;
+      }),
+    );
+    const refreshing = fireAlarm("calendar-refresh");
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect((await dispatch({ type: "calendar/disconnect" })).ok).toBe(true);
+    finish(Response.json({ items: [apiEvent("a", "A", T0 + 20 * MIN)] }));
+    await refreshing;
+    expect(await getLocal("calendarConnected")).toBe(false);
+    expect((await getLocal("calendar")).events).toEqual([]);
   });
 
   it("keeps connected and the cache on a transient network error", async () => {

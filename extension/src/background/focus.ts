@@ -30,6 +30,17 @@ async function setFocus(on: boolean, endBy?: number): Promise<void> {
   await setBlocking(false);
 }
 
+export async function reconcileFocus(): Promise<void> {
+  if (!(await getLocal("focus")).on) return;
+  if (!(await browser.alarms.get(NUDGE_ALARM))) {
+    const { focusNudgeMinutes } = await getSettings();
+    await browser.alarms.create(NUDGE_ALARM, {
+      periodInMinutes: focusNudgeMinutes,
+    });
+  }
+  await scheduleHeadsUp();
+}
+
 export function registerFocusHandlers(): void {
   registerHandler("focus/set", async ({ on, endBy }) => {
     await setFocus(on, endBy);

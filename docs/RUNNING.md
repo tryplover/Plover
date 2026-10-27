@@ -186,3 +186,41 @@ pnpm --filter ./app run test:coverage
 ```
 
 There is no automated full-app E2E suite yet — that's deferred. The walkthrough above is the manual stand-in.
+
+## 11. Chrome extension (`extension/`)
+
+The extension is the current product. It needs no Electron and no `app/` setup.
+
+**Environment.** Copy `extension/.env.example` to `extension/.env` and fill in:
+
+- `WXT_SUPABASE_URL`, `WXT_SUPABASE_ANON_KEY` - same Supabase project as the app
+- `WXT_PLOVER_BACKEND_URL` - the `plover-server` base URL (task breakdown calls `POST /api/decompose`)
+- `WXT_GOOGLE_CLIENT_ID` - a Google OAuth client of type **Web application** (not Desktop)
+
+**Run.** From the repo root:
+
+```bash
+pnpm dev:extension          # or: pnpm --filter ./extension dev
+pnpm build:extension        # production build
+```
+
+In Chrome/Edge/Brave/Arc open `chrome://extensions`, enable Developer mode, **Load unpacked**, and pick `extension/.output/chrome-mv3` (production build). `pnpm dev:extension` writes `extension/.output/chrome-mv3-dev` instead (load that folder when developing); `pnpm build:extension` writes `chrome-mv3`. Reload the extension after manifest changes.
+
+**Redirect URL.** Sign-in and Calendar use `launchWebAuthFlow`, whose redirect is `https://<extension-id>.chromiumapp.org/` (the ID is shown on `chrome://extensions`). Add that exact URL to:
+
+1. Supabase Dashboard -> Authentication -> URL Configuration -> **Redirect URLs**
+2. The Google OAuth **Web application** client -> **Authorised redirect URIs** (Google Cloud Console -> APIs & Services -> Credentials)
+
+Also enable the Google Calendar API and add `https://www.googleapis.com/auth/calendar.readonly` to the consent screen scopes.
+
+**Pin the dev extension ID.** An unpacked extension's ID depends on its folder path, so the redirect URL would change per machine. Pin it by adding a `key` to `extension/manifest.config.ts`: generate a key pair (`openssl genrsa 2048 | openssl rsa -pubout -outform DER | openssl base64 -A` gives the public key to use as `key`; keep the private key out of the repo), reload, and register the resulting stable ID's redirect URL. Do not commit a key you intend to use for the Web Store build.
+
+**Try it.**
+
+1. Open the popup, sign in, type a task, get steps (empty editable list if the backend is unreachable), start a focus block.
+2. Settings (options page): timer lengths, blocked sites, buddy visibility, Calendar connect/disconnect, sign out. Change the shortcut at `chrome://extensions/shortcuts`.
+3. Browse any http(s) page: the buddy sits in the chosen corner; drag it to another corner, click it for the panel, use "Hide on this site" / "Hide everywhere".
+4. Turn on Focus mode and open a blocked site: it redirects to the blocked page until the block ends.
+
+Run the tests with `pnpm --filter ./extension test`.
+

@@ -20,5 +20,10 @@ export const manifest = {
   },
   web_accessible_resources: [
     { resources: ["blocked.html"], matches: ["<all_urls>"] },
+    {
+      resources: ["panel.html"],
+      matches: ["<all_urls>"],
+      use_dynamic_url: true,
+    },
   ],
 } satisfies UserManifest;

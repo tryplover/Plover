@@ -18,6 +18,8 @@ export function registerHandler<T extends Command["type"]>(
 
 const UNQUEUED_COMMANDS: ReadonlySet<Command["type"]> = new Set([
   "auth/google",
+  "auth/password",
+  "auth/signOut",
   "task/decompose",
   "calendar/connect",
 ]);
