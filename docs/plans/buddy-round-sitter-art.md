@@ -55,3 +55,32 @@ The blob is now 64×70 instead of 56×56.
 
 - `pnpm typecheck && pnpm lint && pnpm test` green; `pnpm build` succeeds.
 - Render `Buddy` for all six states in a Playwright harness and inspect the screenshot; confirm the reduced-motion media query stops animation.
+
+## Revision: switch to the Oct 16 drawing
+
+The founder chose the website's Oct 16 revision of the bird over the Oct 4 concept (face centred, wings tucked behind the ball, no sand cap). Source: `Buddy` in `plover-website/src/components/landing/Buddy.jsx` (main). Same 256×280 frame, ball centre (128,142) r=100, so the `extras` (z, dots, sparks) keep their coordinates.
+
+### Task 4: Redraw `Buddy.tsx`
+
+Keep the root `div`, `LABEL`, props and the `extras` group exactly as they are. Drop the `clipPath`/`useId` (the new drawing has no cap). Replace the shadow, body, head and wings with this structure (colours: CREAM `#F3EEE1`, INK `#2F4236`, SAND `#D9CFB4`, AMBER `#E3B55B`; EDGE = `stroke INK, strokeOpacity 0.28, strokeWidth 3`), drawn in this order so the wings sit behind the ball:
+
+- `plover-buddy__shadow`: `ellipse cx=128 cy=256 rx=70 ry=9 fill SAND opacity .75` (outside `__body`, so it stays on the ground).
+- `g.plover-buddy__body` containing, in order:
+  - feet: `ellipse cx=108 cy=244 rx=11 ry=6` and `cx=148`, fill SAND + EDGE.
+  - `g.plover-buddy__wings` (fill SAND) with `g.plover-buddy__wing.plover-buddy__wl` → `ellipse cx=25 cy=176 rx=18 ry=35 transform="rotate(22 25 176)"` + EDGE, and `g.plover-buddy__wing.plover-buddy__wr` → `ellipse cx=231 cy=176 rx=18 ry=35 transform="rotate(-22 231 176)"` + EDGE.
+  - `g.plover-buddy__headg`: `circle cx=128 cy=142 r=100 fill CREAM stroke SAND strokeWidth=5`; then `g.plover-buddy__face` holding the eye sets and the beak `path d="M113 146 H143 L128 168 Z" fill/stroke AMBER strokeWidth=8 strokeLinejoin=round`.
+- Eye sets inside `__face` (each a `g`, all hidden by default via CSS):
+  - `plover-buddy__e-pill` (open): `rect x=91.5 y=111 w=13 h=23 rx=6.5` and `x=151.5`, fill INK.
+  - `plover-buddy__e-arc` (closed): paths `M87 120 Q98 132 109 120`, `M147 120 Q158 132 169 120`.
+  - `plover-buddy__e-happy`: paths `M87 128 Q98 115 109 128`, `M147 128 Q158 115 169 128`.
+  - `plover-buddy__e-sleepy` (new): `rect x=91.5 y=121 w=13 h=10 rx=5` and `x=151.5`, fill INK.
+  - Arc/happy paths: `fill none, stroke INK, strokeWidth 7, strokeLinecap round`.
+
+### Task 5: Update `Buddy.css`
+
+- Add `.plover-buddy__e-sleepy` to the hidden-by-default eye list.
+- Wing origins (shoulders): `.plover-buddy__wl { transform-origin: 36px 144px }`, `.plover-buddy__wr { transform-origin: 220px 144px }`; remove the inline `style` origins from the TSX.
+- break: show `__e-sleepy` instead of `__e-arc`.
+- celebrating wings lift out from behind the ball: `__wl { transform: rotate(40deg) }`, `__wr { transform: rotate(-40deg) }`.
+- nudging wave on the right wing must swing outward, so negate the angles: keyframes `40% rotate(-38deg)`, `70% rotate(-22deg)`.
+- `.plover-buddy__e-pill` blink origin stays `128px 122px` (eyes are centred now). Everything else unchanged.

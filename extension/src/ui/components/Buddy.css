@@ -12,6 +12,7 @@
 .plover-buddy__e-arc,
 .plover-buddy__e-happy,
 .plover-buddy__e-pill,
+.plover-buddy__e-sleepy,
 .plover-buddy__extras > g {
   opacity: 0;
   transition: opacity 0.4s;
@@ -38,6 +39,12 @@
 }
 .plover-buddy__wing {
   transition: transform 0.6s cubic-bezier(0.3, 0.7, 0.3, 1);
+}
+.plover-buddy__wl {
+  transform-origin: 36px 144px;
+}
+.plover-buddy__wr {
+  transform-origin: 220px 144px;
 }
 
 .plover-buddy--idle .plover-buddy__body,
@@ -96,7 +103,7 @@
   transform: translateY(8px);
 }
 
-.plover-buddy--break .plover-buddy__e-arc {
+.plover-buddy--break .plover-buddy__e-sleepy {
   opacity: 1;
 }
 .plover-buddy--break .plover-buddy__headg {
@@ -139,10 +146,10 @@
     transform: rotate(0);
   }
   40% {
-    transform: rotate(38deg);
+    transform: rotate(-38deg);
   }
   70% {
-    transform: rotate(22deg);
+    transform: rotate(-22deg);
   }
 }
 
@@ -153,10 +160,10 @@
   opacity: 1;
 }
 .plover-buddy--celebrating .plover-buddy__wl {
-  transform: rotate(-30deg);
+  transform: rotate(40deg);
 }
 .plover-buddy--celebrating .plover-buddy__wr {
-  transform: rotate(30deg);
+  transform: rotate(-40deg);
 }
 .plover-buddy--celebrating .plover-buddy__body {
   animation: plover-buddy-hop 1.4s cubic-bezier(0.3, 0.6, 0.3, 1) 1;
