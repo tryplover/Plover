@@ -18,9 +18,6 @@ import { registerHandler } from "@/worker/controller";
 const PHASE_ALARM = "timer-phase";
 const CHECKIN_NOTIFICATION = "checkin";
 
-const PLACEHOLDER_ICON =
-  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
-
 export async function notifyCheckIn(): Promise<void> {
   const [tab] = await browser.tabs.query({
     active: true,
@@ -29,7 +26,7 @@ export async function notifyCheckIn(): Promise<void> {
   if (isBuddyVisible(tab?.url, await getSettings())) return;
   await browser.notifications.create(CHECKIN_NOTIFICATION, {
     type: "basic",
-    iconUrl: PLACEHOLDER_ICON,
+    iconUrl: browser.runtime.getURL("/icon/128.png"),
     title: "Which step did you finish?",
     message: "Open Plover to check in.",
   });
