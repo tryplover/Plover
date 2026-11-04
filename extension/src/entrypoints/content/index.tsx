@@ -11,7 +11,8 @@ import { useBuddySnapshot } from "@/ui/hooks/useBuddySnapshot";
 import "./buddy.css";
 
 const MARGIN = 16;
-const SIZE = 56;
+const BUDDY_WIDTH = 64;
+const BUDDY_HEIGHT = 70;
 const GAP = 8;
 const MENU_HEIGHT = 28;
 const PANEL_WIDTH = 320;
@@ -100,7 +101,10 @@ function BuddyView({
     )
       return;
     s.moved = true;
-    setDrag({ x: e.clientX - SIZE / 2, y: e.clientY - SIZE / 2 });
+    setDrag({
+      x: e.clientX - BUDDY_WIDTH / 2,
+      y: e.clientY - BUDDY_HEIGHT / 2,
+    });
   }
 
   function onPointerUp(e: PointerEvent) {
@@ -182,7 +186,7 @@ function BuddyView({
 }
 
 function placeFrame(wrapper: HTMLElement, corner: BuddyCorner): void {
-  const offset = `${MARGIN + SIZE + GAP + MENU_HEIGHT + GAP}px`;
+  const offset = `${MARGIN + BUDDY_HEIGHT + GAP + MENU_HEIGHT + GAP}px`;
   const vertical = corner.startsWith("top") ? "top" : "bottom";
   const horizontal = corner.endsWith("left") ? "left" : "right";
   wrapper.style.top = "";

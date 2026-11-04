@@ -1,40 +1,193 @@
 .plover-buddy {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: #9ad0c2;
+  width: 64px;
+  height: 70px;
   cursor: grab;
   touch-action: none;
-  transition:
-    background 0.3s,
-    transform 0.3s;
 }
-.plover-buddy--working {
-  background: #f2b880;
-  animation: plover-pulse 2s ease-in-out infinite;
+.plover-buddy svg {
+  display: block;
+  overflow: visible;
 }
-.plover-buddy--focus {
-  background: #7e8fd6;
-  transform: scale(0.75);
+
+.plover-buddy__e-arc,
+.plover-buddy__e-happy,
+.plover-buddy__e-pill,
+.plover-buddy__e-sleepy,
+.plover-buddy__extras > g {
+  opacity: 0;
+  transition: opacity 0.4s;
 }
-.plover-buddy--break {
-  background: #a8d98f;
-  transform: scale(0.9);
+.plover-buddy__body,
+.plover-buddy__headg,
+.plover-buddy__face,
+.plover-buddy__wing,
+.plover-buddy__e-pill {
+  transform-box: view-box;
 }
-.plover-buddy--nudging {
-  background: #f2a0a0;
-  animation: plover-pulse 0.8s ease-in-out infinite;
+.plover-buddy__body {
+  transform-origin: 128px 250px;
 }
-.plover-buddy--celebrating {
-  background: #f5d76e;
-  animation: plover-pulse 0.5s ease-in-out infinite;
+.plover-buddy__headg {
+  transform-origin: 128px 142px;
+  transition: transform 0.8s ease;
 }
-@keyframes plover-pulse {
+.plover-buddy__face {
+  transition: transform 0.8s ease;
+}
+.plover-buddy__e-pill {
+  transform-origin: 128px 122px;
+}
+.plover-buddy__wing {
+  transition: transform 0.6s cubic-bezier(0.3, 0.7, 0.3, 1);
+}
+.plover-buddy__wl {
+  transform-origin: 36px 144px;
+}
+.plover-buddy__wr {
+  transform-origin: 220px 144px;
+}
+
+.plover-buddy--idle .plover-buddy__body,
+.plover-buddy--working .plover-buddy__body,
+.plover-buddy--break .plover-buddy__body,
+.plover-buddy--nudging .plover-buddy__body {
+  animation: plover-buddy-breathe 5s ease-in-out infinite;
+}
+@keyframes plover-buddy-breathe {
+  50% {
+    transform: scale(1.02, 1.015);
+  }
+}
+
+.plover-buddy--idle .plover-buddy__e-arc {
+  opacity: 1;
+}
+
+.plover-buddy--working .plover-buddy__e-pill {
+  opacity: 1;
+  animation: plover-buddy-blink 5s infinite;
+}
+.plover-buddy--working .plover-buddy__face {
+  animation: plover-buddy-glance 9s ease-in-out infinite;
+}
+@keyframes plover-buddy-blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.1);
+  }
+}
+@keyframes plover-buddy-glance {
+  0%,
+  40%,
+  100% {
+    transform: translateX(0);
+  }
+  50%,
+  70% {
+    transform: translateX(-7px);
+  }
+}
+
+.plover-buddy--focus .plover-buddy__e-arc {
+  opacity: 1;
+}
+.plover-buddy--focus .plover-buddy__body {
+  animation: none;
+  transform: scale(0.86);
+}
+.plover-buddy--focus .plover-buddy__wing {
+  transform: translateY(8px);
+}
+
+.plover-buddy--break .plover-buddy__e-sleepy {
+  opacity: 1;
+}
+.plover-buddy--break .plover-buddy__headg {
+  transform: rotate(-9deg);
+}
+.plover-buddy--break .plover-buddy__x-z {
+  opacity: 1;
+  animation: plover-buddy-zz 3s ease-in-out infinite;
+}
+@keyframes plover-buddy-zz {
+  0% {
+    transform: translate(0, 8px);
+    opacity: 0;
+  }
+  30%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(8px, -10px);
+    opacity: 0;
+  }
+}
+
+.plover-buddy--nudging .plover-buddy__e-pill {
+  opacity: 1;
+}
+.plover-buddy--nudging .plover-buddy__x-dots {
+  opacity: 1;
+}
+.plover-buddy--nudging .plover-buddy__headg {
+  transform: rotate(6deg);
+}
+.plover-buddy--nudging .plover-buddy__wr {
+  animation: plover-buddy-wave 1.6s ease-in-out infinite;
+}
+@keyframes plover-buddy-wave {
   0%,
   100% {
-    transform: scale(1);
+    transform: rotate(0);
   }
-  50% {
-    transform: scale(1.12);
+  40% {
+    transform: rotate(-38deg);
+  }
+  70% {
+    transform: rotate(-22deg);
+  }
+}
+
+.plover-buddy--celebrating .plover-buddy__e-happy {
+  opacity: 1;
+}
+.plover-buddy--celebrating .plover-buddy__x-spark {
+  opacity: 1;
+}
+.plover-buddy--celebrating .plover-buddy__wl {
+  transform: rotate(40deg);
+}
+.plover-buddy--celebrating .plover-buddy__wr {
+  transform: rotate(-40deg);
+}
+.plover-buddy--celebrating .plover-buddy__body {
+  animation: plover-buddy-hop 1.4s cubic-bezier(0.3, 0.6, 0.3, 1) 1;
+}
+@keyframes plover-buddy-hop {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  12% {
+    transform: translateY(0) scale(1.06, 0.94);
+  }
+  40% {
+    transform: translateY(-22px) scale(0.98, 1.03);
+  }
+  70% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plover-buddy,
+  .plover-buddy * {
+    animation: none !important;
+    transition: none !important;
   }
 }
