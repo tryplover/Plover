@@ -49,7 +49,7 @@
 
 ### Steps
 
-- [ ] **Manifest.** `permissions: ["storage", "alarms", "declarativeNetRequest", "identity", "notifications", "scripting"]` (drop `tabs`), remove `host_permissions`, add `optional_host_permissions: ["<all_urls>"]`. Keep `web_accessible_resources` unchanged: WAR `matches` grant no host access and add no install warning; `panel.html` must stay loadable in any page the buddy runs on, and `blocked.html` must stay reachable for DNR redirects.
+- [ ] **Manifest.** `permissions: ["storage", "alarms", "activeTab", "declarativeNetRequest", "identity", "notifications", "scripting"]` (drop `tabs`; `activeTab` adds no install warning and gives the popup the current tab's URL, so it lands with the `tabs` removal rather than later), remove `host_permissions`, add `optional_host_permissions: ["<all_urls>"]`. Keep `web_accessible_resources` unchanged: WAR `matches` grant no host access and add no install warning; `panel.html` must stay loadable in any page the buddy runs on, and `blocked.html` must stay reachable for DNR redirects.
   - Why `tabs` can go: its only uses read `tab.url` (`notifyCheckIn` in `features/timer/worker.ts`, `redirectOpenTabs` in `features/blocking/worker.ts`). Without `tabs`, `tab.url` is present exactly for tabs Plover has host access to, which is where the buddy can be visible and where redirecting is possible. `notifyCheckIn` sees `undefined` on a tab without access and correctly falls back to a notification.
 - [ ] **Manifest test.** Update the permission list; assert `host_permissions` is `undefined` and `optional_host_permissions` equals `["<all_urls>"]`.
 - [ ] **Pure origins** in `features/site-access/origins.ts`:
@@ -164,7 +164,6 @@ export function registerSiteAccess(): void {
 
 ### Files
 
-- Modify `extension/manifest.config.ts` + `tests/manifest.test.ts`: add `activeTab` (no install warning; gives the popup the current tab's URL)
 - Modify `extension/src/features/site-access/origins.ts`: add `siteOrigin`, `hasHostAccess`
 - Modify `extension/src/features/blocking/rules.ts`, `features/blocking/worker.ts`
 - Modify `extension/src/features/site-access/worker.ts`: re-apply blocking on permission changes
@@ -207,7 +206,7 @@ export function hasHostAccess(domain: string, origins: string[]): boolean {
   - render `<SiteAccess />` in `Panel` only when `surface === "popup"`, above `body`.
   - The worker's `onAdded` listener does the registration + injection, so the popup does nothing else (it may close when Chrome's dialog takes focus).
 - [ ] **Options blocklist.** `DomainList` gets an optional `onAdd?: (domain: string) => void`, called in `add()` right after validation and before `onChange` (synchronous, so the click/Enter gesture is still live). For "Blocked sites": `onAdd={(d) => void browser.permissions.request({ origins: [siteOrigin(d)] })}`. A decline is fine: the site gets a plain block. "Sites without the buddy" passes no `onAdd`.
-- [ ] Build check again: `pnpm build`; manifest has `activeTab`, still no `host_permissions`.
+- [ ] Build check again: `pnpm build`; still no `host_permissions`.
 
 ## Verification (every PR)
 
