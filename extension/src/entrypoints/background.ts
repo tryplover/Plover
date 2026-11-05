@@ -2,6 +2,7 @@ import { browser } from "wxt/browser";
 import { isCommand } from "@/shared/messages";
 import { registerAuthHandlers } from "@/features/auth/worker";
 import { registerCalendarHandlers } from "@/features/calendar/worker";
+import { registerSiteAccess } from "@/features/site-access/worker";
 import { registerBadge } from "@/features/timer/badge";
 import { registerFocusHandlers } from "@/features/focus/worker";
 import { dispatch } from "@/worker/controller";
@@ -24,6 +25,7 @@ export default defineBackground(() => {
   registerFocusHandlers();
   registerAuthHandlers();
   registerCalendarHandlers();
+  registerSiteAccess();
   registerBadge();
 
   onTimerEvent(async (e) => {
