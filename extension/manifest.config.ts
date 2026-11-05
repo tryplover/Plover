@@ -6,6 +6,7 @@ export const manifest = {
   permissions: [
     "storage",
     "alarms",
+    "activeTab",
     "declarativeNetRequest",
     "identity",
     "notifications",
