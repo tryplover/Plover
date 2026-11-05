@@ -1,0 +1,19 @@
+.welcome {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 24px;
+}
+.welcome section {
+  margin-bottom: 28px;
+}
+.welcome h2 {
+  font-size: 16px;
+  margin: 0 0 8px;
+}
+.welcome p {
+  margin: 0 0 12px;
+}
+.welcome [role="alert"] {
+  color: #b3261e;
+  margin: 4px 0;
+}

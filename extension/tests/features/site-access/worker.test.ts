@@ -1,6 +1,7 @@
 import { fakeBrowser } from "wxt/testing/fake-browser";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  openWelcome,
   registerSiteAccess,
   syncBuddyScript,
 } from "@/features/site-access/worker";
@@ -130,5 +131,19 @@ describe("registerSiteAccess", () => {
         ids: ["plover-buddy"],
       }),
     );
+  });
+});
+
+describe("openWelcome", () => {
+  it("opens the welcome page in a new tab", async () => {
+    const create = vi
+      .spyOn(fakeBrowser.tabs, "create")
+      .mockResolvedValue({} as never);
+    await openWelcome();
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(create).toHaveBeenCalledWith({
+      url: expect.stringMatching(/\/welcome\.html$/),
+    });
+    create.mockRestore();
   });
 });

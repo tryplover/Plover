@@ -56,3 +56,7 @@ export function registerSiteAccess(): void {
     void enqueue(syncBuddyScript);
   });
 }
+
+export async function openWelcome(): Promise<void> {
+  await browser.tabs.create({ url: browser.runtime.getURL("/welcome.html") });
+}
