@@ -1,6 +1,6 @@
 # Plover — Browser Buddy Spec (Chrome extension)
 
-**Date:** 2026-10-02 (rev. 2026-10-03: MVP narrowed to five simple features; rev. 2026-10-13: stall nudge added, progress percentages and the goal bar removed; **rev. 2026-10-19: Plover becomes a Chromium browser extension instead of an Electron desktop app; stall nudge dropped**; **rev. 2026-10-26: Electron app deleted**)
+**Date:** 2026-10-02 (rev. 2026-10-03: MVP narrowed to five simple features; rev. 2026-10-13: stall nudge added, progress percentages and the goal bar removed; **rev. 2026-10-19: Plover becomes a Chromium browser extension instead of an Electron desktop app; stall nudge dropped**; **rev. 2026-10-26: Electron app deleted**; rev. 2026-10-27: site access becomes optional, requested on a welcome page)
 **Status:** Draft v3. Supersedes the [2026-05-24 product spec](2026-05-24-task-tracker-agent-product-spec.md) as the product direction. The filename still says "desktop buddy" so existing links keep working.
 **Launch:** waitlist-only on tryplover.com, distributed as an unlisted Chrome Web Store listing (downloads of the desktop app paused since 2026-09-20).
 
@@ -246,17 +246,46 @@ Extension architecture (MV3):
   through the worker.
 - **Blocked page:** an extension page that blocked requests redirect to.
 - **Permissions:** `storage`, `alarms`, `declarativeNetRequest`, `identity`,
-  `notifications`, plus host access to all sites for the floating buddy
-  (see §7).
+  `notifications`, `scripting`. Host access to all sites is an
+  **optional** permission (`optional_host_permissions: ["<all_urls>"]`),
+  not an install-time one; see §6.1.
+
+### 6.1 Site access (resolved 2026-10-27)
+
+Installing asks for no site access, so "Add to Chrome" shows no "read and
+change all your data on all websites" warning.
+
+1. **Welcome page on install.** `runtime.onInstalled` (reason `install`)
+   opens an extension welcome page: sign in, then the privacy policy, then
+   one button, "Let Plover hang out on your pages", which explains that the
+   buddy only draws itself and reads nothing from the page.
+2. **The button asks Chrome.** It calls
+   `chrome.permissions.request({ origins: ["<all_urls>"] })` from the click
+   (a user gesture is required). Chrome shows its own dialog; accepting the
+   privacy policy and granting site access are separate steps.
+3. **The buddy is registered at runtime.** The content script is not
+   declared in the manifest. The worker registers it with
+   `chrome.scripting.registerContentScripts` for whatever origins are
+   granted, and injects it once into tabs that were already open.
+4. **Declined or revoked access.** The popup always works. On a page
+   without access it offers "Show Plover on this site", which requests just
+   that origin. The worker listens to `permissions.onAdded` / `onRemoved`
+   and re-registers the content script to match, because users can change
+   site access in `chrome://extensions` at any time.
+5. **Blocking.** A `declarativeNetRequest` redirect to the blocked page
+   needs host access to the blocked site; a plain block does not. With all
+   sites granted, redirects work as in §4.4. Without it, adding a site to
+   the blocklist requests access to that site, and blocked sites without
+   access fall back to a plain block.
+6. **Store listing.** The listing explains why Plover asks for all sites
+   and that the content script reads nothing from the page.
 
 ## 7. Open questions
 
 - **Character and animations**: pending the separate design work.
-- **"All sites" permission warning**: a buddy on every page needs host
-  access to all sites, which Chrome shows at install as "read and change
-  all your data on all websites" and which slows store review. Accept that
-  (and explain it on the listing), or start with the popup only and inject
-  the buddy only on sites the user opts in to?
+- ~~**"All sites" permission warning**~~: resolved 2026-10-27. All-sites
+  access is optional and requested on the welcome page, with per-site
+  access as the fallback (§6.1).
 - **Blocking strictness**: can the user end a blocked session early with one
   click, or is there a small speed bump (e.g. "type why")? Default proposed:
   one click, no guilt.
