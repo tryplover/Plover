@@ -135,15 +135,17 @@ describe("registerSiteAccess", () => {
     expect(arg.addRules.map((r) => r.action.type)).toEqual(["redirect"]);
   });
 
-  it("leaves rules alone when blocking is off", async () => {
+  it("leaves rules alone and keeps the buddy off a blocklist grant when blocking is off", async () => {
     await updateSettings({ blocklist: ["x.com"] });
     permissions.getAll.mockResolvedValue({ origins: ["*://*.x.com/*"] });
     listeners().added({ origins: ["*://*.x.com/*"] });
     await vi.waitFor(() =>
-      expect(scripting.registerContentScripts).toHaveBeenCalled(),
+      expect(scripting.getRegisteredContentScripts).toHaveBeenCalled(),
     );
     await enqueue(async () => undefined);
     expect(updateDynamicRules).not.toHaveBeenCalled();
+    expect(scripting.registerContentScripts).not.toHaveBeenCalled();
+    expect(tabsQuery).not.toHaveBeenCalled();
   });
 
   it("ignores added events without origins", async () => {

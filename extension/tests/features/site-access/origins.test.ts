@@ -22,6 +22,13 @@ describe("buddyMatches", () => {
     ).toEqual(["*://a.com/*", "http://c.com/*", "https://b.com/*"]);
   });
 
+  it("ignores subdomain-wildcard origins from blocklist grants", () => {
+    expect(
+      buddyMatches(["*://*.youtube.com/*", "https://*.x.com/*", "*://a.com/*"]),
+    ).toEqual(["*://a.com/*"]);
+    expect(buddyMatches(["*://*/*"])).toEqual(["*://*/*"]);
+  });
+
   it("drops non-web origins and handles empty input", () => {
     expect(buddyMatches(["chrome-extension://abc/*", "file:///*"])).toEqual([]);
     expect(buddyMatches([])).toEqual([]);
