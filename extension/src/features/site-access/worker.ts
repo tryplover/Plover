@@ -1,6 +1,8 @@
 import { browser } from "wxt/browser";
 import type { ScriptPublicPath } from "wxt/utils/inject-script";
 import { buddyMatches } from "@/features/site-access/origins";
+import { reapplyBlocking } from "@/features/blocking/worker";
+import { getLocal } from "@/shared/storage";
 import { enqueue } from "@/worker/queue";
 
 const BUDDY_SCRIPT_ID = "plover-buddy";
@@ -46,14 +48,19 @@ export async function injectBuddy(origins: string[]): Promise<void> {
   }
 }
 
+async function resync(): Promise<void> {
+  await syncBuddyScript();
+  if (await getLocal("blockingOn")) await reapplyBlocking();
+}
+
 export function registerSiteAccess(): void {
   browser.permissions.onAdded.addListener(({ origins }) => {
     if (!origins?.length) return;
-    void enqueue(syncBuddyScript).then(() => injectBuddy(origins));
+    void enqueue(resync).then(() => injectBuddy(origins));
   });
   browser.permissions.onRemoved.addListener(({ origins }) => {
     if (!origins?.length) return;
-    void enqueue(syncBuddyScript);
+    void enqueue(resync);
   });
 }
 

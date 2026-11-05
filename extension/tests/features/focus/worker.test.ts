@@ -24,6 +24,7 @@ const updateDynamicRules = vi.fn(
   },
 );
 const getDynamicRules = vi.fn(async () => installed);
+const getAll = vi.fn();
 const tabsQuery = vi.fn();
 const tabsUpdate = vi.fn(async () => undefined);
 
@@ -43,9 +44,11 @@ beforeEach(async () => {
   auth.signedIn = true;
   tabsQuery.mockReset().mockResolvedValue([]);
   tabsUpdate.mockClear();
+  getAll.mockReset().mockResolvedValue({ origins: ["<all_urls>"] });
   vi.stubGlobal("browser", fakeBrowser);
   const b = fakeBrowser as unknown as Record<string, unknown>;
   b.declarativeNetRequest = { updateDynamicRules, getDynamicRules };
+  b.permissions = { getAll: getAll };
   vi.spyOn(fakeBrowser.tabs, "query").mockImplementation(tabsQuery);
   vi.spyOn(fakeBrowser.tabs, "update").mockImplementation(tabsUpdate);
   registerTimerHandlers();
@@ -237,6 +240,16 @@ describe("manual blocking", () => {
     ];
     expect(arg[0].addRules[0]?.condition.requestDomains).toEqual([
       "twitter.com",
+    ]);
+  });
+
+  it("installs plain block rules for sites without granted access", async () => {
+    getAll.mockResolvedValue({ origins: [] });
+    await dispatch({ type: "blocking/set", on: true });
+    expect(installed).toHaveLength(2);
+    expect(installed.map((r) => (r as { action?: unknown }).action)).toEqual([
+      { type: "block" },
+      { type: "block" },
     ]);
   });
 

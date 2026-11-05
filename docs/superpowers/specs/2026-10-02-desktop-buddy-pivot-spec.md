@@ -275,8 +275,14 @@ change all your data on all websites" warning.
 5. **Blocking.** A `declarativeNetRequest` redirect to the blocked page
    needs host access to the blocked site; a plain block does not. With all
    sites granted, redirects work as in §4.4. Without it, adding a site to
-   the blocklist requests access to that site, and blocked sites without
-   access fall back to a plain block.
+   the blocklist requests access to that site (`*://*.<domain>/*`), and
+   blocked sites without access fall back to a plain block. That grant only
+   unlocks the blocked page: the buddy ignores subdomain-wildcard origins,
+   so blocking a site never puts the buddy on it. The popup's per-site grant
+   is the exact host (`*://www.youtube.com/*`); it shows the buddy but does
+   not cover the whole blocked domain, so that site keeps the plain block.
+   Tabs already open on a blocked site without access are not redirected
+   (Plover cannot read their URL); the block applies on their next load.
 6. **Store listing.** The listing explains why Plover asks for all sites
    and that the content script reads nothing from the page.
 
