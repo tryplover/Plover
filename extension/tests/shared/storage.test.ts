@@ -25,7 +25,13 @@ describe("settings", () => {
       blocksPerLongBreak: 4,
       focusNudgeMinutes: 15,
       buddyCorner: "bottom-right",
+      theme: "system",
     });
+  });
+
+  it("reads stored settings saved before theme existed as system", async () => {
+    await fakeBrowser.storage.sync.set({ settings: { workMinutes: 30 } });
+    expect((await getSettings()).theme).toBe("system");
   });
 
   it("persists a patch to storage.sync under settings and keeps other defaults", async () => {
