@@ -13,6 +13,7 @@ export const DEFAULT_SETTINGS: Settings = {
   buddyCorner: "bottom-right",
   hiddenSites: [],
   hideEverywhere: false,
+  theme: "system",
 };
 
 export const DEFAULT_LOCAL: LocalState = {

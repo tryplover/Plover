@@ -7,6 +7,7 @@ import {
   loadLocalState,
 } from "@/shared/storage";
 import type { LocalState, Settings } from "@/shared/types";
+import { applyTheme } from "@/ui/theme";
 
 export interface ExtensionState {
   settings: Settings;
@@ -43,6 +44,10 @@ export function useExtensionState(): ExtensionState {
       clearInterval(id);
     };
   }, []);
+
+  useEffect(() => {
+    if (ready) applyTheme(settings.theme);
+  }, [ready, settings.theme]);
 
   return { settings, local, now, ready };
 }

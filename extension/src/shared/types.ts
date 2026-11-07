@@ -3,6 +3,8 @@ import type { RunningPhase, TimerState } from "@/features/timer/types";
 export type BuddyCorner =
   "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
+export type Theme = "system" | "light" | "dark";
+
 export interface Settings {
   workMinutes: number;
   shortBreakMinutes: number;
@@ -13,6 +15,7 @@ export interface Settings {
   buddyCorner: BuddyCorner;
   hiddenSites: string[];
   hideEverywhere: boolean;
+  theme: Theme;
 }
 
 export interface Step {
