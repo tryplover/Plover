@@ -25,6 +25,7 @@ export const DEFAULT_LOCAL: LocalState = {
   blockingOn: false,
   transient: {
     checkInPending: false,
+    checkInTaskId: null,
     nudgeText: null,
     nudgeUntil: 0,
     celebrateUntil: 0,

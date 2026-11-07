@@ -21,12 +21,20 @@ export interface Step {
   done: boolean;
 }
 
+export interface ParkedTimer {
+  remainingMs: number;
+  blocksCompleted: number;
+  parkedAt: number;
+}
+
 export interface Task {
   id: string;
   title: string;
   steps: Step[];
   createdAt: number;
   doneAt: number | null;
+  parked?: ParkedTimer | null;
+  lastActiveAt?: number;
 }
 
 export interface Session {
@@ -45,6 +53,7 @@ export interface FocusState {
 
 export interface Transient {
   checkInPending: boolean;
+  checkInTaskId: string | null;
   nudgeText: string | null;
   nudgeUntil: number;
   celebrateUntil: number;

@@ -70,6 +70,7 @@ describe("task handlers", () => {
       activeTaskId: "t1",
       transient: {
         checkInPending: true,
+        checkInTaskId: null,
         nudgeText: null,
         nudgeUntil: 0,
         celebrateUntil: 0,
@@ -93,6 +94,7 @@ describe("task handlers", () => {
       activeTaskId: "t1",
       transient: {
         checkInPending: true,
+        checkInTaskId: null,
         nudgeText: null,
         nudgeUntil: 0,
         celebrateUntil: 0,

@@ -48,7 +48,11 @@ export function bookkeep(
 
   let transient = stored.transient;
   if (completedBlock) {
-    transient = { ...transient, checkInPending: true };
+    transient = {
+      ...transient,
+      checkInPending: true,
+      checkInTaskId: stored.activeTaskId,
+    };
   } else if (stopped) {
     transient = { ...transient, checkInPending: false };
   }

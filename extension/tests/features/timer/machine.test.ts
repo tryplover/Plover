@@ -43,6 +43,26 @@ describe("startTimer", () => {
       },
     ]);
   });
+
+  it("ends the work block at endBy and reports the shortened planned seconds", () => {
+    const { state, events } = startTimer(config, T0, {
+      endBy: T0 + 10 * MIN,
+    });
+    expect(state.phaseEndsAt).toBe(T0 + 10 * MIN);
+    expect(events[0]).toMatchObject({ plannedSeconds: 600 });
+  });
+
+  it("ignores an endBy that is not after now", () => {
+    const { state, events } = startTimer(config, T0, { endBy: T0 });
+    expect(state.phaseEndsAt).toBe(T0 + 25 * MIN);
+    expect(events[0]).toMatchObject({ plannedSeconds: 1500 });
+  });
+
+  it("starts the cycle at the given block count", () => {
+    const { state, events } = startTimer(config, T0, { blocksCompleted: 3 });
+    expect(state.blocksCompleted).toBe(3);
+    expect(events[0]).toMatchObject({ blocksCompleted: 3 });
+  });
 });
 
 describe("tick", () => {

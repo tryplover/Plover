@@ -15,6 +15,7 @@ const running = (
 });
 const calm = {
   checkInPending: false,
+  checkInTaskId: null,
   nudgeText: null,
   nudgeUntil: 0,
   celebrateUntil: 0,
@@ -51,6 +52,7 @@ describe("deriveBuddyState", () => {
     const transient = {
       ...calm,
       checkInPending: true,
+      checkInTaskId: null,
       celebrateUntil: NOW + 1,
     };
     expect(
