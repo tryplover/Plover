@@ -99,9 +99,9 @@ invent art.
 │       └── 2026-05-24-task-tracker-agent-product-spec.md  # superseded
 ├── reports/, research_notes/       # background research (progress visibility, competitors)
 └── extension/                      # Chromium MV3 extension (WXT + React), the product
-    ├── src/entrypoints/            # thin WXT entrypoints: background.ts, content/, popup/, options/, panel/, blocked/
+    ├── src/entrypoints/            # thin WXT entrypoints: background.ts, content/, popup/, options/, panel/, blocked/, welcome/
     ├── src/worker/                 # service-worker infra: controller, queue, alarms, reconcile, state-port
-    ├── src/features/<name>/        # timer, tasks, auth, blocking, focus, calendar, buddy: pure logic + worker.ts handlers
+    ├── src/features/<name>/        # timer, tasks, auth, blocking, focus, calendar, buddy, site-access: pure logic + worker.ts handlers
     ├── src/shared/                 # cross-context: types, storage, messages, reconnect, host, with-timeout
     ├── src/ui/{components,hooks}/  # React views shared by popup, panel and options
     └── tests/                      # mirrors src/ (tests/worker, tests/features/<name>, tests/shared)
@@ -161,10 +161,11 @@ the design.
   No browsing-history logging.
 - **Backend API Proxy.** Outbound Gemini API calls are proxied through a secure backend server to protect developer API keys in production.
 
-- **Outbound HTTP allowlist:** `generativelanguage.googleapis.com`,
-  `www.googleapis.com`, `gmail.googleapis.com`, `calendar.googleapis.com`,
-  `classroom.googleapis.com`, `oauth2.googleapis.com`, `accounts.google.com`,
-  `api.github.com`. This is a documented constraint, not a runtime-enforced gate.
+- **Outbound HTTP allowlist:** the `plover-server` Cloud Run URL (task
+  breakdown), the project's `*.supabase.co` (sign-in), `accounts.google.com`
+  (Google OAuth via `launchWebAuthFlow`) and `www.googleapis.com` (Calendar
+  API). Fonts and assets are bundled. This is a documented constraint, not a
+  runtime-enforced gate.
 - **Never capture keystroke content.** Counts only.
 - **Never upload screenshots** anywhere except (later) Gemini Vision with
   explicit user consent surfaced in Settings.
@@ -191,7 +192,8 @@ without a model call; Gemini only suggests steps during task breakdown.
 
 **Not in the MVP:**
 
-- Stall nudge (dropped 2026-10-19), gamification (planned next, after launch)
+- Stall nudge (dropped 2026-10-19; the focus-mode nudge in spec §4.5 stays),
+  gamification (planned next, after launch)
 - Reading page content or browsing history, screen capture, blocking outside
   the browser
 - Firefox/Safari, voice input, multi-account, plugins, mobile
