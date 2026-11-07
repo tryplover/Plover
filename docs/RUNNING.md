@@ -29,6 +29,8 @@ pnpm dev          # WXT dev mode
 pnpm build        # production build
 ```
 
+Store releases (tagging, the Web Store zip and upload): see [RELEASING.md](RELEASING.md).
+
 In Chrome/Edge/Brave/Arc open `chrome://extensions`, enable Developer mode, **Load unpacked**, and pick `extension/.output/chrome-mv3` (production build). `pnpm dev` writes `extension/.output/chrome-mv3-dev` instead (load that folder when developing); `pnpm build` writes `chrome-mv3`. Reload the extension after manifest changes.
 
 **Redirect URL.** Sign-in and Calendar use `launchWebAuthFlow`, whose redirect is `https://<extension-id>.chromiumapp.org/` (the ID is shown on `chrome://extensions`). Add that exact URL to:

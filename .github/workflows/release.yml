@@ -1,0 +1,173 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version without the leading v, e.g. 0.1.0"
+        required: true
+        type: string
+      store:
+        description: "none: build and archive only. upload: upload to the Web Store. submit: upload and submit for review."
+        required: true
+        type: choice
+        default: none
+        options: [none, upload, submit]
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build, archive and publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+
+    steps:
+      - name: Resolve version
+        id: v
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_VERSION: ${{ inputs.version }}
+          INPUT_STORE: ${{ inputs.store }}
+        run: |
+          if [ "$EVENT_NAME" = "push" ]; then
+            version="${GITHUB_REF_NAME#v}"
+            store=submit
+          else
+            version="$INPUT_VERSION"
+            store="$INPUT_STORE"
+          fi
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Version must look like 1.2.3 (got '$version')"
+            exit 1
+          fi
+          {
+            echo "version=$version"
+            echo "tag=v$version"
+            echo "store=$store"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6.0.10
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Test
+        run: pnpm test
+
+      - name: Check build secrets
+        env:
+          WXT_SUPABASE_URL: ${{ secrets.WXT_SUPABASE_URL }}
+          WXT_SUPABASE_ANON_KEY: ${{ secrets.WXT_SUPABASE_ANON_KEY }}
+          WXT_GOOGLE_CLIENT_ID: ${{ secrets.WXT_GOOGLE_CLIENT_ID }}
+          WXT_PLOVER_BACKEND_URL: ${{ vars.WXT_PLOVER_BACKEND_URL }}
+        run: |
+          missing=0
+          for name in WXT_SUPABASE_URL WXT_SUPABASE_ANON_KEY WXT_GOOGLE_CLIENT_ID WXT_PLOVER_BACKEND_URL; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing $name: add it under Settings → Secrets and variables → Actions"
+              missing=1
+            fi
+          done
+          exit $missing
+
+      - name: Set version
+        env:
+          VERSION: ${{ steps.v.outputs.version }}
+        run: pnpm --filter ./extension exec npm pkg set version="$VERSION"
+
+      - name: Build zip
+        env:
+          WXT_SUPABASE_URL: ${{ secrets.WXT_SUPABASE_URL }}
+          WXT_SUPABASE_ANON_KEY: ${{ secrets.WXT_SUPABASE_ANON_KEY }}
+          WXT_GOOGLE_CLIENT_ID: ${{ secrets.WXT_GOOGLE_CLIENT_ID }}
+          WXT_PLOVER_BACKEND_URL: ${{ vars.WXT_PLOVER_BACKEND_URL }}
+        run: pnpm --filter ./extension run zip
+
+      - name: Verify build
+        id: build
+        env:
+          VERSION: ${{ steps.v.outputs.version }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          zips=(extension/.output/*-chrome.zip)
+          if [ "${#zips[@]}" -ne 1 ]; then
+            echo "::error::Expected one chrome zip in extension/.output, found ${#zips[@]}"
+            exit 1
+          fi
+          node -e '
+            const fs = require("fs");
+            const m = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+            const errors = [];
+            if (m.version !== process.env.VERSION) errors.push(`manifest version is ${m.version}, expected ${process.env.VERSION}`);
+            if ("host_permissions" in m) errors.push("host_permissions must not be set (site access stays optional)");
+            if ("content_scripts" in m) errors.push("content_scripts must not be set (site access stays optional)");
+            if (errors.length) {
+              for (const e of errors) console.error(`::error::${e}`);
+              process.exit(1);
+            }
+            console.log(`manifest ok: ${m.name} ${m.version}`);
+          ' extension/.output/chrome-mv3/manifest.json
+          echo "zip=${zips[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: GitHub release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.v.outputs.tag }}
+          name: Plover ${{ steps.v.outputs.tag }}
+          files: ${{ steps.build.outputs.zip }}
+          generate_release_notes: true
+          target_commitish: ${{ github.sha }}
+
+      - name: Web Store
+        if: steps.v.outputs.store != 'none'
+        env:
+          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          CHROME_PUBLISHER_ID: ${{ secrets.CHROME_PUBLISHER_ID }}
+          CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL: ${{ secrets.CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL }}
+          CHROME_SERVICE_ACCOUNT_PRIVATE_KEY: ${{ secrets.CHROME_SERVICE_ACCOUNT_PRIVATE_KEY }}
+          CHROME_API_VERSION: v2
+          CHROME_ZIP: ${{ github.workspace }}/${{ steps.build.outputs.zip }}
+          STORE: ${{ steps.v.outputs.store }}
+        run: |
+          if [ -z "$CHROME_EXTENSION_ID" ]; then
+            echo "::warning::CHROME_EXTENSION_ID is not set, so the zip was not uploaded. Upload it by hand (docs/RELEASING.md, \"First release\")."
+            exit 0
+          fi
+          missing=0
+          for name in CHROME_PUBLISHER_ID CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL CHROME_SERVICE_ACCOUNT_PRIVATE_KEY; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing $name: add it under Settings → Secrets and variables → Actions"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+          if [ "$STORE" = upload ]; then
+            export CHROME_SKIP_SUBMIT_REVIEW=true
+          fi
+          pnpm --filter ./extension exec wxt submit
