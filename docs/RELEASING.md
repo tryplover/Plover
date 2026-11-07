@@ -11,6 +11,8 @@ Pushing a tag `vX.Y.Z` runs `.github/workflows/release.yml`. The tag is the vers
 5. Creates a GitHub release in this repo with the zip attached (kept for the record and rollback).
 6. Uploads the zip to the Chrome Web Store and submits it for review, if the store credentials are set.
 
+Separately, every merge to `main` runs a **Build extension** job in `.github/workflows/ci.yml`. It builds the store zip and attaches it to that run as the artifact `plover-chrome-<sha>`, kept for 30 days. It's for testing a merged build. It doesn't release or upload anything, and its version stays `0.0.0`.
+
 Web Store review usually takes a few hours to a few days. The listing stays **unlisted** (only people with the link can install). Set that once in the developer dashboard.
 
 ## Cut a release
