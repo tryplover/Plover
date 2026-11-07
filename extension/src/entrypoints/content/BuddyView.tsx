@@ -113,7 +113,11 @@ function BuddyView({
   const bubble = snap.checkInPending ? CHECKIN_TEXT : snap.nudgeText;
 
   return (
-    <div className="plover-buddy-wrap" style={style}>
+    <div
+      className="plover-buddy-wrap"
+      data-theme={settings.theme === "system" ? undefined : settings.theme}
+      style={style}
+    >
       {open && !drag && (
         <div
           className={`plover-row plover-buddy-menu ${below ? "plover-below" : ""}`}

@@ -5,8 +5,9 @@ import { siteFromInput } from "@/features/blocking/domains";
 import { siteOrigin } from "@/features/site-access/origins";
 import { sendCommand } from "@/shared/messages";
 import { updateSettings } from "@/shared/storage";
-import type { Settings } from "@/shared/types";
+import type { Settings, Theme } from "@/shared/types";
 import { useExtensionState } from "@/ui/hooks/useExtensionState";
+import { applyStoredTheme } from "@/ui/theme";
 import "@/ui/base.css";
 import "./options.css";
 
@@ -23,6 +24,12 @@ const NUMBER_FIELDS: { key: NumberKey; label: string }[] = [
   { key: "longBreakMinutes", label: "Long break (minutes)" },
   { key: "blocksPerLongBreak", label: "Work blocks before a long break" },
   { key: "focusNudgeMinutes", label: "Focus nudge every (minutes)" },
+];
+
+const THEMES: { value: Theme; label: string }[] = [
+  { value: "system", label: "System" },
+  { value: "light", label: "Light" },
+  { value: "dark", label: "Dark" },
 ];
 
 function DomainList({
@@ -108,6 +115,27 @@ function Options() {
       <h1>Plover settings</h1>
 
       <section>
+        <h2>Appearance</h2>
+        <div className="segmented" role="radiogroup" aria-label="Appearance">
+          {THEMES.map(({ value, label }) => (
+            <label key={value} className="segment">
+              <input
+                type="radio"
+                name="theme"
+                value={value}
+                checked={settings.theme === value}
+                onChange={() => save({ theme: value })}
+              />
+              {label}
+            </label>
+          ))}
+        </div>
+        {settings.theme === "system" && (
+          <p className="hint">Matches your computer&apos;s setting.</p>
+        )}
+      </section>
+
+      <section>
         <h2>Timer</h2>
         {NUMBER_FIELDS.map(({ key, label }) => (
           <label key={key} className="field">
@@ -186,6 +214,7 @@ function Options() {
   );
 }
 
+applyStoredTheme();
 const root = document.getElementById("root");
 if (root) {
   createRoot(root).render(<Options />);

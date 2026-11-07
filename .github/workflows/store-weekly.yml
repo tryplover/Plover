@@ -1,0 +1,90 @@
+name: Weekly store release
+
+on:
+  schedule:
+    - cron: "0 14 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  submit:
+    name: Submit the newest build to the Web Store
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+
+    steps:
+      - name: Pick the newest unreleased build
+        id: pick
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          newest=$(gh release list -R "$REPO" --limit 50 --json tagName,isPrerelease,createdAt \
+            --jq '[.[] | select(.tagName | test("^v[0-9]+\\.[0-9]+\\.[0-9]+$"))] | sort_by(.createdAt) | last // empty')
+          if [ -z "$newest" ] || [ "$(jq -r .isPrerelease <<< "$newest")" != true ]; then
+            echo "Nothing new since the last store release."
+            echo "tag=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "tag=$(jq -r .tagName <<< "$newest")" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        if: steps.pick.outputs.tag != ''
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.pick.outputs.tag }}
+
+      - name: Setup pnpm
+        if: steps.pick.outputs.tag != ''
+        uses: pnpm/action-setup@v6.1.1
+
+      - name: Setup Node
+        if: steps.pick.outputs.tag != ''
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        if: steps.pick.outputs.tag != ''
+        run: pnpm install --frozen-lockfile
+
+      - name: Download zip
+        if: steps.pick.outputs.tag != ''
+        id: zip
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.pick.outputs.tag }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/zip"
+          gh release download "$TAG" --pattern '*-chrome.zip' --dir "$RUNNER_TEMP/zip"
+          echo "path=$(ls "$RUNNER_TEMP"/zip/*-chrome.zip)" >> "$GITHUB_OUTPUT"
+
+      - name: Web Store
+        if: steps.pick.outputs.tag != ''
+        env:
+          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          CHROME_PUBLISHER_ID: ${{ secrets.CHROME_PUBLISHER_ID }}
+          CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL: ${{ secrets.CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL }}
+          CHROME_SERVICE_ACCOUNT_PRIVATE_KEY: ${{ secrets.CHROME_SERVICE_ACCOUNT_PRIVATE_KEY }}
+          CHROME_API_VERSION: v2
+          CHROME_ZIP: ${{ steps.zip.outputs.path }}
+        run: |
+          if [ -z "$CHROME_EXTENSION_ID" ]; then
+            echo "::error::CHROME_EXTENSION_ID is not set. Do the first release by hand (docs/RELEASING.md, \"First release\")."
+            exit 1
+          fi
+          pnpm --filter ./extension exec wxt submit
+
+      - name: Mark as released
+        if: steps.pick.outputs.tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.pick.outputs.tag }}
+        run: gh release edit "$TAG" --prerelease=false --latest

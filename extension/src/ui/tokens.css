@@ -6,37 +6,30 @@
 }
 
 :root {
-  --color-bg-page: #f3eee1;
-  --color-bg-surface: #f3eee1;
-  --color-bg-quiet: #d9cfb4;
-  --color-text-primary: #2f4236;
-  --color-text-secondary: #2f4236;
-  --color-border-decorative: #d9cfb4;
-  --color-border-control: #5e7f6b;
-  --color-action-compact-bg: #2f4236;
-  --color-action-compact-fg: #f3eee1;
+  color-scheme: light dark;
+  --color-bg-page: light-dark(#f3eee1, #243329);
+  --color-bg-surface: light-dark(#f3eee1, #2f4236);
+  --color-bg-quiet: light-dark(#d9cfb4, #243329);
+  --color-text-primary: light-dark(#2f4236, #f3eee1);
+  --color-text-secondary: light-dark(#2f4236, #d9cfb4);
+  --color-border-decorative: light-dark(#d9cfb4, rgba(217, 207, 180, 0.25));
+  --color-border-control: light-dark(#5e7f6b, #d9cfb4);
+  --color-action-compact-bg: light-dark(#2f4236, #f3eee1);
+  --color-action-compact-fg: light-dark(#f3eee1, #2f4236);
   --color-action-brand-bg: #5e7f6b;
   --color-text-on-brand: #f3eee1;
-  --color-status-error: #9a453c;
-  --color-focus: #2f4236;
+  --color-status-error: light-dark(#9a453c, #e7b6ae);
+  --color-focus: light-dark(#2f4236, #f3eee1);
   --radius-control: 8px;
   --radius-card: 14px;
   --radius-panel: 20px;
   --radius-pill: 999px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-bg-page: #243329;
-    --color-bg-surface: #2f4236;
-    --color-bg-quiet: #243329;
-    --color-text-primary: #f3eee1;
-    --color-text-secondary: #d9cfb4;
-    --color-border-decorative: rgba(217, 207, 180, 0.25);
-    --color-border-control: #d9cfb4;
-    --color-action-compact-bg: #f3eee1;
-    --color-action-compact-fg: #2f4236;
-    --color-status-error: #e7b6ae;
-    --color-focus: #f3eee1;
-  }
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }

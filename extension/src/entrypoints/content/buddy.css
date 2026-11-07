@@ -5,6 +5,13 @@
   align-items: flex-end;
   gap: 8px;
   pointer-events: auto;
+  color-scheme: light dark;
+}
+.plover-buddy-wrap[data-theme="light"] {
+  color-scheme: light;
+}
+.plover-buddy-wrap[data-theme="dark"] {
+  color-scheme: dark;
 }
 .plover-below {
   order: 2;
@@ -18,8 +25,8 @@
   padding: 6px 10px;
   border: none;
   border-radius: 10px;
-  background: #fffdf9;
-  color: #2d2a26;
+  background: light-dark(#fffdf9, #2f4236);
+  color: light-dark(#2d2a26, #f3eee1);
   font:
     13px system-ui,
     sans-serif;
