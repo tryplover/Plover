@@ -19,7 +19,7 @@ export function CalendarNext({
   if (!next) return null;
   const mins = Math.ceil((next.start - now) / 60_000);
   return (
-    <p className="plover-calendar">
+    <p className="plover-chip">
       {next.title} {mins <= 0 ? "now" : `in ${mins} min`}
     </p>
   );
@@ -53,11 +53,15 @@ export function ConflictOffer({
       )}
       <div className="plover-row">
         {canShorten && (
-          <button type="button" onClick={shorten}>
+          <button
+            type="button"
+            className="plover-btn-compact"
+            onClick={shorten}
+          >
             Shorten to end before {event.title}
           </button>
         )}
-        <button type="button" onClick={onAnyway}>
+        <button type="button" className="plover-btn-text" onClick={onAnyway}>
           Start anyway
         </button>
       </div>

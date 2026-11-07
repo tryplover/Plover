@@ -16,6 +16,22 @@ export function normalizeDomain(input: string): string | null {
   return HOST.test(host) ? host : null;
 }
 
+const SHORTHANDS: Record<string, string> = {
+  yt: "youtube.com",
+  fb: "facebook.com",
+  ig: "instagram.com",
+  insta: "instagram.com",
+  x: "x.com",
+};
+
+export function siteFromInput(input: string): string | null {
+  const word = input.trim().toLowerCase();
+  const shorthand = SHORTHANDS[word];
+  if (shorthand) return shorthand;
+  if (/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(word)) return `${word}.com`;
+  return normalizeDomain(word);
+}
+
 export function isBlockedUrl(url: string, blocklist: string[]): boolean {
   const host = httpHostname(url);
   if (!host) return false;

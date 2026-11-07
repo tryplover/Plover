@@ -10,10 +10,14 @@
 .blocked h1 {
   font-size: 20px;
   font-weight: 500;
+  line-height: 1.35;
   margin: 0;
 }
 .blocked-clock {
   font-size: 40px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.8px;
   margin: 0;
   font-variant-numeric: tabular-nums;
 }

@@ -5,6 +5,7 @@ import {
   DEFAULT_SETTINGS,
   getLocal,
   getSettings,
+  isSettingsChange,
   setLocal,
   timerConfig,
   updateSettings,
@@ -24,7 +25,13 @@ describe("settings", () => {
       blocksPerLongBreak: 4,
       focusNudgeMinutes: 15,
       buddyCorner: "bottom-right",
+      theme: "system",
     });
+  });
+
+  it("reads stored settings saved before theme existed as system", async () => {
+    await fakeBrowser.storage.sync.set({ settings: { workMinutes: 30 } });
+    expect((await getSettings()).theme).toBe("system");
   });
 
   it("persists a patch to storage.sync under settings and keeps other defaults", async () => {
@@ -59,5 +66,13 @@ describe("local state", () => {
     await setLocal({ activeTaskId: "t1", blockingOn: true });
     expect(await getLocal("activeTaskId")).toBe("t1");
     expect(await getLocal("blockingOn")).toBe(true);
+  });
+});
+
+describe("isSettingsChange", () => {
+  it("is true only for the settings key in sync storage", () => {
+    expect(isSettingsChange({ settings: {} }, "sync")).toBe(true);
+    expect(isSettingsChange({ settings: {} }, "local")).toBe(false);
+    expect(isSettingsChange({ timer: {} }, "sync")).toBe(false);
   });
 });

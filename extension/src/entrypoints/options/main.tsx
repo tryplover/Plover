@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
 import { browser } from "wxt/browser";
-import { normalizeDomain } from "@/features/blocking/domains";
+import { siteFromInput } from "@/features/blocking/domains";
 import { siteOrigin } from "@/features/site-access/origins";
 import { sendCommand } from "@/shared/messages";
 import { updateSettings } from "@/shared/storage";
-import type { Settings } from "@/shared/types";
+import type { Settings, Theme } from "@/shared/types";
 import { useExtensionState } from "@/ui/hooks/useExtensionState";
+import { applyStoredTheme } from "@/ui/theme";
 import "@/ui/base.css";
 import "./options.css";
 
@@ -25,6 +26,12 @@ const NUMBER_FIELDS: { key: NumberKey; label: string }[] = [
   { key: "focusNudgeMinutes", label: "Focus nudge every (minutes)" },
 ];
 
+const THEMES: { value: Theme; label: string }[] = [
+  { value: "system", label: "System" },
+  { value: "light", label: "Light" },
+  { value: "dark", label: "Dark" },
+];
+
 function DomainList({
   title,
   items,
@@ -40,9 +47,9 @@ function DomainList({
   const [error, setError] = useState<string | null>(null);
 
   function add() {
-    const domain = normalizeDomain(draft);
+    const domain = siteFromInput(draft);
     if (!domain) {
-      setError("Enter a site like example.com");
+      setError("Enter a site like youtube or example.com");
       return;
     }
     setError(null);
@@ -59,7 +66,7 @@ function DomainList({
           type="text"
           value={draft}
           aria-label={title}
-          placeholder="example.com"
+          placeholder="youtube or example.com"
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && add()}
         />
@@ -68,12 +75,13 @@ function DomainList({
         </button>
       </div>
       {error && <p role="alert">{error}</p>}
-      <ul>
+      <ul className="domain-list">
         {items.map((d) => (
           <li key={d}>
-            {d}{" "}
+            <span>{d}</span>
             <button
               type="button"
+              className="plover-btn-text"
               onClick={() => onChange(items.filter((x) => x !== d))}
             >
               Remove
@@ -105,6 +113,27 @@ function Options() {
   return (
     <main className="options">
       <h1>Plover settings</h1>
+
+      <section>
+        <h2>Appearance</h2>
+        <div className="segmented" role="radiogroup" aria-label="Appearance">
+          {THEMES.map(({ value, label }) => (
+            <label key={value} className="segment">
+              <input
+                type="radio"
+                name="theme"
+                value={value}
+                checked={settings.theme === value}
+                onChange={() => save({ theme: value })}
+              />
+              {label}
+            </label>
+          ))}
+        </div>
+        {settings.theme === "system" && (
+          <p className="hint">Matches your computer&apos;s setting.</p>
+        )}
+      </section>
 
       <section>
         <h2>Timer</h2>
@@ -185,6 +214,7 @@ function Options() {
   );
 }
 
+applyStoredTheme();
 const root = document.getElementById("root");
 if (root) {
   createRoot(root).render(<Options />);

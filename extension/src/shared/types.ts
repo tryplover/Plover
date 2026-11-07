@@ -3,6 +3,8 @@ import type { RunningPhase, TimerState } from "@/features/timer/types";
 export type BuddyCorner =
   "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
+export type Theme = "system" | "light" | "dark";
+
 export interface Settings {
   workMinutes: number;
   shortBreakMinutes: number;
@@ -13,6 +15,7 @@ export interface Settings {
   buddyCorner: BuddyCorner;
   hiddenSites: string[];
   hideEverywhere: boolean;
+  theme: Theme;
 }
 
 export interface Step {
@@ -21,12 +24,20 @@ export interface Step {
   done: boolean;
 }
 
+export interface ParkedTimer {
+  remainingMs: number;
+  blocksCompleted: number;
+  parkedAt: number;
+}
+
 export interface Task {
   id: string;
   title: string;
   steps: Step[];
   createdAt: number;
   doneAt: number | null;
+  parked?: ParkedTimer | null;
+  lastActiveAt?: number;
 }
 
 export interface Session {
@@ -45,6 +56,7 @@ export interface FocusState {
 
 export interface Transient {
   checkInPending: boolean;
+  checkInTaskId: string | null;
   nudgeText: string | null;
   nudgeUntil: number;
   celebrateUntil: number;

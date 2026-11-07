@@ -73,7 +73,7 @@ eslint+prettier on staged files at commit time.
 - **[Product spec](docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md)** —
   current direction: the browser buddy, its MVP features, the extension
   architecture, and what was carried over from the deleted Electron app
-- **[Original product spec](docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md)** —
+- **[Original product spec](docs/archive/specs/2026-05-24-task-tracker-agent-product-spec.md)** —
   superseded; kept for history
 - **[Research](reports/)** — progress-visibility motivation evidence and the
   competitive landscape ([notes](research_notes/))

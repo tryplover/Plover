@@ -3,6 +3,7 @@ import { getSupabase } from "@/features/auth/supabase";
 import type { CommandResult } from "@/shared/messages";
 import { setLocal } from "@/shared/storage";
 import { sessionKeys } from "@/features/auth/session";
+import { parseAuthRedirect } from "@/features/auth/redirect";
 import { registerHandler } from "@/worker/controller";
 import { enqueue } from "@/worker/queue";
 
@@ -27,9 +28,14 @@ export function registerAuthHandlers(): void {
       url: data.url,
       interactive: true,
     });
-    const code = returned ? new URL(returned).searchParams.get("code") : null;
-    if (!code) return { ok: false, error: "Sign-in was cancelled" };
-    const exchanged = await getSupabase().auth.exchangeCodeForSession(code);
+    const redirect = parseAuthRedirect(returned);
+    if ("cancelled" in redirect) {
+      return { ok: false, error: "Sign-in was cancelled" };
+    }
+    if ("error" in redirect) return { ok: false, error: redirect.error };
+    const exchanged = await getSupabase().auth.exchangeCodeForSession(
+      redirect.code,
+    );
     if (exchanged.error) return { ok: false, error: exchanged.error.message };
     return signedIn();
   });

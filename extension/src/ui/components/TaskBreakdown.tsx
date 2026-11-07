@@ -99,9 +99,10 @@ export function TaskBreakdown({
 
   return (
     <div className="plover-breakdown">
+      <p className="plover-heading">What are you working on?</p>
       <input
         type="text"
-        placeholder="What are you working on?"
+        placeholder="e.g. Write the intro of my essay"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
       />
@@ -109,6 +110,7 @@ export function TaskBreakdown({
         <div className="plover-row">
           <button
             type="button"
+            className="plover-btn-compact"
             disabled={busy || !title.trim()}
             onClick={() => void suggest()}
           >
@@ -116,6 +118,7 @@ export function TaskBreakdown({
           </button>
           <button
             type="button"
+            className="plover-btn-text"
             disabled={busy || !title.trim()}
             onClick={() => setSteps([])}
           >
@@ -126,7 +129,7 @@ export function TaskBreakdown({
         <>
           <ul className="plover-steps">
             {steps.map((s, i) => (
-              <li key={s.key}>
+              <li key={s.key} className="plover-task-row">
                 <input
                   type="text"
                   aria-label={`Step ${i + 1}`}
@@ -135,6 +138,7 @@ export function TaskBreakdown({
                 />
                 <button
                   type="button"
+                  className="plover-btn-text plover-icon-btn"
                   aria-label="Move up"
                   disabled={i === 0}
                   onClick={() => move(i, -1)}
@@ -143,6 +147,7 @@ export function TaskBreakdown({
                 </button>
                 <button
                   type="button"
+                  className="plover-btn-text plover-icon-btn"
                   aria-label="Move down"
                   disabled={i === steps.length - 1}
                   onClick={() => move(i, 1)}
@@ -151,6 +156,7 @@ export function TaskBreakdown({
                 </button>
                 <button
                   type="button"
+                  className="plover-btn-text plover-icon-btn"
                   aria-label="Delete step"
                   onClick={() => setSteps(steps.filter((_, idx) => idx !== i))}
                 >
@@ -162,12 +168,14 @@ export function TaskBreakdown({
           <div className="plover-row">
             <button
               type="button"
+              className="plover-btn-text"
               onClick={() => setSteps([...steps, { key: newKey(), title: "" }])}
             >
               Add step
             </button>
             <button
               type="button"
+              className="plover-btn-brand"
               disabled={busy || !title.trim()}
               onClick={() => void start()}
             >

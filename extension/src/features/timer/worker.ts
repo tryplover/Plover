@@ -1,5 +1,6 @@
 import { browser } from "wxt/browser";
 import { isBuddyVisible } from "@/features/buddy/visibility";
+import { parkedFrom } from "@/features/tasks/parking";
 import { getLocal, getSettings, setLocal, timerConfig } from "@/shared/storage";
 import {
   pauseTimer,
@@ -10,7 +11,7 @@ import {
   tick,
 } from "@/features/timer/machine";
 import type { TimerEvent, TimerTransition } from "@/features/timer/types";
-import type { Session } from "@/shared/types";
+import { bookkeep } from "@/features/timer/bookkeeping";
 import { onAlarm } from "@/worker/alarms";
 import { updateBadge } from "@/features/timer/badge";
 import { registerHandler } from "@/worker/controller";
@@ -51,39 +52,22 @@ export async function applyTransition(
       getLocal("transient"),
     ]);
 
-  const completedBlock = t.events.some(
-    (e) => e.type === "work-block-completed",
+  const book = bookkeep(
+    prev,
+    t,
+    { phaseStartedAt, activeTaskId, sessions, transient },
+    nowMs,
+    () => crypto.randomUUID(),
   );
-  const stopped = t.events.some((e) => e.type === "stopped");
-  const nextSessions = [...sessions];
-  if (prev.phase === "work" && t.state.phase !== "work") {
-    const session: Session = {
-      id: crypto.randomUUID(),
-      taskId: activeTaskId,
-      phase: "work",
-      startedAt: phaseStartedAt ?? nowMs,
-      endedAt: completedBlock ? prev.phaseEndsAt : (prev.pausedAt ?? nowMs),
-      completed: completedBlock,
-    };
-    nextSessions.push(session);
-  }
 
   await setLocal({
     timer: t.state,
-    phaseStartedAt:
-      t.state.phase === "idle"
-        ? null
-        : t.events.some((e) => e.type === "phase-started")
-          ? nowMs
-          : phaseStartedAt,
-    sessions: nextSessions,
-    transient: completedBlock
-      ? { ...transient, checkInPending: true }
-      : stopped
-        ? { ...transient, checkInPending: false }
-        : transient,
+    phaseStartedAt: book.phaseStartedAt,
+    sessions: book.sessions,
+    transient: book.transient,
   });
-  if (stopped) await browser.notifications.clear(CHECKIN_NOTIFICATION);
+  if (t.events.some((e) => e.type === "stopped"))
+    await browser.notifications.clear(CHECKIN_NOTIFICATION);
 
   if (t.state.phase === "idle" || t.state.pausedAt !== null) {
     await browser.alarms.clear(PHASE_ALARM);
@@ -97,14 +81,17 @@ export async function applyTransition(
   }
 }
 
-export async function startTimerNow(endBy?: number): Promise<void> {
+export async function startTimerNow(
+  endBy?: number,
+  blocksCompleted?: number,
+): Promise<void> {
   const timer = await getLocal("timer");
   if (timer.phase !== "idle") return;
   const now = Date.now();
-  const t = startTimer(timerConfig(await getSettings()), now);
-  if (endBy !== undefined && endBy > now) {
-    t.state = { ...t.state, phaseEndsAt: endBy };
-  }
+  const t = startTimer(timerConfig(await getSettings()), now, {
+    endBy,
+    blocksCompleted,
+  });
   await applyTransition(t, now);
 }
 
@@ -146,6 +133,7 @@ export function registerTimerHandlers(): void {
 
   registerHandler("timer/skip", async () => {
     const now = Date.now();
+    if (await settleOverdue(now)) return { ok: true };
     const config = timerConfig(await getSettings());
     await applyTransition(skipPhase(await getLocal("timer"), config, now), now);
     return { ok: true };
@@ -153,7 +141,7 @@ export function registerTimerHandlers(): void {
 
   registerHandler("timer/stop", async () => {
     const now = Date.now();
-    await applyTransition(stopTimer(await getLocal("timer")), now);
+    await stopAndPark(now);
     return { ok: true };
   });
 
@@ -161,6 +149,48 @@ export function registerTimerHandlers(): void {
     const now = Date.now();
     const config = timerConfig(await getSettings());
     await applyTransition(tick(await getLocal("timer"), config, now), now);
+  });
+}
+
+async function settleOverdue(now: number): Promise<boolean> {
+  const config = timerConfig(await getSettings());
+  const t = tick(await getLocal("timer"), config, now);
+  if (t.events.length === 0) return false;
+  await applyTransition(t, now);
+  return true;
+}
+
+export async function stopAndPark(now: number): Promise<void> {
+  await settleOverdue(now);
+  const config = timerConfig(await getSettings());
+  const [timer, activeTaskId, tasks, before] = await Promise.all([
+    getLocal("timer"),
+    getLocal("activeTaskId"),
+    getLocal("tasks"),
+    getLocal("transient"),
+  ]);
+  await applyTransition(stopTimer(timer), now);
+  const checkInTaskId = before.checkInTaskId ?? activeTaskId;
+  if (before.checkInPending && checkInTaskId) {
+    await setLocal({
+      transient: {
+        ...(await getLocal("transient")),
+        checkInPending: true,
+        checkInTaskId,
+      },
+    });
+  }
+  await setLocal({
+    activeTaskId: null,
+    tasks: tasks.map((t) =>
+      t.id !== activeTaskId
+        ? t
+        : {
+            ...t,
+            parked: t.doneAt === null ? parkedFrom(timer, config, now) : null,
+            lastActiveAt: now,
+          },
+    ),
   });
 }
 

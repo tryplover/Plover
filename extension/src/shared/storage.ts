@@ -13,6 +13,7 @@ export const DEFAULT_SETTINGS: Settings = {
   buddyCorner: "bottom-right",
   hiddenSites: [],
   hideEverywhere: false,
+  theme: "system",
 };
 
 export const DEFAULT_LOCAL: LocalState = {
@@ -25,6 +26,7 @@ export const DEFAULT_LOCAL: LocalState = {
   blockingOn: false,
   transient: {
     checkInPending: false,
+    checkInTaskId: null,
     nudgeText: null,
     nudgeUntil: 0,
     celebrateUntil: 0,
@@ -35,6 +37,13 @@ export const DEFAULT_LOCAL: LocalState = {
 };
 
 const SETTINGS_KEY = "settings";
+
+export function isSettingsChange(
+  changes: Record<string, unknown>,
+  area: string,
+): boolean {
+  return area === "sync" && SETTINGS_KEY in changes;
+}
 
 export async function getSettings(): Promise<Settings> {
   const stored = await browser.storage.sync.get(SETTINGS_KEY);
