@@ -89,6 +89,7 @@ invent art.
 ├── .husky/pre-commit               # runs lint-staged
 ├── .github/
 │   ├── workflows/ci.yml            # typecheck + lint + test+coverage
+│   ├── workflows/release.yml       # tag vX.Y.Z → zip → GitHub release → Web Store
 │   ├── dependabot.yml              # weekly npm + actions updates
 │   └── PULL_REQUEST_TEMPLATE.md
 ├── docs/
@@ -116,6 +117,7 @@ All commands run from the **repo root**. The root scripts delegate into
 | `pnpm install`                          | Install everything + run husky `prepare`                 |
 | `pnpm dev`                              | WXT dev mode (writes `extension/.output/chrome-mv3-dev`) |
 | `pnpm build`                            | Production build (writes `extension/.output/chrome-mv3`) |
+| `pnpm --filter ./extension run zip`     | Production build + store zip in `extension/.output/`     |
 | `pnpm typecheck`                        | `tsc --noEmit` on the extension                          |
 | `pnpm lint`                             | ESLint on the extension                                  |
 | `pnpm test`                             | Vitest run (no coverage)                                 |
