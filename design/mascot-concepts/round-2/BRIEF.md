@@ -1,6 +1,6 @@
 # Plover buddy: round 2 design brief
 
-Source of truth: `docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md`
+Source of truth: `docs/DESIGN.md`
 (read §1–§4). The old product (progress tracking) is frozen. Ignore it.
 
 ## What Plover is now

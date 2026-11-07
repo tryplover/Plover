@@ -23,7 +23,7 @@ multi-account/plugins/multi-device sync.
 
 Authoritative specs:
 
-- Product spec (current direction, defines MVP scope; filename predates the extension pivot): [docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md](docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md)
+- Design doc (product scope, architecture rules, features, planned work): [docs/DESIGN.md](docs/DESIGN.md). Update it in the same PR when the design changes.
 - Superseded, history only: [docs/archive/specs/2026-05-24-task-tracker-agent-product-spec.md](docs/archive/specs/2026-05-24-task-tracker-agent-product-spec.md)
 
 ## Environment expectations (agent-specific)
@@ -117,6 +117,6 @@ pnpm typecheck && pnpm lint && pnpm test
 
 ## When in doubt
 
-1. Re-read the product spec at `docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md`.
+1. Re-read the design doc at `docs/DESIGN.md`.
 2. Grep the tests — they encode the invariants the code must preserve.
 3. If a design decision isn't in the specs and isn't obvious from the code, leave a `TODO(scope):` in the PR body (not the code) and ask.
