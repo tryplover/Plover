@@ -54,3 +54,14 @@ export function sortSavedTasks(
     .sort((a, b) => (b.doneAt ?? 0) - (a.doneAt ?? 0));
   return { open, done };
 }
+
+export function savedTaskCaption(
+  task: Task,
+  blocksPerLongBreak: number,
+): string {
+  const done = task.steps.filter((s) => s.done).length;
+  const steps = `${done} of ${task.steps.length} steps`;
+  return task.parked
+    ? `${steps} · Block ${task.parked.blocksCompleted + 1} of ${blocksPerLongBreak}`
+    : steps;
+}

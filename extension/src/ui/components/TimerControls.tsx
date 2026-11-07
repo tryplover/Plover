@@ -57,6 +57,13 @@ export function TimerControls({
         <button
           type="button"
           className="plover-btn-text"
+          onClick={() => void sendCommand({ type: "task/park" })}
+        >
+          Save for later
+        </button>
+        <button
+          type="button"
+          className="plover-btn-text"
           onClick={() => void sendCommand({ type: "timer/stop" })}
         >
           Stop

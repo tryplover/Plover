@@ -194,3 +194,51 @@
   font-size: 16px;
   line-height: 1.6;
 }
+.plover-saved {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.plover-saved .plover-eyebrow {
+  margin-bottom: 8px;
+}
+.plover-saved-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-sizing: border-box;
+  min-height: 48px;
+  padding: 12px;
+  border-radius: var(--radius-control);
+}
+.plover-saved-row:hover {
+  background: var(--color-bg-quiet);
+}
+.plover-saved-text {
+  flex: 1;
+  min-width: 0;
+}
+.plover-saved-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.plover-saved-meta {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.plover-saved-side {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  font-variant-numeric: tabular-nums;
+}
+.plover-saved-side .plover-row {
+  gap: 8px;
+}
+.plover-saved-menu {
+  justify-content: flex-end;
+  padding: 0 12px;
+}
