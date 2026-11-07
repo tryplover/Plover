@@ -24,6 +24,14 @@ async function snapshotAt(
       buddyState: deriveBuddyState({ timer, focus, transient }, now),
       nudgeText: transient.nudgeUntil > now ? transient.nudgeText : null,
       checkInPending: transient.checkInPending,
+      clock:
+        timer.phase === "idle"
+          ? null
+          : {
+              phase: timer.phase,
+              phaseEndsAt: timer.phaseEndsAt,
+              pausedAt: timer.pausedAt,
+            },
     },
     expiresIn: windows.length ? Math.min(...windows) - now : null,
   };

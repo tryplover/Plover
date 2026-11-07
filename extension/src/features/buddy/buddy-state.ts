@@ -1,3 +1,4 @@
+import type { TimerPhase } from "@/features/timer/types";
 import type { BuddyAnimationState, LocalState } from "@/shared/types";
 
 export const STATE_PORT = "plover-state";
@@ -6,6 +7,11 @@ export interface BuddySnapshot {
   buddyState: BuddyAnimationState;
   nudgeText: string | null;
   checkInPending: boolean;
+  clock: {
+    phase: TimerPhase;
+    phaseEndsAt: number;
+    pausedAt: number | null;
+  } | null;
 }
 
 export function deriveBuddyState(
