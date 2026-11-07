@@ -24,7 +24,7 @@ multi-account/plugins/multi-device sync.
 Authoritative specs:
 
 - Product spec (current direction, defines MVP scope; filename predates the extension pivot): [docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md](docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md)
-- Superseded, history only: [docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md](docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md)
+- Superseded, history only: [docs/archive/specs/2026-05-24-task-tracker-agent-product-spec.md](docs/archive/specs/2026-05-24-task-tracker-agent-product-spec.md)
 
 ## Environment expectations (agent-specific)
 
