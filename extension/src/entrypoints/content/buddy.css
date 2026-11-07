@@ -37,3 +37,55 @@
   display: flex;
   gap: 6px;
 }
+.plover-buddy-figure {
+  position: relative;
+}
+.plover-clock {
+  --rim: #5e7f6b;
+  position: absolute;
+  left: 50%;
+  bottom: -4px;
+  transform: translateX(-50%) rotate(-6deg);
+  width: 30px;
+  height: 30px;
+  pointer-events: none;
+}
+.plover-clock--break {
+  --rim: #e3b55b;
+}
+.plover-clock--paused {
+  opacity: 0.6;
+}
+.plover-clock__face {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid var(--rim);
+  border-radius: 50%;
+  background: #fffdf9;
+  color: #2f4236;
+  font:
+    700 11px/1 system-ui,
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+.plover-clock__bell {
+  position: absolute;
+  top: -2px;
+  width: 7px;
+  height: 6px;
+  border-radius: 9px 9px 2px 2px;
+  background: var(--rim);
+}
+.plover-clock__bell--l {
+  left: 1px;
+  transform: rotate(-30deg);
+}
+.plover-clock__bell--r {
+  right: 1px;
+  transform: rotate(30deg);
+}

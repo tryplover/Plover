@@ -6,6 +6,7 @@ import { updateSettings } from "@/shared/storage";
 import type { BuddyCorner, Settings } from "@/shared/types";
 import { Buddy } from "@/ui/components/Buddy";
 import { useBuddySnapshot } from "@/ui/hooks/useBuddySnapshot";
+import { BuddyClock } from "./BuddyClock";
 import { BUDDY_HEIGHT, BUDDY_WIDTH, MARGIN } from "./layout";
 import type { PanelFrame } from "./panel-frame";
 import { useSyncedSettings } from "./use-synced-settings";
@@ -156,7 +157,10 @@ function BuddyView({
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerCancel}
       >
-        <Buddy state={snap.buddyState} />
+        <div className="plover-buddy-figure">
+          <Buddy state={snap.buddyState} />
+          {snap.clock && !drag && <BuddyClock clock={snap.clock} />}
+        </div>
       </div>
     </div>
   );

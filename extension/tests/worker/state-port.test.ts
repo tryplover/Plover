@@ -42,6 +42,7 @@ describe("buildSnapshot", () => {
       buddyState: "idle",
       nudgeText: null,
       checkInPending: false,
+      clock: null,
     });
     const json = JSON.stringify(snap);
     for (const leaked of ["secret", "Write the essay", "Outline", "Dentist"])
@@ -60,9 +61,28 @@ describe("buildSnapshot", () => {
       buddyState: "nudging",
       nudgeText: "Still on it?",
       checkInPending: false,
+      clock: null,
     });
     vi.setSystemTime(1_000_500);
     expect((await buildSnapshot()).nudgeText).toBeNull();
+  });
+
+  it("carries the phase end time for a running timer but not the block count", async () => {
+    await fakeBrowser.storage.local.set({
+      timer: {
+        phase: "work",
+        phaseEndsAt: 1_600_000,
+        blocksCompleted: 2,
+        pausedAt: null,
+      },
+    });
+    const snap = await buildSnapshot();
+    expect(snap.clock).toEqual({
+      phase: "work",
+      phaseEndsAt: 1_600_000,
+      pausedAt: null,
+    });
+    expect(JSON.stringify(snap)).not.toContain("blocksCompleted");
   });
 
   it("flags a pending check-in", async () => {
@@ -73,6 +93,7 @@ describe("buildSnapshot", () => {
       buddyState: "nudging",
       nudgeText: null,
       checkInPending: true,
+      clock: null,
     });
   });
 });
@@ -112,6 +133,7 @@ describe("registerStatePort", () => {
       buddyState: "nudging",
       nudgeText: null,
       checkInPending: true,
+      clock: null,
     });
   });
 
@@ -133,6 +155,7 @@ describe("registerStatePort", () => {
       buddyState: "idle",
       nudgeText: null,
       checkInPending: false,
+      clock: null,
     });
   });
 

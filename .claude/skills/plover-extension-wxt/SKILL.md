@@ -43,6 +43,8 @@ Footguns specific to `extension/` (package `plover-extension`, WXT 0.21, Vitest 
 | A shared UI component (e.g. `SignIn`) renders unstyled on the welcome/options page but fine in the popup | Its rules lived in `Panel.css`, which only pages rendering `Panel` load | Give the component its own `<Name>.css` imported by the component file; page-wide primitives (buttons, inputs, tokens) go in `ui/base.css` |
 | `pnpm` hangs / ConnectTimeoutError on corporate network | corepack `pnpm` shim fetches from npm | `export PATH=~/Library/pnpm:$PATH` before pnpm commands (see `plover-pnpm-workspace`) |
 | `sed -i 's/.../'` fails "undefined label" on macOS | BSD sed takes the next arg as the backup suffix | `sed -i '' 's/.../'` or edit with a script |
+| ESLint `react-hooks/purity` "Cannot call impure function during render" on `useState(Date.now())` | The argument is evaluated on every render | Use a lazy initializer: `useState(() => Date.now())` |
+| Headless Playwright run shows no buddy on pages | Site access is an optional permission and the content script is registered only once it's granted; `--load-extension` grants nothing | Test against a copy of `.output/chrome-mv3` whose `manifest.json` adds `"host_permissions": ["<all_urls>"]` (never ship that) |
 
 ## Details
 
