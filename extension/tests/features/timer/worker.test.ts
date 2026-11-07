@@ -124,6 +124,29 @@ describe("timer commands", () => {
     expect((await getLocal("sessions"))[0]?.completed).toBe(false);
   });
 
+  it("stop after the block ended but before the alarm records a completed block", async () => {
+    await dispatch({ type: "timer/start" });
+    vi.setSystemTime(T0 + 26 * MIN);
+    await dispatch({ type: "timer/stop" });
+    expect((await getLocal("timer")).phase).toBe("idle");
+    const sessions = await getLocal("sessions");
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0]).toMatchObject({
+      completed: true,
+      endedAt: T0 + 25 * MIN,
+    });
+  });
+
+  it("skip after the block ended only completes it", async () => {
+    await dispatch({ type: "timer/start" });
+    vi.setSystemTime(T0 + 26 * MIN);
+    await dispatch({ type: "timer/skip" });
+    const timer = await getLocal("timer");
+    expect(timer.phase).toBe("shortBreak");
+    expect(timer.blocksCompleted).toBe(1);
+    expect((await getLocal("sessions"))[0]?.completed).toBe(true);
+  });
+
   it("shows remaining minutes on the badge and clears it when idle", async () => {
     const spy = vi.spyOn(fakeBrowser.action, "setBadgeText");
     await dispatch({ type: "timer/start" });

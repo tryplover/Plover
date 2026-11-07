@@ -129,6 +129,7 @@ export function registerTimerHandlers(): void {
 
   registerHandler("timer/skip", async () => {
     const now = Date.now();
+    if (await settleOverdue(now)) return { ok: true };
     const config = timerConfig(await getSettings());
     await applyTransition(skipPhase(await getLocal("timer"), config, now), now);
     return { ok: true };
@@ -136,6 +137,7 @@ export function registerTimerHandlers(): void {
 
   registerHandler("timer/stop", async () => {
     const now = Date.now();
+    await settleOverdue(now);
     await applyTransition(stopTimer(await getLocal("timer")), now);
     return { ok: true };
   });
@@ -145,6 +147,14 @@ export function registerTimerHandlers(): void {
     const config = timerConfig(await getSettings());
     await applyTransition(tick(await getLocal("timer"), config, now), now);
   });
+}
+
+async function settleOverdue(now: number): Promise<boolean> {
+  const config = timerConfig(await getSettings());
+  const t = tick(await getLocal("timer"), config, now);
+  if (t.events.length === 0) return false;
+  await applyTransition(t, now);
+  return true;
 }
 
 export async function reconcileTimer(): Promise<void> {
