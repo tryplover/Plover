@@ -225,7 +225,8 @@ without a model call; Gemini only suggests steps during task breakdown.
   trigger (that's the only place the 60% gate can still block a merge); the
   `push: main` run does a plain `pnpm test` to avoid paying for
   coverage overhead on a run with no PR left to gate. Ubuntu-only for now (add
-  macOS/Windows when packaging matters).
+  macOS/Windows when packaging matters). Each `push: main` run also builds the store zip and uploads it as the
+  artifact `plover-chrome-<sha>` (no release; see `docs/RELEASING.md`).
 - **Pre-commit** runs `lint-staged` via husky → eslint --fix + prettier --write
   on staged `extension/**/*.{ts,tsx,json,md,yml,yaml,css,html}`.
 - **Coverage gate:** soft 60% (lines/branches/functions/statements) **only on**

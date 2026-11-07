@@ -7,7 +7,7 @@ on:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   quality:
@@ -53,3 +53,42 @@ jobs:
           path: extension/coverage/
           if-no-files-found: ignore
           retention-days: 14
+
+  build:
+    name: Build extension
+    if: github.event_name == 'push'
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6.0.10
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build zip
+        env:
+          WXT_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          WXT_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          WXT_GOOGLE_CLIENT_ID: ${{ vars.WXT_GOOGLE_CLIENT_ID || secrets.WXT_GOOGLE_CLIENT_ID }}
+          WXT_PLOVER_BACKEND_URL: ${{ vars.WXT_PLOVER_BACKEND_URL || secrets.WXT_PLOVER_BACKEND_URL }}
+        run: pnpm --filter ./extension run zip
+
+      - name: Upload zip
+        uses: actions/upload-artifact@v7
+        with:
+          name: plover-chrome-${{ github.sha }}
+          path: extension/.output/*-chrome.zip
+          if-no-files-found: error
+          retention-days: 30
