@@ -10,6 +10,7 @@ import { ActiveSteps } from "@/ui/components/ActiveSteps";
 import { CalendarNext, ConflictOffer } from "@/ui/components/CalendarNext";
 import { Buddy } from "@/ui/components/Buddy";
 import { CheckIn } from "@/ui/components/CheckIn";
+import { SavedTasks } from "@/ui/components/SavedTasks";
 import { SiteAccess } from "@/ui/components/SiteAccess";
 import { SignIn } from "@/ui/components/SignIn";
 import { TaskBreakdown } from "@/ui/components/TaskBreakdown";
@@ -40,6 +41,10 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
 
   const idle = local.timer.phase === "idle";
   const activeTask = findActiveTask(local.tasks, local.activeTaskId);
+  const checkInTask = findActiveTask(
+    local.tasks,
+    local.transient.checkInTaskId ?? local.activeTaskId,
+  );
   const buddy = deriveBuddyState(local, now);
 
   function toggleFocus() {
@@ -103,7 +108,7 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
   const body = (
     <>
       {nudge && <p className="plover-nudge">{nudge}</p>}
-      {local.transient.checkInPending && <CheckIn task={activeTask} />}
+      {local.transient.checkInPending && <CheckIn task={checkInTask} />}
       {showSignIn && <SignIn />}
       {local.needsSignIn && !idle && (
         <div className="plover-banner">
@@ -129,6 +134,14 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
             workMinutes={settings.workMinutes}
             now={now}
           />
+          <SavedTasks
+            tasks={local.tasks}
+            activeTaskId={local.activeTaskId}
+            events={local.calendar.events}
+            workMinutes={settings.workMinutes}
+            blocksPerLongBreak={settings.blocksPerLongBreak}
+            now={now}
+          />
           {focusSwitch}
         </div>
       ) : (
@@ -138,6 +151,7 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
           <TimerControls
             timer={local.timer}
             now={now}
+            canPark={activeTask !== undefined}
             buddy={
               surface === "popup" ? (
                 <div className="plover-buddy-small">

@@ -3,6 +3,7 @@ import {
   MIN_PARK_MS,
   parkedFrom,
   resumePlan,
+  savedTaskCaption,
   sortSavedTasks,
 } from "@/features/tasks/parking";
 import type { TimerConfig, TimerState } from "@/features/timer/types";
@@ -126,6 +127,11 @@ describe("sortSavedTasks", () => {
     expect(open.map((t) => t.id)).toEqual(["old", "recent"]);
   });
 
+  it("keeps a done active task out of the done list", () => {
+    const { done } = sortSavedTasks(tasks, "doneLate");
+    expect(done.map((t) => t.id)).toEqual(["doneEarly"]);
+  });
+
   it("excludes the active task from both lists", () => {
     const { open, done } = sortSavedTasks(tasks, "running");
     const ids = [...open, ...done].map((t) => t.id);
@@ -136,5 +142,41 @@ describe("sortSavedTasks", () => {
     const { open, done } = sortSavedTasks(tasks, null);
     expect(done.map((t) => t.id)).toEqual(["doneLate", "doneEarly"]);
     expect(open.some((t) => t.doneAt !== null)).toBe(false);
+  });
+});
+
+describe("savedTaskCaption", () => {
+  const task = (parked: Task["parked"]): Task => ({
+    id: "t",
+    title: "T",
+    steps: [
+      { id: "a", title: "A", done: true },
+      { id: "b", title: "B", done: false },
+    ],
+    createdAt: 0,
+    doneAt: null,
+    parked,
+  });
+
+  it("shows only steps when nothing is parked", () => {
+    expect(savedTaskCaption(task(null), 4)).toBe("1 of 2 steps");
+  });
+
+  it("adds the block position when parked", () => {
+    expect(
+      savedTaskCaption(
+        task({ remainingMs: 1000, blocksCompleted: 1, parkedAt: 0 }),
+        4,
+      ),
+    ).toBe("1 of 2 steps · Block 2 of 4");
+  });
+
+  it("wraps the block position at the long-break cycle", () => {
+    expect(
+      savedTaskCaption(
+        task({ remainingMs: 1000, blocksCompleted: 5, parkedAt: 0 }),
+        4,
+      ),
+    ).toBe("1 of 2 steps · Block 2 of 4");
   });
 });

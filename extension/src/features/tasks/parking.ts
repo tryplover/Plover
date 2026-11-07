@@ -50,7 +50,18 @@ export function sortSavedTasks(
         (b.lastActiveAt ?? b.createdAt) - (a.lastActiveAt ?? a.createdAt),
     );
   const done = tasks
-    .filter((t) => t.doneAt !== null)
+    .filter((t) => t.doneAt !== null && t.id !== activeTaskId)
     .sort((a, b) => (b.doneAt ?? 0) - (a.doneAt ?? 0));
   return { open, done };
+}
+
+export function savedTaskCaption(
+  task: Task,
+  blocksPerLongBreak: number,
+): string {
+  const done = task.steps.filter((s) => s.done).length;
+  const steps = `${done} of ${task.steps.length} steps`;
+  return task.parked
+    ? `${steps} · Block ${(task.parked.blocksCompleted % blocksPerLongBreak) + 1} of ${blocksPerLongBreak}`
+    : steps;
 }

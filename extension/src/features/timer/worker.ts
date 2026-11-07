@@ -170,9 +170,14 @@ export async function stopAndPark(now: number): Promise<void> {
     getLocal("transient"),
   ]);
   await applyTransition(stopTimer(timer), now);
-  if (before.checkInPending && (before.checkInTaskId ?? activeTaskId)) {
+  const checkInTaskId = before.checkInTaskId ?? activeTaskId;
+  if (before.checkInPending && checkInTaskId) {
     await setLocal({
-      transient: { ...(await getLocal("transient")), checkInPending: true },
+      transient: {
+        ...(await getLocal("transient")),
+        checkInPending: true,
+        checkInTaskId,
+      },
     });
   }
   await setLocal({

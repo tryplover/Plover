@@ -20,10 +20,12 @@ export function TimerControls({
   timer,
   now,
   buddy,
+  canPark = false,
 }: {
   timer: TimerState;
   now: number;
   buddy?: ReactNode;
+  canPark?: boolean;
 }) {
   const paused = timer.pausedAt !== null;
   return (
@@ -54,6 +56,15 @@ export function TimerControls({
         >
           Skip
         </button>
+        {canPark && (
+          <button
+            type="button"
+            className="plover-btn-text"
+            onClick={() => void sendCommand({ type: "task/park" })}
+          >
+            Save for later
+          </button>
+        )}
         <button
           type="button"
           className="plover-btn-text"
