@@ -71,7 +71,7 @@ Web Store listing. The product lives in the `extension/` workspace package; the
 Gemini backend `plover-server` is a separate repo.
 
 - **Product spec (current direction, extension):** [docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md](docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md) (filename kept for links)
-- **Original product spec (superseded):** [docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md](docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md)
+- **Original product spec (superseded):** [docs/archive/specs/2026-05-24-task-tracker-agent-product-spec.md](docs/archive/specs/2026-05-24-task-tracker-agent-product-spec.md)
 - **Background research:** [reports/](reports/) and [research_notes/](research_notes/)
 
 The character design and animations are being designed separately and are
@@ -93,10 +93,10 @@ invent art.
 │   ├── dependabot.yml              # weekly npm + actions updates
 │   └── PULL_REQUEST_TEMPLATE.md
 ├── docs/
+│   ├── RUNNING.md, RELEASING.md    # run locally; cut a store release
 │   ├── plans/                      # generated implementation plans (input to subagents)
-│   └── superpowers/specs/          # pivot spec (authoritative) + history
-│       ├── 2026-10-02-desktop-buddy-pivot-spec.md   # current direction
-│       └── 2026-05-24-task-tracker-agent-product-spec.md  # superseded
+│   ├── superpowers/specs/          # 2026-10-02-desktop-buddy-pivot-spec.md (authoritative)
+│   └── archive/                    # desktop-era plans and specs, history only
 ├── reports/, research_notes/       # background research (progress visibility, competitors)
 └── extension/                      # Chromium MV3 extension (WXT + React), the product
     ├── src/entrypoints/            # thin WXT entrypoints: background.ts, content/, popup/, options/, panel/, blocked/, welcome/
@@ -176,7 +176,7 @@ MVP principle: simple and not reliant on AI. Timer, blocking and focus work
 without a model call; Gemini only suggests steps during task breakdown.
 
 **In the MVP** (spec §4; no extension roadmap written yet — the desktop
-[mvp-five-features-roadmap](docs/plans/mvp-five-features-roadmap.md) is superseded):
+[mvp-five-features-roadmap](docs/archive/plans/mvp-five-features-roadmap.md) is superseded):
 
 - Floating buddy on every page (content script, Shadow DOM) plus a toolbar
   popup with the same panel; drag to move, hide per site, hide everywhere,
