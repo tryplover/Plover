@@ -159,7 +159,7 @@ function Welcome() {
       <section>
         <h2>Pin Plover</h2>
         <p>
-          Click the puzzle-piece icon in Chrome&apos;s toolbar, then the pin
+          Click the puzzle-piece icon in your browser&apos;s toolbar, then the pin
           next to Plover. You can also press Alt+Shift+P to open it.
         </p>
       </section>

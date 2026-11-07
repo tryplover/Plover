@@ -27,6 +27,11 @@
   height: 104px;
   margin: 0 auto 8px;
 }
+.welcome-buddy .plover-buddy {
+  width: 100%;
+  height: 100%;
+  cursor: default;
+}
 .welcome-list {
   margin: 0;
   padding-left: 20px;
