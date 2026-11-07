@@ -49,3 +49,41 @@
   height: 36px;
   padding: 0 4px;
 }
+.options .segmented {
+  display: inline-flex;
+  border: 1.5px solid var(--color-border-control);
+  border-radius: var(--radius-control);
+  overflow: hidden;
+}
+.options .segment {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.options .segment + .segment {
+  border-left: 1.5px solid var(--color-border-control);
+}
+.options .segment:has(input:checked) {
+  background: var(--color-bg-quiet);
+}
+.options .segment:has(input:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -4px;
+}
+.options .segment input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  margin: 0;
+}
+.options .hint {
+  margin: 8px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}

@@ -5,6 +5,7 @@ import { ALL_SITES } from "@/features/site-access/origins";
 import { PRIVACY_POLICY_URL } from "@/shared/links";
 import { SignIn } from "@/ui/components/SignIn";
 import { useExtensionState } from "@/ui/hooks/useExtensionState";
+import { applyStoredTheme } from "@/ui/theme";
 import "@/ui/base.css";
 import "./welcome.css";
 
@@ -95,6 +96,7 @@ function Welcome() {
   );
 }
 
+applyStoredTheme();
 const root = document.getElementById("root");
 if (root) {
   createRoot(root).render(<Welcome />);
