@@ -79,13 +79,13 @@ jobs:
 
       - name: Check build secrets
         env:
-          WXT_SUPABASE_URL: ${{ secrets.WXT_SUPABASE_URL }}
-          WXT_SUPABASE_ANON_KEY: ${{ secrets.WXT_SUPABASE_ANON_KEY }}
-          WXT_GOOGLE_CLIENT_ID: ${{ secrets.WXT_GOOGLE_CLIENT_ID }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          WXT_GOOGLE_CLIENT_ID: ${{ vars.WXT_GOOGLE_CLIENT_ID }}
           WXT_PLOVER_BACKEND_URL: ${{ vars.WXT_PLOVER_BACKEND_URL }}
         run: |
           missing=0
-          for name in WXT_SUPABASE_URL WXT_SUPABASE_ANON_KEY WXT_GOOGLE_CLIENT_ID WXT_PLOVER_BACKEND_URL; do
+          for name in SUPABASE_URL SUPABASE_ANON_KEY WXT_GOOGLE_CLIENT_ID WXT_PLOVER_BACKEND_URL; do
             if [ -z "${!name}" ]; then
               echo "::error::Missing $name: add it under Settings → Secrets and variables → Actions"
               missing=1
@@ -100,9 +100,9 @@ jobs:
 
       - name: Build zip
         env:
-          WXT_SUPABASE_URL: ${{ secrets.WXT_SUPABASE_URL }}
-          WXT_SUPABASE_ANON_KEY: ${{ secrets.WXT_SUPABASE_ANON_KEY }}
-          WXT_GOOGLE_CLIENT_ID: ${{ secrets.WXT_GOOGLE_CLIENT_ID }}
+          WXT_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          WXT_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          WXT_GOOGLE_CLIENT_ID: ${{ vars.WXT_GOOGLE_CLIENT_ID }}
           WXT_PLOVER_BACKEND_URL: ${{ vars.WXT_PLOVER_BACKEND_URL }}
         run: pnpm --filter ./extension run zip
 
