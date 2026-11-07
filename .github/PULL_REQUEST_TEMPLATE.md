@@ -14,5 +14,5 @@
 ## Scope check
 
 - [ ] Changes stay within the current phase per [the product spec](../docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md)
-- [ ] No new outbound network destinations beyond the allowlist (`plover-server`, Supabase, `www.googleapis.com`, Google OAuth)
+- [ ] No new outbound network destinations beyond the allowlist in `CLAUDE.md` (`plover-server`, Supabase, `accounts.google.com`, `www.googleapis.com`)
 - [ ] No new extension permissions or host permissions requested without discussion
