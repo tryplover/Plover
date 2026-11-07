@@ -7,9 +7,11 @@ vi.mock("@/features/auth/session", async (orig) => ({
   isSignedIn: async () => auth.signedIn,
 }));
 import { dispatch } from "@/worker/controller";
-import { registerFocusHandlers } from "@/features/focus/worker";
 import { registerTimerHandlers } from "@/features/timer/worker";
+import { NUDGE_VISIBLE_MS } from "@/features/buddy/worker";
+import { reconcileFocus, registerFocusHandlers } from "@/features/focus/worker";
 import { getLocal, setLocal, updateSettings } from "@/shared/storage";
+import { enqueue } from "@/worker/queue";
 
 const MIN = 60_000;
 const T0 = 1_700_000_000_000;
@@ -126,7 +128,7 @@ describe("focus mode", () => {
     await fireAlarm("focus-nudge");
     const transient = await getLocal("transient");
     expect(transient.nudgeText).toBe('Still on "Draft intro"?');
-    expect(transient.nudgeUntil).toBe(T0 + 15 * MIN + 60_000);
+    expect(transient.nudgeUntil).toBe(T0 + 15 * MIN + NUDGE_VISIBLE_MS);
   });
 
   it("nudge falls back to a generic prompt", async () => {
@@ -208,6 +210,26 @@ describe("focus mode", () => {
     expect((await getLocal("timer")).phase).toBe("shortBreak");
     expect(await getLocal("blockingOn")).toBe(true);
     expect(installed).toHaveLength(2);
+  });
+
+  it("keeps the nudge schedule when an unrelated setting changes", async () => {
+    await dispatch({ type: "focus/set", on: true });
+    const before = (await fakeBrowser.alarms.get("focus-nudge"))?.scheduledTime;
+    vi.setSystemTime(T0 + 5 * MIN);
+    await updateSettings({ buddyCorner: "top-left" });
+    await enqueue(async () => undefined);
+    expect((await fakeBrowser.alarms.get("focus-nudge"))?.scheduledTime).toBe(
+      before,
+    );
+  });
+
+  it("reconcile fixes a nudge alarm whose interval is out of date", async () => {
+    await dispatch({ type: "focus/set", on: true });
+    await fakeBrowser.alarms.create("focus-nudge", { periodInMinutes: 5 });
+    await reconcileFocus();
+    expect((await fakeBrowser.alarms.get("focus-nudge"))?.periodInMinutes).toBe(
+      15,
+    );
   });
 
   it("recreates the nudge alarm when the interval changes", async () => {
