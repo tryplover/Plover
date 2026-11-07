@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
 import { browser } from "wxt/browser";
-import { normalizeDomain } from "@/features/blocking/domains";
+import { siteFromInput } from "@/features/blocking/domains";
 import { siteOrigin } from "@/features/site-access/origins";
 import { sendCommand } from "@/shared/messages";
 import { updateSettings } from "@/shared/storage";
@@ -40,9 +40,9 @@ function DomainList({
   const [error, setError] = useState<string | null>(null);
 
   function add() {
-    const domain = normalizeDomain(draft);
+    const domain = siteFromInput(draft);
     if (!domain) {
-      setError("Enter a site like example.com");
+      setError("Enter a site like youtube or example.com");
       return;
     }
     setError(null);
@@ -59,7 +59,7 @@ function DomainList({
           type="text"
           value={draft}
           aria-label={title}
-          placeholder="example.com"
+          placeholder="youtube or example.com"
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && add()}
         />
@@ -68,12 +68,13 @@ function DomainList({
         </button>
       </div>
       {error && <p role="alert">{error}</p>}
-      <ul>
+      <ul className="domain-list">
         {items.map((d) => (
           <li key={d}>
-            {d}{" "}
+            <span>{d}</span>
             <button
               type="button"
+              className="plover-btn-text"
               onClick={() => onChange(items.filter((x) => x !== d))}
             >
               Remove
