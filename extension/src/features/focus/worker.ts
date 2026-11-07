@@ -1,7 +1,12 @@
 import { browser } from "wxt/browser";
 import { showNudge } from "@/features/buddy/worker";
 import { findActiveTask, firstOpenStep } from "@/features/tasks/active-step";
-import { getLocal, getSettings, setLocal } from "@/shared/storage";
+import {
+  getLocal,
+  getSettings,
+  isSettingsChange,
+  setLocal,
+} from "@/shared/storage";
 import { onAlarm } from "@/worker/alarms";
 import {
   CALENDAR_HEADSUP_ALARM,
@@ -77,7 +82,7 @@ export function registerFocusHandlers(): void {
   });
 
   browser.storage.onChanged.addListener((changes, area) => {
-    if (area !== "sync" || !changes["settings"]) return;
+    if (!isSettingsChange(changes, area)) return;
     void enqueue(async () => {
       if (await getLocal("blockingOn")) await reapplyBlocking();
       if ((await getLocal("focus")).on) await scheduleFocusNudge(false);
