@@ -50,7 +50,7 @@ export function sortSavedTasks(
         (b.lastActiveAt ?? b.createdAt) - (a.lastActiveAt ?? a.createdAt),
     );
   const done = tasks
-    .filter((t) => t.doneAt !== null)
+    .filter((t) => t.doneAt !== null && t.id !== activeTaskId)
     .sort((a, b) => (b.doneAt ?? 0) - (a.doneAt ?? 0));
   return { open, done };
 }

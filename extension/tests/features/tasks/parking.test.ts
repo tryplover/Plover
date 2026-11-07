@@ -127,6 +127,11 @@ describe("sortSavedTasks", () => {
     expect(open.map((t) => t.id)).toEqual(["old", "recent"]);
   });
 
+  it("keeps a done active task out of the done list", () => {
+    const { done } = sortSavedTasks(tasks, "doneLate");
+    expect(done.map((t) => t.id)).toEqual(["doneEarly"]);
+  });
+
   it("excludes the active task from both lists", () => {
     const { open, done } = sortSavedTasks(tasks, "running");
     const ids = [...open, ...done].map((t) => t.id);

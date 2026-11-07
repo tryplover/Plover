@@ -240,4 +240,66 @@ describe("task handlers", () => {
     expect((await getLocal("tasks"))[0]?.steps[0]?.done).toBe(true);
     expect((await getLocal("transient")).checkInPending).toBe(false);
   });
+
+  it("answering the check-in with the last open step marks the task done", async () => {
+    const oneLeft = {
+      ...task,
+      steps: [
+        { id: "s1", title: "Outline", done: true },
+        { id: "s2", title: "Draft", done: false },
+      ],
+    };
+    await setLocal({ tasks: [oneLeft], activeTaskId: "t1" });
+    await dispatch({ type: "timer/start" });
+    vi.setSystemTime(T0 + 25 * MIN);
+    await fireAlarm("timer-phase");
+    await dispatch({ type: "checkin/answer", stepId: "s2" });
+    expect((await getLocal("tasks"))[0]?.doneAt).toBe(T0 + 25 * MIN);
+  });
+
+  it("an overdue stop keeps the block's check-in pending", async () => {
+    await setLocal({ tasks: [task], activeTaskId: "t1" });
+    await dispatch({ type: "timer/start" });
+    vi.setSystemTime(T0 + 26 * MIN);
+    await dispatch({ type: "timer/stop" });
+    const transient = await getLocal("transient");
+    expect(transient.checkInPending).toBe(true);
+    expect(transient.checkInTaskId).toBe("t1");
+  });
+
+  it("resuming the running task keeps its time left", async () => {
+    await run(task);
+    await dispatch({ type: "task/resume", taskId: "t1" });
+    expect((await getLocal("timer")).phaseEndsAt).toBe(T0 + 25 * MIN);
+  });
+
+  it("resume ignores an endBy in the past", async () => {
+    await setLocal({
+      tasks: [
+        {
+          ...task,
+          parked: { remainingMs: 18 * MIN, blocksCompleted: 0, parkedAt: T0 },
+        },
+      ],
+    });
+    await dispatch({ type: "task/resume", taskId: "t1", endBy: T0 - MIN });
+    expect((await getLocal("timer")).phaseEndsAt).toBe(T0 + 18 * MIN);
+  });
+
+  it("deleting a task clears its pending check-in", async () => {
+    await setLocal({ tasks: [task], activeTaskId: "t1" });
+    await dispatch({ type: "timer/start" });
+    vi.setSystemTime(T0 + 25 * MIN);
+    await fireAlarm("timer-phase");
+    await dispatch({ type: "task/park" });
+    await dispatch({ type: "task/delete", taskId: "t1" });
+    const transient = await getLocal("transient");
+    expect(transient.checkInPending).toBe(false);
+    expect(transient.checkInTaskId).toBeNull();
+  });
+
+  it("task/save keeps an existing lastActiveAt", async () => {
+    await dispatch({ type: "task/save", task: { ...task, lastActiveAt: 5 } });
+    expect((await getLocal("tasks"))[0]?.lastActiveAt).toBe(5);
+  });
 });

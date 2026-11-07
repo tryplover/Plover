@@ -151,6 +151,7 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
           <TimerControls
             timer={local.timer}
             now={now}
+            canPark={activeTask !== undefined}
             buddy={
               surface === "popup" ? (
                 <div className="plover-buddy-small">

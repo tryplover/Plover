@@ -116,7 +116,7 @@ export interface ParkedTimer {
 
 ```ts
 /** Snapshot of the active task's timer, or null if there is nothing worth saving. */
-export function parkedFrom(timer: TimerState, nowMs: number): ParkedTimer | null;
+export function parkedFrom(timer: TimerState, config: TimerConfig, nowMs: number): ParkedTimer | null;
 
 /** The `endBy` and starting cycle to resume a task with. */
 export function resumePlan(
