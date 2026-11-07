@@ -1,8 +1,8 @@
 # Plover — Browser Buddy Spec (Chrome extension)
 
-**Date:** 2026-10-02 (rev. 2026-10-03: MVP narrowed to five simple features; rev. 2026-10-13: stall nudge added, progress percentages and the goal bar removed; **rev. 2026-10-19: Plover becomes a Chromium browser extension instead of an Electron desktop app; stall nudge dropped**; **rev. 2026-10-26: Electron app deleted**; rev. 2026-10-27: site access becomes optional, requested on a welcome page)
+**Date:** 2026-10-02 (rev. 2026-10-03: MVP narrowed to five simple features; rev. 2026-10-13: stall nudge added, progress percentages and the goal bar removed; **rev. 2026-10-19: Plover becomes a Chromium browser extension instead of an Electron desktop app; stall nudge dropped**; **rev. 2026-10-26: Electron app deleted**; rev. 2026-10-27: site access becomes optional, requested on a welcome page; rev. 2026-11-05: waitlist gate dropped, sign-up open)
 **Status:** Draft v3. Supersedes the [2026-05-24 product spec](2026-05-24-task-tracker-agent-product-spec.md) as the product direction. The filename still says "desktop buddy" so existing links keep working.
-**Launch:** waitlist-only on tryplover.com, distributed as an unlisted Chrome Web Store listing (downloads of the desktop app paused since 2026-09-20).
+**Launch:** distributed as an unlisted Chrome Web Store listing linked from tryplover.com; sign-in is required but sign-up is open (the waitlist gate was dropped on 2026-11-05). Downloads of the desktop app paused since 2026-09-20.
 
 ## 1. Vision
 
@@ -163,8 +163,8 @@ page), and sign out. Nothing else.
 ### 4.8 Accounts and data
 
 - **Sign-in is required.** The extension does nothing until the user signs
-  in with their Plover account (Supabase auth, waitlist-gated). This keeps
-  the launch waitlist-only and protects the Gemini proxy.
+  in with their Plover account (Supabase auth, open sign-up). This ties
+  Gemini proxy usage to an account so it can be rate-limited.
 - **Settings sync, tasks stay local.** Settings (blocklist, timer lengths,
   buddy position and visibility) live in `chrome.storage.sync`, so they
   follow the user across their signed-in browsers. `storage.sync` is capped
@@ -176,7 +176,7 @@ page), and sign out. Nothing else.
 
 ## 5. Scope
 
-### MVP (waitlist launch)
+### MVP (launch)
 
 - Floating buddy on every page plus toolbar popup, with an animation-state
   interface (placeholder art until the design lands)
@@ -188,8 +188,8 @@ page), and sign out. Nothing else.
 - Required sign-in; minimal settings
 
 **Browsers:** all Chromium browsers (Chrome, Edge, Brave, Arc). Distributed
-as an unlisted Chrome Web Store listing for the waitlist (needs a privacy
-policy and store review). Edge users can install from the Chrome Web Store;
+as an unlisted Chrome Web Store listing linked from tryplover.com (needs a
+privacy policy and store review). Edge users can install from the Chrome Web Store;
 a separate Edge Add-ons listing is optional.
 
 ### After the MVP (not committed, in rough order of interest)

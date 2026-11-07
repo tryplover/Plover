@@ -20,7 +20,7 @@ Gamification and more come later. Your tasks stay in your browser; only your
 settings sync (through your browser's own sync), and only step-suggestion
 requests leave it, proxied through the hosted backend.
 
-> **Status.** Plover is a Chrome (Chromium) extension. The earlier Electron desktop app was deleted on 2026-10-26; see the [product spec](docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md). Launch is waitlist-only on tryplover.com, through an unlisted Chrome Web Store listing. The Gemini proxy lives in the standalone [plover-server](https://github.com/tryplover/plover-server) repo on Google Cloud Run (see [GCP & GitHub Setup Details](docs/plans/gcp-setup-details.md)).
+> **Status.** Plover is a Chrome (Chromium) extension. The earlier Electron desktop app was deleted on 2026-10-26; see the [product spec](docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md). Launch is an unlisted Chrome Web Store listing linked from tryplover.com, with open sign-up. The Gemini proxy lives in the standalone [plover-server](https://github.com/tryplover/plover-server) repo on Google Cloud Run (see [GCP & GitHub Setup Details](docs/plans/gcp-setup-details.md)).
 
 ## Quickstart
 

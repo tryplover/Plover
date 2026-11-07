@@ -2,7 +2,8 @@ import type { UserManifest } from "wxt";
 
 export const manifest = {
   name: "Plover",
-  description: "A cute desktop work buddy for the browser.",
+  description:
+    "A cute work buddy that keeps you company while you focus: task steps, a Pomodoro timer and site blocking.",
   permissions: [
     "storage",
     "alarms",
