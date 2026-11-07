@@ -1,9 +1,16 @@
-import { useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { createRoot } from "react-dom/client";
 import { browser } from "wxt/browser";
 import { ALL_SITES } from "@/features/site-access/origins";
 import { PRIVACY_POLICY_URL } from "@/shared/links";
 import { sendCommand } from "@/shared/messages";
+import type { BuddyAnimationState } from "@/shared/types";
 import { Buddy } from "@/ui/components/Buddy";
 import { SignIn } from "@/ui/components/SignIn";
 import { useExtensionState } from "@/ui/hooks/useExtensionState";
@@ -11,9 +18,52 @@ import { applyStoredTheme } from "@/ui/theme";
 import "@/ui/base.css";
 import "./welcome.css";
 
-function SiteAccess() {
+const STEP_COUNT = 6;
+const BUDDY_STATES: BuddyAnimationState[] = [
+  "celebrating",
+  "idle",
+  "working",
+  "working",
+  "idle",
+  "celebrating",
+];
+
+function Heading({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    ref.current?.focus({ preventScroll: true });
+  }, []);
+  return (
+    <h1 ref={ref} tabIndex={-1} className="plover-heading welcome-heading">
+      {children}
+    </h1>
+  );
+}
+
+function Progress({ step }: { step: number }) {
+  return (
+    <div
+      className="welcome-progress"
+      role="group"
+      aria-label={`Step ${step + 1} of ${STEP_COUNT}`}
+    >
+      {Array.from({ length: STEP_COUNT }, (_, i) => (
+        <span
+          key={i}
+          aria-hidden="true"
+          className={
+            "welcome-dot" +
+            (i === step ? " welcome-dot--current" : "") +
+            (i < step ? " welcome-dot--done" : "")
+          }
+        />
+      ))}
+    </div>
+  );
+}
+
+function useSiteAccess() {
   const [granted, setGranted] = useState(false);
-  const [declined, setDeclined] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -32,46 +82,175 @@ function SiteAccess() {
     };
   }, []);
 
-  if (granted) {
-    return (
-      <p>
-        Plover is on your pages. You can change this in chrome://extensions any
-        time.
+  return granted;
+}
+
+function HelloStep({ onNext }: { onNext: () => void }) {
+  return (
+    <>
+      <p className="plover-eyebrow">Welcome</p>
+      <Heading>Hi, I&apos;m Plover.</Heading>
+      <p className="welcome-body">
+        A small work buddy that helps you start, one step at a time.
       </p>
-    );
-  }
+      <button type="button" className="plover-btn-brand" onClick={onNext}>
+        Let&apos;s get set up
+      </button>
+    </>
+  );
+}
+
+function SignInStep({
+  needsSignIn,
+  onNext,
+}: {
+  needsSignIn: boolean;
+  onNext: () => void;
+}) {
+  const [arrivedSignedOut] = useState(needsSignIn);
+
+  useEffect(() => {
+    if (!arrivedSignedOut || needsSignIn) return;
+    const id = setTimeout(onNext, 600);
+    return () => clearTimeout(id);
+  }, [arrivedSignedOut, needsSignIn, onNext]);
 
   return (
     <>
-      <p>
-        The buddy floats in a corner of each page. It only draws itself and
-        reads nothing on the page.
+      <Heading>First, sign in</Heading>
+      <p className="welcome-body">
+        Your tasks stay on this device. Signing in lets Plover suggest steps for
+        you.
       </p>
-      <button
-        type="button"
-        onClick={() =>
-          void browser.permissions
-            .request({ origins: [ALL_SITES] })
-            .then((ok) => setDeclined(!ok))
-        }
-      >
-        Let Plover hang out on your pages
-      </button>
-      {declined && (
-        <p role="status">
-          No problem. The Plover popup can add it one site at a time.
-        </p>
+      {needsSignIn ? (
+        <SignIn />
+      ) : (
+        <>
+          <p className="welcome-done">
+            <span aria-hidden="true" className="welcome-tick">
+              ✓
+            </span>
+            You&apos;re signed in.
+          </p>
+          <button type="button" className="plover-btn-brand" onClick={onNext}>
+            Continue
+          </button>
+        </>
       )}
     </>
   );
 }
 
-function CalendarConnect({
+function SiteAccessStep({ onNext }: { onNext: () => void }) {
+  const granted = useSiteAccess();
+  const [declined, setDeclined] = useState(false);
+
+  return (
+    <>
+      <Heading>I&apos;ll sit in the corner of your pages</Heading>
+      <p className="welcome-body">
+        I only draw myself. I never read the page or your history.
+      </p>
+      <div className="welcome-browser" aria-hidden="true">
+        <div className="welcome-browser__bar">
+          <span className="welcome-browser__dot" />
+          <span className="welcome-browser__dot" />
+          <span className="welcome-browser__dot" />
+          <span className="welcome-browser__address" />
+        </div>
+        <div className="welcome-browser__page">
+          <span className="welcome-browser__line" />
+          <span className="welcome-browser__line" />
+          <span className="welcome-browser__line welcome-browser__line--short" />
+        </div>
+        {granted && (
+          <div className="welcome-browser__buddy">
+            <Buddy state="working" />
+          </div>
+        )}
+      </div>
+      {granted ? (
+        <button type="button" className="plover-btn-brand" onClick={onNext}>
+          Continue
+        </button>
+      ) : (
+        <>
+          <button
+            type="button"
+            className="plover-btn-brand"
+            onClick={() =>
+              void browser.permissions
+                .request({ origins: [ALL_SITES] })
+                .then((ok) => setDeclined(!ok))
+            }
+          >
+            Put Plover on my pages
+          </button>
+          <button type="button" className="plover-btn-text" onClick={onNext}>
+            Not now
+          </button>
+          {declined && (
+            <p role="status" className="welcome-note">
+              No problem. The Plover popup can add it one site at a time.
+            </p>
+          )}
+        </>
+      )}
+    </>
+  );
+}
+
+const HOW_IT_WORKS = [
+  {
+    title: "Break it down",
+    line: "Tell me the task. I'll suggest small steps you can edit.",
+  },
+  {
+    title: "Focus for a block",
+    line: "Start a 25-minute timer. Focus mode blocks your distracting sites.",
+  },
+  {
+    title: "Tick off a step",
+    line: "When the block ends, tell me what you finished. Then take a break.",
+  },
+];
+
+function HowStep({ onNext }: { onNext: () => void }) {
+  return (
+    <>
+      <Heading>Here&apos;s how it works</Heading>
+      <ol className="welcome-rows">
+        {HOW_IT_WORKS.map((row, i) => (
+          <li
+            key={row.title}
+            className="welcome-row"
+            style={{ "--i": i } as React.CSSProperties}
+          >
+            <span className="welcome-row__badge" aria-hidden="true">
+              {i + 1}
+            </span>
+            <div>
+              <p className="welcome-row__title">{row.title}</p>
+              <p className="welcome-row__line">{row.line}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+      <button type="button" className="plover-btn-brand" onClick={onNext}>
+        Continue
+      </button>
+    </>
+  );
+}
+
+function CalendarStep({
   connected,
   needsSignIn,
+  onNext,
 }: {
   connected: boolean;
   needsSignIn: boolean;
+  onNext: () => void;
 }) {
   const [error, setError] = useState<string | null>(null);
 
@@ -81,99 +260,129 @@ function CalendarConnect({
     if (!result.ok) setError(result.error);
   }
 
-  if (connected) return <p>Calendar connected.</p>;
-
   return (
     <>
+      <Heading>Want a heads-up before meetings?</Heading>
+      <p className="welcome-body">
+        Connect Google Calendar and I&apos;ll warn you if a focus block would
+        run into an event. I only read your calendar.
+      </p>
+      {connected ? (
+        <>
+          <p className="welcome-done">
+            <span aria-hidden="true" className="welcome-tick">
+              ✓
+            </span>
+            Calendar connected.
+          </p>
+          <button type="button" className="plover-btn-brand" onClick={onNext}>
+            Continue
+          </button>
+        </>
+      ) : (
+        <>
+          <button
+            type="button"
+            className="plover-btn-brand"
+            disabled={needsSignIn}
+            onClick={() => void connect()}
+          >
+            Connect Google Calendar
+          </button>
+          {needsSignIn && <p className="welcome-note">Sign in first.</p>}
+          {error && <p role="alert">{error}</p>}
+          <button type="button" className="plover-btn-text" onClick={onNext}>
+            Skip
+          </button>
+        </>
+      )}
+    </>
+  );
+}
+
+function PinStep() {
+  return (
+    <>
+      <Heading>You&apos;re all set</Heading>
+      <p className="welcome-body">
+        Pin me to your toolbar so I&apos;m one click away.
+      </p>
+      <div className="welcome-toolbar" aria-hidden="true">
+        <span className="welcome-toolbar__address" />
+        <span className="welcome-toolbar__puzzle">🧩</span>
+        <span className="welcome-toolbar__pin">
+          <Buddy state="idle" />
+        </span>
+      </div>
+      <p className="welcome-note">Or press Alt+Shift+P to open me.</p>
       <button
         type="button"
-        disabled={needsSignIn}
-        onClick={() => void connect()}
+        className="plover-btn-brand"
+        onClick={() => window.close()}
       >
-        Connect
+        Start my first task
       </button>
-      {needsSignIn && <p>Sign in first.</p>}
-      {error && <p role="alert">{error}</p>}
     </>
   );
 }
 
 function Welcome() {
   const { local, ready } = useExtensionState();
+  const [step, setStep] = useState(0);
+  const [direction, setDirection] = useState<"forward" | "back">("forward");
+
+  const next = useCallback(() => {
+    setDirection("forward");
+    setStep((s) => Math.min(s + 1, STEP_COUNT - 1));
+  }, []);
+  const back = useCallback(() => {
+    setDirection("back");
+    setStep((s) => Math.max(s - 1, 0));
+  }, []);
+
   if (!ready) return null;
 
   return (
     <main className="welcome">
-      <header className="welcome-header">
-        <div className="welcome-buddy">
-          <Buddy state="idle" />
+      <Progress step={step} />
+      <div key={step} className="welcome-buddy">
+        <Buddy state={BUDDY_STATES[step] ?? "idle"} />
+      </div>
+      <section className="welcome-card">
+        <div key={step} className="welcome-step" data-direction={direction}>
+          {step === 0 && <HelloStep onNext={next} />}
+          {step === 1 && (
+            <SignInStep needsSignIn={local.needsSignIn} onNext={next} />
+          )}
+          {step === 2 && <SiteAccessStep onNext={next} />}
+          {step === 3 && <HowStep onNext={next} />}
+          {step === 4 && (
+            <CalendarStep
+              connected={local.calendarConnected}
+              needsSignIn={local.needsSignIn}
+              onNext={next}
+            />
+          )}
+          {step === 5 && <PinStep />}
         </div>
-        <h1>Welcome to Plover</h1>
-        <p>Plover is a small work buddy for your browser.</p>
-      </header>
-
-      <section>
-        <h2>Sign in</h2>
-        {local.needsSignIn ? <SignIn /> : <p>Signed in.</p>}
+        {step > 0 && (
+          <button
+            type="button"
+            className="plover-btn-text welcome-back"
+            onClick={back}
+          >
+            Back
+          </button>
+        )}
       </section>
-
-      <section>
-        <h2>What Plover does</h2>
-        <ul className="welcome-list">
-          <li>
-            Break a task into steps. Plover suggests them and you can edit every
-            one.
-          </li>
-          <li>
-            Run a Pomodoro timer. At the end of each work block, tick off the
-            step you finished.
-          </li>
-          <li>
-            Turn on Focus mode to block your distracting sites until the block
-            ends.
-          </li>
-          <li>
-            The buddy sits in a corner of the sites you allow, and never reads
-            the page.
-          </li>
-        </ul>
-      </section>
-
-      <section>
-        <h2>Site access</h2>
-        <SiteAccess />
-      </section>
-
-      <section>
-        <h2>Google Calendar (optional)</h2>
-        <p>
-          See your next event so a focus block doesn&apos;t run into a meeting.
-          Plover only reads your calendar.
+      {step === STEP_COUNT - 1 && (
+        <p className="welcome-privacy">
+          Your tasks stay on this device.{" "}
+          <a href={PRIVACY_POLICY_URL} target="_blank" rel="noreferrer">
+            Privacy policy
+          </a>
         </p>
-        <CalendarConnect
-          connected={local.calendarConnected}
-          needsSignIn={local.needsSignIn}
-        />
-      </section>
-
-      <section>
-        <h2>Pin Plover</h2>
-        <p>
-          Click the puzzle-piece icon in your browser&apos;s toolbar, then the pin
-          next to Plover. You can also press Alt+Shift+P to open it.
-        </p>
-      </section>
-
-      <section>
-        <h2>Privacy</h2>
-        <p>
-          Your tasks stay on this device. Plover does not read the pages you
-          visit or your browsing history.
-        </p>
-        <a href={PRIVACY_POLICY_URL} target="_blank" rel="noreferrer">
-          Read the privacy policy
-        </a>
-      </section>
+      )}
     </main>
   );
 }
