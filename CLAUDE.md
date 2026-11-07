@@ -66,8 +66,8 @@ a toolbar popup. The MVP is five simple features: task breakdown, Pomodoro,
 site/tab blocking, focus mode and read-only Google Calendar. Sign-in (Supabase)
 is required; tasks stay in `chrome.storage.local`, settings sync via
 `chrome.storage.sync`, and Gemini calls are proxied through `plover-server` to
-protect the developer API key. Launch is waitlist-only via an unlisted Chrome
-Web Store listing. The product lives in the `extension/` workspace package; the
+protect the developer API key. Launch is an unlisted Chrome Web Store listing
+with open sign-up (no waitlist gate). The product lives in the `extension/` workspace package; the
 Gemini backend `plover-server` is a separate repo.
 
 - **Product spec (current direction, extension):** [docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md](docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md) (filename kept for links)
