@@ -1,0 +1,65 @@
+name: Design doc
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+concurrency:
+  group: design-doc-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Design doc updated
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Check load-bearing paths
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # Make sure the opt-out label exists so authors can pick it from the sidebar.
+          gh label create no-design-change -R "$REPO" --color c5def5 \
+            --description "Touches a load-bearing path without changing docs/DESIGN.md (refactor or bug fix)" \
+            >/dev/null 2>&1 || true
+
+          changed=$(git diff --name-only "$BASE_SHA...$HEAD_SHA")
+          if grep -qx 'docs/DESIGN.md' <<< "$changed"; then
+            echo "docs/DESIGN.md is updated in this PR."
+            exit 0
+          fi
+
+          hits=$(grep -E '^extension/(manifest\.config\.ts|wxt\.config\.ts|src/worker/|src/entrypoints/background\.ts|src/entrypoints/content/|src/shared/(types|messages|storage)\.ts|src/features/[^/]+/worker\.ts)' <<< "$changed" || true)
+          if [ -z "$hits" ]; then
+            echo "No load-bearing paths changed."
+            exit 0
+          fi
+
+          if jq -e 'index("no-design-change")' <<< "$LABELS" >/dev/null; then
+            echo "Load-bearing paths changed, but the PR is labelled no-design-change:"
+            echo "$hits"
+            exit 0
+          fi
+
+          echo "::error::This PR changes load-bearing paths but not docs/DESIGN.md:"
+          echo "$hits"
+          echo
+          echo "Update the matching section of docs/DESIGN.md in this PR (state, messages, permissions,"
+          echo "hosts, surfaces, what the content script receives, user-visible behaviour)."
+          echo "If the design really doesn't change (a refactor or bug fix), add the"
+          echo "'no-design-change' label and say why in the PR description."
+          exit 1
