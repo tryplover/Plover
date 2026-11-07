@@ -62,6 +62,6 @@ export function savedTaskCaption(
   const done = task.steps.filter((s) => s.done).length;
   const steps = `${done} of ${task.steps.length} steps`;
   return task.parked
-    ? `${steps} · Block ${task.parked.blocksCompleted + 1} of ${blocksPerLongBreak}`
+    ? `${steps} · Block ${(task.parked.blocksCompleted % blocksPerLongBreak) + 1} of ${blocksPerLongBreak}`
     : steps;
 }

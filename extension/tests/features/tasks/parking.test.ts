@@ -165,4 +165,13 @@ describe("savedTaskCaption", () => {
       ),
     ).toBe("1 of 2 steps · Block 2 of 4");
   });
+
+  it("wraps the block position at the long-break cycle", () => {
+    expect(
+      savedTaskCaption(
+        task({ remainingMs: 1000, blocksCompleted: 5, parkedAt: 0 }),
+        4,
+      ),
+    ).toBe("1 of 2 steps · Block 2 of 4");
+  });
 });

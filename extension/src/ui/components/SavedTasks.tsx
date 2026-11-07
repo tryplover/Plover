@@ -30,11 +30,17 @@ export function SavedTasks({
   } | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [showDone, setShowDone] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pending = useRef<{
+    taskId: string;
+    timer: ReturnType<typeof setTimeout>;
+  } | null>(null);
 
   useEffect(
     () => () => {
-      if (timer.current) clearTimeout(timer.current);
+      const p = pending.current;
+      if (!p) return;
+      clearTimeout(p.timer);
+      void sendCommand({ type: "task/delete", taskId: p.taskId });
     },
     [],
   );
@@ -54,20 +60,30 @@ export function SavedTasks({
     else resume(task);
   }
 
+  function commitDelete() {
+    const p = pending.current;
+    if (!p) return;
+    clearTimeout(p.timer);
+    pending.current = null;
+    void sendCommand({ type: "task/delete", taskId: p.taskId });
+  }
+
   function startDelete(task: Task) {
-    if (timer.current) clearTimeout(timer.current);
+    commitDelete();
     setMenuId(null);
     setDeleting(task.id);
-    timer.current = setTimeout(() => {
-      timer.current = null;
-      setDeleting(null);
-      void sendCommand({ type: "task/delete", taskId: task.id });
-    }, UNDO_MS);
+    pending.current = {
+      taskId: task.id,
+      timer: setTimeout(() => {
+        commitDelete();
+        setDeleting(null);
+      }, UNDO_MS),
+    };
   }
 
   function undoDelete() {
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = null;
+    if (pending.current) clearTimeout(pending.current.timer);
+    pending.current = null;
     setDeleting(null);
   }
 
@@ -134,7 +150,10 @@ export function SavedTasks({
                   className="plover-btn-text"
                   onClick={() => {
                     setMenuId(null);
-                    void sendCommand({ type: "task/markDone", taskId: task.id });
+                    void sendCommand({
+                      type: "task/markDone",
+                      taskId: task.id,
+                    });
                   }}
                 >
                   Mark done
