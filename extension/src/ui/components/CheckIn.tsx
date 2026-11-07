@@ -5,11 +5,12 @@ export function CheckIn({ task }: { task: Task | undefined }) {
   const open = task?.steps.filter((s) => !s.done) ?? [];
   return (
     <div className="plover-checkin" role="group" aria-label="Check-in">
-      <p>Which step did you finish?</p>
+      <p className="plover-heading">Which step did you finish?</p>
       {open.map((s) => (
         <button
           key={s.id}
           type="button"
+          className="plover-checkin-step"
           onClick={() =>
             void sendCommand({ type: "checkin/answer", stepId: s.id })
           }
@@ -19,6 +20,7 @@ export function CheckIn({ task }: { task: Task | undefined }) {
       ))}
       <button
         type="button"
+        className="plover-btn-text"
         onClick={() =>
           void sendCommand({ type: "checkin/answer", stepId: null })
         }

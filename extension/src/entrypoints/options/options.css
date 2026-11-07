@@ -7,7 +7,9 @@
   margin-bottom: 24px;
 }
 .options h2 {
-  font-size: 16px;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.35;
   margin: 0 0 8px;
 }
 .options .field {
@@ -25,6 +27,5 @@
   gap: 6px;
 }
 .options [role="alert"] {
-  color: #b3261e;
   margin: 4px 0;
 }

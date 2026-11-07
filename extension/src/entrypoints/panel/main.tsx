@@ -1,5 +1,6 @@
 import { createRoot } from "react-dom/client";
 import { Panel } from "@/ui/components/Panel";
+import "@/ui/base.css";
 import "./panel.css";
 
 const root = document.getElementById("root");

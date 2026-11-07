@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { sendCommand } from "@/shared/messages";
 import { remainingSeconds } from "@/features/timer/machine";
 import type { TimerState } from "@/features/timer/types";
@@ -18,20 +19,28 @@ export function formatClock(totalSeconds: number): string {
 export function TimerControls({
   timer,
   now,
+  buddy,
 }: {
   timer: TimerState;
   now: number;
+  buddy?: ReactNode;
 }) {
   const paused = timer.pausedAt !== null;
   return (
     <div className="plover-timer">
-      <p className="plover-phase">{PHASE_LABEL[timer.phase]}</p>
-      <p className="plover-clock" aria-live="off">
-        {formatClock(remainingSeconds(timer, now))}
-      </p>
+      <div className="plover-timer-row">
+        <div className="plover-timer-clock">
+          <p className="plover-clock" aria-live="off">
+            {formatClock(remainingSeconds(timer, now))}
+          </p>
+          <p className="plover-phase">{PHASE_LABEL[timer.phase]}</p>
+        </div>
+        {buddy}
+      </div>
       <div className="plover-row">
         <button
           type="button"
+          className="plover-btn-compact"
           onClick={() =>
             void sendCommand({ type: paused ? "timer/resume" : "timer/pause" })
           }
@@ -40,12 +49,14 @@ export function TimerControls({
         </button>
         <button
           type="button"
+          className="plover-btn-text"
           onClick={() => void sendCommand({ type: "timer/skip" })}
         >
           Skip
         </button>
         <button
           type="button"
+          className="plover-btn-text"
           onClick={() => void sendCommand({ type: "timer/stop" })}
         >
           Stop
