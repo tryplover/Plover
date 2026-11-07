@@ -36,6 +36,13 @@ export const DEFAULT_LOCAL: LocalState = {
 
 const SETTINGS_KEY = "settings";
 
+export function isSettingsChange(
+  changes: Record<string, unknown>,
+  area: string,
+): boolean {
+  return area === "sync" && SETTINGS_KEY in changes;
+}
+
 export async function getSettings(): Promise<Settings> {
   const stored = await browser.storage.sync.get(SETTINGS_KEY);
   return {
