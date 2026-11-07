@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { isBlockedUrl, normalizeDomain } from "@/features/blocking/domains";
+import {
+  isBlockedUrl,
+  normalizeDomain,
+  siteFromInput,
+} from "@/features/blocking/domains";
 
 describe("normalizeDomain", () => {
   it.each([
@@ -42,4 +46,29 @@ describe("isBlockedUrl", () => {
     expect(isBlockedUrl("chrome://newtab", ["newtab"])).toBe(false);
     expect(isBlockedUrl("garbage", ["youtube.com"])).toBe(false);
   });
+});
+
+describe("siteFromInput", () => {
+  it.each([
+    ["youtube", "youtube.com"],
+    ["  YouTube ", "youtube.com"],
+    ["reddit", "reddit.com"],
+    ["yt", "youtube.com"],
+    ["fb", "facebook.com"],
+    ["ig", "instagram.com"],
+    ["insta", "instagram.com"],
+    ["x", "x.com"],
+    ["youtube.com", "youtube.com"],
+    ["https://www.linkedin.com/feed", "linkedin.com"],
+    ["news.ycombinator.com", "news.ycombinator.com"],
+  ])("%s -> %s", (input, expected) => {
+    expect(siteFromInput(input)).toBe(expected);
+  });
+
+  it.each(["", "not a site", "a@b.com", "-bad-", "localhost:3000"])(
+    "rejects %j",
+    (input) => {
+      expect(siteFromInput(input)).toBeNull();
+    },
+  );
 });
