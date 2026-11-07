@@ -2,9 +2,11 @@ import { useState } from "react";
 import { browser } from "wxt/browser";
 import { conflictDuring } from "@/features/calendar/events";
 import { deriveBuddyState } from "@/features/buddy/buddy-state";
-import { findActiveTask, firstOpenStep } from "@/features/tasks/active-step";
+import { findActiveTask } from "@/features/tasks/active-step";
+import type { TimerPhase } from "@/features/timer/types";
 import { sendCommand } from "@/shared/messages";
 import type { CalendarEvent } from "@/shared/types";
+import { ActiveSteps } from "@/ui/components/ActiveSteps";
 import { CalendarNext, ConflictOffer } from "@/ui/components/CalendarNext";
 import { Buddy } from "@/ui/components/Buddy";
 import { CheckIn } from "@/ui/components/CheckIn";
@@ -14,6 +16,17 @@ import { TaskBreakdown } from "@/ui/components/TaskBreakdown";
 import { TimerControls } from "@/ui/components/TimerControls";
 import { useExtensionState } from "@/ui/hooks/useExtensionState";
 import "./Panel.css";
+
+function eyebrowFor(phase: TimerPhase, focusOn: boolean): string {
+  switch (phase) {
+    case "idle":
+      return "Plover · Today";
+    case "work":
+      return focusOn ? "Focus · Work block" : "Work block";
+    default:
+      return "Break";
+  }
+}
 
 export function Panel({ surface }: { surface: "popup" | "buddy" }) {
   const { local, settings, now, ready } = useExtensionState();
@@ -86,15 +99,7 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
   const showSignIn = local.needsSignIn && idle;
   const nudge =
     local.transient.nudgeUntil > now ? local.transient.nudgeText : null;
-  const currentStep = firstOpenStep(activeTask);
-  const eyebrow =
-    local.timer.phase === "idle"
-      ? "Plover · Today"
-      : local.timer.phase === "work"
-        ? local.focus.on
-          ? "Focus · Work block"
-          : "Work block"
-        : "Break";
+  const eyebrow = eyebrowFor(local.timer.phase, local.focus.on);
   const body = (
     <>
       {nudge && <p className="plover-nudge">{nudge}</p>}
@@ -129,38 +134,7 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
       ) : (
         <>
           {activeTask && <p className="plover-task">{activeTask.title}</p>}
-          {activeTask && activeTask.steps.length > 0 && (
-            <ul className="plover-steps">
-              {activeTask.steps.map((s) => (
-                <li
-                  key={s.id}
-                  className={
-                    "plover-step" +
-                    (s.id === currentStep?.id ? " plover-step-current" : "") +
-                    (s.done ? " plover-step-done" : "")
-                  }
-                >
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={s.done}
-                      onChange={() =>
-                        void sendCommand({
-                          type: "step/toggle",
-                          taskId: activeTask.id,
-                          stepId: s.id,
-                        })
-                      }
-                    />
-                    {s.title}
-                  </label>
-                  {s.id === currentStep?.id && (
-                    <span className="plover-now">Now</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
+          {activeTask && <ActiveSteps task={activeTask} />}
           <TimerControls
             timer={local.timer}
             now={now}
