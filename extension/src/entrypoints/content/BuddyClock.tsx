@@ -11,10 +11,14 @@ export function BuddyClock({
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    if (clock.pausedAt !== null) return;
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [clock.pausedAt]);
+    const sync = () => setNow(Date.now());
+    const first = setTimeout(sync, 0);
+    const id = clock.pausedAt === null ? setInterval(sync, 1000) : undefined;
+    return () => {
+      clearTimeout(first);
+      clearInterval(id);
+    };
+  }, [clock.pausedAt, clock.phaseEndsAt]);
 
   const seconds = remainingSeconds({ ...clock, blocksCompleted: 0 }, now);
   const label = seconds >= 60 ? String(Math.ceil(seconds / 60)) : `${seconds}s`;
