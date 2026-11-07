@@ -10,7 +10,7 @@ import {
   tick,
 } from "@/features/timer/machine";
 import type { TimerEvent, TimerTransition } from "@/features/timer/types";
-import type { Session } from "@/shared/types";
+import { bookkeep } from "@/features/timer/bookkeeping";
 import { onAlarm } from "@/worker/alarms";
 import { updateBadge } from "@/features/timer/badge";
 import { registerHandler } from "@/worker/controller";
@@ -51,39 +51,22 @@ export async function applyTransition(
       getLocal("transient"),
     ]);
 
-  const completedBlock = t.events.some(
-    (e) => e.type === "work-block-completed",
+  const book = bookkeep(
+    prev,
+    t,
+    { phaseStartedAt, activeTaskId, sessions, transient },
+    nowMs,
+    () => crypto.randomUUID(),
   );
-  const stopped = t.events.some((e) => e.type === "stopped");
-  const nextSessions = [...sessions];
-  if (prev.phase === "work" && t.state.phase !== "work") {
-    const session: Session = {
-      id: crypto.randomUUID(),
-      taskId: activeTaskId,
-      phase: "work",
-      startedAt: phaseStartedAt ?? nowMs,
-      endedAt: completedBlock ? prev.phaseEndsAt : (prev.pausedAt ?? nowMs),
-      completed: completedBlock,
-    };
-    nextSessions.push(session);
-  }
 
   await setLocal({
     timer: t.state,
-    phaseStartedAt:
-      t.state.phase === "idle"
-        ? null
-        : t.events.some((e) => e.type === "phase-started")
-          ? nowMs
-          : phaseStartedAt,
-    sessions: nextSessions,
-    transient: completedBlock
-      ? { ...transient, checkInPending: true }
-      : stopped
-        ? { ...transient, checkInPending: false }
-        : transient,
+    phaseStartedAt: book.phaseStartedAt,
+    sessions: book.sessions,
+    transient: book.transient,
   });
-  if (stopped) await browser.notifications.clear(CHECKIN_NOTIFICATION);
+  if (t.events.some((e) => e.type === "stopped"))
+    await browser.notifications.clear(CHECKIN_NOTIFICATION);
 
   if (t.state.phase === "idle" || t.state.pausedAt !== null) {
     await browser.alarms.clear(PHASE_ALARM);
