@@ -1,5 +1,6 @@
 import { browser } from "wxt/browser";
 import { isBuddyVisible } from "@/features/buddy/visibility";
+import { parkedFrom } from "@/features/tasks/parking";
 import { getLocal, getSettings, setLocal, timerConfig } from "@/shared/storage";
 import {
   pauseTimer,
@@ -140,8 +141,7 @@ export function registerTimerHandlers(): void {
 
   registerHandler("timer/stop", async () => {
     const now = Date.now();
-    await settleOverdue(now);
-    await applyTransition(stopTimer(await getLocal("timer")), now);
+    await stopAndPark(now);
     return { ok: true };
   });
 
@@ -158,6 +158,35 @@ async function settleOverdue(now: number): Promise<boolean> {
   if (t.events.length === 0) return false;
   await applyTransition(t, now);
   return true;
+}
+
+export async function stopAndPark(now: number): Promise<void> {
+  await settleOverdue(now);
+  const config = timerConfig(await getSettings());
+  const [timer, activeTaskId, tasks, before] = await Promise.all([
+    getLocal("timer"),
+    getLocal("activeTaskId"),
+    getLocal("tasks"),
+    getLocal("transient"),
+  ]);
+  await applyTransition(stopTimer(timer), now);
+  if (before.checkInPending && (before.checkInTaskId ?? activeTaskId)) {
+    await setLocal({
+      transient: { ...(await getLocal("transient")), checkInPending: true },
+    });
+  }
+  await setLocal({
+    activeTaskId: null,
+    tasks: tasks.map((t) =>
+      t.id !== activeTaskId
+        ? t
+        : {
+            ...t,
+            parked: t.doneAt === null ? parkedFrom(timer, config, now) : null,
+            lastActiveAt: now,
+          },
+    ),
+  });
 }
 
 export async function reconcileTimer(): Promise<void> {
