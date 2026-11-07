@@ -20,7 +20,7 @@ Gamification and more come later. Your tasks stay in your browser; only your
 settings sync (through your browser's own sync), and only step-suggestion
 requests leave it, proxied through the hosted backend.
 
-> **Status.** Plover is a Chrome (Chromium) extension. The earlier Electron desktop app was deleted on 2026-10-26; see the [product spec](docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md). Launch is an unlisted Chrome Web Store listing linked from tryplover.com, with open sign-up. The Gemini proxy lives in the standalone [plover-server](https://github.com/tryplover/plover-server) repo on Google Cloud Run (see [GCP & GitHub Setup Details](docs/plans/gcp-setup-details.md)).
+> **Status.** Plover is a Chrome (Chromium) extension. The earlier Electron desktop app was deleted on 2026-10-26; see the [design doc](docs/DESIGN.md). Launch is an unlisted Chrome Web Store listing linked from tryplover.com, with open sign-up. The Gemini proxy lives in the standalone [plover-server](https://github.com/tryplover/plover-server) repo on Google Cloud Run (see [GCP & GitHub Setup Details](docs/plans/gcp-setup-details.md)).
 
 ## Quickstart
 
@@ -62,7 +62,7 @@ eslint+prettier on staged files at commit time.
 .
 ├── CLAUDE.md                       # context for Claude sessions
 ├── README.md                       # ← you are here
-├── docs/superpowers/specs/         # product spec and history
+├── docs/DESIGN.md                  # the design doc: product, architecture, features, planned work
 ├── reports/, research_notes/       # background research
 ├── .github/                        # CI workflow, Dependabot, PR template
 └── extension/                      # the Chromium MV3 extension (WXT + React)
@@ -70,9 +70,9 @@ eslint+prettier on staged files at commit time.
 
 ## Documentation
 
-- **[Product spec](docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md)** —
-  current direction: the browser buddy, its MVP features, the extension
-  architecture, and what was carried over from the deleted Electron app
+- **[Design doc](docs/DESIGN.md)** — the one source of truth: product
+  scope, system architecture and rules, how each feature works, and what's
+  planned. Read it before building a feature; update it when the design changes
 - **[Original product spec](docs/archive/specs/2026-05-24-task-tracker-agent-product-spec.md)** —
   superseded; kept for history
 - **[Research](reports/)** — progress-visibility motivation evidence and the

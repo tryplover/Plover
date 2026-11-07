@@ -6,9 +6,10 @@ context, conventions, and known footguns.
 
 ## How to work in this repo (read this first)
 
-1. **Spec is authoritative.** The
-   [desktop buddy pivot spec](docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md)
-   defines current product scope and the extension architecture (§6). Do not scope-creep beyond the pivot's v1.
+1. **The design doc is authoritative.** [docs/DESIGN.md](docs/DESIGN.md) is
+   the one design doc: product scope, system architecture and its rules,
+   how each feature works, and planned work. Do not scope-creep beyond it.
+   There are no per-feature spec files; don't create them.
 2. **Footgun knowledge is a contract.** If you hit an error, surprise, or
    wrong-first-attempt that a future Claude could avoid, capture it **before
    reporting completion** — but NOT in this file. Add it to the most relevant
@@ -26,7 +27,7 @@ context, conventions, and known footguns.
    stays focused on design, dispatch, and review.
 4. **Verify before claiming.** Run `pnpm typecheck && pnpm lint && pnpm test`
    from the repo root and confirm green output before saying anything is done.
-5. **Use the docs to avoid re-reading code.** This file + the pivot spec
+5. **Use the docs to avoid re-reading code.** This file + `docs/DESIGN.md`
    should be enough to start a session. Open code only when you need a specific
    detail.
 
@@ -38,7 +39,27 @@ For any non-trivial changes, follow this structured cycle:
 - **Delegate implementation** → Dispatch Haiku subagent(s) (or Sonnet/Opus for tricky tasks) to implement the plan, using one agent per independent task. Use the `subagent-driven-development` / `executing-plans` flow.
 - **Review + verify** → The orchestrator reviews the subagent diffs and runs `pnpm typecheck && pnpm lint && pnpm test` before claiming completion.
 
-Note: `docs/plans/` contains _generated implementation plans_ used as input to subagents. It is distinct from `docs/superpowers/specs/`, which remains the authoritative product and phase specification.
+Note: `docs/plans/` contains _generated implementation plans_ used as input to subagents. They are short-lived: delete a plan in the PR that finishes its work, and move anything worth keeping into `docs/DESIGN.md`.
+
+## Design-doc workflow (every feature)
+
+1. **Before:** read `docs/DESIGN.md` §1 (scope), §2 (architecture and rules) and
+   the section for the feature. If the feature isn't there, add it (a "Planned"
+   entry in §9 is enough to start) and build against it.
+2. **During:** if the change adds or changes state, a message/command, a
+   permission, an outbound host, a surface, what the content script receives,
+   or behaviour a user would notice, update the matching `docs/DESIGN.md`
+   section **in the same PR**. When a planned feature ships, move it from §9
+   into §4.
+3. **Review the diff against the doc** before claiming done, and have review
+   subagents do the same: architecture rules (§2.3), permissions/network/privacy
+   (§6), scope (§1.5), and whether the doc still describes the code. Report
+   anything the doc and the diff disagree on.
+4. **CI enforces it:** the `Design doc` check fails a PR that touches a
+   load-bearing path (manifest, worker, background/content entrypoints,
+   shared types/messages/storage, `features/*/worker.ts`) without touching
+   `docs/DESIGN.md`. For a refactor or bug fix that doesn't change the design,
+   add the `no-design-change` label and say why in the PR.
 
 ## Prefer stacked PRs
 
@@ -70,7 +91,7 @@ protect the developer API key. Launch is an unlisted Chrome Web Store listing
 with open sign-up (no waitlist gate). The product lives in the `extension/` workspace package; the
 Gemini backend `plover-server` is a separate repo.
 
-- **Product spec (current direction, extension):** [docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md](docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md) (filename kept for links)
+- **Design doc (source of truth):** [docs/DESIGN.md](docs/DESIGN.md)
 - **Original product spec (superseded):** [docs/archive/specs/2026-05-24-task-tracker-agent-product-spec.md](docs/archive/specs/2026-05-24-task-tracker-agent-product-spec.md)
 - **Background research:** [reports/](reports/) and [research_notes/](research_notes/)
 
@@ -90,12 +111,13 @@ invent art.
 ├── .github/
 │   ├── workflows/ci.yml            # typecheck + lint + test+coverage
 │   ├── workflows/release.yml       # tag vX.Y.Z → zip → GitHub release → Web Store
+│   ├── workflows/design-doc.yml    # fails PRs touching load-bearing paths without docs/DESIGN.md
 │   ├── dependabot.yml              # weekly npm + actions updates
 │   └── PULL_REQUEST_TEMPLATE.md
 ├── docs/
 │   ├── RUNNING.md, RELEASING.md    # run locally; cut a store release
 │   ├── plans/                      # generated implementation plans (input to subagents)
-│   ├── superpowers/specs/          # 2026-10-02-desktop-buddy-pivot-spec.md (authoritative)
+│   ├── DESIGN.md                   # the design doc (authoritative): product, architecture, features, planned
 │   └── archive/                    # desktop-era plans and specs, history only
 ├── reports/, research_notes/       # background research (progress visibility, competitors)
 └── extension/                      # Chromium MV3 extension (WXT + React), the product
@@ -135,7 +157,7 @@ walkthrough), see [docs/RUNNING.md](docs/RUNNING.md).
 
 ## Architecture rules (load-bearing)
 
-These are not style preferences (spec §6). Violating them defeats the point of
+These are not style preferences (`docs/DESIGN.md` §2.3). Violating them defeats the point of
 the design.
 
 - **The background service worker owns all state** (timer, focus, blocking,
@@ -175,7 +197,7 @@ the design.
 MVP principle: simple and not reliant on AI. Timer, blocking and focus work
 without a model call; Gemini only suggests steps during task breakdown.
 
-**In the MVP** (spec §4; no extension roadmap written yet — the desktop
+**In the MVP** (`docs/DESIGN.md` §1.5 and §4; planned work is §9 — the desktop
 [mvp-five-features-roadmap](docs/archive/plans/mvp-five-features-roadmap.md) is superseded):
 
 - Floating buddy on every page (content script, Shadow DOM) plus a toolbar
@@ -192,7 +214,7 @@ without a model call; Gemini only suggests steps during task breakdown.
 
 **Not in the MVP:**
 
-- Stall nudge (dropped 2026-10-19; the focus-mode nudge in spec §4.5 stays),
+- Stall nudge (dropped 2026-10-19; the focus-mode nudge in DESIGN §4.7 stays),
   gamification (planned next, after launch)
 - Reading page content or browsing history, screen capture, blocking outside
   the browser
