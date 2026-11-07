@@ -5,6 +5,7 @@ import { formatClock } from "@/ui/components/TimerControls";
 import { Buddy } from "@/ui/components/Buddy";
 import { deriveBuddyState } from "@/features/buddy/buddy-state";
 import { useExtensionState } from "@/ui/hooks/useExtensionState";
+import { applyStoredTheme } from "@/ui/theme";
 import "@/ui/base.css";
 import "./blocked.css";
 
@@ -39,6 +40,7 @@ function Blocked() {
   );
 }
 
+applyStoredTheme();
 const root = document.getElementById("root");
 if (root) {
   createRoot(root).render(<Blocked />);

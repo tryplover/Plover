@@ -71,7 +71,7 @@ Web Store listing. The product lives in the `extension/` workspace package; the
 Gemini backend `plover-server` is a separate repo.
 
 - **Product spec (current direction, extension):** [docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md](docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md) (filename kept for links)
-- **Original product spec (superseded):** [docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md](docs/superpowers/specs/2026-05-24-task-tracker-agent-product-spec.md)
+- **Original product spec (superseded):** [docs/archive/specs/2026-05-24-task-tracker-agent-product-spec.md](docs/archive/specs/2026-05-24-task-tracker-agent-product-spec.md)
 - **Background research:** [reports/](reports/) and [research_notes/](research_notes/)
 
 The character design and animations are being designed separately and are
@@ -89,18 +89,19 @@ invent art.
 ├── .husky/pre-commit               # runs lint-staged
 ├── .github/
 │   ├── workflows/ci.yml            # typecheck + lint + test+coverage
+│   ├── workflows/release.yml       # tag vX.Y.Z → zip → GitHub release → Web Store
 │   ├── dependabot.yml              # weekly npm + actions updates
 │   └── PULL_REQUEST_TEMPLATE.md
 ├── docs/
+│   ├── RUNNING.md, RELEASING.md    # run locally; cut a store release
 │   ├── plans/                      # generated implementation plans (input to subagents)
-│   └── superpowers/specs/          # pivot spec (authoritative) + history
-│       ├── 2026-10-02-desktop-buddy-pivot-spec.md   # current direction
-│       └── 2026-05-24-task-tracker-agent-product-spec.md  # superseded
+│   ├── superpowers/specs/          # 2026-10-02-desktop-buddy-pivot-spec.md (authoritative)
+│   └── archive/                    # desktop-era plans and specs, history only
 ├── reports/, research_notes/       # background research (progress visibility, competitors)
 └── extension/                      # Chromium MV3 extension (WXT + React), the product
-    ├── src/entrypoints/            # thin WXT entrypoints: background.ts, content/, popup/, options/, panel/, blocked/
+    ├── src/entrypoints/            # thin WXT entrypoints: background.ts, content/, popup/, options/, panel/, blocked/, welcome/
     ├── src/worker/                 # service-worker infra: controller, queue, alarms, reconcile, state-port
-    ├── src/features/<name>/        # timer, tasks, auth, blocking, focus, calendar, buddy: pure logic + worker.ts handlers
+    ├── src/features/<name>/        # timer, tasks, auth, blocking, focus, calendar, buddy, site-access: pure logic + worker.ts handlers
     ├── src/shared/                 # cross-context: types, storage, messages, reconnect, host, with-timeout
     ├── src/ui/{components,hooks}/  # React views shared by popup, panel and options
     └── tests/                      # mirrors src/ (tests/worker, tests/features/<name>, tests/shared)
@@ -116,6 +117,7 @@ All commands run from the **repo root**. The root scripts delegate into
 | `pnpm install`                          | Install everything + run husky `prepare`                 |
 | `pnpm dev`                              | WXT dev mode (writes `extension/.output/chrome-mv3-dev`) |
 | `pnpm build`                            | Production build (writes `extension/.output/chrome-mv3`) |
+| `pnpm --filter ./extension run zip`     | Production build + store zip in `extension/.output/`     |
 | `pnpm typecheck`                        | `tsc --noEmit` on the extension                          |
 | `pnpm lint`                             | ESLint on the extension                                  |
 | `pnpm test`                             | Vitest run (no coverage)                                 |
@@ -159,10 +161,11 @@ the design.
   No browsing-history logging.
 - **Backend API Proxy.** Outbound Gemini API calls are proxied through a secure backend server to protect developer API keys in production.
 
-- **Outbound HTTP allowlist:** `generativelanguage.googleapis.com`,
-  `www.googleapis.com`, `gmail.googleapis.com`, `calendar.googleapis.com`,
-  `classroom.googleapis.com`, `oauth2.googleapis.com`, `accounts.google.com`,
-  `api.github.com`. This is a documented constraint, not a runtime-enforced gate.
+- **Outbound HTTP allowlist:** the `plover-server` Cloud Run URL (task
+  breakdown), the project's `*.supabase.co` (sign-in), `accounts.google.com`
+  (Google OAuth via `launchWebAuthFlow`) and `www.googleapis.com` (Calendar
+  API). Fonts and assets are bundled. This is a documented constraint, not a
+  runtime-enforced gate.
 - **Never capture keystroke content.** Counts only.
 - **Never upload screenshots** anywhere except (later) Gemini Vision with
   explicit user consent surfaced in Settings.
@@ -173,7 +176,7 @@ MVP principle: simple and not reliant on AI. Timer, blocking and focus work
 without a model call; Gemini only suggests steps during task breakdown.
 
 **In the MVP** (spec §4; no extension roadmap written yet — the desktop
-[mvp-five-features-roadmap](docs/plans/mvp-five-features-roadmap.md) is superseded):
+[mvp-five-features-roadmap](docs/archive/plans/mvp-five-features-roadmap.md) is superseded):
 
 - Floating buddy on every page (content script, Shadow DOM) plus a toolbar
   popup with the same panel; drag to move, hide per site, hide everywhere,
@@ -189,7 +192,8 @@ without a model call; Gemini only suggests steps during task breakdown.
 
 **Not in the MVP:**
 
-- Stall nudge (dropped 2026-10-19), gamification (planned next, after launch)
+- Stall nudge (dropped 2026-10-19; the focus-mode nudge in spec §4.5 stays),
+  gamification (planned next, after launch)
 - Reading page content or browsing history, screen capture, blocking outside
   the browser
 - Firefox/Safari, voice input, multi-account, plugins, mobile
@@ -221,7 +225,9 @@ without a model call; Gemini only suggests steps during task breakdown.
   trigger (that's the only place the 60% gate can still block a merge); the
   `push: main` run does a plain `pnpm test` to avoid paying for
   coverage overhead on a run with no PR left to gate. Ubuntu-only for now (add
-  macOS/Windows when packaging matters).
+  macOS/Windows when packaging matters). Each `push: main` run also bumps the patch version and publishes the zip as a
+  GitHub pre-release; `store-weekly.yml` submits the newest one to the Web Store
+  every Monday (see `docs/RELEASING.md`).
 - **Pre-commit** runs `lint-staged` via husky → eslint --fix + prettier --write
   on staged `extension/**/*.{ts,tsx,json,md,yml,yaml,css,html}`.
 - **Coverage gate:** soft 60% (lines/branches/functions/statements) **only on**

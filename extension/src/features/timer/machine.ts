@@ -28,12 +28,14 @@ function beginPhase(
   blocksCompleted: number,
   config: TimerConfig,
   nowMs: number,
+  endBy?: number,
 ): { state: TimerState; event: TimerEvent } {
-  const seconds = plannedSeconds(phase, config);
+  const phaseEndsAt = endBy ?? nowMs + plannedSeconds(phase, config) * 1000;
+  const seconds = Math.ceil((phaseEndsAt - nowMs) / 1000);
   return {
     state: {
       phase,
-      phaseEndsAt: nowMs + seconds * 1000,
+      phaseEndsAt,
       blocksCompleted,
       pausedAt: null,
     },
@@ -49,8 +51,17 @@ function beginPhase(
 export function startTimer(
   config: TimerConfig,
   nowMs: number,
+  opts: { endBy?: number; blocksCompleted?: number } = {},
 ): TimerTransition {
-  const { state, event } = beginPhase("work", 0, config, nowMs);
+  const endBy =
+    opts.endBy !== undefined && opts.endBy > nowMs ? opts.endBy : undefined;
+  const { state, event } = beginPhase(
+    "work",
+    opts.blocksCompleted ?? 0,
+    config,
+    nowMs,
+    endBy,
+  );
   return { state, events: [event] };
 }
 

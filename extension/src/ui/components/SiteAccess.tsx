@@ -29,7 +29,7 @@ export function SiteAccess() {
   return (
     <button
       type="button"
-      className="plover-link"
+      className="plover-btn-text plover-link"
       onClick={() =>
         void browser.permissions.request({ origins: [origin] }).then(setGranted)
       }

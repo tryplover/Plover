@@ -7,6 +7,7 @@ import { sendCommand } from "@/shared/messages";
 import { Buddy } from "@/ui/components/Buddy";
 import { SignIn } from "@/ui/components/SignIn";
 import { useExtensionState } from "@/ui/hooks/useExtensionState";
+import { applyStoredTheme } from "@/ui/theme";
 import "@/ui/base.css";
 import "./welcome.css";
 
@@ -177,6 +178,7 @@ function Welcome() {
   );
 }
 
+applyStoredTheme();
 const root = document.getElementById("root");
 if (root) {
   createRoot(root).render(<Welcome />);

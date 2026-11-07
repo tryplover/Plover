@@ -1,0 +1,13 @@
+.signin {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.signin form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.plover-signin-google {
+  width: 100%;
+}

@@ -1,6 +1,12 @@
 import { browser } from "wxt/browser";
+import { showNudge } from "@/features/buddy/worker";
 import { findActiveTask, firstOpenStep } from "@/features/tasks/active-step";
-import { getLocal, getSettings, setLocal } from "@/shared/storage";
+import {
+  getLocal,
+  getSettings,
+  isSettingsChange,
+  setLocal,
+} from "@/shared/storage";
 import { onAlarm } from "@/worker/alarms";
 import {
   CALENDAR_HEADSUP_ALARM,
@@ -16,7 +22,15 @@ import {
 } from "@/features/timer/worker";
 
 const NUDGE_ALARM = "focus-nudge";
-const NUDGE_VISIBLE_MS = 60_000;
+
+async function scheduleFocusNudge(restart: boolean): Promise<void> {
+  const { focusNudgeMinutes } = await getSettings();
+  const alarm = await browser.alarms.get(NUDGE_ALARM);
+  if (!restart && alarm?.periodInMinutes === focusNudgeMinutes) return;
+  await browser.alarms.create(NUDGE_ALARM, {
+    periodInMinutes: focusNudgeMinutes,
+  });
+}
 
 async function setFocus(on: boolean, endBy?: number): Promise<void> {
   if (on) {
@@ -25,10 +39,7 @@ async function setFocus(on: boolean, endBy?: number): Promise<void> {
     else if (timer.pausedAt !== null) await resumeTimerNow();
     await setBlocking(true);
     await setLocal({ focus: { on: true, startedAt: Date.now() } });
-    const { focusNudgeMinutes } = await getSettings();
-    await browser.alarms.create(NUDGE_ALARM, {
-      periodInMinutes: focusNudgeMinutes,
-    });
+    await scheduleFocusNudge(true);
     await scheduleHeadsUp();
     return;
   }
@@ -40,12 +51,7 @@ async function setFocus(on: boolean, endBy?: number): Promise<void> {
 
 export async function reconcileFocus(): Promise<void> {
   if (!(await getLocal("focus")).on) return;
-  if (!(await browser.alarms.get(NUDGE_ALARM))) {
-    const { focusNudgeMinutes } = await getSettings();
-    await browser.alarms.create(NUDGE_ALARM, {
-      periodInMinutes: focusNudgeMinutes,
-    });
-  }
+  await scheduleFocusNudge(false);
   await scheduleHeadsUp();
 }
 
@@ -67,31 +73,19 @@ export function registerFocusHandlers(): void {
   onAlarm(NUDGE_ALARM, async () => {
     const timer = await getLocal("timer");
     if (timer.phase !== "work" || timer.pausedAt !== null) return;
-    const [tasks, activeTaskId, transient] = await Promise.all([
+    const [tasks, activeTaskId] = await Promise.all([
       getLocal("tasks"),
       getLocal("activeTaskId"),
-      getLocal("transient"),
     ]);
     const step = firstOpenStep(findActiveTask(tasks, activeTaskId));
-    await setLocal({
-      transient: {
-        ...transient,
-        nudgeText: step ? `Still on "${step.title}"?` : "Still on it?",
-        nudgeUntil: Date.now() + NUDGE_VISIBLE_MS,
-      },
-    });
+    await showNudge(step ? `Still on "${step.title}"?` : "Still on it?");
   });
 
   browser.storage.onChanged.addListener((changes, area) => {
-    if (area !== "sync" || !changes["settings"]) return;
+    if (!isSettingsChange(changes, area)) return;
     void enqueue(async () => {
       if (await getLocal("blockingOn")) await reapplyBlocking();
-      if ((await getLocal("focus")).on) {
-        const { focusNudgeMinutes } = await getSettings();
-        await browser.alarms.create(NUDGE_ALARM, {
-          periodInMinutes: focusNudgeMinutes,
-        });
-      }
+      if ((await getLocal("focus")).on) await scheduleFocusNudge(false);
     });
   });
 }

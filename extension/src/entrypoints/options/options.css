@@ -7,7 +7,9 @@
   margin-bottom: 24px;
 }
 .options h2 {
-  font-size: 16px;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.35;
   margin: 0 0 8px;
 }
 .options .field {
@@ -25,6 +27,63 @@
   gap: 6px;
 }
 .options [role="alert"] {
-  color: #b3261e;
   margin: 4px 0;
+}
+.options .domain-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+.options .domain-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  border-bottom: 1px solid var(--color-border-decorative);
+}
+.options .domain-list li:last-child {
+  border-bottom: none;
+}
+.options .domain-list .plover-btn-text {
+  height: 36px;
+  padding: 0 4px;
+}
+.options .segmented {
+  display: inline-flex;
+  border: 1.5px solid var(--color-border-control);
+  border-radius: var(--radius-control);
+  overflow: hidden;
+}
+.options .segment {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.options .segment + .segment {
+  border-left: 1.5px solid var(--color-border-control);
+}
+.options .segment:has(input:checked) {
+  background: var(--color-bg-quiet);
+}
+.options .segment:has(input:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -4px;
+}
+.options .segment input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  margin: 0;
+}
+.options .hint {
+  margin: 8px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
 }

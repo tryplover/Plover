@@ -1,6 +1,8 @@
 import { browser } from "wxt/browser";
 import { DecomposeError, suggestSteps } from "@/features/tasks/decompose";
-import { getLocal, setLocal } from "@/shared/storage";
+import { resumePlan } from "@/features/tasks/parking";
+import { startTimerNow, stopAndPark } from "@/features/timer/worker";
+import { getLocal, getSettings, setLocal, timerConfig } from "@/shared/storage";
 import { registerHandler } from "@/worker/controller";
 import { enqueue } from "@/worker/queue";
 
@@ -18,7 +20,8 @@ export function registerTaskHandlers(): void {
     }
   });
 
-  registerHandler("task/save", async ({ task }) => {
+  registerHandler("task/save", async ({ task: saved }) => {
+    const task = { ...saved, lastActiveAt: saved.lastActiveAt ?? Date.now() };
     const tasks = await getLocal("tasks");
     const exists = tasks.some((t) => t.id === task.id);
     await setLocal({
@@ -37,18 +40,17 @@ export function registerTaskHandlers(): void {
   registerHandler("step/toggle", async ({ taskId, stepId }) => {
     const tasks = await getLocal("tasks");
     let becameDone = false;
-    const next = tasks.map((t) =>
-      t.id !== taskId
-        ? t
-        : {
-            ...t,
-            steps: t.steps.map((s) => {
-              if (s.id !== stepId) return s;
-              becameDone = !s.done;
-              return { ...s, done: !s.done };
-            }),
-          },
-    );
+    const now = Date.now();
+    const next = tasks.map((t) => {
+      if (t.id !== taskId) return t;
+      const steps = t.steps.map((s) => {
+        if (s.id !== stepId) return s;
+        becameDone = !s.done;
+        return { ...s, done: !s.done };
+      });
+      const allDone = steps.length > 0 && steps.every((s) => s.done);
+      return { ...t, steps, doneAt: allDone ? (t.doneAt ?? now) : null };
+    });
     const patch: Parameters<typeof setLocal>[0] = { tasks: next };
     if (becameDone) {
       patch.transient = {
@@ -66,24 +68,86 @@ export function registerTaskHandlers(): void {
       getLocal("activeTaskId"),
       getLocal("transient"),
     ]);
+    const targetId = transient.checkInTaskId ?? activeTaskId;
+    const now = Date.now();
     const next =
       stepId === null
         ? tasks
-        : tasks.map((t) =>
-            t.id !== activeTaskId
-              ? t
-              : {
-                  ...t,
-                  steps: t.steps.map((s) =>
-                    s.id === stepId ? { ...s, done: true } : s,
-                  ),
-                },
-          );
+        : tasks.map((t) => {
+            if (t.id !== targetId) return t;
+            const steps = t.steps.map((s) =>
+              s.id === stepId ? { ...s, done: true } : s,
+            );
+            const allDone = steps.every((s) => s.done);
+            return { ...t, steps, doneAt: allDone ? (t.doneAt ?? now) : null };
+          });
     await setLocal({
       tasks: next,
-      transient: { ...transient, checkInPending: false },
+      transient: { ...transient, checkInPending: false, checkInTaskId: null },
     });
     await browser.notifications.clear("checkin");
+    return { ok: true };
+  });
+
+  registerHandler("task/park", async () => {
+    await stopAndPark(Date.now());
+    return { ok: true };
+  });
+
+  registerHandler("task/resume", async ({ taskId, endBy }) => {
+    const now = Date.now();
+    const found = (await getLocal("tasks")).find((t) => t.id === taskId);
+    if (!found || found.doneAt !== null) {
+      return { ok: false, error: "Task not found" };
+    }
+    if ((await getLocal("timer")).phase !== "idle") await stopAndPark(now);
+    const task =
+      (await getLocal("tasks")).find((t) => t.id === taskId) ?? found;
+    await setLocal({
+      activeTaskId: taskId,
+      tasks: (await getLocal("tasks")).map((t) =>
+        t.id === taskId ? { ...t, parked: null, lastActiveAt: now } : t,
+      ),
+    });
+    const plan = resumePlan(task, timerConfig(await getSettings()), now);
+    await startTimerNow(
+      endBy !== undefined && endBy > now
+        ? Math.min(plan.endBy, endBy)
+        : plan.endBy,
+      plan.blocksCompleted,
+    );
+    return { ok: true };
+  });
+
+  registerHandler("task/markDone", async ({ taskId }) => {
+    const now = Date.now();
+    await setLocal({
+      tasks: (await getLocal("tasks")).map((t) =>
+        t.id === taskId ? { ...t, doneAt: t.doneAt ?? now, parked: null } : t,
+      ),
+    });
+    if ((await getLocal("activeTaskId")) === taskId) await stopAndPark(now);
+    return { ok: true };
+  });
+
+  registerHandler("task/delete", async ({ taskId }) => {
+    if ((await getLocal("activeTaskId")) === taskId) {
+      await stopAndPark(Date.now());
+    }
+    const transient = await getLocal("transient");
+    await setLocal({
+      tasks: (await getLocal("tasks")).filter((t) => t.id !== taskId),
+      ...(transient.checkInTaskId === taskId && {
+        transient: { ...transient, checkInPending: false, checkInTaskId: null },
+      }),
+    });
+    return { ok: true };
+  });
+
+  registerHandler("task/clearDone", async () => {
+    await setLocal({
+      tasks: (await getLocal("tasks")).filter((t) => t.doneAt === null),
+    });
     return { ok: true };
   });
 }

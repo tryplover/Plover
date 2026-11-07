@@ -87,6 +87,22 @@ describe("auth/google", () => {
     expect(await getLocal("needsSignIn")).toBe(true);
   });
 
+  it("surfaces Supabase's error_description when the redirect carries one", async () => {
+    sb.signInWithOAuth.mockResolvedValue({
+      data: { url: "https://sb.example/authorize" },
+      error: null,
+    });
+    launchWebAuthFlow.mockResolvedValue(
+      `${REDIRECT}#error=server_error&error_description=Provider+misconfigured`,
+    );
+
+    expect(await dispatch({ type: "auth/google" })).toEqual({
+      ok: false,
+      error: "Provider misconfigured",
+    });
+    expect(sb.exchangeCodeForSession).not.toHaveBeenCalled();
+  });
+
   it("fails when the user cancels the flow", async () => {
     sb.signInWithOAuth.mockResolvedValue({
       data: { url: "https://sb.example/authorize" },

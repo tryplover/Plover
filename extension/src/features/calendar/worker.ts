@@ -1,4 +1,5 @@
 import { browser } from "wxt/browser";
+import { showNudge } from "@/features/buddy/worker";
 import {
   CalendarAuthError,
   fetchUpcoming,
@@ -18,7 +19,6 @@ export const CALENDAR_HEADSUP_ALARM = "calendar-headsup";
 const REFRESH_ALARM = "calendar-refresh";
 const REFRESH_MINUTES = 15;
 const HEADSUP_LEAD_MS = 5 * 60_000;
-const NUDGE_VISIBLE_MS = 60_000;
 
 async function clearConnection(): Promise<void> {
   await browser.alarms.clear(REFRESH_ALARM);
@@ -109,21 +109,14 @@ export function registerCalendarHandlers(): void {
   onAlarm(REFRESH_ALARM, refreshCalendar, { queued: false });
 
   onAlarm(CALENDAR_HEADSUP_ALARM, async () => {
-    const [focus, calendar, transient] = await Promise.all([
+    const [focus, calendar] = await Promise.all([
       getLocal("focus"),
       getLocal("calendar"),
-      getLocal("transient"),
     ]);
     if (!focus.on) return;
     const now = Date.now();
     const next = nextUpcoming(calendar.events, now);
     if (!next) return;
-    await setLocal({
-      transient: {
-        ...transient,
-        nudgeText: `${next.title} starts in 5 min`,
-        nudgeUntil: now + NUDGE_VISIBLE_MS,
-      },
-    });
+    await showNudge(`${next.title} starts in 5 min`, now);
   });
 }
