@@ -44,8 +44,8 @@ Alternative: Actions → Release → Run workflow, with a version (no leading `v
 ## One-time setup
 
 1. **GitHub secrets and variable** (Settings → Secrets and variables → Actions):
-   - Secrets: `WXT_SUPABASE_URL`, `WXT_SUPABASE_ANON_KEY`, `WXT_GOOGLE_CLIENT_ID`.
-   - Variable: `WXT_PLOVER_BACKEND_URL` = `https://plover-server-562340206018.us-central1.run.app`.
+   - Secrets: `SUPABASE_URL` and `SUPABASE_ANON_KEY` (already there from the Electron release workflow; the build passes them in as `WXT_SUPABASE_URL` / `WXT_SUPABASE_ANON_KEY`).
+   - Variables (Variables tab; not secret): `WXT_GOOGLE_CLIENT_ID` = `562340206018-d8m6t93hhbk6fkojbg1jvb5qah8bq5g9.apps.googleusercontent.com` and `WXT_PLOVER_BACKEND_URL` = `https://plover-server-562340206018.us-central1.run.app`.
 
    Use the same values as a production `extension/.env`. Never put the Supabase `service_role` key or the Google client secret here: everything in these ends up readable inside the shipped extension.
 
