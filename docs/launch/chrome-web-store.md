@@ -10,7 +10,7 @@ dashboard only the account owner can reach; everything else is in a repo.
       candidate revision, check its `/health`, then promote it to 100% traffic
       (command in the server README). The extension only calls
       `POST /api/decompose`.
-- [ ] **Website:** the privacy policy at `https://tryplover.com/privacy/policy`
+- [ ] **Website:** the privacy policy at `https://tryplover.com/privacy`
       describes optional site access (the store reviews it against the
       manifest). Terms at `https://tryplover.com/terms` describe the free
       extension.
@@ -22,33 +22,15 @@ dashboard only the account owner can reach; everything else is in a repo.
 
 ## 2. Production build
 
-Create `extension/.env.production` (git-ignored, like `.env`) with production
-values:
-
-| Variable | Value |
-| --- | --- |
-| `WXT_SUPABASE_URL` | the production Supabase project URL |
-| `WXT_SUPABASE_ANON_KEY` | its anon (publishable) key, never the service-role key |
-| `WXT_PLOVER_BACKEND_URL` | `https://plover-server-562340206018.us-central1.run.app` |
-| `WXT_GOOGLE_CLIENT_ID` | the Google OAuth **Web application** client ID used for Calendar |
-
-Then, from the repo root:
-
-```bash
-pnpm typecheck && pnpm lint && pnpm test
-```
-
-```bash
-pnpm --filter ./extension run zip
-```
-
-`wxt zip` builds for production and writes the upload zip to
-`extension/.output/` (named after the package and its version, `0.1.0`). Load
-`extension/.output/chrome-mv3` unpacked once and click through sign-in, task
-breakdown, a short focus block, blocking and Calendar before uploading.
-
-Bump `version` in `extension/package.json` for every later upload; the store
-rejects a version it has already seen.
+CI builds every version, so don't build or bump versions by hand. Each merge to
+`main` gets the next patch version and publishes the store zip as a GitHub
+pre-release, and the newest one is submitted to the store every Monday. For the
+first upload, download the zip from the newest pre-release on the
+[releases page](https://github.com/tryplover/Plover/releases). Load
+`chrome-mv3` unpacked once, and click through sign-in, task breakdown, a short
+focus block, blocking and Calendar before uploading. See
+[docs/RELEASING.md](../RELEASING.md) for the build values (repository secrets)
+and the release flow.
 
 ## 3. Extension ID and redirect URLs
 
@@ -74,7 +56,7 @@ and the ID of the store build differs from an unpacked build.
 shows an "unverified app" screen and caps it at 100 users.
 
 - [ ] App name "Plover", support email, logo, homepage `https://tryplover.com`,
-      privacy policy `https://tryplover.com/privacy/policy`, terms
+      privacy policy `https://tryplover.com/privacy`, terms
       `https://tryplover.com/terms`.
 - [ ] Authorised domain `tryplover.com`, verified in Google Search Console.
 - [ ] Scopes: `.../auth/calendar.readonly` only, with this justification:
@@ -152,7 +134,7 @@ buddy character that keeps you company.
 **Certifications:** data is not sold, not used or transferred for purposes
 unrelated to the single purpose, and not used for creditworthiness or lending.
 
-**Privacy policy URL:** `https://tryplover.com/privacy/policy`
+**Privacy policy URL:** `https://tryplover.com/privacy`
 
 ## 7. Submit
 

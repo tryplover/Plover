@@ -83,7 +83,7 @@ Alternative: Actions → Release → Run workflow, with a version (no leading `v
 
    Until `CHROME_EXTENSION_ID` is set, the store step is skipped with a warning and the workflow only builds and archives the zip.
 
-## Before the first public waitlist invite
+## Before the public launch
 
 - The privacy policy is live at `https://tryplover.com/privacy`.
 - Supabase uses custom SMTP (the built-in email is rate-limited to a few messages per hour).
