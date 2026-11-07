@@ -80,14 +80,17 @@ export async function applyTransition(
   }
 }
 
-export async function startTimerNow(endBy?: number): Promise<void> {
+export async function startTimerNow(
+  endBy?: number,
+  blocksCompleted?: number,
+): Promise<void> {
   const timer = await getLocal("timer");
   if (timer.phase !== "idle") return;
   const now = Date.now();
-  const t = startTimer(timerConfig(await getSettings()), now);
-  if (endBy !== undefined && endBy > now) {
-    t.state = { ...t.state, phaseEndsAt: endBy };
-  }
+  const t = startTimer(timerConfig(await getSettings()), now, {
+    endBy,
+    blocksCompleted,
+  });
   await applyTransition(t, now);
 }
 

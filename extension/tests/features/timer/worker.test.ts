@@ -273,6 +273,7 @@ describe("check-in cleanup", () => {
     await setLocal({
       transient: {
         checkInPending: true,
+        checkInTaskId: null,
         nudgeText: null,
         nudgeUntil: 0,
         celebrateUntil: 0,

@@ -6,6 +6,7 @@ import type { Session, Transient } from "@/shared/types";
 const NOW = 1_700_000_000_000;
 const TRANSIENT: Transient = {
   checkInPending: false,
+  checkInTaskId: null,
   nudgeText: "hi",
   nudgeUntil: 42,
   celebrateUntil: 7,
@@ -71,7 +72,11 @@ describe("bookkeep", () => {
         completed: true,
       },
     ]);
-    expect(out.transient).toEqual({ ...TRANSIENT, checkInPending: true });
+    expect(out.transient).toEqual({
+      ...TRANSIENT,
+      checkInPending: true,
+      checkInTaskId: "task-1",
+    });
     expect(out.phaseStartedAt).toBe(NOW);
   });
 
