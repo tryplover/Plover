@@ -1,24 +1,39 @@
 .plover-panel {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-  font-family: system-ui, sans-serif;
-  font-size: 14px;
+  gap: 16px;
+  padding: 16px 24px 24px;
   box-sizing: border-box;
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
 }
 .plover-surface-popup {
-  width: 320px;
+  width: 360px;
+  min-height: 100vh;
 }
-.plover-panel input[type="text"],
-.plover-panel input[type="email"],
-.plover-panel input[type="password"] {
-  width: 100%;
-  box-sizing: border-box;
+.plover-idle:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.plover-surface-buddy {
+  min-height: 100vh;
+  border: 1px solid var(--color-border-decorative);
+  border-radius: var(--radius-panel);
+  box-shadow: 0 16px 40px -12px rgba(36, 51, 41, 0.18);
+}
+.plover-panel p {
+  margin: 0;
+}
+.plover-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 .plover-row {
   display: flex;
-  gap: 6px;
+  align-items: center;
+  gap: 16px;
 }
 .plover-steps {
   list-style: none;
@@ -28,41 +43,154 @@
   flex-direction: column;
   gap: 4px;
 }
-.plover-steps li {
+.plover-task-row,
+.plover-step {
   display: flex;
+  align-items: center;
+  gap: 12px;
+  box-sizing: border-box;
+  min-height: 48px;
+  padding: 12px;
+  border-radius: var(--radius-control);
+}
+.plover-task-row {
   gap: 4px;
+  padding: 0;
+}
+.plover-task-row input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 12px;
+}
+.plover-step label {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 12px;
+}
+.plover-step-current {
+  background: var(--color-bg-quiet);
+}
+.plover-step-done label {
+  opacity: 0.7;
+}
+.plover-now {
+  font-size: 12px;
+  line-height: 1.5;
+  letter-spacing: 1.44px;
+  text-transform: uppercase;
+}
+.plover-icon-btn {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  text-decoration: none;
+}
+.plover-task {
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+.plover-timer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.plover-timer-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.plover-timer-clock {
+  flex: 1;
 }
 .plover-clock {
-  font-size: 36px;
+  font-size: 40px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.8px;
   font-variant-numeric: tabular-nums;
-  margin: 0;
 }
-.plover-phase,
-.plover-task {
-  margin: 0;
+.plover-phase {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.plover-buddy-large {
+  display: flex;
+  justify-content: center;
+}
+.plover-buddy-large .plover-buddy {
+  width: 120px;
+  height: auto;
+  aspect-ratio: 256 / 280;
+}
+.plover-buddy-small .plover-buddy {
+  width: 72px;
+  height: auto;
+  aspect-ratio: 256 / 280;
 }
 .plover-checkin {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
+.plover-checkin .plover-heading {
+  margin-bottom: 12px;
+}
+.plover-checkin-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-sizing: border-box;
+  width: 100%;
+  height: auto;
+  min-height: 48px;
+  padding: 12px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+.plover-checkin-step::before {
+  content: "";
+  flex: none;
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--color-border-control);
+  border-radius: 6px;
+}
+.plover-checkin-step:hover {
+  background: var(--color-bg-quiet);
+}
 .plover-link {
   align-self: flex-start;
-  background: none;
-  border: none;
   padding: 0;
-  text-decoration: underline;
-  cursor: pointer;
 }
-.plover-surface-buddy {
-  min-height: 100vh;
+.plover-conflict,
+.plover-nudge {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--radius-card);
+  background: var(--color-bg-quiet);
+  color: var(--color-text-primary);
+}
+.plover-conflict .plover-row {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.plover-conflict .plover-btn-compact {
+  height: auto;
+  min-height: 44px;
+  padding-top: 8px;
+  padding-bottom: 8px;
 }
 .plover-nudge {
-  margin: 0;
-  padding: 6px 10px;
-  border-radius: 8px;
-  background: #fbe7d4;
-}
-.plover-step-current {
-  font-weight: 600;
+  font-size: 16px;
+  line-height: 1.6;
 }

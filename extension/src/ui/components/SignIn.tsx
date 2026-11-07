@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { sendCommand, type CommandResult } from "@/shared/messages";
+import "./SignIn.css";
 
 export function SignIn() {
   const [mode, setMode] = useState<"signIn" | "signUp">("signIn");
@@ -41,6 +42,7 @@ export function SignIn() {
     <div className="signin">
       <button
         type="button"
+        className="plover-btn-compact plover-signin-google"
         disabled={busy}
         onClick={() => void run(() => sendCommand({ type: "auth/google" }))}
       >
@@ -69,6 +71,7 @@ export function SignIn() {
       </form>
       <button
         type="button"
+        className="plover-btn-text"
         disabled={busy}
         onClick={() => setMode(mode === "signIn" ? "signUp" : "signIn")}
       >
