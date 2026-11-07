@@ -9,6 +9,10 @@ export const GATED_COMMANDS: Command["type"][] = [
   "blocking/set",
   "task/decompose",
   "task/save",
+  "task/resume",
+  "task/markDone",
+  "task/delete",
+  "task/clearDone",
   "calendar/connect",
 ];
 
