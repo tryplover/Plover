@@ -45,6 +45,8 @@ Footguns specific to `extension/` (package `plover-extension`, WXT 0.21, Vitest 
 | `sed -i 's/.../'` fails "undefined label" on macOS | BSD sed takes the next arg as the backup suffix | `sed -i '' 's/.../'` or edit with a script |
 | ESLint `react-hooks/purity` "Cannot call impure function during render" on `useState(Date.now())` | The argument is evaluated on every render | Use a lazy initializer: `useState(() => Date.now())` |
 | Headless Playwright run shows no buddy on pages | Site access is an optional permission and the content script is registered only once it's granted; `--load-extension` grants nothing | Test against a copy of `.output/chrome-mv3` whose `manifest.json` adds `"host_permissions": ["<all_urls>"]` (never ship that) |
+| A one-off Playwright script fails to launch: the browser for its version (e.g. `chromium-1248`) isn't downloaded, and the download is blocked on the corporate network | Install `playwright` into the scratchpad with `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` and pass `executablePath` to the cached build under `~/Library/Caches/ms-playwright/chromium-*/…/Google Chrome for Testing`. Extensions need `launchPersistentContext` with `headless: false` + `--headless=new`, `--load-extension`; read the ID from the service worker URL |
+| A UI detail is invisible in the light theme but fine in dark | In light, `--color-bg-quiet` and `--color-border-decorative` are the same colour (`#d9cfb4`), so anything drawn in one on top of the other disappears. For marks on a quiet surface use `color-mix(in srgb, var(--color-text-primary) 18%, transparent)`, and screenshot both themes |
 
 ## Details
 
