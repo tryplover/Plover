@@ -1,7 +1,7 @@
 # Buddy on the desktop — brief (shared by all agents)
 
 ## Context
-Plover is a calm desktop work buddy for people with ADHD (spec: `docs/superpowers/specs/2026-10-02-desktop-buddy-pivot-spec.md`,
+Plover is a calm desktop work buddy for people with ADHD (spec: `docs/DESIGN.md`,
 §3 and §4). The buddy lives in a small, always-on-top, frameless window; it never blocks work, can be moved, minimised
 or dismissed. MVP features it hosts: task breakdown (steps), Pomodoro timer, site blocking, focus mode, read-only
 calendar. Tone: encouraging, never guilt-tripping. Feel: **calm, trustworthy, focused**, lightly playful.

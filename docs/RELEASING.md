@@ -62,7 +62,7 @@ Alternative: Actions → Release → Run workflow, with a version (no leading `v
    1. Run the Release workflow with store `none` (or push a tag).
    2. Download the zip from the GitHub release.
    3. In the developer dashboard, create a new item and upload the zip.
-   4. Fill in the listing: description, screenshots, privacy policy URL `https://tryplover.com/privacy`, and a justification for each permission and for optional all-sites access. The buddy draws itself and reads nothing on the page (spec §6.1).
+   4. Fill in the listing: description, screenshots, privacy policy URL `https://tryplover.com/privacy`, and a justification for each permission and for optional all-sites access. The buddy draws itself and reads nothing on the page (`docs/DESIGN.md` §4.2 and §6).
    5. Set **Visibility: Unlisted**, then submit for review.
    6. Copy the **extension ID** and the **publisher ID** from the dashboard.
 
