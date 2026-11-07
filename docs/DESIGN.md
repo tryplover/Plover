@@ -221,7 +221,15 @@ Opens in its own tab. Sections: timer lengths and nudge interval, blocklist, bud
 
 ### 4.12 Welcome page
 
-Opens once on install: sign in, what Plover does, site access (all sites), calendar (optional), pinning, privacy. Planned replacement: the step-by-step walkthrough in §9.5.
+Opens once on install as a six-step walkthrough, one idea per screen (`entrypoints/welcome/main.tsx` + `steps.tsx`):
+1. **Hello**: the buddy waves.
+2. **Sign in**: advances on its own 600 ms after signing in, but only if the user reached this step signed out.
+3. **Meet your buddy**: a browser mock; the buddy pops into its corner once all-sites access is granted. "Not now" falls back to per-site access.
+4. **How a session goes**: three rows slide in: break it down, focus for a block, tick off a step.
+5. **Calendar**: optional, with Skip.
+6. **You're all set**: a toolbar mock with a pulsing ring around the pinned buddy, and the privacy line. "Start my first task" closes the tab.
+
+Progress dots and a Back button; no jumping ahead, and the step isn't remembered across reloads. Content slides 24px and fades in (280 ms), direction-aware. Everything is instant under `prefers-reduced-motion`. Focus moves to each step's heading. Only existing tokens are used, so dark mode works.
 
 ---
 
@@ -292,10 +300,6 @@ Turning blocking or focus on with an empty blocklist opens an inline editor inst
 
 Grouped sections: **Focus** (steppers: work 5–90, breaks 1–30, nudge 5–60), **Blocking** (`BlockList`), **Where Plover appears** (§9.1), **Calendar** (connect; "Warn me before meetings" 5 / 10 / off as `settings.headsUpMinutes`, replacing the fixed 5-minute lead), **Appearance**, **Keyboard shortcut** (shows Alt+Shift+P, links to the shortcuts page), **Account**. Figma settings rows (label left, value right, 51px, divider). Desktop-era rows (Show on desktop, Sounds, 5 more minutes) are left out. Lands after 9.1 and 9.3 so it reuses their components.
 
-### 9.5 Onboarding walkthrough
-
-Replaces the single welcome page with six steps, one idea per screen, progress dots and a Back button: **Hello** (buddy waves) → **Sign in** (advances on its own) → **Meet your buddy** (a browser mock where the buddy pops into its corner when all-sites access is granted; "Not now" falls back to per-site) → **How a session goes** (three rows sliding in: break it down, focus for a block, tick off a step) → **Calendar** (optional, Skip) → **You're all set** (toolbar mock with a pulsing ring around the pinned buddy; "Start my first task" closes the tab). Content slides 24px and fades (280ms), direction-aware; all instant under reduced motion; focus moves to each step's heading. Only `entrypoints/welcome/*` changes. Plan: `docs/plans/onboarding-steps.md`.
-
 ---
 
 ## 10. Open questions
@@ -316,4 +320,4 @@ Replaces the single welcome page with six steps, one idea per screen, progress d
 - 2026-10-26: Electron app deleted.
 - 2026-10-27: site access becomes optional, requested on the welcome page.
 - 2026-11-05: waitlist gate dropped; sign-up open.
-- 2026-11-07: Figma styling, dark mode, saved tasks, settings in a tab, smarter site input, buddy clock; this doc replaces the pivot spec and per-feature design files.
+- 2026-11-07: Figma styling, dark mode, saved tasks, settings in a tab, smarter site input, buddy clock; this doc replaces the pivot spec and per-feature design files; the welcome page becomes a six-step walkthrough.

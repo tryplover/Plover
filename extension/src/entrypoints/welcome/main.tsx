@@ -1,179 +1,110 @@
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { browser } from "wxt/browser";
-import { ALL_SITES } from "@/features/site-access/origins";
 import { PRIVACY_POLICY_URL } from "@/shared/links";
-import { sendCommand } from "@/shared/messages";
+import type { BuddyAnimationState } from "@/shared/types";
 import { Buddy } from "@/ui/components/Buddy";
-import { SignIn } from "@/ui/components/SignIn";
 import { useExtensionState } from "@/ui/hooks/useExtensionState";
 import { applyStoredTheme } from "@/ui/theme";
+import {
+  CalendarStep,
+  HelloStep,
+  HowStep,
+  PinStep,
+  SignInStep,
+  SiteAccessStep,
+} from "./steps";
 import "@/ui/base.css";
 import "./welcome.css";
 
-function SiteAccess() {
-  const [granted, setGranted] = useState(false);
-  const [declined, setDeclined] = useState(false);
+const STEP_COUNT = 6;
+const BUDDY_STATES: BuddyAnimationState[] = [
+  "celebrating",
+  "idle",
+  "working",
+  "working",
+  "idle",
+  "celebrating",
+];
 
-  useEffect(() => {
-    let alive = true;
-    const refresh = () => {
-      void browser.permissions.contains({ origins: [ALL_SITES] }).then((ok) => {
-        if (alive) setGranted(ok);
-      });
-    };
-    refresh();
-    browser.permissions.onAdded.addListener(refresh);
-    browser.permissions.onRemoved.addListener(refresh);
-    return () => {
-      alive = false;
-      browser.permissions.onAdded.removeListener(refresh);
-      browser.permissions.onRemoved.removeListener(refresh);
-    };
-  }, []);
-
-  if (granted) {
-    return (
-      <p>
-        Plover is on your pages. You can change this in chrome://extensions any
-        time.
-      </p>
-    );
-  }
-
+function Progress({ step }: { step: number }) {
   return (
-    <>
-      <p>
-        The buddy floats in a corner of each page. It only draws itself and
-        reads nothing on the page.
-      </p>
-      <button
-        type="button"
-        onClick={() =>
-          void browser.permissions
-            .request({ origins: [ALL_SITES] })
-            .then((ok) => setDeclined(!ok))
-        }
-      >
-        Let Plover hang out on your pages
-      </button>
-      {declined && (
-        <p role="status">
-          No problem. The Plover popup can add it one site at a time.
-        </p>
-      )}
-    </>
-  );
-}
-
-function CalendarConnect({
-  connected,
-  needsSignIn,
-}: {
-  connected: boolean;
-  needsSignIn: boolean;
-}) {
-  const [error, setError] = useState<string | null>(null);
-
-  async function connect() {
-    setError(null);
-    const result = await sendCommand({ type: "calendar/connect" });
-    if (!result.ok) setError(result.error);
-  }
-
-  if (connected) return <p>Calendar connected.</p>;
-
-  return (
-    <>
-      <button
-        type="button"
-        disabled={needsSignIn}
-        onClick={() => void connect()}
-      >
-        Connect
-      </button>
-      {needsSignIn && <p>Sign in first.</p>}
-      {error && <p role="alert">{error}</p>}
-    </>
+    <div
+      className="welcome-progress"
+      role="group"
+      aria-label={`Step ${step + 1} of ${STEP_COUNT}`}
+    >
+      {Array.from({ length: STEP_COUNT }, (_, i) => (
+        <span
+          key={i}
+          aria-hidden="true"
+          className={
+            "welcome-dot" +
+            (i === step ? " welcome-dot--current" : "") +
+            (i < step ? " welcome-dot--done" : "")
+          }
+        />
+      ))}
+    </div>
   );
 }
 
 function Welcome() {
   const { local, ready } = useExtensionState();
+  const [step, setStep] = useState(0);
+  const [direction, setDirection] = useState<"forward" | "back">("forward");
+
+  const next = useCallback(() => {
+    setDirection("forward");
+    setStep((s) => Math.min(s + 1, STEP_COUNT - 1));
+  }, []);
+  const back = useCallback(() => {
+    setDirection("back");
+    setStep((s) => Math.max(s - 1, 0));
+  }, []);
+
   if (!ready) return null;
 
   return (
     <main className="welcome">
-      <header className="welcome-header">
-        <div className="welcome-buddy">
-          <Buddy state="idle" />
+      <Progress step={step} />
+      <div key={step} className="welcome-buddy">
+        <Buddy state={BUDDY_STATES[step] ?? "idle"} />
+      </div>
+      <section className="welcome-card">
+        <div key={step} className="welcome-step" data-direction={direction}>
+          {step === 0 && <HelloStep onNext={next} />}
+          {step === 1 && (
+            <SignInStep needsSignIn={local.needsSignIn} onNext={next} />
+          )}
+          {step === 2 && <SiteAccessStep onNext={next} />}
+          {step === 3 && <HowStep onNext={next} />}
+          {step === 4 && (
+            <CalendarStep
+              connected={local.calendarConnected}
+              needsSignIn={local.needsSignIn}
+              onNext={next}
+            />
+          )}
+          {step === 5 && <PinStep />}
         </div>
-        <h1>Welcome to Plover</h1>
-        <p>Plover is a small work buddy for your browser.</p>
-      </header>
-
-      <section>
-        <h2>Sign in</h2>
-        {local.needsSignIn ? <SignIn /> : <p>Signed in.</p>}
+        {step > 0 && (
+          <button
+            type="button"
+            className="plover-btn-text welcome-back"
+            onClick={back}
+          >
+            Back
+          </button>
+        )}
       </section>
-
-      <section>
-        <h2>What Plover does</h2>
-        <ul className="welcome-list">
-          <li>
-            Break a task into steps. Plover suggests them and you can edit every
-            one.
-          </li>
-          <li>
-            Run a Pomodoro timer. At the end of each work block, tick off the
-            step you finished.
-          </li>
-          <li>
-            Turn on Focus mode to block your distracting sites until the block
-            ends.
-          </li>
-          <li>
-            The buddy sits in a corner of the sites you allow, and never reads
-            the page.
-          </li>
-        </ul>
-      </section>
-
-      <section>
-        <h2>Site access</h2>
-        <SiteAccess />
-      </section>
-
-      <section>
-        <h2>Google Calendar (optional)</h2>
-        <p>
-          See your next event so a focus block doesn&apos;t run into a meeting.
-          Plover only reads your calendar.
+      {step === STEP_COUNT - 1 && (
+        <p className="welcome-privacy">
+          Your tasks stay on this device.{" "}
+          <a href={PRIVACY_POLICY_URL} target="_blank" rel="noreferrer">
+            Privacy policy
+          </a>
         </p>
-        <CalendarConnect
-          connected={local.calendarConnected}
-          needsSignIn={local.needsSignIn}
-        />
-      </section>
-
-      <section>
-        <h2>Pin Plover</h2>
-        <p>
-          Click the puzzle-piece icon in your browser&apos;s toolbar, then the pin
-          next to Plover. You can also press Alt+Shift+P to open it.
-        </p>
-      </section>
-
-      <section>
-        <h2>Privacy</h2>
-        <p>
-          Your tasks stay on this device. Plover does not read the pages you
-          visit or your browsing history.
-        </p>
-        <a href={PRIVACY_POLICY_URL} target="_blank" rel="noreferrer">
-          Read the privacy policy
-        </a>
-      </section>
+      )}
     </main>
   );
 }
