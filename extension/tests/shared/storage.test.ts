@@ -5,6 +5,7 @@ import {
   DEFAULT_SETTINGS,
   getLocal,
   getSettings,
+  isSettingsChange,
   setLocal,
   timerConfig,
   updateSettings,
@@ -59,5 +60,13 @@ describe("local state", () => {
     await setLocal({ activeTaskId: "t1", blockingOn: true });
     expect(await getLocal("activeTaskId")).toBe("t1");
     expect(await getLocal("blockingOn")).toBe(true);
+  });
+});
+
+describe("isSettingsChange", () => {
+  it("is true only for the settings key in sync storage", () => {
+    expect(isSettingsChange({ settings: {} }, "sync")).toBe(true);
+    expect(isSettingsChange({ settings: {} }, "local")).toBe(false);
+    expect(isSettingsChange({ timer: {} }, "sync")).toBe(false);
   });
 });
