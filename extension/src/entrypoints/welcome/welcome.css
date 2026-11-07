@@ -115,6 +115,10 @@
   color: var(--color-text-on-brand);
   font-size: 14px;
 }
+.welcome-step .plover-btn-text {
+  align-self: flex-start;
+  padding: 0;
+}
 .welcome-back {
   margin-top: 16px;
   padding: 0;
@@ -129,7 +133,7 @@
   max-width: 100%;
   aspect-ratio: 9 / 5;
   overflow: hidden;
-  border: 1px solid var(--color-border-decorative);
+  border: 1px solid color-mix(in srgb, var(--color-text-primary) 18%, transparent);
   border-radius: var(--radius-card);
   background: var(--color-bg-quiet);
 }
@@ -140,20 +144,20 @@
   box-sizing: border-box;
   height: 28px;
   padding: 0 10px;
-  border-bottom: 1px solid var(--color-border-decorative);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-text-primary) 18%, transparent);
 }
 .welcome-browser__dot {
   width: 8px;
   height: 8px;
   border-radius: var(--radius-pill);
-  background: var(--color-border-decorative);
+  background: color-mix(in srgb, var(--color-text-primary) 18%, transparent);
 }
 .welcome-browser__address {
   flex: 1;
   height: 14px;
   margin-left: 8px;
   border-radius: var(--radius-pill);
-  background: var(--color-border-decorative);
+  background: color-mix(in srgb, var(--color-text-primary) 18%, transparent);
 }
 .welcome-browser__page {
   display: flex;
@@ -164,7 +168,7 @@
 .welcome-browser__line {
   height: 8px;
   border-radius: var(--radius-pill);
-  background: var(--color-border-decorative);
+  background: color-mix(in srgb, var(--color-text-primary) 18%, transparent);
 }
 .welcome-browser__line--short {
   width: 60%;
@@ -243,7 +247,7 @@
   flex: 1;
   height: 20px;
   border-radius: var(--radius-pill);
-  background: var(--color-border-decorative);
+  background: color-mix(in srgb, var(--color-text-primary) 18%, transparent);
 }
 .welcome-toolbar__puzzle {
   font-size: 16px;
