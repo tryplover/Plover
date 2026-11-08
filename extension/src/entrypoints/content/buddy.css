@@ -20,6 +20,30 @@
   height: 28px;
   padding: 0;
 }
+.plover-buddy-menu button {
+  box-sizing: border-box;
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid
+    light-dark(rgba(47, 66, 54, 0.14), rgba(243, 238, 225, 0.16));
+  border-radius: 999px;
+  background: light-dark(#fffdf9, #2f4236);
+  color: light-dark(#2d2a26, #f3eee1);
+  font:
+    500 12px/1 system-ui,
+    sans-serif;
+  white-space: nowrap;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+}
+.plover-buddy-menu button:hover {
+  background: light-dark(#f1ece0, #3a5143);
+}
+.plover-buddy-menu button:focus-visible,
+.plover-bubble:focus-visible {
+  outline: 2px solid #5e7f6b;
+  outline-offset: 2px;
+}
 .plover-bubble {
   max-width: 220px;
   padding: 6px 10px;
