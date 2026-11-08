@@ -20,6 +20,7 @@ const UNQUEUED_COMMANDS: ReadonlySet<Command["type"]> = new Set([
   "auth/google",
   "auth/password",
   "auth/signOut",
+  "auth/handoff",
   "task/decompose",
   "calendar/connect",
 ]);

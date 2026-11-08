@@ -1,8 +1,11 @@
 import { useState, type FormEvent } from "react";
+import { browser } from "wxt/browser";
+import { CONNECT_URL } from "@/shared/links";
 import { sendCommand, type CommandResult } from "@/shared/messages";
 import "./SignIn.css";
 
 export function SignIn() {
+  const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"signIn" | "signUp">("signIn");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -42,41 +45,68 @@ export function SignIn() {
     <div className="signin">
       <button
         type="button"
-        className="plover-btn-compact plover-signin-google"
-        disabled={busy}
-        onClick={() => void run(() => sendCommand({ type: "auth/google" }))}
+        className="plover-btn-brand plover-signin-web"
+        onClick={() => void browser.tabs.create({ url: CONNECT_URL })}
       >
-        Continue with Google
+        Sign in on tryplover.com
       </button>
-      <form onSubmit={onSubmit}>
-        <input
-          type="email"
-          placeholder="Email"
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          autoComplete={mode === "signIn" ? "current-password" : "new-password"}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <button type="submit" disabled={busy}>
-          {mode === "signIn" ? "Sign in" : "Create account"}
-        </button>
-      </form>
+      <p className="signin-muted">
+        New to Plover? You can create your account there too.
+      </p>
       <button
         type="button"
-        className="plover-btn-text"
-        disabled={busy}
-        onClick={() => setMode(mode === "signIn" ? "signUp" : "signIn")}
+        className="plover-btn-text signin-toggle"
+        aria-expanded={open}
+        aria-controls="signin-fallback"
+        onClick={() => setOpen(!open)}
       >
-        {mode === "signIn" ? "Create an account" : "Have an account? Sign in"}
+        {open ? "Hide" : "Or sign in here"}
       </button>
+      {open && (
+        <div id="signin-fallback" className="signin-fallback">
+          <button
+            type="button"
+            className="plover-btn-compact plover-signin-google"
+            disabled={busy}
+            onClick={() => void run(() => sendCommand({ type: "auth/google" }))}
+          >
+            Continue with Google
+          </button>
+          <form onSubmit={onSubmit}>
+            <input
+              type="email"
+              placeholder="Email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              autoComplete={
+                mode === "signIn" ? "current-password" : "new-password"
+              }
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <button type="submit" disabled={busy}>
+              {mode === "signIn" ? "Sign in" : "Create account"}
+            </button>
+          </form>
+          <button
+            type="button"
+            className="plover-btn-text"
+            disabled={busy}
+            onClick={() => setMode(mode === "signIn" ? "signUp" : "signIn")}
+          >
+            {mode === "signIn"
+              ? "Create an account"
+              : "Have an account? Sign in"}
+          </button>
+        </div>
+      )}
       {error && <p role="alert">{error}</p>}
       {notice && <p role="status">{notice}</p>}
     </div>

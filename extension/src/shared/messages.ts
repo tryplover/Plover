@@ -25,6 +25,7 @@ export type Command =
       password: string;
     }
   | { type: "auth/signOut" }
+  | { type: "auth/handoff"; tokenHash: string }
   | { type: "focus/set"; on: boolean; endBy?: number }
   | { type: "blocking/set"; on: boolean }
   | { type: "calendar/connect" }
@@ -62,6 +63,7 @@ const COMMAND_TYPES: ReadonlySet<string> = new Set<Command["type"]>([
   "auth/google",
   "auth/password",
   "auth/signOut",
+  "auth/handoff",
   "focus/set",
   "blocking/set",
   "calendar/connect",
