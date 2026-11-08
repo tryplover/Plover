@@ -42,17 +42,14 @@ export function resumePlan(
 export function sortSavedTasks(
   tasks: Task[],
   activeTaskId: string | null,
-): { open: Task[]; done: Task[] } {
+): { open: Task[] } {
   const open = tasks
     .filter((t) => t.doneAt === null && t.id !== activeTaskId)
     .sort(
       (a, b) =>
         (b.lastActiveAt ?? b.createdAt) - (a.lastActiveAt ?? a.createdAt),
     );
-  const done = tasks
-    .filter((t) => t.doneAt !== null && t.id !== activeTaskId)
-    .sort((a, b) => (b.doneAt ?? 0) - (a.doneAt ?? 0));
-  return { open, done };
+  return { open };
 }
 
 export function savedTaskCaption(

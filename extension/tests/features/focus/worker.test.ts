@@ -7,6 +7,7 @@ vi.mock("@/features/auth/session", async (orig) => ({
   isSignedIn: async () => auth.signedIn,
 }));
 import { dispatch } from "@/worker/controller";
+import { registerTaskHandlers } from "@/features/tasks/worker";
 import { registerTimerHandlers } from "@/features/timer/worker";
 import { NUDGE_VISIBLE_MS } from "@/features/buddy/worker";
 import { reconcileFocus, registerFocusHandlers } from "@/features/focus/worker";
@@ -164,6 +165,28 @@ describe("focus mode", () => {
     expect(await getLocal("blockingOn")).toBe(false);
     expect((await getLocal("focus")).on).toBe(false);
     expect(await fakeBrowser.alarms.get("focus-nudge")).toBeUndefined();
+    expect(installed).toHaveLength(0);
+  });
+
+  it("marking the active task done ends focus and blocking", async () => {
+    await setLocal({
+      tasks: [
+        {
+          id: "t1",
+          title: "T",
+          steps: [],
+          createdAt: T0,
+          doneAt: null,
+        },
+      ],
+      activeTaskId: "t1",
+    });
+    registerTaskHandlers();
+    await dispatch({ type: "focus/set", on: true });
+    await dispatch({ type: "task/markDone", taskId: "t1" });
+    expect(await getLocal("blockingOn")).toBe(false);
+    expect((await getLocal("focus")).on).toBe(false);
+    expect((await getLocal("timer")).phase).toBe("idle");
     expect(installed).toHaveLength(0);
   });
 

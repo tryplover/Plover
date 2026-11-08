@@ -127,6 +127,22 @@ export function registerTaskHandlers(): void {
       ),
     });
     if ((await getLocal("activeTaskId")) === taskId) await stopAndPark(now);
+    await setLocal({
+      transient: {
+        ...(await getLocal("transient")),
+        celebrateUntil: Date.now() + CELEBRATE_MS,
+      },
+    });
+    return { ok: true };
+  });
+
+  registerHandler("task/reopen", async ({ taskId }) => {
+    const now = Date.now();
+    await setLocal({
+      tasks: (await getLocal("tasks")).map((t) =>
+        t.id === taskId ? { ...t, doneAt: null, lastActiveAt: now } : t,
+      ),
+    });
     return { ok: true };
   });
 

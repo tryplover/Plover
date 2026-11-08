@@ -127,20 +127,10 @@ describe("sortSavedTasks", () => {
     expect(open.map((t) => t.id)).toEqual(["old", "recent"]);
   });
 
-  it("keeps a done active task out of the done list", () => {
-    const { done } = sortSavedTasks(tasks, "doneLate");
-    expect(done.map((t) => t.id)).toEqual(["doneEarly"]);
-  });
-
-  it("excludes the active task from both lists", () => {
-    const { open, done } = sortSavedTasks(tasks, "running");
-    const ids = [...open, ...done].map((t) => t.id);
+  it("excludes the active task and done tasks", () => {
+    const { open } = sortSavedTasks(tasks, "running");
+    const ids = open.map((t) => t.id);
     expect(ids).not.toContain("running");
-  });
-
-  it("lists done tasks by finish time, latest first, outside the open list", () => {
-    const { open, done } = sortSavedTasks(tasks, null);
-    expect(done.map((t) => t.id)).toEqual(["doneLate", "doneEarly"]);
     expect(open.some((t) => t.doneAt !== null)).toBe(false);
   });
 });
