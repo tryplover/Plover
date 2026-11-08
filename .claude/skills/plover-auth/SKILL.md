@@ -21,6 +21,7 @@ Firestore token system was removed).
 | Tempted to add a second/parallel sign-in mechanism (separate token, separate OAuth client) | Don't. Supabase is the single identity system across the extension, `plover-website` and `plover-server`. Extend `extension/src/features/auth/` instead.                                                                                                                                                             |
 | Adding a backend endpoint that needs the caller's identity                                 | It arrives as `req.userId` (a Supabase UUID) once `authMiddleware` runs, the same id space as `plover-website`'s `profiles.id` / Stripe `client_reference_id`.                                                                                                                                                  |
 | `launchWebAuthFlow` sign-in or Calendar auth fails with a redirect mismatch                | The redirect `https://<extension-id>.chromiumapp.org/` must be registered in Supabase (Redirect URLs) and on the Google OAuth **Web application** client; see `docs/RUNNING.md` section "Chrome extension".                                                                                                     |
+| New auth command whose handler awaits `signedIn()` hangs (tests time out, later tests cascade) | `signedIn()` calls `enqueue`; a queued command awaiting it deadlocks. Add the command type to `UNQUEUED_COMMANDS` in `extension/src/worker/controller.ts` (as `auth/google`, `auth/password`, `auth/handoff`). |
 
 ## Details
 

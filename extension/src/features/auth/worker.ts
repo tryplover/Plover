@@ -53,6 +53,14 @@ export function registerAuthHandlers(): void {
     return signedIn();
   });
 
+  registerHandler("auth/handoff", async (cmd) => {
+    const { error } = await getSupabase().auth.verifyOtp({
+      token_hash: cmd.tokenHash,
+      type: "magiclink",
+    });
+    return error ? { ok: false, error: error.message } : signedIn();
+  });
+
   registerHandler("auth/signOut", async () => {
     try {
       await getSupabase().auth.signOut();

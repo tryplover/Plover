@@ -1,5 +1,10 @@
 import { browser } from "wxt/browser";
 import { isCommand } from "@/shared/messages";
+import {
+  isTrustedWebsiteSender,
+  parseExternalMessage,
+} from "@/features/auth/handoff";
+import { getLocal } from "@/shared/storage";
 import { registerAuthHandlers } from "@/features/auth/worker";
 import { registerCalendarHandlers } from "@/features/calendar/worker";
 import { openWelcome, registerSiteAccess } from "@/features/site-access/worker";
@@ -44,4 +49,26 @@ export default defineBackground(() => {
     void dispatch(message).then(sendResponse);
     return true;
   });
+
+  browser.runtime.onMessageExternal.addListener(
+    (message, sender, sendResponse) => {
+      if (!isTrustedWebsiteSender(sender, import.meta.env.DEV)) return false;
+      const parsed = parseExternalMessage(message);
+      if (!parsed) return false;
+      if (parsed.type === "ping") {
+        void (async () =>
+          sendResponse({
+            ok: true,
+            signedIn: !(await getLocal("needsSignIn")),
+            version: browser.runtime.getManifest().version,
+          }))();
+      } else {
+        void dispatch({
+          type: "auth/handoff",
+          tokenHash: parsed.tokenHash,
+        }).then(sendResponse);
+      }
+      return true;
+    },
+  );
 });

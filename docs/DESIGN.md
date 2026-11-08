@@ -209,6 +209,7 @@ One switch: starts or resumes the timer on the current task, turns blocking on f
 
 - Sign-in is required (Supabase: Google OAuth or email/password; open sign-up). Gated commands (`GATED_COMMANDS` in `features/auth/session.ts`) refuse with a sign-in prompt while `needsSignIn`.
 - The Supabase session lives in `storage.local` (worker and pages only). Calls to `plover-server` send `Authorization: Bearer <access_token>`; the server verifies it with the service-role key.
+- **Website handoff.** tryplover.com `/connect` signs the user in on the website, gets a one-time Supabase magic-link token hash from its `extension-handoff` Edge Function (no email is sent) and sends `{ type: "plover/handoff", tokenHash }` to the extension via `runtime.sendMessage`. The worker's `onMessageExternal` listener accepts it only from `https://tryplover.com` (dev builds also `http://localhost:5173`; exact origin match), validates the shape (`features/auth/handoff.ts`: hash is 1-512 chars of `[A-Za-z0-9_-]`) and dispatches `auth/handoff`, which calls `verifyOtp({ token_hash, type: "magiclink" })` to create the extension's own session and clear `needsSignIn`. `auth/handoff` is not gated. `{ type: "plover/ping" }` replies `{ ok, signedIn, version }` so the page can tell "installed" from "not installed or too old". Untrusted senders and malformed messages get no response. The website's tokens are never shared: Supabase rotates refresh tokens and revokes the session on reuse, so two clients cannot hold one session; the hash works once and expires.
 - The extension ships only the **publishable** Supabase key. The service-role key and the Google client secret never go in the extension or its build secrets.
 
 ### 4.10 Appearance
@@ -244,7 +245,7 @@ Progress dots and a Back button; no jumping ahead, and the step isn't remembered
 
 ## 6. Permissions, network and privacy
 
-**Permissions (install time):** `storage`, `alarms`, `activeTab`, `declarativeNetRequest`, `identity`, `notifications`, `scripting`. **Optional:** host access `<all_urls>`. Adding or widening any permission is a design change: update this section and justify it for store review.
+**Permissions (install time):** `storage`, `alarms`, `activeTab`, `declarativeNetRequest`, `identity`, `notifications`, `scripting`. **Optional:** host access `<all_urls>`. **`externally_connectable`:** `https://tryplover.com/*` only (dev builds add `http://localhost:5173/*`); it is a manifest key, not a permission, so there is no new install warning. Adding or widening any permission is a design change: update this section and justify it for store review.
 
 **Outbound hosts (documented allowlist):** the `plover-server` Cloud Run URL (step suggestions), the project's `*.supabase.co` (auth), `accounts.google.com` (OAuth), `www.googleapis.com` (Calendar). Fonts and assets are bundled. A new host is a design change.
 

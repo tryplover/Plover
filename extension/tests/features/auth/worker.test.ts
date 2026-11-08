@@ -7,6 +7,7 @@ const sb = vi.hoisted(() => ({
   signInWithPassword: vi.fn(),
   signUp: vi.fn(),
   signOut: vi.fn(),
+  verifyOtp: vi.fn(),
   getSession: vi.fn(),
 }));
 vi.mock("@supabase/supabase-js", () => ({
@@ -228,6 +229,28 @@ describe("auth/password", () => {
       password: "pw",
     });
     expect(r).toEqual({ ok: true, data: { confirmEmail: true } });
+    expect(await getLocal("needsSignIn")).toBe(true);
+  });
+});
+
+describe("auth/handoff", () => {
+  it("verifies the token hash as a magiclink and clears needsSignIn", async () => {
+    await setLocal({ needsSignIn: true });
+    sb.verifyOtp.mockResolvedValue({ error: null });
+    const r = await dispatch({ type: "auth/handoff", tokenHash: "abc_-1" });
+    expect(r).toEqual({ ok: true });
+    expect(sb.verifyOtp).toHaveBeenCalledWith({
+      token_hash: "abc_-1",
+      type: "magiclink",
+    });
+    expect(await getLocal("needsSignIn")).toBe(false);
+  });
+
+  it("returns the error and stays signed out", async () => {
+    await setLocal({ needsSignIn: true });
+    sb.verifyOtp.mockResolvedValue({ error: { message: "Token has expired" } });
+    const r = await dispatch({ type: "auth/handoff", tokenHash: "abc" });
+    expect(r).toEqual({ ok: false, error: "Token has expired" });
     expect(await getLocal("needsSignIn")).toBe(true);
   });
 });
