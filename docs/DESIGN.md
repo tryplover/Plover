@@ -208,6 +208,7 @@ One switch: starts or resumes the timer on the current task, turns blocking on f
 ### 4.9 Accounts and auth
 
 - Sign-in is required (Supabase: Google OAuth or email/password; open sign-up). Gated commands (`GATED_COMMANDS` in `features/auth/session.ts`) refuse with a sign-in prompt while `needsSignIn`.
+- The sign-in UI (`ui/components/SignIn.tsx`, used by the popup, panel and welcome step 2) leads with **Sign in on tryplover.com**, which opens `/connect` in a new tab (the handoff below). The Google and email/password form sits behind **Or sign in here** as a fallback, collapsed by default.
 - The Supabase session lives in `storage.local` (worker and pages only). Calls to `plover-server` send `Authorization: Bearer <access_token>`; the server verifies it with the service-role key.
 - **Website handoff.** tryplover.com `/connect` signs the user in on the website, gets a one-time Supabase magic-link token hash from its `extension-handoff` Edge Function (no email is sent) and sends `{ type: "plover/handoff", tokenHash }` to the extension via `runtime.sendMessage`. The worker's `onMessageExternal` listener accepts it only from `https://tryplover.com` (dev builds also `http://localhost:5173`; exact origin match), validates the shape (`features/auth/handoff.ts`: hash is 1-512 chars of `[A-Za-z0-9_-]`) and dispatches `auth/handoff`, which calls `verifyOtp({ token_hash, type: "magiclink" })` to create the extension's own session and clear `needsSignIn`. `auth/handoff` is not gated. `{ type: "plover/ping" }` replies `{ ok, signedIn, version }` so the page can tell "installed" from "not installed or too old". Untrusted senders and malformed messages get no response. The website's tokens are never shared: Supabase rotates refresh tokens and revokes the session on reuse, so two clients cannot hold one session; the hash works once and expires.
 - The extension ships only the **publishable** Supabase key. The service-role key and the Google client secret never go in the extension or its build secrets.
@@ -224,7 +225,7 @@ Opens in its own tab. Sections: timer lengths and nudge interval, blocklist, bud
 
 Opens once on install as a six-step walkthrough, one idea per screen (`entrypoints/welcome/main.tsx` + `steps.tsx`):
 1. **Hello**: the buddy waves.
-2. **Sign in**: advances on its own 600 ms after signing in, but only if the user reached this step signed out.
+2. **Sign in**: leads with **Sign in on tryplover.com** (opens `/connect`), with the Google/email form behind "Or sign in here". Advances on its own 600 ms after signing in, but only if the user reached this step signed out.
 3. **Meet your buddy**: a browser mock; the buddy pops into its corner once all-sites access is granted. "Not now" falls back to per-site access.
 4. **How a session goes**: three rows slide in: break it down, focus for a block, tick off a step.
 5. **Calendar**: optional, with Skip.

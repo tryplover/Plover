@@ -75,8 +75,8 @@ export function SignInStep({
     <>
       <Heading>First, sign in</Heading>
       <p className="welcome-body">
-        Your tasks stay on this device. Signing in lets Plover suggest steps for
-        you.
+        Sign in or create your account on tryplover.com. This page moves on by
+        itself once you&apos;re signed in.
       </p>
       {needsSignIn ? (
         <SignIn />
