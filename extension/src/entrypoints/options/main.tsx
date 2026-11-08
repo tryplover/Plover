@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { browser } from "wxt/browser";
 import { siteFromInput } from "@/features/blocking/domains";
 import { siteOrigin } from "@/features/site-access/origins";
 import { sendCommand } from "@/shared/messages";
+import { clampInput } from "@/shared/number-input";
 import { updateSettings } from "@/shared/storage";
 import type { Settings, Theme } from "@/shared/types";
 import { useExtensionState } from "@/ui/hooks/useExtensionState";
@@ -18,13 +19,92 @@ type NumberKey =
   | "blocksPerLongBreak"
   | "focusNudgeMinutes";
 
-const NUMBER_FIELDS: { key: NumberKey; label: string }[] = [
-  { key: "workMinutes", label: "Work block (minutes)" },
-  { key: "shortBreakMinutes", label: "Short break (minutes)" },
-  { key: "longBreakMinutes", label: "Long break (minutes)" },
-  { key: "blocksPerLongBreak", label: "Work blocks before a long break" },
-  { key: "focusNudgeMinutes", label: "Focus nudge every (minutes)" },
+const NUMBER_FIELDS: {
+  key: NumberKey;
+  label: string;
+  unit: string;
+  max: number;
+}[] = [
+  { key: "workMinutes", label: "Work block", unit: "min", max: 90 },
+  { key: "shortBreakMinutes", label: "Short break", unit: "min", max: 30 },
+  { key: "longBreakMinutes", label: "Long break", unit: "min", max: 60 },
+  {
+    key: "blocksPerLongBreak",
+    label: "Blocks before a long break",
+    unit: "",
+    max: 10,
+  },
+  {
+    key: "focusNudgeMinutes",
+    label: "Focus nudge every",
+    unit: "min",
+    max: 60,
+  },
 ];
+
+function Stepper({
+  label,
+  unit,
+  value,
+  max,
+  onChange,
+}: {
+  label: string;
+  unit: string;
+  value: number;
+  max: number;
+  onChange: (n: number) => void;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const id = useId();
+  const commit = (raw: string) => {
+    setDraft(null);
+    const n = clampInput(raw, 1, max);
+    if (n !== value) onChange(n);
+  };
+  return (
+    <div className="stepper-row">
+      <label htmlFor={id}>{label}</label>
+      <div className="stepper">
+        <button
+          type="button"
+          aria-label={`Decrease ${label.toLowerCase()}`}
+          disabled={value <= 1}
+          onClick={() => onChange(Math.max(1, value - 1))}
+        >
+          −
+        </button>
+        <input
+          id={id}
+          type="text"
+          inputMode="numeric"
+          value={draft ?? String(value)}
+          onChange={(e) => setDraft(e.target.value.replace(/\D/g, ""))}
+          onBlur={(e) => commit(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.currentTarget.blur();
+            if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+              e.preventDefault();
+              const step = e.key === "ArrowUp" ? 1 : -1;
+              onChange(clampInput(String(value + step), 1, max));
+            }
+          }}
+        />
+        <button
+          type="button"
+          aria-label={`Increase ${label.toLowerCase()}`}
+          disabled={value >= max}
+          onClick={() => onChange(Math.min(max, value + 1))}
+        >
+          +
+        </button>
+        <span className="stepper-unit" aria-hidden={!unit}>
+          {unit}
+        </span>
+      </div>
+    </div>
+  );
+}
 
 const THEMES: { value: Theme; label: string }[] = [
   { value: "system", label: "System" },
@@ -137,20 +217,18 @@ function Options() {
 
       <section>
         <h2>Timer</h2>
-        {NUMBER_FIELDS.map(({ key, label }) => (
-          <label key={key} className="field">
-            {label}
-            <input
-              type="number"
-              min={1}
+        <div className="stepper-list">
+          {NUMBER_FIELDS.map(({ key, label, unit, max }) => (
+            <Stepper
+              key={key}
+              label={label}
+              unit={unit}
               value={settings[key]}
-              onChange={(e) => {
-                const n = Math.floor(Number(e.target.value));
-                if (n >= 1) save({ [key]: n });
-              }}
+              max={max}
+              onChange={(n) => save({ [key]: n })}
             />
-          </label>
-        ))}
+          ))}
+        </div>
       </section>
 
       <DomainList
