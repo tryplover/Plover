@@ -75,6 +75,7 @@ An **unlisted** Chrome Web Store listing linked from tryplover.com. Sign-in is r
 | **In-page panel** | `entrypoints/panel/` | Same `Panel`, in an extension iframe (`panel.html`, `use_dynamic_url`) anchored next to the buddy. Being an extension page, it can read storage. | — |
 | **Options** | `entrypoints/options/` | Settings, in its own tab (`open_in_tab: true`). | — |
 | **Welcome** | `entrypoints/welcome/` | Opens on install: sign in, site access, calendar, pinning. | — |
+| **History** | `entrypoints/task-history/` | Finished tasks with steps and focus time (§4.13). Reads state, changes it only through commands. | — |
 | **Blocked** | `entrypoints/blocked/` | Where blocked navigations redirect: calm message, the buddy, the current step. | — |
 
 ### 2.2 Data flow
@@ -99,7 +100,7 @@ Breaking any of these defeats the design. Reviewers check them on every PR.
 
 ```
 extension/src/
-├── entrypoints/   background.ts, content/, popup/, panel/, options/, welcome/, blocked/  (thin)
+├── entrypoints/   background.ts, content/, popup/, panel/, options/, welcome/, task-history/, blocked/  (thin)
 ├── worker/        controller (dispatch), queue (enqueue), alarms, reconcile, state-port
 ├── features/<name>/   pure logic + worker.ts handlers
 │     auth · blocking · buddy · calendar · focus · site-access · tasks · timer
@@ -170,12 +171,12 @@ Chrome's own extension page shows only per-site toggles for optional permissions
 
 Every task is kept, with its steps and its place in the timer.
 
-- **Idle screen** shows **Your tasks** (open tasks, most recently active first) with steps done, time left in its block and Pomodoro block, **Resume**, and a ⋯ menu (**Mark done**, **Delete** with a 5-second **Undo**). **Done (n)** expands finished tasks with **Clear done**.
-- **While running:** **Save for later** parks the task. **Stop** parks too (stopping never throws time away).
+- **Idle screen** shows **Your tasks** (open tasks, most recently active first) with steps done, time left in its block and Pomodoro block, **Resume**, and a ⋯ menu (**Mark done**, **Delete** with a 5-second **Undo**). Finished tasks live on the History page (§4.13); the popup and panel show a **History** link once any task is done.
+- **While running:** **Save for later** parks the task. **Stop** parks too (stopping never throws time away). **Mark task done** (work and break phases) finishes the task: it sets `doneAt`, stops the timer through `stopAndPark` (which ends focus and blocking, as **Stop** does) and makes the buddy celebrate. Back on the idle screen, a `role="status"` banner `Done: "<title>"` offers **Undo** for 5 seconds (the same banner follows **Mark done** in the ⋯ menu); Undo sends `task/reopen`, which clears `doneAt` and returns the task to **Your tasks** without restarting the timer. The banner is Panel UI state, not worker state.
 - **Parking** (`parkedFrom`): a work phase saves its time left (measured at `pausedAt` when paused); under 30 s saves nothing; a break saves a full work block but keeps `blocksCompleted`. An overdue phase is settled first (`settleOverdue`).
 - **Resume** (`task/resume`): parks the current task if any, then starts a work block ending at `now + remainingMs` with the saved cycle position. A calendar conflict triggers the same "shorten or start anyway" offer as starting.
 - A pending check-in stays tied to its task (`checkInTaskId`) even after switching.
-- Commands: `task/park`, `task/resume`, `task/markDone`, `task/delete`, `task/clearDone`, all sign-in gated (except park). Pure logic in `features/tasks/parking.ts`.
+- Commands: `task/park`, `task/resume`, `task/markDone`, `task/reopen`, `task/delete`, `task/clearDone`, all sign-in gated (except park). Pure logic in `features/tasks/parking.ts`.
 
 ### 4.5 Pomodoro timer and check-in
 
@@ -230,6 +231,16 @@ Opens once on install as a six-step walkthrough, one idea per screen (`entrypoin
 6. **You're all set**: a toolbar mock with a pulsing ring around the pinned buddy, and the privacy line. "Start my first task" closes the tab.
 
 Progress dots and a Back button; no jumping ahead, and the step isn't remembered across reloads. Content slides 24px and fades in (280 ms), direction-aware. Everything is instant under `prefers-reduced-motion`. Focus moves to each step's heading. Only existing tokens are used, so dark mode works.
+
+### 4.13 History page
+
+Opens in a tab from the **History** link in the popup and panel (`browser.tabs.create` on `task-history.html`; no `tabs` permission needed). The entrypoint is named `task-history` because WXT treats an entrypoint named `history` as a `chrome_url_overrides` page, which would replace the browser's own history page.
+
+- **Header:** totals over finished tasks: `12 tasks · 31 focus blocks · 13 h 5 m focused`.
+- **Day groups** (Today, Yesterday, then a date; the year is added for other years), newest first, grouped by local day of `doneAt`. Each task card shows title, `4 of 4 steps · 3 blocks · 1 h 15 m · 3:42 pm`, a **Steps** disclosure listing steps (done ones ticked), **Reopen** (`task/reopen`) and **Delete** (`task/delete`, with a 5-second **Undo** that re-saves via `task/save`).
+- **Stats** (`features/tasks/history.ts`, from `local.sessions`): `blocks` = completed work sessions for the task; `focusMs` = time of all work sessions for the task, completed or cut short.
+- **Clear history** asks inline, then sends `task/clearDone`. Empty state: "Nothing finished yet."
+- A thin trusted view: reads with `useExtensionState()` and writes only through `sendCommand`. Existing tokens only, so dark mode works.
 
 ---
 
@@ -290,7 +301,7 @@ Today only the welcome page can grant all-sites access, so users who skip it app
 
 ### 9.2 End-of-task wrap-up
 
-Ticking the last open step (or **Mark done**) stops the timer, turns off focus and blocking, and shows a wrap-up: "Nice work on '…'. How did that session go?" with **Smooth / Okay / Tough**, an optional one-line note, **Done** or **Skip**. The eyebrow shows blocks and minutes for the task (from `sessions`). Stored as `task.reflection { mood, note, at }`, local only. `transient.wrapUpTaskId` drives the screen; commands `wrapup/answer`, `wrapup/skip`. Unticking within 10 s reopens and resumes. If a check-in answer completes the task, the wrap-up replaces the return to the timer. No stats in v1.
+Ticking the last open step (or **Mark done**, including the running-screen **Mark task done**) stops the timer, turns off focus and blocking, and shows a wrap-up: "Nice work on '…'. How did that session go?" with **Smooth / Okay / Tough**, an optional one-line note, **Done** or **Skip**. The eyebrow shows blocks and minutes for the task (from `sessions`). Stored as `task.reflection { mood, note, at }`, local only. `transient.wrapUpTaskId` drives the screen; commands `wrapup/answer`, `wrapup/skip`. Unticking within 10 s reopens and resumes. If a check-in answer completes the task, the wrap-up replaces the return to the timer. No stats in v1.
 
 ### 9.3 Block sites from the popup
 
@@ -321,3 +332,4 @@ Grouped sections: **Focus** (steppers: work 5–90, breaks 1–30, nudge 5–60)
 - 2026-10-27: site access becomes optional, requested on the welcome page.
 - 2026-11-05: waitlist gate dropped; sign-up open.
 - 2026-11-07: Figma styling, dark mode, saved tasks, settings in a tab, smarter site input, buddy clock; this doc replaces the pivot spec and per-feature design files; the welcome page becomes a six-step walkthrough.
+- 2026-11-08: **Mark task done** on the running screen with Undo (`task/reopen`); History page replaces the popup's Done list.

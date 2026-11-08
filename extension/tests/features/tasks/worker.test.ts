@@ -194,6 +194,19 @@ describe("task handlers", () => {
     expect(t1?.parked == null).toBe(true);
     expect((await getLocal("timer")).phase).toBe("idle");
     expect(await getLocal("activeTaskId")).toBeNull();
+    expect((await getLocal("transient")).celebrateUntil).toBe(
+      T0 + 5 * MIN + 3000,
+    );
+  });
+
+  it("reopen clears doneAt and bumps lastActiveAt without touching the timer", async () => {
+    await setLocal({ tasks: [{ ...task, doneAt: T0 }] });
+    vi.setSystemTime(T0 + MIN);
+    await dispatch({ type: "task/reopen", taskId: "t1" });
+    const t1 = (await getLocal("tasks"))[0];
+    expect(t1?.doneAt).toBeNull();
+    expect(t1?.lastActiveAt).toBe(T0 + MIN);
+    expect((await getLocal("timer")).phase).toBe("idle");
   });
 
   it("delete on the active task stops the timer", async () => {

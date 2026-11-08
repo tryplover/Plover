@@ -15,6 +15,7 @@ export type Command =
   | { type: "task/park" }
   | { type: "task/resume"; taskId: string; endBy?: number }
   | { type: "task/markDone"; taskId: string }
+  | { type: "task/reopen"; taskId: string }
   | { type: "task/delete"; taskId: string }
   | { type: "task/clearDone" }
   | { type: "auth/google" }
@@ -57,6 +58,7 @@ const COMMAND_TYPES: ReadonlySet<string> = new Set<Command["type"]>([
   "task/park",
   "task/resume",
   "task/markDone",
+  "task/reopen",
   "task/delete",
   "task/clearDone",
   "auth/google",

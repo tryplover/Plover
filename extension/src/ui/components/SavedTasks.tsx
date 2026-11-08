@@ -15,6 +15,8 @@ export function SavedTasks({
   workMinutes,
   blocksPerLongBreak,
   now,
+  justDone,
+  onJustDoneExpired,
 }: {
   tasks: Task[];
   activeTaskId: string | null;
@@ -22,6 +24,8 @@ export function SavedTasks({
   workMinutes: number;
   blocksPerLongBreak: number;
   now: number;
+  justDone: { id: string; title: string } | null;
+  onJustDoneExpired: () => void;
 }) {
   const [menuId, setMenuId] = useState<string | null>(null);
   const [conflict, setConflict] = useState<{
@@ -30,18 +34,49 @@ export function SavedTasks({
   } | null>(null);
   const [deleted, setDeleted] = useState<Task | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [showDone, setShowDone] = useState(false);
+  const [finished, setFinished] = useState<{
+    id: string;
+    title: string;
+  } | null>(justDone);
+  const doneTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(
-    () => () => {
-      if (undoTimer.current) clearTimeout(undoTimer.current);
-    },
-    [],
-  );
+  function armDoneTimer() {
+    if (doneTimer.current) clearTimeout(doneTimer.current);
+    doneTimer.current = setTimeout(() => {
+      doneTimer.current = null;
+      setFinished(null);
+      onJustDoneExpired();
+    }, UNDO_MS);
+  }
 
-  const { open, done } = sortSavedTasks(tasks, activeTaskId);
-  if (open.length === 0 && done.length === 0 && !deleted) return null;
+  useEffect(() => {
+    if (justDone) armDoneTimer();
+    return () => {
+      if (undoTimer.current) clearTimeout(undoTimer.current);
+      if (doneTimer.current) clearTimeout(doneTimer.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const { open } = sortSavedTasks(tasks, activeTaskId);
+  if (open.length === 0 && !deleted && !finished) return null;
+
+  function markDone(task: Task) {
+    setMenuId(null);
+    setFinished({ id: task.id, title: task.title });
+    armDoneTimer();
+    void sendCommand({ type: "task/markDone", taskId: task.id });
+  }
+
+  function undoDone() {
+    if (doneTimer.current) clearTimeout(doneTimer.current);
+    doneTimer.current = null;
+    if (finished)
+      void sendCommand({ type: "task/reopen", taskId: finished.id });
+    setFinished(null);
+    onJustDoneExpired();
+  }
 
   function resume(task: Task, endBy?: number) {
     setConflict(null);
@@ -78,10 +113,6 @@ export function SavedTasks({
     setDeleted(null);
   }
 
-  function remove(task: Task) {
-    void sendCommand({ type: "task/delete", taskId: task.id });
-  }
-
   return (
     <div className="plover-saved">
       <p className="plover-eyebrow">Your tasks</p>
@@ -93,6 +124,19 @@ export function SavedTasks({
             className="plover-btn-text"
             autoFocus
             onClick={undoDelete}
+          >
+            Undo
+          </button>
+        </div>
+      )}
+      {finished && (
+        <div className="plover-saved-row" role="status">
+          <p className="plover-saved-title">Done: “{finished.title}”</p>
+          <button
+            type="button"
+            className="plover-btn-text"
+            autoFocus
+            onClick={undoDone}
           >
             Undo
           </button>
@@ -144,13 +188,7 @@ export function SavedTasks({
               <button
                 type="button"
                 className="plover-btn-text"
-                onClick={() => {
-                  setMenuId(null);
-                  void sendCommand({
-                    type: "task/markDone",
-                    taskId: task.id,
-                  });
-                }}
+                onClick={() => markDone(task)}
               >
                 Mark done
               </button>
@@ -173,46 +211,6 @@ export function SavedTasks({
           )}
         </div>
       ))}
-      {done.length > 0 && (
-        <>
-          <button
-            type="button"
-            className="plover-btn-text plover-link"
-            aria-expanded={showDone}
-            onClick={() => setShowDone(!showDone)}
-          >
-            {`Done (${done.length}) ${showDone ? "▾" : "▸"}`}
-          </button>
-          {showDone && (
-            <>
-              {done.map((task) => (
-                <div key={task.id} className="plover-saved-row">
-                  <div className="plover-saved-text">
-                    <p className="plover-saved-title">{task.title}</p>
-                    <p className="plover-saved-meta">
-                      {new Date(task.doneAt ?? 0).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    className="plover-btn-text"
-                    onClick={() => remove(task)}
-                  >
-                    Delete
-                  </button>
-                </div>
-              ))}
-              <button
-                type="button"
-                className="plover-btn-text plover-link"
-                onClick={() => void sendCommand({ type: "task/clearDone" })}
-              >
-                Clear done
-              </button>
-            </>
-          )}
-        </>
-      )}
     </div>
   );
 }

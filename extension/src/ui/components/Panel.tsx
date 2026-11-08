@@ -32,6 +32,10 @@ function eyebrowFor(phase: TimerPhase, focusOn: boolean): string {
 export function Panel({ surface }: { surface: "popup" | "buddy" }) {
   const { local, settings, now, ready } = useExtensionState();
   const [reauth, setReauth] = useState(false);
+  const [justDone, setJustDone] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
   const [focusConflict, setFocusConflict] = useState<CalendarEvent | null>(
     null,
   );
@@ -141,6 +145,8 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
             workMinutes={settings.workMinutes}
             blocksPerLongBreak={settings.blocksPerLongBreak}
             now={now}
+            justDone={justDone}
+            onJustDoneExpired={() => setJustDone(null)}
           />
           {focusSwitch}
         </div>
@@ -148,6 +154,21 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
         <>
           {activeTask && <p className="plover-task">{activeTask.title}</p>}
           {activeTask && <ActiveSteps task={activeTask} />}
+          {activeTask && (
+            <button
+              type="button"
+              className="plover-btn-text"
+              onClick={() => {
+                setJustDone({ id: activeTask.id, title: activeTask.title });
+                void sendCommand({
+                  type: "task/markDone",
+                  taskId: activeTask.id,
+                });
+              }}
+            >
+              Mark task done
+            </button>
+          )}
           <TimerControls
             timer={local.timer}
             now={now}
@@ -186,6 +207,19 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
       >
         Settings
       </button>
+      {local.tasks.some((t) => t.doneAt !== null) && (
+        <button
+          type="button"
+          className="plover-btn-text plover-link"
+          onClick={() =>
+            void browser.tabs.create({
+              url: browser.runtime.getURL("/task-history.html"),
+            })
+          }
+        >
+          History
+        </button>
+      )}
     </div>
   );
 }
