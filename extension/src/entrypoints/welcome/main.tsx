@@ -154,7 +154,9 @@ function Welcome() {
               onNext={next}
             />
           )}
-          {step === 5 && <PinStep />}
+          {step === 5 && (
+            <PinStep buddyRef={buddyRef} onCelebrate={celebrate} />
+          )}
         </div>
         {step > 0 && (
           <button
