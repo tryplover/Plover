@@ -47,7 +47,7 @@ export function HelloStep({ onNext }: { onNext: () => void }) {
       <p className="plover-eyebrow">Welcome</p>
       <Heading>Hi, I&apos;m Plover.</Heading>
       <p className="welcome-body">
-        A small work buddy that helps you start, one step at a time.
+        I&apos;m a small work buddy. I help you start, one step at a time.
       </p>
       <button type="button" className="plover-btn-brand" onClick={onNext}>
         Let&apos;s get set up
@@ -73,10 +73,10 @@ export function SignInStep({
 
   return (
     <>
-      <Heading>First, sign in</Heading>
+      <Heading>First, let&apos;s sign you in</Heading>
       <p className="welcome-body">
-        Sign in or create your account on tryplover.com. This page moves on by
-        itself once you&apos;re signed in.
+        Sign in so I can save your tasks and suggest steps. I&apos;ll move on by
+        myself once you&apos;re in.
       </p>
       {needsSignIn ? (
         <SignIn />
@@ -131,6 +131,10 @@ export function SiteAccessStep({ onNext }: { onNext: () => void }) {
         </button>
       ) : (
         <>
+          <p className="welcome-note">
+            Chrome will say I can &ldquo;read and change&rdquo; your sites.
+            That&apos;s its standard warning for anything that draws on a page.
+          </p>
           <button
             type="button"
             className="plover-btn-brand"
@@ -140,14 +144,14 @@ export function SiteAccessStep({ onNext }: { onNext: () => void }) {
                 .then((ok) => setDeclined(!ok))
             }
           >
-            Put Plover on my pages
+            Put me on your pages
           </button>
           <button type="button" className="plover-btn-text" onClick={onNext}>
             Not now
           </button>
           {declined && (
             <p role="status" className="welcome-note">
-              No problem. The Plover popup can add it one site at a time.
+              No problem. You can add me one site at a time from my popup.
             </p>
           )}
         </>
@@ -158,23 +162,26 @@ export function SiteAccessStep({ onNext }: { onNext: () => void }) {
 
 const HOW_IT_WORKS = [
   {
-    title: "Break it down",
-    line: "Tell me the task. I'll suggest small steps you can edit.",
+    title: "You tell me what's on your plate",
+    line: "Big or fuzzy is fine. I'll break it into small steps, and you can change any of them.",
   },
   {
-    title: "Focus for a block",
-    line: "Start a 25-minute timer. Focus mode blocks your distracting sites.",
+    title: "We focus together",
+    line: "I'll start a 25-minute timer, block the sites you pick, and stay quiet in my corner.",
   },
   {
-    title: "Tick off a step",
-    line: "When the block ends, tell me what you finished. Then take a break.",
+    title: "I'll check in",
+    line: "When the timer ends, I'll ask what you got done. Then we both take a break.",
   },
 ];
 
 export function HowStep({ onNext }: { onNext: () => void }) {
   return (
     <>
-      <Heading>Here&apos;s how it works</Heading>
+      <Heading>Here&apos;s how I&apos;ll help</Heading>
+      <p className="welcome-body">
+        We&apos;ll take it one small step at a time, together.
+      </p>
       <ol className="welcome-rows">
         {HOW_IT_WORKS.map((row, i) => (
           <li
@@ -259,9 +266,9 @@ export function CalendarStep({
 export function PinStep() {
   return (
     <>
-      <Heading>You&apos;re all set</Heading>
+      <Heading>Pin me so I&apos;m one click away</Heading>
       <p className="welcome-body">
-        Pin me to your toolbar so I&apos;m one click away.
+        Click the puzzle piece in your toolbar, then the pin next to Plover.
       </p>
       <div className="welcome-toolbar" aria-hidden="true">
         <span className="welcome-toolbar__address" />
@@ -270,7 +277,7 @@ export function PinStep() {
           <Buddy state="idle" />
         </span>
       </div>
-      <p className="welcome-note">Or press Alt+Shift+P to open me.</p>
+      <p className="welcome-note">Or press Alt+Shift+O to open me.</p>
       <button
         type="button"
         className="plover-btn-brand"

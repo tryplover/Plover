@@ -21,9 +21,9 @@ describe("manifest", () => {
     expect(manifest.optional_host_permissions).toEqual(["<all_urls>"]);
   });
 
-  it("binds the action shortcut to Alt+Shift+P", () => {
+  it("binds the action shortcut to Alt+Shift+O", () => {
     expect(manifest.commands?._execute_action?.suggested_key?.default).toBe(
-      "Alt+Shift+P",
+      "Alt+Shift+O",
     );
   });
 
