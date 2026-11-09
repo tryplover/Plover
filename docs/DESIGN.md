@@ -185,7 +185,7 @@ Every task is kept, with its steps and its place in the timer.
 - **Alarms** fire at `phaseEndsAt`; nothing ticks.
 - **Check-in:** at the end of each work block, "Which step did you finish?" in the panel and the buddy's bubble; answering ticks that step on the task the check-in belongs to. If no page with the buddy is visible, a system notification carries it.
 - **Toolbar badge** shows the minutes left (`features/timer/badge.ts`).
-- Keyboard shortcut **Alt+Shift+P** opens the popup (`_execute_action`; users change it at `chrome://extensions/shortcuts`).
+- Keyboard shortcut **Alt+Shift+O** opens the popup (`_execute_action`; users change it at `chrome://extensions/shortcuts`).
 
 ### 4.6 Site blocking
 
@@ -224,13 +224,13 @@ Opens in its own tab. Sections: timer lengths and nudge interval, blocklist, bud
 
 ### 4.12 Welcome page
 
-Opens once on install as a six-step walkthrough, one idea per screen (`entrypoints/welcome/main.tsx` + `steps.tsx`):
+Opens once on install as a six-step walkthrough, one idea per screen (`entrypoints/welcome/main.tsx` + `steps.tsx`). All copy is in Plover's first-person voice ("I'll sit in the corner of your pages").
 1. **Hello**: the buddy waves.
 2. **Sign in**: leads with **Sign in on tryplover.com** (opens `/connect`), with the Google/email form behind "Or sign in here". Advances on its own 600 ms after signing in, but only if the user reached this step signed out.
-3. **Meet your buddy**: a browser mock; the buddy pops into its corner once all-sites access is granted. "Not now" falls back to per-site access.
-4. **How a session goes**: three rows slide in: break it down, focus for a block, tick off a step.
+3. **Meet your buddy**: a browser mock; the buddy pops into its corner once all-sites access is granted. A note warns ahead that Chrome's prompt will say "read and change" your sites. "Not now" falls back to per-site access.
+4. **Here's how I'll help**: three rows slide in: you tell me what's on your plate, we focus together, I'll check in.
 5. **Calendar**: optional, with Skip.
-6. **You're all set**: a toolbar mock with a pulsing ring around the pinned buddy, and the privacy line. "Start my first task" closes the tab.
+6. **Pin me**: a toolbar mock with a pulsing ring around the pinned buddy, and the privacy line. "Start my first task" closes the tab.
 
 Progress dots and a Back button; no jumping ahead, and the step isn't remembered across reloads. Content slides 24px and fades in (280 ms), direction-aware. Everything is instant under `prefers-reduced-motion`. Focus moves to each step's heading. Only existing tokens are used, so dark mode works.
 
@@ -311,7 +311,7 @@ Turning blocking or focus on with an empty blocklist opens an inline editor inst
 
 ### 9.4 Settings page per Figma screen 8
 
-Grouped sections: **Focus** (steppers: work 5–90, breaks 1–30, nudge 5–60), **Blocking** (`BlockList`), **Where Plover appears** (§9.1), **Calendar** (connect; "Warn me before meetings" 5 / 10 / off as `settings.headsUpMinutes`, replacing the fixed 5-minute lead), **Appearance**, **Keyboard shortcut** (shows Alt+Shift+P, links to the shortcuts page), **Account**. Figma settings rows (label left, value right, 51px, divider). Desktop-era rows (Show on desktop, Sounds, 5 more minutes) are left out. Lands after 9.1 and 9.3 so it reuses their components.
+Grouped sections: **Focus** (steppers: work 5–90, breaks 1–30, nudge 5–60), **Blocking** (`BlockList`), **Where Plover appears** (§9.1), **Calendar** (connect; "Warn me before meetings" 5 / 10 / off as `settings.headsUpMinutes`, replacing the fixed 5-minute lead), **Appearance**, **Keyboard shortcut** (shows Alt+Shift+O, links to the shortcuts page), **Account**. Figma settings rows (label left, value right, 51px, divider). Desktop-era rows (Show on desktop, Sounds, 5 more minutes) are left out. Lands after 9.1 and 9.3 so it reuses their components.
 
 ---
 

@@ -16,7 +16,7 @@ export const manifest = {
   optional_host_permissions: ["<all_urls>"],
   commands: {
     _execute_action: {
-      suggested_key: { default: "Alt+Shift+P" },
+      suggested_key: { default: "Alt+Shift+O" },
       description: "Open Plover",
     },
   },

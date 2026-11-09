@@ -196,7 +196,7 @@ function Options() {
       <section>
         <h2>Keyboard shortcut</h2>
         <p>
-          Open Plover with Alt+Shift+P. To change it, go to
+          Open Plover with Alt+Shift+O. To change it, go to
           chrome://extensions/shortcuts in your browser.
         </p>
       </section>

@@ -99,7 +99,7 @@ function Welcome() {
       </section>
       {step === STEP_COUNT - 1 && (
         <p className="welcome-privacy">
-          Your tasks stay on this device.{" "}
+          I keep your tasks on this device.{" "}
           <a href={PRIVACY_POLICY_URL} target="_blank" rel="noreferrer">
             Privacy policy
           </a>
