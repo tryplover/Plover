@@ -232,7 +232,7 @@ Opens once on install as a six-step walkthrough, one idea per screen (`entrypoin
 5. **Calendar**: optional, with Skip.
 6. **Pin me**: a toolbar mock with a pulsing ring around the pinned buddy, and the privacy line. "Start my first task" closes the tab.
 
-Progress dots and a Back button; no jumping ahead, and the step isn't remembered across reloads. Content slides 24px and fades in (280 ms), direction-aware. Everything is instant under `prefers-reduced-motion`. Focus moves to each step's heading. Only existing tokens are used, so dark mode works.
+A six-segment progress bar (the newest segment fills and pops) and a Back button; no jumping ahead, and the step isn't remembered across reloads. The buddy above the card stays mounted: it hops on every step change, blinks (`working`) between steps, and switches to `celebrating` for 1.8 s on the hello step and when sign-in, all-sites access or Calendar succeeds. The card itself doesn't move: it animates its height between steps while the content fades in with a short direction-aware stagger (45 ms per child). Everything is instant under `prefers-reduced-motion`. Focus moves to each step's heading. Only existing tokens are used, so dark mode works.
 
 ### 4.13 History page
 

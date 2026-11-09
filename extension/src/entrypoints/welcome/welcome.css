@@ -9,45 +9,58 @@
 
 .welcome-progress {
   display: flex;
-  gap: 8px;
-  align-items: center;
+  gap: 6px;
+  width: 100%;
+  max-width: 480px;
   margin-bottom: 24px;
 }
-.welcome-dot {
-  box-sizing: border-box;
-  width: 8px;
-  height: 8px;
-  border: 1.5px solid var(--color-border-control);
+.welcome-seg {
+  position: relative;
+  flex: 1;
+  height: 5px;
+  overflow: hidden;
   border-radius: var(--radius-pill);
-  transition:
-    width 0.28s cubic-bezier(0.2, 0.8, 0.2, 1),
-    background-color 0.28s;
+  background: color-mix(in srgb, var(--color-text-primary) 12%, transparent);
 }
-.welcome-dot--done {
+.welcome-seg__fill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
   background: var(--color-action-brand-bg);
-  border-color: var(--color-action-brand-bg);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-.welcome-dot--current {
-  width: 24px;
-  background: var(--color-action-brand-bg);
-  border-color: var(--color-action-brand-bg);
+.welcome-seg--on .welcome-seg__fill {
+  transform: scaleX(1);
+}
+.welcome-seg--now {
+  animation: welcome-seg-pop 0.42s ease-out 0.2s;
+}
+@keyframes welcome-seg-pop {
+  40% {
+    transform: scaleY(2.2);
+  }
+}
+.welcome-seg--now .welcome-seg__fill {
+  animation: welcome-seg-fill 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes welcome-seg-fill {
+  from {
+    transform: scaleX(0);
+  }
 }
 
 .welcome-buddy {
   width: 120px;
   height: 131px;
   margin-bottom: 16px;
-  animation: welcome-bounce 0.32s ease-out;
+  transform-origin: 50% 100%;
 }
 .welcome-buddy .plover-buddy {
   width: 100%;
   height: 100%;
   cursor: default;
-}
-@keyframes welcome-bounce {
-  50% {
-    transform: translateY(-6px);
-  }
 }
 
 .welcome-card {
@@ -57,6 +70,7 @@
   max-width: 480px;
   padding: 32px;
   border-radius: var(--radius-panel);
+  overflow: hidden;
   background: var(--color-bg-surface);
   box-shadow: 0 16px 40px -12px rgba(36, 51, 41, 0.18);
 }
@@ -65,21 +79,35 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 16px;
-  animation: welcome-in-forward 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-.welcome-step[data-direction="back"] {
+.welcome-step > * {
+  animation: welcome-in-forward 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+.welcome-step[data-direction="back"] > * {
   animation-name: welcome-in-back;
+}
+.welcome-step > :nth-child(2) {
+  animation-delay: 45ms;
+}
+.welcome-step > :nth-child(3) {
+  animation-delay: 90ms;
+}
+.welcome-step > :nth-child(4) {
+  animation-delay: 135ms;
+}
+.welcome-step > :nth-child(n + 5) {
+  animation-delay: 180ms;
 }
 @keyframes welcome-in-forward {
   from {
     opacity: 0;
-    transform: translateX(24px);
+    transform: translate(16px, 8px);
   }
 }
 @keyframes welcome-in-back {
   from {
     opacity: 0;
-    transform: translateX(-24px);
+    transform: translate(-16px, 8px);
   }
 }
 .welcome-step > * {
@@ -133,7 +161,8 @@
   max-width: 100%;
   aspect-ratio: 9 / 5;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--color-text-primary) 18%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--color-text-primary) 18%, transparent);
   border-radius: var(--radius-card);
   background: var(--color-bg-quiet);
 }
@@ -144,7 +173,8 @@
   box-sizing: border-box;
   height: 28px;
   padding: 0 10px;
-  border-bottom: 1px solid color-mix(in srgb, var(--color-text-primary) 18%, transparent);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--color-text-primary) 18%, transparent);
 }
 .welcome-browser__dot {
   width: 8px;
@@ -292,14 +322,15 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .welcome-buddy,
-  .welcome-step,
+  .welcome-seg--now,
+  .welcome-seg--now .welcome-seg__fill,
+  .welcome-step > *,
   .welcome-row,
   .welcome-browser__buddy,
   .welcome-toolbar__pin {
     animation: none;
   }
-  .welcome-dot {
+  .welcome-seg__fill {
     transition: none;
   }
 }
