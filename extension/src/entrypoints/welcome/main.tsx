@@ -1,7 +1,12 @@
-import { useCallback, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { createRoot } from "react-dom/client";
 import { PRIVACY_POLICY_URL } from "@/shared/links";
-import type { BuddyAnimationState } from "@/shared/types";
 import { Buddy } from "@/ui/components/Buddy";
 import { useExtensionState } from "@/ui/hooks/useExtensionState";
 import { applyStoredTheme } from "@/ui/theme";
@@ -12,19 +17,17 @@ import {
   PinStep,
   SignInStep,
   SiteAccessStep,
+  useSiteAccess,
 } from "./steps";
 import "@/ui/base.css";
 import "./welcome.css";
 
 const STEP_COUNT = 6;
-const BUDDY_STATES: BuddyAnimationState[] = [
-  "celebrating",
-  "idle",
-  "working",
-  "working",
-  "idle",
-  "celebrating",
-];
+const CELEBRATE_MS = 1800;
+const EASE = "cubic-bezier(0.2, 0.8, 0.2, 1)";
+
+const reducedMotion = () =>
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 function Progress({ step }: { step: number }) {
   return (
@@ -35,23 +38,53 @@ function Progress({ step }: { step: number }) {
     >
       {Array.from({ length: STEP_COUNT }, (_, i) => (
         <span
-          key={i}
+          key={i === step ? `now-${step}` : i}
           aria-hidden="true"
           className={
-            "welcome-dot" +
-            (i === step ? " welcome-dot--current" : "") +
-            (i < step ? " welcome-dot--done" : "")
+            "welcome-seg" +
+            (i <= step ? " welcome-seg--on" : "") +
+            (i === step ? " welcome-seg--now" : "")
           }
-        />
+        >
+          <span className="welcome-seg__fill" />
+        </span>
       ))}
     </div>
   );
 }
 
+function useCelebration() {
+  const [party, setParty] = useState(0);
+  const [active, setActive] = useState(false);
+  const celebrate = useCallback(() => {
+    setParty((n) => n + 1);
+    setActive(true);
+  }, []);
+  useEffect(() => {
+    if (party === 0) return;
+    const id = setTimeout(() => setActive(false), CELEBRATE_MS);
+    return () => clearTimeout(id);
+  }, [party]);
+  return { party, active, celebrate };
+}
+
+function useBecameTrue(value: boolean, onTrue: () => void) {
+  const prev = useRef(value);
+  useEffect(() => {
+    if (value && !prev.current) onTrue();
+    prev.current = value;
+  }, [value, onTrue]);
+}
+
 function Welcome() {
   const { local, ready } = useExtensionState();
+  const siteAccess = useSiteAccess();
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState<"forward" | "back">("forward");
+  const { party, active, celebrate } = useCelebration();
+  const buddyRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLElement>(null);
+  const cardHeight = useRef<number | null>(null);
 
   const next = useCallback(() => {
     setDirection("forward");
@@ -62,15 +95,51 @@ function Welcome() {
     setStep((s) => Math.max(s - 1, 0));
   }, []);
 
+  useBecameTrue(ready && !local.needsSignIn, celebrate);
+  useBecameTrue(siteAccess, celebrate);
+  useBecameTrue(ready && local.calendarConnected, celebrate);
+
+  useEffect(() => {
+    if (step === 0) celebrate();
+  }, [step, celebrate]);
+
+  useEffect(() => {
+    const el = buddyRef.current;
+    if (!el || reducedMotion()) return;
+    el.animate(
+      [
+        { transform: "translateY(0) scale(1, 1)" },
+        { transform: "translateY(0) scale(1.06, 0.9)", offset: 0.15 },
+        { transform: "translateY(-16px) scale(0.96, 1.05)", offset: 0.5 },
+        { transform: "translateY(0) scale(1.05, 0.93)", offset: 0.85 },
+        { transform: "none" },
+      ],
+      { duration: 520, easing: "ease-out" },
+    );
+  }, [step]);
+
+  useLayoutEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
+    const to = el.offsetHeight;
+    const from = cardHeight.current;
+    cardHeight.current = to;
+    if (from === null || from === to || reducedMotion()) return;
+    el.animate([{ height: `${from}px` }, { height: `${to}px` }], {
+      duration: 320,
+      easing: EASE,
+    });
+  }, [step, ready, local.needsSignIn, local.calendarConnected, siteAccess]);
+
   if (!ready) return null;
 
   return (
     <main className="welcome">
       <Progress step={step} />
-      <div key={step} className="welcome-buddy">
-        <Buddy state={BUDDY_STATES[step] ?? "idle"} />
+      <div ref={buddyRef} className="welcome-buddy">
+        <Buddy key={party} state={active ? "celebrating" : "working"} />
       </div>
-      <section className="welcome-card">
+      <section ref={cardRef} className="welcome-card">
         <div key={step} className="welcome-step" data-direction={direction}>
           {step === 0 && <HelloStep onNext={next} />}
           {step === 1 && (

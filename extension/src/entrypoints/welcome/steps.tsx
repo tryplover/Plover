@@ -18,7 +18,7 @@ function Heading({ children }: { children: ReactNode }) {
   );
 }
 
-function useSiteAccess() {
+export function useSiteAccess() {
   const [granted, setGranted] = useState(false);
 
   useEffect(() => {
