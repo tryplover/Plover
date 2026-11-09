@@ -172,6 +172,14 @@ function Options() {
           />
           Hide the buddy everywhere
         </label>
+        <label className="field">
+          <input
+            type="checkbox"
+            checked={settings.askToStart}
+            onChange={(e) => save({ askToStart: e.target.checked })}
+          />
+          Ask me if I want to start a focus block
+        </label>
       </section>
 
       <DomainList

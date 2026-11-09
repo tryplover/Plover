@@ -184,6 +184,25 @@
   }
 }
 
+.plover-buddy--inviting .plover-buddy__e-pill {
+  opacity: 1;
+}
+.plover-buddy--inviting .plover-buddy__headg {
+  transform: rotate(8deg);
+}
+.plover-buddy--inviting .plover-buddy__wr {
+  animation: plover-buddy-wave-twice 0.5s ease-in-out 2;
+}
+@keyframes plover-buddy-wave-twice {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  50% {
+    transform: rotate(-34deg);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .plover-buddy,
   .plover-buddy * {

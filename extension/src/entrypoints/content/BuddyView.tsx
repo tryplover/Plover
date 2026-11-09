@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent } from "react";
 import { normalizeDomain } from "@/features/blocking/domains";
 import { isBuddyVisible, nearestCorner } from "@/features/buddy/visibility";
+import { sendCommand } from "@/shared/messages";
 import { updateSettings } from "@/shared/storage";
 import type { BuddyCorner, Settings } from "@/shared/types";
 import { Buddy } from "@/ui/components/Buddy";
@@ -111,6 +112,12 @@ function BuddyView({
     : cornerStyle(corner);
   const below = corner.startsWith("top");
   const bubble = snap.checkInPending ? CHECKIN_TEXT : snap.nudgeText;
+  const invite = !bubble && snap.invite;
+
+  function answer(choice: "start" | "later" | "notToday") {
+    void sendCommand({ type: "invite/answer", choice });
+    if (choice === "start") setOpen(true);
+  }
 
   return (
     <div
@@ -150,6 +157,38 @@ function BuddyView({
         >
           {bubble}
         </button>
+      )}
+      {!open && !drag && invite && (
+        <div
+          role="group"
+          aria-label="Focus block invitation"
+          className={`plover-bubble plover-invite ${below ? "plover-below" : ""}`}
+        >
+          <p>Want to start a focus block?</p>
+          <div className="plover-invite__actions">
+            <button
+              type="button"
+              className="plover-invite__start"
+              onClick={() => answer("start")}
+            >
+              Start
+            </button>
+            <button
+              type="button"
+              className="plover-invite__text"
+              onClick={() => answer("later")}
+            >
+              Later
+            </button>
+            <button
+              type="button"
+              className="plover-invite__text"
+              onClick={() => answer("notToday")}
+            >
+              Not today
+            </button>
+          </div>
+        </div>
       )}
       <div
         onPointerDown={onPointerDown}

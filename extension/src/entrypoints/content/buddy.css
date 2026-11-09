@@ -33,6 +33,42 @@
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
   cursor: pointer;
 }
+.plover-invite {
+  box-sizing: border-box;
+  max-width: 240px;
+  cursor: default;
+}
+.plover-invite p {
+  margin: 0 0 6px;
+}
+.plover-invite__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+.plover-invite button {
+  height: 28px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+.plover-invite__start {
+  background: #5e7f6b;
+  color: #f3eee1;
+}
+.plover-invite__text {
+  background: none;
+  color: inherit;
+  text-decoration: underline;
+}
+.plover-invite button:focus-visible {
+  outline: 2px solid light-dark(#2f4236, #f3eee1);
+  outline-offset: 2px;
+}
 .plover-row {
   display: flex;
   gap: 6px;

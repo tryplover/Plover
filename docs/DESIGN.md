@@ -152,6 +152,7 @@ Optional fields on stored objects are read with defaults; there is no migration 
   - **Timer events:** `stopped` sets `invite.stoppedAt`; `phase-started` zeroes it and clears a pending invite.
   - **Answers** (`invite/answer`, not gated): `start` clears the invite; `later` declines for 30 min; `notToday` declines until the next local midnight.
   - **Expiry:** unanswered after 30 min it is cleared and treated as Later. The snapshot drops an expired invite and the state port re-pushes at that time; the alarm then persists the clear.
+  - **Look:** open pill eyes, head tilted about 8°, and the right wing waves twice (0.5 s each) when it appears; static under `prefers-reduced-motion`. The bubble shows the question with **Start** (opens the panel), **Later** and **Not today**; a pending check-in or nudge text takes the bubble first. Precedence: celebrating > nudging > inviting > focus/working > break > idle.
 - Visibility: `isBuddyVisible(url, settings)`; only http(s) pages, not hidden everywhere or on this site.
 
 ### 4.2 Site access
@@ -227,7 +228,7 @@ One switch: starts or resumes the timer on the current task, turns blocking on f
 
 ### 4.11 Settings page
 
-Opens in its own tab. Sections: timer lengths and nudge interval, blocklist, buddy (hide everywhere, sites without the buddy), calendar connect/disconnect, appearance, account. Site lists share one aligned row layout with a **Remove** text button. Planned redesign: §9.4.
+Opens in its own tab. Sections: timer lengths and nudge interval, blocklist, buddy (hide everywhere, sites without the buddy, "Ask me if I want to start a focus block" = `askToStart`), calendar connect/disconnect, appearance, account. Site lists share one aligned row layout with a **Remove** text button. Planned redesign: §9.4.
 
 ### 4.12 Welcome page
 
@@ -342,3 +343,4 @@ Grouped sections: **Focus** (steppers: work 5–90, breaks 1–30, nudge 5–60)
 - 2026-11-05: waitlist gate dropped; sign-up open.
 - 2026-11-07: Figma styling, dark mode, saved tasks, settings in a tab, smarter site input, buddy clock; this doc replaces the pivot spec and per-feature design files; the welcome page becomes a six-step walkthrough.
 - 2026-11-08: **Mark task done** on the running screen with Undo (`task/reopen`); History page replaces the popup's Done list.
+- 2026-11-09: buddy **invite** state: "Want to start a focus block?" (first page of the day, 10 min after Stop, 45 min idle), with a Settings toggle.
