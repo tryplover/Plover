@@ -90,6 +90,7 @@ describe("task handlers", () => {
         nudgeText: null,
         nudgeUntil: 0,
         celebrateUntil: 0,
+        inviteSince: 0,
       },
     });
     await fakeBrowser.notifications.create("checkin", {
@@ -114,6 +115,7 @@ describe("task handlers", () => {
         nudgeText: null,
         nudgeUntil: 0,
         celebrateUntil: 0,
+        inviteSince: 0,
       },
     });
     await dispatch({ type: "checkin/answer", stepId: null });

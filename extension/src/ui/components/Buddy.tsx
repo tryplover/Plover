@@ -8,6 +8,7 @@ const LABEL: Record<BuddyAnimationState, string> = {
   break: "Plover is on a break",
   nudging: "Plover has something for you",
   celebrating: "Plover is celebrating",
+  inviting: "Plover wants to start with you",
 };
 
 const CREAM = "#F3EEE1";

@@ -7,6 +7,7 @@ export interface BuddySnapshot {
   buddyState: BuddyAnimationState;
   nudgeText: string | null;
   checkInPending: boolean;
+  invite: boolean;
   clock: {
     phase: TimerPhase;
     phaseEndsAt: number;
@@ -21,6 +22,7 @@ export function deriveBuddyState(
   if (s.transient.celebrateUntil > nowMs) return "celebrating";
   if (s.transient.nudgeUntil > nowMs || s.transient.checkInPending)
     return "nudging";
+  if (s.transient.inviteSince > 0) return "inviting";
   const { phase } = s.timer;
   if (phase === "work") return s.focus.on ? "focus" : "working";
   if (phase === "shortBreak" || phase === "longBreak") return "break";

@@ -1,3 +1,4 @@
+import { reconcileInvite } from "@/features/buddy/worker";
 import { reconcileCalendar } from "@/features/calendar/worker";
 import { reconcileFocus } from "@/features/focus/worker";
 import { syncBuddyScript } from "@/features/site-access/worker";
@@ -8,6 +9,7 @@ export async function reconcile(): Promise<void> {
   await enqueue(async () => {
     await reconcileTimer();
     await reconcileFocus();
+    await reconcileInvite();
     await syncBuddyScript();
   });
   await reconcileCalendar();

@@ -14,6 +14,7 @@ export const DEFAULT_SETTINGS: Settings = {
   hiddenSites: [],
   hideEverywhere: false,
   theme: "system",
+  askToStart: true,
 };
 
 export const DEFAULT_LOCAL: LocalState = {
@@ -30,7 +31,9 @@ export const DEFAULT_LOCAL: LocalState = {
     nudgeText: null,
     nudgeUntil: 0,
     celebrateUntil: 0,
+    inviteSince: 0,
   },
+  invite: { declinedUntil: 0, lastDay: "", lastAt: 0, stoppedAt: 0 },
   needsSignIn: true,
   calendar: { events: [], fetchedAt: 0 },
   calendarConnected: false,

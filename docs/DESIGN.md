@@ -126,10 +126,11 @@ No Plover server stores user data. `plover-server` sees only the task text sent 
 
 ### 3.2 Types (`shared/types.ts`)
 
-- **`Settings`:** `workMinutes` 25, `shortBreakMinutes` 5, `longBreakMinutes` 15, `blocksPerLongBreak` 4, `focusNudgeMinutes` 15, `blocklist` [], `buddyCorner` "bottom-right", `hiddenSites` [], `hideEverywhere` false, `theme` "system". `getSettings` spreads `DEFAULT_SETTINGS`, so new keys need no migration.
-- **`LocalState`:** `tasks`, `activeTaskId`, `timer` (`TimerState`: `phase`, `phaseEndsAt`, `blocksCompleted`, `pausedAt`), `phaseStartedAt`, `sessions` (completed or cut-short work blocks, for later stats), `focus`, `blockingOn`, `transient`, `needsSignIn`, `calendar` (`events`, `fetchedAt`), `calendarConnected`.
+- **`Settings`:** `workMinutes` 25, `shortBreakMinutes` 5, `longBreakMinutes` 15, `blocksPerLongBreak` 4, `focusNudgeMinutes` 15, `blocklist` [], `buddyCorner` "bottom-right", `hiddenSites` [], `hideEverywhere` false, `theme` "system", `askToStart` true. `getSettings` spreads `DEFAULT_SETTINGS`, so new keys need no migration.
+- **`LocalState`:** `tasks`, `activeTaskId`, `timer` (`TimerState`: `phase`, `phaseEndsAt`, `blocksCompleted`, `pausedAt`), `phaseStartedAt`, `sessions` (completed or cut-short work blocks, for later stats), `focus`, `blockingOn`, `transient`, `invite`, `needsSignIn`, `calendar` (`events`, `fetchedAt`), `calendarConnected`.
 - **`Task`:** `id`, `title`, `steps` (`{ id, title, done }`), `createdAt`, `doneAt`, optional `parked` (`ParkedTimer`: `remainingMs`, `blocksCompleted`, `parkedAt`) and `lastActiveAt`.
-- **`Transient`:** short-lived UI state: `checkInPending`, `checkInTaskId`, `nudgeText`/`nudgeUntil`, `celebrateUntil`.
+- **`Transient`:** short-lived UI state: `checkInPending`, `checkInTaskId`, `nudgeText`/`nudgeUntil`, `celebrateUntil`, `inviteSince` (0 = none; else the time the pending invite was raised).
+- **`InviteState`** (`LocalState.invite`): `declinedUntil`, `lastDay` (local `YYYY-MM-DD` of the last invite), `lastAt`, `stoppedAt` (last Stop; 0 once a phase starts).
 
 Optional fields on stored objects are read with defaults; there is no migration layer (no backwards-compat shims for unshipped data).
 
@@ -144,7 +145,13 @@ Optional fields on stored objects are read with defaults; there is no migration 
 - **Click** toggles the in-page panel (iframe, 320×480, placed next to the buddy's corner) and a small menu: **Hide on this site** (adds the hostname to `hiddenSites`) and **Hide everywhere**. Both are undone in Settings.
 - **Speech bubble:** the focus nudge text, or "Which step did you finish?" while a check-in is pending. Clicking opens the panel.
 - **Clock:** while a phase runs, the buddy holds a small alarm clock with whole minutes left (seconds in the last minute): green rim for work, amber for breaks, faded when paused, hidden when idle. Purely presentational (`pointer-events: none`).
-- **Animation state** comes from `deriveBuddyState` (`features/buddy/buddy-state.ts`): celebrating > nudging (nudge or check-in) > focus/working (work phase) > break > idle.
+- **Animation state** comes from `deriveBuddyState` (`features/buddy/buddy-state.ts`): celebrating > nudging (nudge or check-in) > inviting > focus/working (work phase) > break > idle.
+- **Inviting** (`features/buddy/invite.ts` pure, `worker.ts` handlers): when no timer runs, the buddy may ask "Want to start a focus block?". `BuddySnapshot.invite` carries it; it reads only Plover's own state and clock.
+  - **Gates** (all must hold): `settings.askToStart` (default on), signed in, not `hideEverywhere`, timer idle, no invite pending, `now >= invite.declinedUntil`.
+  - **Triggers** (`inviteDue`): `day` runs when a buddy port connects and `invite.lastDay` is not today (local day); `afterStop` fires 10 min after Stop with no phase started since; `idle` fires after 45 min without timer activity (`lastActivityAt`) and 45 min since the last invite. The `invite-check` alarm (every 5 min, re-registered by `reconcile`) checks `afterStop` then `idle`. Raising sets `inviteSince`, `lastDay`, `lastAt`, all inside the command queue.
+  - **Timer events:** `stopped` sets `invite.stoppedAt`; `phase-started` zeroes it and clears a pending invite.
+  - **Answers** (`invite/answer`, not gated): `start` clears the invite; `later` declines for 30 min; `notToday` declines until the next local midnight.
+  - **Expiry:** unanswered after 30 min it is cleared and treated as Later. The snapshot drops an expired invite and the state port re-pushes at that time; the alarm then persists the clear.
 - Visibility: `isBuddyVisible(url, settings)`; only http(s) pages, not hidden everywhere or on this site.
 
 ### 4.2 Site access

@@ -19,6 +19,7 @@ const calm = {
   nudgeText: null,
   nudgeUntil: 0,
   celebrateUntil: 0,
+  inviteSince: 0,
 };
 const off = { on: false, startedAt: null };
 const on = { on: true, startedAt: NOW };
@@ -58,6 +59,32 @@ describe("deriveBuddyState", () => {
     expect(
       deriveBuddyState({ timer: running("work"), focus: on, transient }, NOW),
     ).toBe("celebrating");
+  });
+
+  it("inviting shows when idle and beats work, focus and break", () => {
+    const transient = { ...calm, inviteSince: NOW - 1 };
+    for (const timer of [IDLE_TIMER, running("work"), running("shortBreak")])
+      expect(deriveBuddyState({ timer, focus: on, transient }, NOW)).toBe(
+        "inviting",
+      );
+  });
+
+  it("celebrating, a nudge and a check-in all beat inviting", () => {
+    const inviting = { ...calm, inviteSince: NOW - 1 };
+    const args = (transient: typeof calm) => ({
+      timer: IDLE_TIMER,
+      focus: off,
+      transient,
+    });
+    expect(
+      deriveBuddyState(args({ ...inviting, celebrateUntil: NOW + 1 }), NOW),
+    ).toBe("celebrating");
+    expect(
+      deriveBuddyState(args({ ...inviting, nudgeUntil: NOW + 1 }), NOW),
+    ).toBe("nudging");
+    expect(
+      deriveBuddyState(args({ ...inviting, checkInPending: true }), NOW),
+    ).toBe("nudging");
   });
 
   it("ignores expired celebrate and nudge windows", () => {

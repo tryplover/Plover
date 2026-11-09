@@ -5,6 +5,7 @@ import {
   parseExternalMessage,
 } from "@/features/auth/handoff";
 import { getLocal } from "@/shared/storage";
+import { registerBuddyHandlers } from "@/features/buddy/worker";
 import { registerAuthHandlers } from "@/features/auth/worker";
 import { registerCalendarHandlers } from "@/features/calendar/worker";
 import { openWelcome, registerSiteAccess } from "@/features/site-access/worker";
@@ -28,6 +29,7 @@ export default defineBackground(() => {
   registerTimerHandlers();
   registerTaskHandlers();
   registerFocusHandlers();
+  registerBuddyHandlers();
   registerAuthHandlers();
   registerCalendarHandlers();
   registerSiteAccess();

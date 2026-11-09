@@ -16,6 +16,7 @@ export interface Settings {
   hiddenSites: string[];
   hideEverywhere: boolean;
   theme: Theme;
+  askToStart: boolean;
 }
 
 export interface Step {
@@ -60,6 +61,14 @@ export interface Transient {
   nudgeText: string | null;
   nudgeUntil: number;
   celebrateUntil: number;
+  inviteSince: number;
+}
+
+export interface InviteState {
+  declinedUntil: number;
+  lastDay: string;
+  lastAt: number;
+  stoppedAt: number;
 }
 
 export interface CalendarEvent {
@@ -79,10 +88,17 @@ export interface LocalState {
   focus: FocusState;
   blockingOn: boolean;
   transient: Transient;
+  invite: InviteState;
   needsSignIn: boolean;
   calendar: { events: CalendarEvent[]; fetchedAt: number };
   calendarConnected: boolean;
 }
 
 export type BuddyAnimationState =
-  "idle" | "working" | "break" | "focus" | "nudging" | "celebrating";
+  | "idle"
+  | "working"
+  | "break"
+  | "focus"
+  | "nudging"
+  | "celebrating"
+  | "inviting";

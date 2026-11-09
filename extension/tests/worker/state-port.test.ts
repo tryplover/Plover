@@ -42,6 +42,7 @@ describe("buildSnapshot", () => {
       buddyState: "idle",
       nudgeText: null,
       checkInPending: false,
+      invite: false,
       clock: null,
     });
     const json = JSON.stringify(snap);
@@ -61,10 +62,28 @@ describe("buildSnapshot", () => {
       buddyState: "nudging",
       nudgeText: "Still on it?",
       checkInPending: false,
+      invite: false,
       clock: null,
     });
     vi.setSystemTime(1_000_500);
     expect((await buildSnapshot()).nudgeText).toBeNull();
+  });
+
+  it("flags a pending invite until it expires", async () => {
+    await fakeBrowser.storage.local.set({
+      transient: { ...DEFAULT_LOCAL.transient, inviteSince: 1_000_000 - 1 },
+    });
+    expect(await buildSnapshot()).toEqual({
+      buddyState: "inviting",
+      nudgeText: null,
+      checkInPending: false,
+      invite: true,
+      clock: null,
+    });
+    vi.setSystemTime(1_000_000 - 1 + 30 * 60_000);
+    const snap = await buildSnapshot();
+    expect(snap.invite).toBe(false);
+    expect(snap.buddyState).toBe("idle");
   });
 
   it("carries the phase end time for a running timer but not the block count", async () => {
@@ -93,6 +112,7 @@ describe("buildSnapshot", () => {
       buddyState: "nudging",
       nudgeText: null,
       checkInPending: true,
+      invite: false,
       clock: null,
     });
   });
@@ -133,6 +153,7 @@ describe("registerStatePort", () => {
       buddyState: "nudging",
       nudgeText: null,
       checkInPending: true,
+      invite: false,
       clock: null,
     });
   });
@@ -155,6 +176,7 @@ describe("registerStatePort", () => {
       buddyState: "idle",
       nudgeText: null,
       checkInPending: false,
+      invite: false,
       clock: null,
     });
   });

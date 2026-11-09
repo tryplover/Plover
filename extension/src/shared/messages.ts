@@ -27,6 +27,7 @@ export type Command =
     }
   | { type: "auth/signOut" }
   | { type: "auth/handoff"; tokenHash: string }
+  | { type: "invite/answer"; choice: "start" | "later" | "notToday" }
   | { type: "focus/set"; on: boolean; endBy?: number }
   | { type: "blocking/set"; on: boolean }
   | { type: "calendar/connect" }
@@ -66,6 +67,7 @@ const COMMAND_TYPES: ReadonlySet<string> = new Set<Command["type"]>([
   "auth/password",
   "auth/signOut",
   "auth/handoff",
+  "invite/answer",
   "focus/set",
   "blocking/set",
   "calendar/connect",

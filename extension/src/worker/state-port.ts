@@ -4,6 +4,9 @@ import {
   deriveBuddyState,
   type BuddySnapshot,
 } from "@/features/buddy/buddy-state";
+import { INVITE_TTL_MS, inviteExpired } from "@/features/buddy/invite";
+import { checkInvite } from "@/features/buddy/worker";
+import { enqueue } from "@/worker/queue";
 import { getLocal } from "@/shared/storage";
 
 export { STATE_PORT };
@@ -11,19 +14,25 @@ export { STATE_PORT };
 async function snapshotAt(
   now: number,
 ): Promise<{ snap: BuddySnapshot; expiresIn: number | null }> {
-  const [timer, focus, transient] = await Promise.all([
+  const [timer, focus, stored] = await Promise.all([
     getLocal("timer"),
     getLocal("focus"),
     getLocal("transient"),
   ]);
-  const windows = [transient.nudgeUntil, transient.celebrateUntil].filter(
-    (t) => t > now,
-  );
+  const transient = inviteExpired(stored.inviteSince, now)
+    ? { ...stored, inviteSince: 0 }
+    : stored;
+  const windows = [
+    transient.nudgeUntil,
+    transient.celebrateUntil,
+    transient.inviteSince > 0 ? transient.inviteSince + INVITE_TTL_MS : 0,
+  ].filter((t) => t > now);
   return {
     snap: {
       buddyState: deriveBuddyState({ timer, focus, transient }, now),
       nudgeText: transient.nudgeUntil > now ? transient.nudgeText : null,
       checkInPending: transient.checkInPending,
+      invite: transient.inviteSince > 0,
       clock:
         timer.phase === "idle"
           ? null
@@ -63,6 +72,7 @@ export function registerStatePort(): void {
       browser.storage.onChanged.removeListener(onChanged);
     });
     browser.storage.onChanged.addListener(onChanged);
+    void enqueue(() => checkInvite("day")).catch(() => undefined);
     push();
   });
 }

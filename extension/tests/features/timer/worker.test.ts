@@ -277,6 +277,7 @@ describe("check-in cleanup", () => {
         nudgeText: null,
         nudgeUntil: 0,
         celebrateUntil: 0,
+        inviteSince: 0,
       },
     });
     await fakeBrowser.notifications.create("checkin", {
