@@ -27,6 +27,7 @@ describe("showNudge", () => {
         ...DEFAULT_LOCAL.transient,
         checkInPending: true,
         celebrateUntil: T0 + 5,
+        extendOffer: false,
       },
     });
     await showNudge("hello", T0);

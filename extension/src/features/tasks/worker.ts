@@ -94,7 +94,7 @@ export function registerTaskHandlers(): void {
     return { ok: true };
   });
 
-  registerHandler("task/resume", async ({ taskId, endBy }) => {
+  registerHandler("task/resume", async ({ taskId, endBy, justFive }) => {
     const now = Date.now();
     const found = (await getLocal("tasks")).find((t) => t.id === taskId);
     if (!found || found.doneAt !== null) {
@@ -115,6 +115,7 @@ export function registerTaskHandlers(): void {
         ? Math.min(plan.endBy, endBy)
         : plan.endBy,
       plan.blocksCompleted,
+      justFive,
     );
     return { ok: true };
   });

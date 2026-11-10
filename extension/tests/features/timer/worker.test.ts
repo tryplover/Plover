@@ -277,6 +277,7 @@ describe("check-in cleanup", () => {
         nudgeText: null,
         nudgeUntil: 0,
         celebrateUntil: 0,
+        extendOffer: false,
       },
     });
     await fakeBrowser.notifications.create("checkin", {
@@ -330,5 +331,105 @@ describe("check-in notification click", () => {
     Object.assign(fakeBrowser.action, { openPopup });
     await fakeBrowser.notifications.onClicked.trigger("other");
     expect(openPopup).not.toHaveBeenCalled();
+  });
+});
+
+describe("just 5 min", () => {
+  async function startJustFive() {
+    await setLocal({
+      tasks: [{ id: "t1", title: "T", steps: [], createdAt: 0, doneAt: null }],
+      activeTaskId: "t1",
+    });
+    await dispatch({ type: "timer/start", justFive: true });
+  }
+
+  it("pauses at 5 minutes and offers to keep going", async () => {
+    await startJustFive();
+    expect((await getLocal("timer")).phaseEndsAt).toBe(T0 + 25 * MIN);
+    expect((await fakeBrowser.alarms.get("just-five"))?.scheduledTime).toBe(
+      T0 + 5 * MIN,
+    );
+    vi.setSystemTime(T0 + 5 * MIN);
+    await fireAlarm("just-five");
+    expect((await getLocal("timer")).pausedAt).toBe(T0 + 5 * MIN);
+    expect((await getLocal("transient")).extendOffer).toBe(true);
+    expect(await getLocal("justFiveUntil")).toBeNull();
+  });
+
+  it("keepGoing resumes and clears the offer", async () => {
+    await startJustFive();
+    vi.setSystemTime(T0 + 5 * MIN);
+    await fireAlarm("just-five");
+    vi.setSystemTime(T0 + 6 * MIN);
+    await dispatch({ type: "timer/keepGoing" });
+    const timer = await getLocal("timer");
+    expect(timer.pausedAt).toBeNull();
+    expect(timer.phaseEndsAt).toBe(T0 + 26 * MIN);
+    expect((await getLocal("transient")).extendOffer).toBe(false);
+  });
+
+  it("plain Resume also clears the offer", async () => {
+    await startJustFive();
+    vi.setSystemTime(T0 + 5 * MIN);
+    await fireAlarm("just-five");
+    await dispatch({ type: "timer/resume" });
+    expect((await getLocal("timer")).pausedAt).toBeNull();
+    expect((await getLocal("transient")).extendOffer).toBe(false);
+  });
+
+  it("stopHere parks the task and records an incomplete session", async () => {
+    await startJustFive();
+    vi.setSystemTime(T0 + 5 * MIN);
+    await fireAlarm("just-five");
+    await dispatch({ type: "timer/stopHere" });
+    expect((await getLocal("timer")).phase).toBe("idle");
+    expect((await getLocal("transient")).extendOffer).toBe(false);
+    const [task] = await getLocal("tasks");
+    expect(task?.parked).not.toBeNull();
+    expect(await getLocal("activeTaskId")).toBeNull();
+    const sessions = await getLocal("sessions");
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0]).toMatchObject({
+      completed: false,
+      endedAt: T0 + 5 * MIN,
+    });
+  });
+
+  it("stop before 5 minutes clears the alarm and nothing fires", async () => {
+    await startJustFive();
+    vi.setSystemTime(T0 + 2 * MIN);
+    await dispatch({ type: "timer/stop" });
+    expect(await fakeBrowser.alarms.get("just-five")).toBeUndefined();
+    expect(await getLocal("justFiveUntil")).toBeNull();
+    vi.setSystemTime(T0 + 5 * MIN);
+    await fireAlarm("just-five");
+    expect((await getLocal("timer")).phase).toBe("idle");
+    expect((await getLocal("transient")).extendOffer).toBe(false);
+  });
+
+  it("skip clears the pending just-five", async () => {
+    await startJustFive();
+    await dispatch({ type: "timer/skip" });
+    expect(await fakeBrowser.alarms.get("just-five")).toBeUndefined();
+    expect(await getLocal("justFiveUntil")).toBeNull();
+  });
+
+  it("reconcile with a past justFiveUntil pauses with the offer", async () => {
+    await startJustFive();
+    await fakeBrowser.alarms.clearAll();
+    vi.setSystemTime(T0 + 8 * MIN);
+    await reconcileTimer();
+    expect((await getLocal("timer")).pausedAt).toBe(T0 + 8 * MIN);
+    expect((await getLocal("transient")).extendOffer).toBe(true);
+  });
+
+  it("reconcile with a future justFiveUntil recreates the alarm", async () => {
+    await startJustFive();
+    await fakeBrowser.alarms.clearAll();
+    vi.setSystemTime(T0 + MIN);
+    await reconcileTimer();
+    expect((await fakeBrowser.alarms.get("just-five"))?.scheduledTime).toBe(
+      T0 + 5 * MIN,
+    );
   });
 });

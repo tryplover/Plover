@@ -127,9 +127,9 @@ No Plover server stores user data. `plover-server` sees only the task text sent 
 ### 3.2 Types (`shared/types.ts`)
 
 - **`Settings`:** `workMinutes` 25, `shortBreakMinutes` 5, `longBreakMinutes` 15, `blocksPerLongBreak` 4, `focusNudgeMinutes` 15, `blocklist` [], `buddyCorner` "bottom-right", `hiddenSites` [], `hideEverywhere` false, `theme` "system". `getSettings` spreads `DEFAULT_SETTINGS`, so new keys need no migration.
-- **`LocalState`:** `tasks`, `activeTaskId`, `timer` (`TimerState`: `phase`, `phaseEndsAt`, `blocksCompleted`, `pausedAt`), `phaseStartedAt`, `sessions` (completed or cut-short work blocks, for later stats), `focus`, `blockingOn`, `transient`, `needsSignIn`, `calendar` (`events`, `fetchedAt`), `calendarConnected`.
+- **`LocalState`:** `tasks`, `activeTaskId`, `timer` (`TimerState`: `phase`, `phaseEndsAt`, `blocksCompleted`, `pausedAt`), `phaseStartedAt`, `sessions` (completed or cut-short work blocks, for later stats), `focus`, `blockingOn`, `transient`, `needsSignIn`, `calendar` (`events`, `fetchedAt`), `calendarConnected`, `justFiveUntil` (timestamp or null; used by §9.8).
 - **`Task`:** `id`, `title`, `steps` (`{ id, title, done }`), `createdAt`, `doneAt`, optional `parked` (`ParkedTimer`: `remainingMs`, `blocksCompleted`, `parkedAt`) and `lastActiveAt`.
-- **`Transient`:** short-lived UI state: `checkInPending`, `checkInTaskId`, `nudgeText`/`nudgeUntil`, `celebrateUntil`.
+- **`Transient`:** short-lived UI state: `checkInPending`, `checkInTaskId`, `nudgeText`/`nudgeUntil`, `celebrateUntil`, `extendOffer` (used by §9.8).
 
 Optional fields on stored objects are read with defaults; there is no migration layer (no backwards-compat shims for unshipped data).
 
@@ -324,7 +324,7 @@ Grouped sections: **Focus** (steppers: work 5–90, breaks 1–30, nudge 5–60)
 
 ### 9.8 "Just 5 minutes" start
 
-Next to **Start** (new task) and **Resume** (saved task), a text button **Just 5 min** starts a work block with `endBy = now + 5 min`. When it ends, instead of the usual check-in the panel and buddy bubble ask "Keep going?": **Keep going** extends the same block to a full work block (`timer/extend`: `phaseEndsAt = phaseStartedAt + workMinutes`, minus time already done) and **Stop here** stops and parks. A 5-minute block counts as focus time but not as a Pomodoro unless extended. `transient.extendOffer` drives it.
+Next to **Start** (new task) and **Resume** (saved task), a text button **Just 5 min** starts a normal full work block (`timer/start` or `task/resume` with `justFive: true`) and sets `local.justFiveUntil = now + 5 min` with a one-shot `just-five` alarm. When it fires and the timer is still a running work phase, the worker pauses the timer and sets `transient.extendOffer`; the panel and buddy bubble then ask "Keep going?". **Keep going** (`timer/keepGoing`) clears the offer and resumes, so the block can become a full Pomodoro. **Stop here** (`timer/stopHere`) clears the offer and stops and parks the task: the session is recorded as not completed, so it counts as focus time but not as a Pomodoro. Any transition that leaves the work phase (stop, skip, park, mark done, the block ending) clears `justFiveUntil`, the alarm and `extendOffer` in `applyTransition`. `reconcileTimer` re-creates the alarm when `justFiveUntil` is in the future and applies the pause when it has passed. Worker logic is in place; the buttons and bubble are not built yet.
 
 ### 9.9 Next step after a break
 

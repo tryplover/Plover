@@ -10,6 +10,7 @@ const TRANSIENT: Transient = {
   nudgeText: "hi",
   nudgeUntil: 42,
   celebrateUntil: 7,
+  extendOffer: false,
 };
 const SESSION: Session = {
   id: "old",
