@@ -11,17 +11,25 @@ test("popup: start, pause, skip, mark done, undo", async ({
   const p = await context.newPage();
   await p.setViewportSize({ width: 420, height: 720 });
   await p.goto(`chrome-extension://${extensionId}/popup.html`);
-  await p
-    .getByPlaceholder("e.g. Write the intro of my essay")
-    .pressSequentially(title);
+  const input = p.getByRole("textbox", { name: "What are you working on?" });
+  await expect(input).toBeVisible();
+  await expect(p.getByRole("status")).toHaveCount(1);
+  await input.pressSequentially(title);
   await p.getByRole("button", { name: "Write my own" }).click();
-  for (const s of ["Outline three points", "Draft the hook"]) {
-    await p.getByRole("button", { name: "Add step" }).click();
-    await p.locator('input[aria-label^="Step "]').last().fill(s);
-  }
+  await expect(p.getByRole("textbox", { name: "Step 1" })).toBeFocused();
+  await p.getByRole("textbox", { name: "Step 1" }).fill("Outline three points");
+  await p.getByRole("button", { name: "Add step" }).click();
+  await p.locator('input[aria-label^="Step "]').last().fill("Draft the hook");
+  await expect(p.getByRole("button", { name: "Move step 2 up" })).toBeVisible();
+  await expect(
+    p.getByRole("button", { name: "Delete step 2: Draft the hook" }),
+  ).toBeVisible();
   await shot(p, "popup-1-steps");
   await p.getByRole("button", { name: "Start" }).click();
-  await expect(p.getByText("Focus block")).toBeVisible();
+  await expect(p.getByText("Focus block", { exact: true })).toBeVisible();
+  await expect(p.getByRole("button", { name: "Pause" })).toBeFocused();
+  await expect(p.getByRole("status").first()).toHaveText("Focus block started");
+  await expect(p.getByRole("heading", { name: title })).toBeVisible();
   await expect(p.getByText(title).first()).toBeVisible();
   await shot(p, "popup-2-running");
 
@@ -29,7 +37,7 @@ test("popup: start, pause, skip, mark done, undo", async ({
   await expect(p.getByRole("button", { name: "Resume" }).first()).toBeVisible();
   await p.getByRole("button", { name: "Resume" }).first().click();
   await p.getByRole("button", { name: "Skip" }).click();
-  await expect(p.getByText("Short break")).toBeVisible();
+  await expect(p.getByText("Short break", { exact: true })).toBeVisible();
   await shot(p, "popup-3-break");
   await p.getByRole("button", { name: "Skip" }).click();
 

@@ -16,6 +16,7 @@ import { SignIn } from "@/ui/components/SignIn";
 import { TaskBreakdown } from "@/ui/components/TaskBreakdown";
 import { TimerControls } from "@/ui/components/TimerControls";
 import { useExtensionState } from "@/ui/hooks/useExtensionState";
+import { useTimerAnnouncement } from "@/ui/hooks/useTimerAnnouncement";
 import "./Panel.css";
 
 function eyebrowFor(phase: TimerPhase, focusOn: boolean): string {
@@ -40,10 +41,18 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
     null,
   );
 
+  const announcement = useTimerAnnouncement(local.timer, ready);
+  const idle = local.timer.phase === "idle";
+  const [prevIdle, setPrevIdle] = useState<boolean | null>(null);
+  const [justStarted, setJustStarted] = useState(false);
+  if (ready && prevIdle !== idle) {
+    setPrevIdle(idle);
+    setJustStarted(prevIdle === true && !idle);
+  }
+
   if (!ready)
     return <div className={`plover-panel plover-surface-${surface}`} />;
 
-  const idle = local.timer.phase === "idle";
   const activeTask = findActiveTask(local.tasks, local.activeTaskId);
   const checkInTask = findActiveTask(
     local.tasks,
@@ -153,7 +162,7 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
         </div>
       ) : (
         <>
-          {activeTask && <p className="plover-task">{activeTask.title}</p>}
+          {activeTask && <h2 className="plover-task">{activeTask.title}</h2>}
           {activeTask && <ActiveSteps task={activeTask} />}
           {activeTask && (
             <button
@@ -174,6 +183,7 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
             timer={local.timer}
             now={now}
             canPark={activeTask !== undefined}
+            autoFocusPause={justStarted}
             buddy={
               surface === "popup" ? (
                 <div className="plover-buddy-small">
@@ -193,6 +203,9 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
       className={`plover-panel plover-surface-${surface}`}
       data-buddy={buddy}
     >
+      <div className="plover-sr" role="status" aria-live="polite">
+        {announcement}
+      </div>
       <p className="plover-eyebrow">{eyebrow}</p>
       {surface === "popup" && <SiteAccess />}
       {surface === "popup" && idle && (

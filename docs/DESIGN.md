@@ -163,7 +163,7 @@ Chrome's own extension page shows only per-site toggles for optional permissions
 
 1. The user types a task in the popup or panel ("Write the intro of my history essay").
 2. **Suggest steps** sends it to `plover-server` `/api/decompose` (Gemini) with the Supabase token. **Write my own** skips AI.
-3. Steps are fully editable (edit, reorder, delete, add), then **Start** saves the task (`task/save`), makes it active and starts a work block. Keyboard entry: the popup focuses the title box when it opens idle (unless something else, such as the Undo banner, already holds focus); Enter in the title box runs **Suggest steps**; Enter in a step adds and focuses the next step (nothing if the last step is empty); **Add step** focuses the new step; Ctrl/Cmd+Enter starts.
+3. Steps are fully editable (edit, reorder, delete, add), then **Start** saves the task (`task/save`), makes it active and starts a work block. Keyboard entry: the popup focuses the title box when it opens idle (unless something else, such as the Undo banner, already holds focus); Enter in the title box runs **Suggest steps**; Enter in a step adds and focuses the next step (nothing if the last step is empty); **Add step** focuses the new step; Ctrl/Cmd+Enter starts. Accessibility: "What are you working on?" is the task input's `<label>`; **Write my own** focuses (and if needed creates) Step 1; step buttons are named per row ("Move step 2 up", "Delete step 2: <title>"); "Your tasks" and the running task title are `<h2>`s.
 4. **No flow depends on the model:** on failure or rate limit the user gets an empty list to fill in.
 5. Steps are ticked by hand (`step/toggle`). Ticking the last step plays the celebration and sets `doneAt`; the block keeps running until the user stops it (see §9.2 for the planned wrap-up).
 
@@ -184,6 +184,7 @@ Every task is kept, with its steps and its place in the timer.
 - **State machine** (`features/timer/machine.ts`, pure): `startTimer`, `tick`, `pauseTimer`, `resumeTimer`, `skipPhase`, `stopTimer`, `delayPhase`, `remainingSeconds`. `startTimer` accepts `endBy` (shortened block) and `blocksCompleted` (resume). Transitions emit events; `bookkeep()` records sessions and sets the check-in.
 - **Alarms** fire at `phaseEndsAt`; nothing ticks.
 - **Check-in:** at the end of each work block, "Which step did you finish?" in the panel and the buddy's bubble; answering ticks that step on the task the check-in belongs to. It only appears when the block's task has an open step (`hasOpenStep`, computed in `applyTransition`); an anonymous block or a task with every step done gets none. If no page with the buddy is visible, a system notification carries it.
+- **Announcements and focus:** the panel keeps an always-mounted visually hidden `role="status"` region (`.plover-sr`) that announces phase changes ("Focus block started", "Short break started", "Paused", "Resumed"; never clock ticks). The check-in heading takes focus when it appears (if the document has focus; otherwise a `role="alert"` announces it), and **Start** moves focus to **Pause**.
 - **Toolbar badge** shows the minutes left (`features/timer/badge.ts`).
 - Keyboard shortcut **Alt+Shift+O** opens the popup (`_execute_action`; users change it at `chrome://extensions/shortcuts`).
 
@@ -379,3 +380,4 @@ Settings → **Backup**: "Back up to your Google Drive" stores one `plover-backu
 - 2026-11-10: end-to-end Playwright suite and `e2e.yml` workflow (§8.5).
 - 2026-11-10: focus mode picks up the most recent open task when none is active; the check-in only appears when the block's task has an open step (#529).
 - 2026-11-10: keyboard entry in task breakdown: Enter suggests steps, Enter in a step adds the next, Ctrl/Cmd+Enter starts, and the popup focuses the title box (#517).
+- 2026-11-10: popup accessibility: labelled task input, headings, per-row control names, status announcements for timer phases and check-in, focus after Write my own / Start / Settings Remove (#534, #535, #536).
