@@ -1,3 +1,12 @@
+/* Must follow WXT's `:host { all: initial !important }` reset: only an
+   !important rule inside the shadow tree can position the host above the
+   page's own fixed elements. */
+:host {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  z-index: 2147483647 !important;
+}
 .plover-buddy-wrap {
   position: fixed;
   display: flex;
