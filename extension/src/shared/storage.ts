@@ -34,6 +34,7 @@ export const DEFAULT_LOCAL: LocalState = {
   needsSignIn: true,
   calendar: { events: [], fetchedAt: 0 },
   calendarConnected: false,
+  siteBannerDismissedUntil: 0,
 };
 
 const SETTINGS_KEY = "settings";

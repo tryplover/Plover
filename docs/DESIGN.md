@@ -127,7 +127,7 @@ No Plover server stores user data. `plover-server` sees only the task text sent 
 ### 3.2 Types (`shared/types.ts`)
 
 - **`Settings`:** `workMinutes` 25, `shortBreakMinutes` 5, `longBreakMinutes` 15, `blocksPerLongBreak` 4, `focusNudgeMinutes` 15, `blocklist` [], `buddyCorner` "bottom-right", `hiddenSites` [], `hideEverywhere` false, `theme` "system". `getSettings` spreads `DEFAULT_SETTINGS`, so new keys need no migration.
-- **`LocalState`:** `tasks`, `activeTaskId`, `timer` (`TimerState`: `phase`, `phaseEndsAt`, `blocksCompleted`, `pausedAt`), `phaseStartedAt`, `sessions` (completed or cut-short work blocks, for later stats), `focus`, `blockingOn`, `transient`, `needsSignIn`, `calendar` (`events`, `fetchedAt`), `calendarConnected`.
+- **`LocalState`:** `tasks`, `activeTaskId`, `timer` (`TimerState`: `phase`, `phaseEndsAt`, `blocksCompleted`, `pausedAt`), `phaseStartedAt`, `sessions` (completed or cut-short work blocks, for later stats), `focus`, `blockingOn`, `transient`, `needsSignIn`, `calendar` (`events`, `fetchedAt`), `calendarConnected`, `siteBannerDismissedUntil` (0; epoch ms until which the popup all-sites banner stays hidden).
 - **`Task`:** `id`, `title`, `steps` (`{ id, title, done }`), `createdAt`, `doneAt`, optional `parked` (`ParkedTimer`: `remainingMs`, `blocksCompleted`, `parkedAt`) and `lastActiveAt`.
 - **`Transient`:** short-lived UI state: `checkInPending`, `checkInTaskId`, `nudgeText`/`nudgeUntil`, `celebrateUntil`.
 
@@ -153,11 +153,13 @@ Installing asks for **no** site access (no "read and change all your data" warni
 
 1. **Welcome page** (opened on `onInstalled` reason `install`) asks once for all sites from a click (user gesture required).
 2. **Runtime registration.** The content script isn't in the manifest; `syncBuddyScript()` registers it with `scripting.registerContentScripts` for the granted origins (`buddyMatches`), on install/update/startup (`reconcile`) and on `permissions.onAdded/onRemoved`, and `injectBuddy` injects it into tabs already open.
-3. **Per-site fallback.** On a page without access the popup offers "Show Plover on this site" (exact host).
-4. **Pages no extension can draw on:** `chrome://`, the Web Store, the new-tab page, the PDF viewer, other extensions' pages. The popup is the fallback there.
-5. **Blocking and access:** see §4.5.
+3. **Popup banner.** While `<all_urls>` isn't granted, the popup shows "Plover isn't on your pages yet." above the task input with **Show Plover on all sites** (permission request from the click), **Just this site** (the per-site request, only when the current tab can have one) and a **×** that sends `siteAccess/dismissBanner`, hiding the banner for 7 days (`siteBannerDismissedUntil`). The pure `bannerState(granted, dismissedUntil, now)` in `features/site-access/origins.ts` decides. It follows `permissions.onAdded/onRemoved`, so it disappears once access is granted and the worker registers the script.
+4. **Per-site fallback.** While the banner is hidden (dismissed) and all sites aren't granted, the popup offers "Show Plover on this site" (exact host). The banner replaces it while showing.
+5. **Settings.** The **Where Plover appears** section has a **Show Plover on all sites** switch that requests `<all_urls>` when turned on and removes it when turned off (following `permissions.onAdded/onRemoved`), next to **Hide the buddy everywhere** and **Sites without the buddy**.
+6. **Pages no extension can draw on:** `chrome://`, the Web Store, the new-tab page, the PDF viewer, other extensions' pages. The popup is the fallback there.
+7. **Blocking and access:** see §4.5.
 
-Chrome's own extension page shows only per-site toggles for optional permissions, so "all sites" can only be granted from inside Plover (today: the welcome page; planned: popup and Settings, §9.1).
+Chrome's own extension page shows only per-site toggles for optional permissions, so "all sites" can only be granted from inside Plover (the welcome page, the popup banner and Settings).
 
 ### 4.3 Task breakdown
 
@@ -297,10 +299,6 @@ On PRs, if the diff touches a load-bearing path and not `docs/DESIGN.md`, the ch
 
 Each entry is the agreed design in brief. Before building one, write a plan in `docs/plans/`, and move the entry into §4 when it ships.
 
-### 9.1 Buddy on all sites from the popup and Settings
-
-Today only the welcome page can grant all-sites access, so users who skip it approve sites one by one. **Popup:** when `<all_urls>` isn't granted, a banner above the task input: "Plover isn't on your pages yet. [Show Plover on all sites] Just this site", dismissible for 7 days (pure `bannerState(granted, dismissedUntil, now)` in `features/site-access/origins.ts`). **Settings:** a "Where Plover appears" section with a **Show Plover on all sites** toggle that requests or removes `<all_urls>` and follows `permissions.onAdded/onRemoved`, next to Hide everywhere and Sites without the buddy. No new permissions. Not doing: making access install-time (brings back the install warning).
-
 ### 9.2 End-of-task wrap-up
 
 Ticking the last open step (or **Mark done**, including the running-screen **Mark task done**) stops the timer, turns off focus and blocking, and shows a wrap-up: "Nice work on '…'. How did that session go?" with **Smooth / Okay / Tough**, an optional one-line note, **Done** or **Skip**. The eyebrow shows blocks and minutes for the task (from `sessions`). Stored as `task.reflection { mood, note, at }`, local only. `transient.wrapUpTaskId` drives the screen; commands `wrapup/answer`, `wrapup/skip`. Unticking within 10 s reopens and resumes. If a check-in answer completes the task, the wrap-up replaces the return to the timer. No stats in v1.
@@ -311,7 +309,7 @@ Turning blocking or focus on with an empty blocklist opens an inline editor inst
 
 ### 9.4 Settings page per Figma screen 8
 
-Grouped sections: **Focus** (steppers: work 5–90, breaks 1–30, nudge 5–60), **Blocking** (`BlockList`), **Where Plover appears** (§9.1), **Calendar** (connect; "Warn me before meetings" 5 / 10 / off as `settings.headsUpMinutes`, replacing the fixed 5-minute lead), **Appearance**, **Keyboard shortcut** (shows Alt+Shift+O, links to the shortcuts page), **Account**. Figma settings rows (label left, value right, 51px, divider). Desktop-era rows (Show on desktop, Sounds, 5 more minutes) are left out. Lands after 9.1 and 9.3 so it reuses their components.
+Grouped sections: **Focus** (steppers: work 5–90, breaks 1–30, nudge 5–60), **Blocking** (`BlockList`), **Where Plover appears** (§4.2), **Calendar** (connect; "Warn me before meetings" 5 / 10 / off as `settings.headsUpMinutes`, replacing the fixed 5-minute lead), **Appearance**, **Keyboard shortcut** (shows Alt+Shift+O, links to the shortcuts page), **Account**. Figma settings rows (label left, value right, 51px, divider). Desktop-era rows (Show on desktop, Sounds, 5 more minutes) are left out. Lands after 9.3 so it reuses their components.
 
 ### 9.6 End-to-end tests in CI
 
@@ -375,3 +373,4 @@ Settings → **Backup**: "Back up to your Google Drive" stores one `plover-backu
 - 2026-11-05: waitlist gate dropped; sign-up open.
 - 2026-11-07: Figma styling, dark mode, saved tasks, settings in a tab, smarter site input, buddy clock; this doc replaces the pivot spec and per-feature design files; the welcome page becomes a six-step walkthrough.
 - 2026-11-08: **Mark task done** on the running screen with Undo (`task/reopen`); History page replaces the popup's Done list.
+- 2026-11-10: the popup banner and a Settings switch grant all-sites access without the welcome page (`siteAccess/dismissBanner`).

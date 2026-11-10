@@ -82,6 +82,7 @@ export interface LocalState {
   needsSignIn: boolean;
   calendar: { events: CalendarEvent[]; fetchedAt: number };
   calendarConnected: boolean;
+  siteBannerDismissedUntil: number;
 }
 
 export type BuddyAnimationState =

@@ -2,12 +2,13 @@ import { useId, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { browser } from "wxt/browser";
 import { siteFromInput } from "@/features/blocking/domains";
-import { siteOrigin } from "@/features/site-access/origins";
+import { ALL_SITES, siteOrigin } from "@/features/site-access/origins";
 import { sendCommand } from "@/shared/messages";
 import { clampInput } from "@/shared/number-input";
 import { updateSettings } from "@/shared/storage";
 import type { Settings, Theme } from "@/shared/types";
 import { useExtensionState } from "@/ui/hooks/useExtensionState";
+import { useSiteAccess } from "@/ui/hooks/useSiteAccess";
 import { applyStoredTheme } from "@/ui/theme";
 import "@/ui/base.css";
 import "./options.css";
@@ -175,6 +176,7 @@ function DomainList({
 
 function Options() {
   const { settings, local, ready } = useExtensionState();
+  const allSites = useSiteAccess();
   const [calendarError, setCalendarError] = useState<string | null>(null);
   if (!ready) return null;
 
@@ -241,7 +243,22 @@ function Options() {
       />
 
       <section>
-        <h2>Buddy</h2>
+        <h2>Where Plover appears</h2>
+        <div className="field">
+          <span id="all-sites-label">Show Plover on all sites</span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={allSites}
+            aria-labelledby="all-sites-label"
+            className="switch"
+            onClick={() =>
+              void (allSites
+                ? browser.permissions.remove({ origins: [ALL_SITES] })
+                : browser.permissions.request({ origins: [ALL_SITES] }))
+            }
+          />
+        </div>
         <label className="field">
           <input
             type="checkbox"

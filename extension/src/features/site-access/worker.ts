@@ -1,8 +1,9 @@
 import { browser } from "wxt/browser";
 import type { ScriptPublicPath } from "wxt/utils/inject-script";
-import { buddyMatches } from "@/features/site-access/origins";
+import { DISMISS_MS, buddyMatches } from "@/features/site-access/origins";
 import { reapplyBlocking } from "@/features/blocking/worker";
-import { getLocal } from "@/shared/storage";
+import { getLocal, setLocal } from "@/shared/storage";
+import { registerHandler } from "@/worker/controller";
 import { enqueue } from "@/worker/queue";
 
 const BUDDY_SCRIPT_ID = "plover-buddy";
@@ -54,6 +55,10 @@ async function resync(): Promise<void> {
 }
 
 export function registerSiteAccess(): void {
+  registerHandler("siteAccess/dismissBanner", async () => {
+    await setLocal({ siteBannerDismissedUntil: Date.now() + DISMISS_MS });
+    return { ok: true };
+  });
   browser.permissions.onAdded.addListener(({ origins }) => {
     if (!origins?.length) return;
     void enqueue(resync).then(() => injectBuddy(origins));

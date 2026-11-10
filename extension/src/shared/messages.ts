@@ -30,7 +30,8 @@ export type Command =
   | { type: "focus/set"; on: boolean; endBy?: number }
   | { type: "blocking/set"; on: boolean }
   | { type: "calendar/connect" }
-  | { type: "calendar/disconnect" };
+  | { type: "calendar/disconnect" }
+  | { type: "siteAccess/dismissBanner" };
 
 export type CommandResult =
   { ok: true; data?: unknown } | { ok: false; error: string };
@@ -70,6 +71,7 @@ const COMMAND_TYPES: ReadonlySet<string> = new Set<Command["type"]>([
   "blocking/set",
   "calendar/connect",
   "calendar/disconnect",
+  "siteAccess/dismissBanner",
 ]);
 
 export function isCommand(msg: unknown): msg is Command {

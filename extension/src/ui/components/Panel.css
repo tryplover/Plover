@@ -251,3 +251,32 @@
   justify-content: flex-end;
   padding: 0 12px;
 }
+
+.plover-banner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--radius-card);
+  background: var(--color-bg-quiet);
+  color: var(--color-text-primary);
+}
+.plover-banner__text {
+  margin: 0;
+  padding-right: 32px;
+}
+.plover-banner__actions {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.plover-banner__close {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  font-size: 22px;
+  text-decoration: none;
+}

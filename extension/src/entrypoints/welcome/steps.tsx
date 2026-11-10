@@ -4,6 +4,7 @@ import { browser } from "wxt/browser";
 import { ALL_SITES } from "@/features/site-access/origins";
 import { sendCommand } from "@/shared/messages";
 import { Buddy } from "@/ui/components/Buddy";
+import { useSiteAccess } from "@/ui/hooks/useSiteAccess";
 import { SignIn } from "@/ui/components/SignIn";
 
 function Heading({ children }: { children: ReactNode }) {
@@ -16,29 +17,6 @@ function Heading({ children }: { children: ReactNode }) {
       {children}
     </h1>
   );
-}
-
-export function useSiteAccess() {
-  const [granted, setGranted] = useState(false);
-
-  useEffect(() => {
-    let alive = true;
-    const refresh = () => {
-      void browser.permissions.contains({ origins: [ALL_SITES] }).then((ok) => {
-        if (alive) setGranted(ok);
-      });
-    };
-    refresh();
-    browser.permissions.onAdded.addListener(refresh);
-    browser.permissions.onRemoved.addListener(refresh);
-    return () => {
-      alive = false;
-      browser.permissions.onAdded.removeListener(refresh);
-      browser.permissions.onRemoved.removeListener(refresh);
-    };
-  }, []);
-
-  return granted;
 }
 
 export function HelloStep({ onNext }: { onNext: () => void }) {
