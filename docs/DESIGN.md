@@ -313,6 +313,46 @@ Turning blocking or focus on with an empty blocklist opens an inline editor inst
 
 Grouped sections: **Focus** (steppers: work 5–90, breaks 1–30, nudge 5–60), **Blocking** (`BlockList`), **Where Plover appears** (§9.1), **Calendar** (connect; "Warn me before meetings" 5 / 10 / off as `settings.headsUpMinutes`, replacing the fixed 5-minute lead), **Appearance**, **Keyboard shortcut** (shows Alt+Shift+O, links to the shortcuts page), **Account**. Figma settings rows (label left, value right, 51px, divider). Desktop-era rows (Show on desktop, Sounds, 5 more minutes) are left out. Lands after 9.1 and 9.3 so it reuses their components.
 
+### 9.6 End-to-end tests in CI
+
+A Playwright suite in `extension/tests/e2e/` that builds the extension, loads it unpacked (a test copy of the build with `host_permissions: ["<all_urls>"]` so the buddy draws headless) and drives real flows: popup start → pause → skip → Mark task done → Undo; History stats, pagination, search and export; Settings steppers; the buddy and its hide menu on a local page. Sign-in is faked by writing `needsSignIn: false` and a placeholder `sb-*-auth-token`; no real network (a local HTTP server serves the test page). New workflow `e2e.yml` on pull requests uploads screenshots and the Playwright report as artifacts. Adds `@playwright/test` as a dev dependency.
+
+### 9.7 Rate limit on plover-server
+
+`/api/decompose` limits each Supabase user to 30 requests per hour and 200 per day (in-memory sliding window per instance; Cloud Run max instances kept low so it stays close). Over the limit: `429` with `Retry-After`. The extension maps 429 to "You've used today's step suggestions. Write your own, or try again in N min." and still offers the empty list (no flow depends on the model).
+
+### 9.8 "Just 5 minutes" start
+
+Next to **Start** (new task) and **Resume** (saved task), a text button **Just 5 min** starts a work block with `endBy = now + 5 min`. When it ends, instead of the usual check-in the panel and buddy bubble ask "Keep going?": **Keep going** extends the same block to a full work block (`timer/extend`: `phaseEndsAt = phaseStartedAt + workMinutes`, minus time already done) and **Stop here** stops and parks. A 5-minute block counts as focus time but not as a Pomodoro unless extended. `transient.extendOffer` drives it.
+
+### 9.9 Next step after a break
+
+When a break ends and a work block starts, the buddy's bubble shows "Next: <first open step>" for 20 s and the running screen scrolls that step into view (it already carries **NOW**). The snapshot gains `nextStep: string | null`; the content script still receives only display text.
+
+### 9.10 Start again from History
+
+Finished tasks in the History Tasks tab get **Start again**: a copy with the same title and steps, all unticked, saved as a new open task (`cloneTask` pure; `task/save`), then "Added to Your tasks." Useful for recurring work.
+
+### 9.11 When you focus best
+
+Stats tab card, shown once there are ≥10 Pomodoros in the last 30 days: a 7 × 24 weekday-by-hour heatmap of focus minutes and one line, "You focus best Tue–Thu, 9–11 am" (the 2-hour window and weekday run with the most focus). Pure `focusHeatmap(sessions, now, days)` and `bestWindow(heatmap)` in `features/stats/`.
+
+### 9.12 Weekly recap
+
+The first time the popup or panel opens in a new week (Monday start) after a week with any sessions, a dismissible card: "Last week: 6 h 10 m focus · 14 Pomodoros · 5 tasks · best day Wed" with **See history**. `local.recapSeenWeek` (week start) stops it repeating. Pure `weeklyRecap(sessions, tasks, weekStart)`.
+
+### 9.13 Plan a focus block from the calendar
+
+With the calendar connected and the timer idle, when the next event is ≥ `workMinutes` away (looking 3 h ahead), the calendar line reads "You're free until 11:00." and **Start** uses that window; when it's shorter, it offers a shortened block that ends 2 min before the event (existing conflict offer). Pure `freeWindow(events, now, horizonMs)` in `features/calendar/`.
+
+### 9.14 Soft weekly goal
+
+Settings: **Weekly goal**, "Focus on N days a week" (default 4, or Off). A day counts with at least one Pomodoro. The idle screen shows "3 of 4 days this week" with seven small dots; it resets Monday and never shows a lost streak. Reaching the goal plays the buddy's celebration once that week (`local.goalCelebratedWeek`). Buddy accessories as rewards wait for real character art.
+
+### 9.15 Optional backup to the user's Google Drive
+
+Settings → **Backup**: "Back up to your Google Drive" stores one `plover-backup.json` (tasks, sessions, settings) in the Drive **app data folder** (hidden, only Plover can read it) using the user's own Google token (`drive.appdata` scope via `launchWebAuthFlow`, like Calendar). Daily alarm plus **Back up now**; **Restore** merges by id. Plover's servers never see it, so "no Plover cloud sync" still holds. Host `www.googleapis.com` is already allowed. **Blocked on the owner:** add the `drive.appdata` scope to the Google OAuth consent screen.
+
 ---
 
 ## 10. Open questions
