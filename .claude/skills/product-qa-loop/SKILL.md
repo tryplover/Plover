@@ -28,6 +28,7 @@ Read it at the start of every iteration. If it's missing, ask the owner once, wr
 - run_product: how to launch/drive the product headlessly (URL, build output, fake sign-in, seed data)
 - ui_paths: [src/ui/, src/entrypoints/, "*.css", "*.html"]   # touching these = UI change
 - ui_draft_cap: 4
+- media_branch: pr-media   # orphan branch for PR screenshots/GIFs (§2a)
 - personas: [procrastinating student, remote developer, meeting-heavy manager, first-time installer, keyboard-only user]
 - hard_constraints: [things never to build, e.g. "local-only data", "no reading page content"]
 - feedback_label: client-feedback
@@ -65,10 +66,28 @@ Work the steps in order. Use worktrees (`git worktree add -B <branch> <dir> orig
 6. **Ship.**
    - Push the branch and open a PR with `Closes #N`.
    - **No UI change** (nothing in `ui_paths`, no user-visible copy): merge once CI is green on the head and the review passed.
-   - **UI change:** open a **draft** PR with screenshots from a headless run (light and dark when themed), a recording if motion matters, and what to look at.
+   - **UI change:** open a **draft** PR with screenshots and a GIF recording **embedded in the PR description** (see §2a), and say what to look at.
    - Keep at most `ui_draft_cap` UI drafts open. When at the cap, do work with no UI change (tests, CI, refactors with a reason, performance, accessibility fixes in logic).
 7. **Report** one short summary to the owner: merged, waiting for review, new feedback, blocked, next.
 8. **Continue immediately** with the next item. The scheduled trigger is only a safety net.
+
+## 2a. Screenshots and recordings on UI PRs (required)
+
+Every PR that changes what a user sees carries **embedded media in its description**, not just local file paths. A reviewer must be able to judge the change without checking it out.
+
+1. **Capture** from a headless run of the PR's own build (Playwright):
+   - PNG screenshots at `deviceScaleFactor: 2`: the before state when the change is a fix, the after state, and light and dark when themed.
+   - One GIF of the main interaction: no longer than 15 s and no larger than 6 MB. Record with Playwright's `recordVideo` (webm), then run `ffmpeg -y -i in.webm -vf "fps=12,scale=720:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=128[p];[s1][p]paletteuse=dither=bayer" out.gif`. Pace the actions 600–900 ms apart so a person can follow.
+   - Look at every PNG and a few GIF frames yourself. A blank page or a sign-in screen is a failed capture.
+2. **Host** the files on the media branch (`media_branch` in the config, default `pr-media`). It's an orphan branch holding only `<PR number>/<name>.{png,gif}`, and nothing from it is ever merged.
+   - Work in a separate worktree: `git worktree add <dir> <media_branch>`. To create the branch the first time: `git worktree add --detach <dir>`, then `git checkout --orphan <media_branch>` and `git rm -rf .`.
+   - Commit and push normally. Never force-push it.
+3. **Embed** the files in the PR body, under a `## Screenshots` section:
+   - Images: `![caption](https://raw.githubusercontent.com/<repo>/<media_branch>/<PR>/<file>)`. GIFs play inline. Use a public repo's raw URL; for a private repo, see below.
+   - Give each image a one-line caption that says what to look at. For before/after pairs, use a two-column table.
+   - Raw `.mp4`/`.webm` links don't play in GitHub markdown, and only files uploaded through the web UI do. So use GIFs, and link any longer video as a file on the media branch.
+4. **Private repos:** `raw.githubusercontent.com` URLs need a token and render as broken images. Upload the media where the reviewer can see it instead, for example a private artifact or page they can open, and link to it from the PR. Or tell the owner that inline media needs the repo to be public, or a manual upload in the web UI.
+5. **When the PR changes UI again,** recapture, overwrite the files with the same names, push, and keep the PR body links as they are. Reviewers then always see the current state.
 
 ## 3. Scheduling
 
@@ -101,5 +120,6 @@ Work the steps in order. Use worktrees (`git worktree add -B <branch> <dir> orig
 | QA feedback with no screenshots, made up from reading code | The client must drive the real build and look at what it captured. |
 | Parallel subagents in one checkout clobbering builds | One worktree per branch or agent. |
 | Building a request that breaks a hard constraint | Close the issue with the reason. |
+| UI PR with screenshots only on local disk or as `/tmp/...` paths | Reviewers can't see them. Push them to the media branch and embed them in the PR body (§2a). |
 | Letting UI drafts pile up and conflict | Respect `ui_draft_cap`, and do work with no UI change instead. |
 | Going idle until the next trigger | Chain the next item immediately. |
