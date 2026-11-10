@@ -85,7 +85,7 @@ describe("focus mode", () => {
     });
     expect(tabsUpdate).toHaveBeenCalledTimes(1);
     expect(tabsUpdate).toHaveBeenCalledWith(7, {
-      url: fakeBrowser.runtime.getURL("/blocked.html"),
+      url: `${fakeBrowser.runtime.getURL("/blocked.html")}#https://www.youtube.com/watch?v=1`,
     });
     expect((await fakeBrowser.alarms.get("focus-nudge"))?.periodInMinutes).toBe(
       15,
