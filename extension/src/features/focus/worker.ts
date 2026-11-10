@@ -1,5 +1,7 @@
 import { browser } from "wxt/browser";
 import { showNudge } from "@/features/buddy/worker";
+import { sortSavedTasks } from "@/features/tasks/parking";
+import { resumeTaskNow } from "@/features/tasks/worker";
 import { findActiveTask, firstOpenStep } from "@/features/tasks/active-step";
 import {
   getLocal,
@@ -35,8 +37,16 @@ async function scheduleFocusNudge(restart: boolean): Promise<void> {
 async function setFocus(on: boolean, endBy?: number): Promise<void> {
   if (on) {
     const timer = await getLocal("timer");
-    if (timer.phase === "idle") await startTimerNow(endBy);
-    else if (timer.pausedAt !== null) await resumeTimerNow();
+    if (timer.phase === "idle") {
+      const [tasks, activeTaskId] = await Promise.all([
+        getLocal("tasks"),
+        getLocal("activeTaskId"),
+      ]);
+      const recent =
+        activeTaskId === null ? sortSavedTasks(tasks, null).open[0] : undefined;
+      if (recent) await resumeTaskNow(recent.id, endBy);
+      else await startTimerNow(endBy);
+    } else if (timer.pausedAt !== null) await resumeTimerNow();
     await setBlocking(true);
     await setLocal({ focus: { on: true, startedAt: Date.now() } });
     await scheduleFocusNudge(true);
