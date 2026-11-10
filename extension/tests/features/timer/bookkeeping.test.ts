@@ -26,6 +26,7 @@ function stored(overrides: Partial<BookkeepingInput> = {}) {
   return {
     phaseStartedAt: NOW - 1_000,
     activeTaskId: "task-1",
+    hasOpenStep: true,
     sessions: [SESSION],
     transient: TRANSIENT,
     ...overrides,
@@ -79,6 +80,25 @@ describe("bookkeep", () => {
       checkInTaskId: "task-1",
     });
     expect(out.phaseStartedAt).toBe(NOW);
+  });
+
+  it.each([
+    ["no task", { activeTaskId: null, hasOpenStep: false }],
+    ["a task with every step done", { hasOpenStep: false }],
+  ])("sets no check-in for %s", (_, overrides) => {
+    const prev: TimerState = { ...workRunning, phaseEndsAt: NOW - 500 };
+    const t: TimerTransition = {
+      state: {
+        phase: "shortBreak",
+        phaseEndsAt: NOW + 300_000,
+        blocksCompleted: 1,
+        pausedAt: null,
+      },
+      events: [{ type: "work-block-completed", blocksCompleted: 1 }],
+    };
+    const out = bookkeep(prev, t, stored(overrides), NOW, newId);
+    expect(out.transient.checkInPending).toBe(false);
+    expect(out.sessions.at(-1)?.completed).toBe(true);
   });
 
   it("records an early stop while paused at pausedAt and clears check-in", () => {
