@@ -163,7 +163,7 @@ Chrome's own extension page shows only per-site toggles for optional permissions
 
 1. The user types a task in the popup or panel ("Write the intro of my history essay").
 2. **Suggest steps** sends it to `plover-server` `/api/decompose` (Gemini) with the Supabase token. **Write my own** skips AI.
-3. Steps are fully editable (edit, reorder, delete, add), then **Start** saves the task (`task/save`), makes it active and starts a work block.
+3. Steps are fully editable (edit, reorder, delete, add), then **Start** saves the task (`task/save`), makes it active and starts a work block. Keyboard entry: the popup focuses the title box when it opens idle (unless something else, such as the Undo banner, already holds focus); Enter in the title box runs **Suggest steps**; Enter in a step adds and focuses the next step (nothing if the last step is empty); **Add step** focuses the new step; Ctrl/Cmd+Enter starts.
 4. **No flow depends on the model:** on failure or rate limit the user gets an empty list to fill in.
 5. Steps are ticked by hand (`step/toggle`). Ticking the last step plays the celebration and sets `doneAt`; the block keeps running until the user stops it (see §9.2 for the planned wrap-up).
 
@@ -375,3 +375,4 @@ Settings → **Backup**: "Back up to your Google Drive" stores one `plover-backu
 - 2026-11-05: waitlist gate dropped; sign-up open.
 - 2026-11-07: Figma styling, dark mode, saved tasks, settings in a tab, smarter site input, buddy clock; this doc replaces the pivot spec and per-feature design files; the welcome page becomes a six-step walkthrough.
 - 2026-11-08: **Mark task done** on the running screen with Undo (`task/reopen`); History page replaces the popup's Done list.
+- 2026-11-10: keyboard entry in task breakdown: Enter suggests steps, Enter in a step adds the next, Ctrl/Cmd+Enter starts, and the popup focuses the title box (#517).
