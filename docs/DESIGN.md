@@ -192,6 +192,7 @@ Every task is kept, with its steps and its place in the timer.
 - A blocklist of domains in settings. The input is forgiving (`siteFromInput`): "youtube" → youtube.com, `yt`/`fb`/`ig`/`insta`/`x` shorthands, full URLs → their domain.
 - While blocking is on (during focus mode, or turned on by hand), `declarativeNetRequest` dynamic rules (`features/blocking/rules.ts`) block those domains. It turns off when the session ends.
 - **Redirect vs plain block:** a redirect to the calm blocked page needs host access to the site; without it the rule is a plain block (Chrome's error page). Adding a site in Settings requests access for that domain so it gets the blocked page. That grant doesn't put the buddy on the site (the buddy ignores subdomain-wildcard origins).
+- The redirect carries the requested URL in the blocked page's hash (`blocked.html#<url>`, DNR `regexSubstitution`; open tabs get the same when blocking turns on) so the page can name the site and offer to continue after focus ends (#525). `blockedDestination` only accepts http(s). The URL stays in that tab; nothing is stored.
 - The extension never records visited sites; it only installs rules. Tabs already open on a blocked site are blocked on their next load.
 
 ### 4.7 Focus mode
