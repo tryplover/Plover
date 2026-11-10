@@ -16,6 +16,7 @@ Footguns specific to writing Vitest tests in this repo: mocking pitfalls and Typ
 | `ReferenceError: Cannot access 'mockVariable' before initialization`                                                     | Declare mock vars with `vi.hoisted(...)`, not plain outer `const`/`let`                                                                                                  |
 | `TS2532: Object is possibly 'undefined'` on `result[0].kind`, and `result[0]!.kind` fails ESLint `no-non-null-assertion` | Destructure + optional chaining: `const [r0] = result; expect(r0?.kind).toBe(...)`                                                                                       |
 | ESLint `@typescript-eslint/no-empty-function` on stub methods in a `vi.mock` class (`start() {}`)                        | Use expression-bodied class fields: `start = () => undefined;` / `watch = async () => undefined;` (keep a real `class` body; Vitest 4 `new vi.fn(...)` mocks don't work) |
+| A real-timer test passes locally but fails on CI with `expected [ …(3) ] to have a length of 2` (e.g. `state-port.test.ts` nudge window) | `setTimeout(fn, until - now)` can fire a moment before `Date.now()` reaches `until`, so the code posts the old state once more. Don't assert an exact count of posts; `vi.waitFor` on the final value (`posted.at(-1)`) and check the earlier ones loosely |
 
 ## Details
 
@@ -45,3 +46,8 @@ When `r0` is undefined, `r0?.kind` is `undefined` and the `toBe(...)` assertion 
 **Symptom:** `pnpm lint` reports `Unexpected empty method 'start'` (`@typescript-eslint/no-empty-function`) on test mocks like `class { start() {} stop() {} }`.
 **Root cause:** The rule applies to test files too, and Vitest 4 requires mocked constructors to be real `class` bodies (`vi.fn(() => ...)` with `new` fails).
 **Fix:** Declare stubs as expression-bodied class fields: `start = () => undefined;`, `watch = async () => undefined;`. Non-empty bodies satisfy the rule without comments.
+
+### Timer-boundary flake on CI
+**Symptom:** `registerStatePort > re-posts when a nudge window expires` failed once on a `push: main` run (`expected [ …(3) ] to have a length of 2 but got 3`), then passed on the next run and every local run.
+**Root cause:** the port schedules its next push with `setTimeout(push, nudgeUntil - now)`. A timer can fire a little before `Date.now()` passes `nudgeUntil`, so that push still sees the nudge as open and posts `nudging` again before the calm snapshot. On a slow runner the extra post lands before the test checks.
+**Fix:** wait for the final value instead of a count: `await vi.waitFor(() => expect(posted.at(-1)).toEqual(calm))`, then check that every earlier post is the old state.
