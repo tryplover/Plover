@@ -4,6 +4,7 @@ import type { Session, Transient } from "@/shared/types";
 export interface BookkeepingInput {
   phaseStartedAt: number | null;
   activeTaskId: string | null;
+  hasOpenStep: boolean;
   sessions: Session[];
   transient: Transient;
 }
@@ -47,7 +48,7 @@ export function bookkeep(
   }
 
   let transient = stored.transient;
-  if (completedBlock) {
+  if (completedBlock && stored.hasOpenStep) {
     transient = {
       ...transient,
       checkInPending: true,

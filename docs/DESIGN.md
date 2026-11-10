@@ -127,9 +127,9 @@ No Plover server stores user data. `plover-server` sees only the task text sent 
 ### 3.2 Types (`shared/types.ts`)
 
 - **`Settings`:** `workMinutes` 25, `shortBreakMinutes` 5, `longBreakMinutes` 15, `blocksPerLongBreak` 4, `focusNudgeMinutes` 15, `blocklist` [], `buddyCorner` "bottom-right", `hiddenSites` [], `hideEverywhere` false, `theme` "system". `getSettings` spreads `DEFAULT_SETTINGS`, so new keys need no migration.
-- **`LocalState`:** `tasks`, `activeTaskId`, `timer` (`TimerState`: `phase`, `phaseEndsAt`, `blocksCompleted`, `pausedAt`), `phaseStartedAt`, `sessions` (completed or cut-short work blocks, for later stats), `focus`, `blockingOn`, `transient`, `needsSignIn`, `calendar` (`events`, `fetchedAt`), `calendarConnected`.
+- **`LocalState`:** `tasks`, `activeTaskId`, `timer` (`TimerState`: `phase`, `phaseEndsAt`, `blocksCompleted`, `pausedAt`), `phaseStartedAt`, `sessions` (completed or cut-short work blocks, for later stats), `focus`, `blockingOn`, `transient`, `needsSignIn`, `calendar` (`events`, `fetchedAt`), `calendarConnected`, `justFiveUntil` (timestamp or null; used by §9.8).
 - **`Task`:** `id`, `title`, `steps` (`{ id, title, done }`), `createdAt`, `doneAt`, optional `parked` (`ParkedTimer`: `remainingMs`, `blocksCompleted`, `parkedAt`) and `lastActiveAt`.
-- **`Transient`:** short-lived UI state: `checkInPending`, `checkInTaskId`, `nudgeText`/`nudgeUntil`, `celebrateUntil`.
+- **`Transient`:** short-lived UI state: `checkInPending`, `checkInTaskId`, `nudgeText`/`nudgeUntil`, `celebrateUntil`, `extendOffer` (used by §9.8).
 
 Optional fields on stored objects are read with defaults; there is no migration layer (no backwards-compat shims for unshipped data).
 
@@ -183,7 +183,7 @@ Every task is kept, with its steps and its place in the timer.
 - Defaults 25 / 5 / 15, long break after every 4 work blocks; all configurable. Start, pause, resume, skip, stop from the panel or popup.
 - **State machine** (`features/timer/machine.ts`, pure): `startTimer`, `tick`, `pauseTimer`, `resumeTimer`, `skipPhase`, `stopTimer`, `delayPhase`, `remainingSeconds`. `startTimer` accepts `endBy` (shortened block) and `blocksCompleted` (resume). Transitions emit events; `bookkeep()` records sessions and sets the check-in.
 - **Alarms** fire at `phaseEndsAt`; nothing ticks.
-- **Check-in:** at the end of each work block, "Which step did you finish?" in the panel and the buddy's bubble; answering ticks that step on the task the check-in belongs to. If no page with the buddy is visible, a system notification carries it.
+- **Check-in:** at the end of each work block, "Which step did you finish?" in the panel and the buddy's bubble; answering ticks that step on the task the check-in belongs to. It only appears when the block's task has an open step (`hasOpenStep`, computed in `applyTransition`); an anonymous block or a task with every step done gets none. If no page with the buddy is visible, a system notification carries it.
 - **Toolbar badge** shows the minutes left (`features/timer/badge.ts`).
 - Keyboard shortcut **Alt+Shift+O** opens the popup (`_execute_action`; users change it at `chrome://extensions/shortcuts`).
 
@@ -197,7 +197,7 @@ Every task is kept, with its steps and its place in the timer.
 
 ### 4.7 Focus mode
 
-One switch: starts or resumes the timer on the current task, turns blocking on for the session, puts the buddy in `focus` (quieter: only the timed "still on it?" nudge every `focusNudgeMinutes`, and the check-in), and warns about a calendar conflict. Turning it off or finishing reverses all of it.
+One switch: starts or resumes the timer on the current task (when the timer is idle and no task is active, it picks up the most recently active open task through `resumeTaskNow`, the same path as `task/resume`, using its parked time and honouring `endBy`; with no open task it starts an anonymous block), turns blocking on for the session, puts the buddy in `focus` (quieter: only the timed "still on it?" nudge every `focusNudgeMinutes`, and the check-in), and warns about a calendar conflict. Turning it off or finishing reverses all of it.
 
 ### 4.8 Calendar (optional, read-only)
 
@@ -324,7 +324,7 @@ Grouped sections: **Focus** (steppers: work 5–90, breaks 1–30, nudge 5–60)
 
 ### 9.8 "Just 5 minutes" start
 
-Next to **Start** (new task) and **Resume** (saved task), a text button **Just 5 min** starts a work block with `endBy = now + 5 min`. When it ends, instead of the usual check-in the panel and buddy bubble ask "Keep going?": **Keep going** extends the same block to a full work block (`timer/extend`: `phaseEndsAt = phaseStartedAt + workMinutes`, minus time already done) and **Stop here** stops and parks. A 5-minute block counts as focus time but not as a Pomodoro unless extended. `transient.extendOffer` drives it.
+Next to **Start** (new task) and **Resume** (saved task), a text button **Just 5 min** starts a normal full work block (`timer/start` or `task/resume` with `justFive: true`) and sets `local.justFiveUntil = now + 5 min` with a one-shot `just-five` alarm. When it fires and the timer is still a running work phase, the worker pauses the timer and sets `transient.extendOffer`; the panel and buddy bubble then ask "Keep going?". **Keep going** (`timer/keepGoing`) clears the offer and resumes, so the block can become a full Pomodoro. **Stop here** (`timer/stopHere`) clears the offer and stops and parks the task: the session is recorded as not completed, so it counts as focus time but not as a Pomodoro. Any transition that leaves the work phase (stop, skip, park, mark done, the block ending) clears `justFiveUntil`, the alarm and `extendOffer` in `applyTransition`. `reconcileTimer` re-creates the alarm when `justFiveUntil` is in the future and applies the pause when it has passed. Worker logic is in place; the buttons and bubble are not built yet.
 
 ### 9.9 Next step after a break
 
@@ -377,3 +377,4 @@ Settings → **Backup**: "Back up to your Google Drive" stores one `plover-backu
 - 2026-11-07: Figma styling, dark mode, saved tasks, settings in a tab, smarter site input, buddy clock; this doc replaces the pivot spec and per-feature design files; the welcome page becomes a six-step walkthrough.
 - 2026-11-08: **Mark task done** on the running screen with Undo (`task/reopen`); History page replaces the popup's Done list.
 - 2026-11-10: end-to-end Playwright suite and `e2e.yml` workflow (§8.5).
+- 2026-11-10: focus mode picks up the most recent open task when none is active; the check-in only appears when the block's task has an open step (#529).

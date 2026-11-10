@@ -17,6 +17,8 @@ import { updateBadge } from "@/features/timer/badge";
 import { registerHandler } from "@/worker/controller";
 
 const PHASE_ALARM = "timer-phase";
+const JUST_FIVE_ALARM = "just-five";
+const JUST_FIVE_MS = 5 * 60_000;
 const CHECKIN_NOTIFICATION = "checkin";
 
 export async function notifyCheckIn(): Promise<void> {
@@ -43,29 +45,38 @@ export async function applyTransition(
   t: TimerTransition,
   nowMs: number,
 ): Promise<void> {
-  const [prev, phaseStartedAt, activeTaskId, sessions, transient] =
+  const [prev, phaseStartedAt, activeTaskId, sessions, transient, tasks] =
     await Promise.all([
       getLocal("timer"),
       getLocal("phaseStartedAt"),
       getLocal("activeTaskId"),
       getLocal("sessions"),
       getLocal("transient"),
+      getLocal("tasks"),
     ]);
+  const hasOpenStep =
+    tasks.find((t) => t.id === activeTaskId)?.steps.some((s) => !s.done) ??
+    false;
 
   const book = bookkeep(
     prev,
     t,
-    { phaseStartedAt, activeTaskId, sessions, transient },
+    { phaseStartedAt, activeTaskId, hasOpenStep, sessions, transient },
     nowMs,
     () => crypto.randomUUID(),
   );
 
+  const leftWork = t.state.phase !== "work";
   await setLocal({
     timer: t.state,
     phaseStartedAt: book.phaseStartedAt,
     sessions: book.sessions,
-    transient: book.transient,
+    transient: leftWork
+      ? { ...book.transient, extendOffer: false }
+      : book.transient,
+    ...(leftWork ? { justFiveUntil: null } : {}),
   });
+  if (leftWork) await browser.alarms.clear(JUST_FIVE_ALARM);
   if (t.events.some((e) => e.type === "stopped"))
     await browser.notifications.clear(CHECKIN_NOTIFICATION);
 
@@ -84,6 +95,7 @@ export async function applyTransition(
 export async function startTimerNow(
   endBy?: number,
   blocksCompleted?: number,
+  justFive?: boolean,
 ): Promise<void> {
   const timer = await getLocal("timer");
   if (timer.phase !== "idle") return;
@@ -93,10 +105,33 @@ export async function startTimerNow(
     blocksCompleted,
   });
   await applyTransition(t, now);
+  if (justFive) {
+    const until = now + JUST_FIVE_MS;
+    await setLocal({ justFiveUntil: until });
+    await browser.alarms.create(JUST_FIVE_ALARM, { when: until });
+  }
+}
+
+async function settleJustFive(now: number): Promise<void> {
+  const [timer, until] = await Promise.all([
+    getLocal("timer"),
+    getLocal("justFiveUntil"),
+  ]);
+  if (until === null) return;
+  await setLocal({ justFiveUntil: null });
+  if (timer.phase !== "work" || timer.pausedAt !== null || now < until - 1000)
+    return;
+  await applyTransition(pauseTimer(timer, now), now);
+  await setLocal({
+    transient: { ...(await getLocal("transient")), extendOffer: true },
+  });
 }
 
 export async function resumeTimerNow(): Promise<void> {
   const now = Date.now();
+  const transient = await getLocal("transient");
+  if (transient.extendOffer)
+    await setLocal({ transient: { ...transient, extendOffer: false } });
   await applyTransition(resumeTimer(await getLocal("timer"), now), now);
 }
 
@@ -116,7 +151,7 @@ export function registerTimerHandlers(): void {
   });
 
   registerHandler("timer/start", async (cmd) => {
-    await startTimerNow(cmd.endBy);
+    await startTimerNow(cmd.endBy, undefined, cmd.justFive);
     return { ok: true };
   });
 
@@ -144,6 +179,19 @@ export function registerTimerHandlers(): void {
     await stopAndPark(now);
     return { ok: true };
   });
+
+  registerHandler("timer/keepGoing", async () => {
+    if (!(await getLocal("transient")).extendOffer) return { ok: true };
+    await resumeTimerNow();
+    return { ok: true };
+  });
+
+  registerHandler("timer/stopHere", async () => {
+    await stopAndPark(Date.now());
+    return { ok: true };
+  });
+
+  onAlarm(JUST_FIVE_ALARM, () => settleJustFive(Date.now()));
 
   onAlarm(PHASE_ALARM, async () => {
     const now = Date.now();
@@ -198,4 +246,11 @@ export async function reconcileTimer(): Promise<void> {
   const now = Date.now();
   const config = timerConfig(await getSettings());
   await applyTransition(tick(await getLocal("timer"), config, now), now);
+  const until = await getLocal("justFiveUntil");
+  if (until === null) return;
+  if (until > now) {
+    await browser.alarms.create(JUST_FIVE_ALARM, { when: until });
+  } else {
+    await settleJustFive(now);
+  }
 }
