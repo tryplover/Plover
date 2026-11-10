@@ -60,6 +60,7 @@ export interface Transient {
   nudgeText: string | null;
   nudgeUntil: number;
   celebrateUntil: number;
+  extendOffer: boolean;
 }
 
 export interface CalendarEvent {
@@ -79,6 +80,7 @@ export interface LocalState {
   focus: FocusState;
   blockingOn: boolean;
   transient: Transient;
+  justFiveUntil: number | null;
   needsSignIn: boolean;
   calendar: { events: CalendarEvent[]; fetchedAt: number };
   calendarConnected: boolean;

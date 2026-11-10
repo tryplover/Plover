@@ -12,10 +12,12 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "e2e": "playwright test",
     "format": "prettier --write ."
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "1.63.0",
     "@types/chrome": "^0.3.7",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
