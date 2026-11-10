@@ -144,6 +144,7 @@ All commands run from the **repo root**. The root scripts delegate into
 | `pnpm lint`                             | ESLint on the extension                                  |
 | `pnpm test`                             | Vitest run (no coverage)                                 |
 | `pnpm test:coverage`                    | Vitest run + v8 coverage report                          |
+| `pnpm e2e`                              | Playwright e2e on the built extension (`pnpm build` first) |
 | `pnpm --filter ./extension exec <tool>` | Run a tool binary inside the extension workspace         |
 
 **Always use path-based filters (`--filter ./extension`)**, not name-based
