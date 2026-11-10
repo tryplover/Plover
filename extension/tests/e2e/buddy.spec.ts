@@ -39,8 +39,8 @@ test("buddy: stays above a page's fixed elements", async ({
   const y = 800 - 16 - 35;
   expect(
     await p.evaluate(
-      ([px, py]) => document.elementFromPoint(px, py)?.tagName,
-      [x, y],
+      ({ px, py }) => document.elementFromPoint(px, py)?.tagName,
+      { px: x, py: y },
     ),
   ).toBe("PLOVER-BUDDY");
   await p.mouse.click(x, y);
