@@ -1,6 +1,10 @@
 import { browser } from "wxt/browser";
 import { isBlockedUrl } from "@/features/blocking/domains";
-import { BLOCKED_PAGE, buildRules } from "@/features/blocking/rules";
+import {
+  BLOCKED_PAGE,
+  blockedPageFor,
+  buildRules,
+} from "@/features/blocking/rules";
 import { getSettings, setLocal } from "@/shared/storage";
 
 async function installRules(blocklist: string[]): Promise<void> {
@@ -8,7 +12,11 @@ async function installRules(blocklist: string[]): Promise<void> {
   const existing = await browser.declarativeNetRequest.getDynamicRules();
   await browser.declarativeNetRequest.updateDynamicRules({
     removeRuleIds: existing.map((r) => r.id),
-    addRules: buildRules(blocklist, origins),
+    addRules: buildRules(
+      blocklist,
+      origins,
+      browser.runtime.getURL(BLOCKED_PAGE as "/blocked.html"),
+    ),
   });
 }
 
@@ -18,7 +26,9 @@ async function redirectOpenTabs(blocklist: string[]): Promise<void> {
   for (const tab of tabs) {
     if (tab.id === undefined || !tab.url) continue;
     if (isBlockedUrl(tab.url, blocklist))
-      await browser.tabs.update(tab.id, { url: blockedUrl });
+      await browser.tabs.update(tab.id, {
+        url: blockedPageFor(blockedUrl, tab.url),
+      });
   }
 }
 

@@ -2,18 +2,25 @@ import { browser } from "wxt/browser";
 import type { Task } from "@/shared/types";
 
 export type Command =
-  | { type: "timer/start"; endBy?: number }
+  | { type: "timer/start"; endBy?: number; justFive?: boolean }
   | { type: "timer/pause" }
   | { type: "timer/resume" }
   | { type: "timer/skip" }
   | { type: "timer/stop" }
+  | { type: "timer/keepGoing" }
+  | { type: "timer/stopHere" }
   | { type: "checkin/answer"; stepId: string | null }
   | { type: "task/decompose"; text: string }
   | { type: "task/save"; task: Task }
   | { type: "task/setActive"; taskId: string | null }
   | { type: "step/toggle"; taskId: string; stepId: string }
   | { type: "task/park" }
-  | { type: "task/resume"; taskId: string; endBy?: number }
+  | {
+      type: "task/resume";
+      taskId: string;
+      endBy?: number;
+      justFive?: boolean;
+    }
   | { type: "task/markDone"; taskId: string }
   | { type: "task/reopen"; taskId: string }
   | { type: "task/delete"; taskId: string }
@@ -51,6 +58,8 @@ const COMMAND_TYPES: ReadonlySet<string> = new Set<Command["type"]>([
   "timer/resume",
   "timer/skip",
   "timer/stop",
+  "timer/keepGoing",
+  "timer/stopHere",
   "checkin/answer",
   "task/decompose",
   "task/save",

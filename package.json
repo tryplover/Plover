@@ -14,7 +14,8 @@
     "typecheck": "pnpm --filter ./extension typecheck",
     "lint": "pnpm --filter ./extension lint",
     "test": "pnpm --filter ./extension test",
-    "test:coverage": "pnpm --filter ./extension run test:coverage"
+    "test:coverage": "pnpm --filter ./extension run test:coverage",
+    "e2e": "pnpm --filter ./extension run e2e"
   },
   "devDependencies": {
     "husky": "^9.1.7",

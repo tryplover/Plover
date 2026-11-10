@@ -8,6 +8,32 @@ import { enqueue } from "@/worker/queue";
 
 const CELEBRATE_MS = 3000;
 
+export async function resumeTaskNow(
+  taskId: string,
+  endBy?: number,
+  justFive?: boolean,
+): Promise<void> {
+  const now = Date.now();
+  if ((await getLocal("timer")).phase !== "idle") await stopAndPark(now);
+  const tasks = await getLocal("tasks");
+  const task = tasks.find((t) => t.id === taskId);
+  if (!task) return;
+  await setLocal({
+    activeTaskId: taskId,
+    tasks: tasks.map((t) =>
+      t.id === taskId ? { ...t, parked: null, lastActiveAt: now } : t,
+    ),
+  });
+  const plan = resumePlan(task, timerConfig(await getSettings()), now);
+  await startTimerNow(
+    endBy !== undefined && endBy > now
+      ? Math.min(plan.endBy, endBy)
+      : plan.endBy,
+    plan.blocksCompleted,
+    justFive,
+  );
+}
+
 export function registerTaskHandlers(): void {
   registerHandler("task/decompose", async ({ text }) => {
     try {
@@ -102,28 +128,12 @@ export function registerTaskHandlers(): void {
     return { ok: true };
   });
 
-  registerHandler("task/resume", async ({ taskId, endBy }) => {
-    const now = Date.now();
+  registerHandler("task/resume", async ({ taskId, endBy, justFive }) => {
     const found = (await getLocal("tasks")).find((t) => t.id === taskId);
     if (!found || found.doneAt !== null) {
       return { ok: false, error: "Task not found" };
     }
-    if ((await getLocal("timer")).phase !== "idle") await stopAndPark(now);
-    const task =
-      (await getLocal("tasks")).find((t) => t.id === taskId) ?? found;
-    await setLocal({
-      activeTaskId: taskId,
-      tasks: (await getLocal("tasks")).map((t) =>
-        t.id === taskId ? { ...t, parked: null, lastActiveAt: now } : t,
-      ),
-    });
-    const plan = resumePlan(task, timerConfig(await getSettings()), now);
-    await startTimerNow(
-      endBy !== undefined && endBy > now
-        ? Math.min(plan.endBy, endBy)
-        : plan.endBy,
-      plan.blocksCompleted,
-    );
+    await resumeTaskNow(taskId, endBy, justFive);
     return { ok: true };
   });
 

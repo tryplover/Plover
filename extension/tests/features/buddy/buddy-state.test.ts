@@ -19,6 +19,7 @@ const calm = {
   nudgeText: null,
   nudgeUntil: 0,
   celebrateUntil: 0,
+  extendOffer: false,
 };
 const off = { on: false, startedAt: null };
 const on = { on: true, startedAt: NOW };
