@@ -192,6 +192,7 @@ Every task is kept, with its steps and its place in the timer.
 - A blocklist of domains in settings. The input is forgiving (`siteFromInput`): "youtube" → youtube.com, `yt`/`fb`/`ig`/`insta`/`x` shorthands, full URLs → their domain.
 - While blocking is on (during focus mode, or turned on by hand), `declarativeNetRequest` dynamic rules (`features/blocking/rules.ts`) block those domains. It turns off when the session ends.
 - **Redirect vs plain block:** a redirect to the calm blocked page needs host access to the site; without it the rule is a plain block (Chrome's error page). Adding a site in Settings requests access for that domain so it gets the blocked page. That grant doesn't put the buddy on the site (the buddy ignores subdomain-wildcard origins).
+- The redirect carries the requested URL in the blocked page's hash (`blocked.html#<url>`, DNR `regexSubstitution`; open tabs get the same when blocking turns on) so the page can name the site and offer to continue after focus ends (#525). `blockedDestination` only accepts http(s). The URL stays in that tab; nothing is stored.
 - The extension never records visited sites; it only installs rules. Tabs already open on a blocked site are blocked on their next load.
 
 ### 4.7 Focus mode
@@ -291,6 +292,10 @@ On PRs, if the diff touches a load-bearing path and not `docs/DESIGN.md`, the ch
 - `store-weekly.yml`: every Monday 14:00 UTC, submits the newest pre-release to the Web Store.
 - Details and one-time setup: `docs/RELEASING.md`. Running locally: `docs/RUNNING.md`.
 
+### 8.5 End-to-end tests (`.github/workflows/e2e.yml`)
+
+A Playwright suite in `extension/tests/e2e/` drives the built extension in headless Chromium: popup start → pause → skip → Mark task done → Undo; History list, steps and Clear confirm on seeded data; Settings work-block stepper; the buddy drawing on a local page and opening its panel. The fixtures copy `.output/chrome-mv3` to a temp dir and set `host_permissions: ["<all_urls>"]` there so the buddy draws headless; the real build is untouched. Sign-in is faked by writing `needsSignIn: false` and a placeholder `sb-*-auth-token`; no real network (a local HTTP server serves the test page). Screenshots go to `extension/tests/e2e/.screens/` (git-ignored). The workflow runs on pull requests and manual dispatch and uploads the screenshots and Playwright report as artifacts. Locally: `pnpm build && pnpm e2e` (set `PW_CHROMIUM_PATH` to use a specific Chromium). Vitest excludes `tests/e2e/**`.
+
 ---
 
 ## 9. Planned (designed, not built)
@@ -312,10 +317,6 @@ Turning blocking or focus on with an empty blocklist opens an inline editor inst
 ### 9.4 Settings page per Figma screen 8
 
 Grouped sections: **Focus** (steppers: work 5–90, breaks 1–30, nudge 5–60), **Blocking** (`BlockList`), **Where Plover appears** (§9.1), **Calendar** (connect; "Warn me before meetings" 5 / 10 / off as `settings.headsUpMinutes`, replacing the fixed 5-minute lead), **Appearance**, **Keyboard shortcut** (shows Alt+Shift+O, links to the shortcuts page), **Account**. Figma settings rows (label left, value right, 51px, divider). Desktop-era rows (Show on desktop, Sounds, 5 more minutes) are left out. Lands after 9.1 and 9.3 so it reuses their components.
-
-### 9.6 End-to-end tests in CI
-
-A Playwright suite in `extension/tests/e2e/` that builds the extension, loads it unpacked (a test copy of the build with `host_permissions: ["<all_urls>"]` so the buddy draws headless) and drives real flows: popup start → pause → skip → Mark task done → Undo; History stats, pagination, search and export; Settings steppers; the buddy and its hide menu on a local page. Sign-in is faked by writing `needsSignIn: false` and a placeholder `sb-*-auth-token`; no real network (a local HTTP server serves the test page). New workflow `e2e.yml` on pull requests uploads screenshots and the Playwright report as artifacts. Adds `@playwright/test` as a dev dependency.
 
 ### 9.7 Rate limit on plover-server
 
@@ -375,3 +376,4 @@ Settings → **Backup**: "Back up to your Google Drive" stores one `plover-backu
 - 2026-11-05: waitlist gate dropped; sign-up open.
 - 2026-11-07: Figma styling, dark mode, saved tasks, settings in a tab, smarter site input, buddy clock; this doc replaces the pivot spec and per-feature design files; the welcome page becomes a six-step walkthrough.
 - 2026-11-08: **Mark task done** on the running screen with Undo (`task/reopen`); History page replaces the popup's Done list.
+- 2026-11-10: end-to-end Playwright suite and `e2e.yml` workflow (§8.5).

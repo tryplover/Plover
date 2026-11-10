@@ -54,6 +54,7 @@ Footguns specific to `extension/` (package `plover-extension`, WXT 0.21, Vitest 
 | The **Open Plover** shortcut (`_execute_action` `suggested_key`) does nothing; `chrome.commands.getAll()` shows `shortcut: ""` | Chrome (seen on 156, Windows, clean profile) silently refuses some suggested keys, including **Alt+Shift+P**; other keys in the same manifest register | Read `chrome.commands.getAll()` from the service worker on a clean profile before shipping a suggested key. Alt+Shift+O and Ctrl+Shift+Y registered in the same test. Copy that names the key must match |
 | "Start my first task" opens the popup and it vanishes at once | `action.openPopup()` succeeded, then the page called `window.close()`; closing the tab the popup belongs to closes the popup too (Chrome 156) | Call `openPopup()` and leave the tab open; fall back to `window.close()` only if `openPopup()` throws |
 | A Puppeteer check of an extension page in `chrome-mv3-dev` logs "calling ReactDOMClient.createRoot() on a container that has already been passed to createRoot()" and finds duplicated elements | WXT dev mode's HMR runs the entry module twice in that page | Check UI against a production build (`pnpm build`, load `.output/chrome-mv3`); the warning doesn't happen there |
+| Headless e2e: buddy never draws, or `Missing .output/chrome-mv3` | Production build has no `host_permissions`; the buddy needs `<all_urls>` | `tests/e2e/fixtures.ts` copies the build and adds `host_permissions: ["<all_urls>"]`; run `pnpm build` before `pnpm e2e` |
 
 ## Details
 
