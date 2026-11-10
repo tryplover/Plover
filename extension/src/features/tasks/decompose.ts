@@ -8,8 +8,25 @@ export class DecomposeError extends Error {
   constructor(
     message: string,
     readonly status: number | null,
+    readonly retryAfterSeconds: number | null = null,
   ) {
     super(message);
+  }
+}
+
+async function dailyLimitRetry(res: Response): Promise<number | null> {
+  if (res.status !== 429) return null;
+  try {
+    const body = (await res.json()) as {
+      error?: unknown;
+      retryAfterSeconds?: unknown;
+    };
+    if (body.error !== "daily rate limit exceeded") return null;
+    return typeof body.retryAfterSeconds === "number"
+      ? body.retryAfterSeconds
+      : 0;
+  } catch {
+    return null;
   }
 }
 
@@ -44,7 +61,11 @@ export async function suggestSteps(
       signal,
     });
     if (!res.ok) {
-      throw new DecomposeError(`decompose failed: ${res.status}`, res.status);
+      throw new DecomposeError(
+        `decompose failed: ${res.status}`,
+        res.status,
+        await dailyLimitRetry(res),
+      );
     }
     const json = (await res.json()) as {
       subtasks?: { title?: unknown }[];
@@ -55,4 +76,15 @@ export async function suggestSteps(
       .filter((t) => t.length > 0)
       .slice(0, MAX_STEPS);
   });
+}
+
+export function limitNotice(retryAfterSeconds: number): string {
+  const minutes = Math.ceil(retryAfterSeconds / 60);
+  const when =
+    minutes <= 0
+      ? "tomorrow"
+      : minutes < 60
+        ? `in about ${minutes} min`
+        : `in about ${Math.ceil(minutes / 60)} h`;
+  return `You've used today's step suggestions. Write your own below, or try again ${when}.`;
 }

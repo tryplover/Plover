@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { conflictDuring } from "@/features/calendar/events";
+import { limitNotice } from "@/features/tasks/decompose";
 import { sendCommand } from "@/shared/messages";
 import type { CalendarEvent, Task } from "@/shared/types";
 import { ConflictOffer } from "@/ui/components/CalendarNext";
@@ -34,11 +35,15 @@ export function TaskBreakdown({
     const res = await sendCommand({ type: "task/decompose", text });
     setBusy(false);
     const data = res.ok
-      ? (res.data as { steps?: string[]; aiFailed?: boolean } | undefined)
+      ? (res.data as
+          | { steps?: string[]; aiFailed?: boolean; limitedFor?: number }
+          | undefined)
       : undefined;
     const suggested = data?.steps ?? [];
     setSteps(suggested.map((t) => ({ key: newKey(), title: t })));
-    if (!res.ok || data?.aiFailed || suggested.length === 0) {
+    if (data?.limitedFor !== undefined) {
+      setNotice(limitNotice(data.limitedFor));
+    } else if (!res.ok || data?.aiFailed || suggested.length === 0) {
       setNotice("Couldn't suggest steps. Write your own below.");
     }
   }

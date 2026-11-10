@@ -4,7 +4,11 @@ const token = vi.hoisted(() => ({ value: "TOKEN" as string | null }));
 vi.mock("@/features/auth/session", () => ({
   getAccessToken: async () => token.value,
 }));
-import { DecomposeError, suggestSteps } from "@/features/tasks/decompose";
+import {
+  DecomposeError,
+  limitNotice,
+  suggestSteps,
+} from "@/features/tasks/decompose";
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status });
@@ -70,5 +74,15 @@ describe("suggestSteps", () => {
     await expect(
       suggestSteps("x", f as unknown as typeof fetch),
     ).rejects.toBeInstanceOf(DecomposeError);
+  });
+});
+
+describe("limitNotice", () => {
+  it("says when suggestions come back", () => {
+    expect(limitNotice(90)).toBe(
+      "You've used today's step suggestions. Write your own below, or try again in about 2 min.",
+    );
+    expect(limitNotice(3 * 3600 - 10)).toContain("in about 3 h");
+    expect(limitNotice(0)).toContain("try again tomorrow");
   });
 });

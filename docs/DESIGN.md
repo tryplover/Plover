@@ -164,7 +164,7 @@ Chrome's own extension page shows only per-site toggles for optional permissions
 1. The user types a task in the popup or panel ("Write the intro of my history essay").
 2. **Suggest steps** sends it to `plover-server` `/api/decompose` (Gemini) with the Supabase token. **Write my own** skips AI.
 3. Steps are fully editable (edit, reorder, delete, add), then **Start** saves the task (`task/save`), makes it active and starts a work block.
-4. **No flow depends on the model:** on failure or rate limit the user gets an empty list to fill in.
+4. **No flow depends on the model:** on failure or rate limit the user gets an empty list to fill in. Hitting the daily limit (server `429` with `error: "daily rate limit exceeded"`) says so: "You've used today's step suggestions. Write your own below, or try again in about N h." (`limitNotice`); any other failure says "Couldn't suggest steps."
 5. Steps are ticked by hand (`step/toggle`). Ticking the last step plays the celebration and sets `doneAt`; the block keeps running until the user stops it (see §9.2 for the planned wrap-up).
 
 ### 4.4 Saved tasks
@@ -267,7 +267,7 @@ Opens in a tab from the **History** link in the popup and panel (`browser.tabs.c
 
 ## 7. Backend: plover-server
 
-A separate repo (`tryplover/plover-server`), Python/FastAPI on Google Cloud Run (project `plover-server-liyuxiao`, us-central1). Endpoint used by the extension: `POST /api/decompose` (Bearer Supabase token) → suggested steps from Gemini. Deploys on every merge to its `main`: build, deploy a no-traffic `candidate` revision, smoke-test `/health`, promote to 100%, check production, roll back on failure. Deploys change only the image; env vars and secrets are managed in the Cloud Run console. Setup details: `docs/plans/gcp-setup-details.md`.
+A separate repo (`tryplover/plover-server`), Python/FastAPI on Google Cloud Run (project `plover-server-liyuxiao`, us-central1). Endpoint used by the extension: `POST /api/decompose` (Bearer Supabase token) → suggested steps from Gemini. Rate limit: 200 decompose calls per user per day (Firestore counters), `429` with `Retry-After` and `retryAfterSeconds` when exceeded. Deploys on every merge to its `main`: build, deploy a no-traffic `candidate` revision, smoke-test `/health`, promote to 100%, check production, roll back on failure. Deploys change only the image; env vars and secrets are managed in the Cloud Run console. Setup details: `docs/plans/gcp-setup-details.md`.
 
 ---
 
@@ -317,9 +317,6 @@ Grouped sections: **Focus** (steppers: work 5–90, breaks 1–30, nudge 5–60)
 
 A Playwright suite in `extension/tests/e2e/` that builds the extension, loads it unpacked (a test copy of the build with `host_permissions: ["<all_urls>"]` so the buddy draws headless) and drives real flows: popup start → pause → skip → Mark task done → Undo; History stats, pagination, search and export; Settings steppers; the buddy and its hide menu on a local page. Sign-in is faked by writing `needsSignIn: false` and a placeholder `sb-*-auth-token`; no real network (a local HTTP server serves the test page). New workflow `e2e.yml` on pull requests uploads screenshots and the Playwright report as artifacts. Adds `@playwright/test` as a dev dependency.
 
-### 9.7 Rate limit on plover-server
-
-`/api/decompose` limits each Supabase user to 30 requests per hour and 200 per day (in-memory sliding window per instance; Cloud Run max instances kept low so it stays close). Over the limit: `429` with `Retry-After`. The extension maps 429 to "You've used today's step suggestions. Write your own, or try again in N min." and still offers the empty list (no flow depends on the model).
 
 ### 9.8 "Just 5 minutes" start
 
