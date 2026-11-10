@@ -313,6 +313,10 @@ Turning blocking or focus on with an empty blocklist opens an inline editor inst
 
 Grouped sections: **Focus** (steppers: work 5–90, breaks 1–30, nudge 5–60), **Blocking** (`BlockList`), **Where Plover appears** (§9.1), **Calendar** (connect; "Warn me before meetings" 5 / 10 / off as `settings.headsUpMinutes`, replacing the fixed 5-minute lead), **Appearance**, **Keyboard shortcut** (shows Alt+Shift+O, links to the shortcuts page), **Account**. Figma settings rows (label left, value right, 51px, divider). Desktop-era rows (Show on desktop, Sounds, 5 more minutes) are left out. Lands after 9.1 and 9.3 so it reuses their components.
 
+### 9.6 Stats and task vault
+
+The History page becomes a vault: Stats tab (focus time, Pomodoros, breaks, cycles for today / this week / all time; a 7-day bar chart; a timeline where each cycle, one sitting from start to idle, shows its work and break blocks with times) and Tasks tab (finished tasks, searchable). Every phase is recorded (breaks too) with `cycleId`, `pausedMs` (excluded from focus) and `taskTitle` (so deleting a task keeps its stats). CSV/JSON export via a page download (no new permission). Clear history can also clear stats (`stats/clear`). Local only. Plan: `docs/plans/stats-vault.md`.
+
 ---
 
 ## 10. Open questions
