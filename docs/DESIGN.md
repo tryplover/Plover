@@ -220,7 +220,7 @@ One switch: starts or resumes the timer on the current task, turns blocking on f
 
 ### 4.11 Settings page
 
-Opens in its own tab. Sections: timer lengths and nudge interval, blocklist, buddy (hide everywhere, sites without the buddy), calendar connect/disconnect, appearance, account. Site lists share one aligned row layout with a **Remove** text button. Planned redesign: §9.4.
+Opens in its own tab. Sections: timer lengths and nudge interval (stepper rows: − value + with a unit; the field can be cleared while typing, and on blur or Enter an empty, zero or invalid value falls back to 1 and anything above the cap is capped: work 90, short break 30, long break 60, blocks 10, nudge 60; `clampInput` in `shared/number-input.ts`), blocklist, buddy (hide everywhere, sites without the buddy), calendar connect/disconnect, appearance, account. Site lists share one aligned row layout with a **Remove** text button. Planned redesign: §9.4.
 
 ### 4.12 Welcome page
 

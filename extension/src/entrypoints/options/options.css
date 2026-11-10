@@ -19,8 +19,60 @@
   gap: 12px;
   margin-bottom: 6px;
 }
-.options .field input[type="number"] {
-  width: 72px;
+.options .stepper-list {
+  border-top: 1px solid var(--color-border-decorative);
+}
+.options .stepper-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  min-height: 51px;
+  border-bottom: 1px solid var(--color-border-decorative);
+}
+.options .stepper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.options .stepper button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1.5px solid var(--color-border-control);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.options .stepper button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.options .stepper input {
+  box-sizing: border-box;
+  width: 48px;
+  height: 36px;
+  padding: 0;
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.options .stepper input:hover,
+.options .stepper input:focus {
+  border-color: var(--color-border-control);
+}
+.options .stepper-unit {
+  width: 28px;
+  color: var(--color-text-secondary);
+  font-size: 14px;
 }
 .options .row {
   display: flex;
@@ -69,7 +121,8 @@
   border-left: 1.5px solid var(--color-border-control);
 }
 .options .segment:has(input:checked) {
-  background: var(--color-bg-quiet);
+  background: light-dark(var(--color-bg-quiet), var(--color-bg-surface));
+  font-weight: 700;
 }
 .options .segment:has(input:focus-visible) {
   outline: 2px solid var(--color-focus);
