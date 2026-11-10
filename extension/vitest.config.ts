@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [WxtVitest()],
   test: {
     include: ["tests/**/*.test.{ts,tsx}"],
+    exclude: ["tests/e2e/**", "node_modules/**"],
     coverage: {
       provider: "v8",
       include: ["src/features/**", "src/shared/**", "src/worker/**"],

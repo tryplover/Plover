@@ -9,6 +9,7 @@ export interface BookkeepingInput {
   activeTaskTitle: string | null;
   cycleId: string | null;
   phasePausedMs: number;
+  hasOpenStep: boolean;
   sessions: Session[];
   transient: Transient;
 }
@@ -77,7 +78,7 @@ export function bookkeep(
   }
 
   let transient = stored.transient;
-  if (completedBlock) {
+  if (completedBlock && stored.hasOpenStep) {
     transient = {
       ...transient,
       checkInPending: true,
