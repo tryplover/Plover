@@ -1,0 +1,51 @@
+=== BEFORE Start (steps editor) ===
+- status
+- paragraph: Plover · Today
+- img "Plover is resting"
+- text: What are you working on?
+- textbox "What are you working on?":
+  - /placeholder: e.g. Write the intro of my essay
+  - text: Write the intro of my history essay
+- list:
+  - listitem:
+    - textbox "Step 1": Outline three points
+    - button "Move step 1 up" [disabled]: ↑
+    - button "Move step 1 down": ↓
+    - 'button "Delete step 1: Outline three points"': ×
+  - listitem:
+    - textbox "Step 2": Draft the hook
+    - button "Move step 2 up": ↑
+    - button "Move step 2 down" [disabled]: ↓
+    - 'button "Delete step 2: Draft the hook"': ×
+- button "Add step"
+- button "Start"
+- text: Focus mode
+- checkbox "Focus mode"
+- text: Block sites now
+- checkbox "Block sites now"
+- button "Settings"
+
+=== AFTER Start (running; focus on: BUTTON aria-label=null text=Pause) ===
+- status: Focus block started
+- paragraph: Work block
+- heading "Write the intro of my history essay" [level=2]
+- list:
+  - listitem:
+    - checkbox "Outline three points"
+    - text: Outline three points Now
+  - listitem:
+    - checkbox "Draft the hook"
+    - text: Draft the hook
+- button "Mark task done"
+- paragraph: 25:00
+- paragraph: Focus block
+- img "Plover is working with you"
+- button "Pause"
+- button "Skip"
+- button "Save for later"
+- button "Stop"
+- text: Focus mode
+- checkbox "Focus mode"
+- text: Block sites now
+- checkbox "Block sites now"
+- button "Settings"
