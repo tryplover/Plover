@@ -18,18 +18,21 @@ function TaskCard({
   task,
   blocks,
   focusMs,
+  showDate,
   onReopen,
   onDelete,
 }: {
   task: Task;
   blocks: number;
   focusMs: number;
+  showDate: boolean;
   onReopen: () => void;
   onDelete: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const stepsDone = task.steps.filter((s) => s.done).length;
-  const time = new Date(task.doneAt ?? 0).toLocaleTimeString([], {
+  const time = new Date(task.doneAt ?? 0).toLocaleString([], {
+    ...(showDate && { month: "short", day: "numeric" }),
     hour: "numeric",
     minute: "2-digit",
   });
@@ -139,6 +142,7 @@ export function TasksTab({
         task={task}
         blocks={stats.blocks}
         focusMs={stats.focusMs}
+        showDate={searching}
         onReopen={() => reopen(task)}
         onDelete={() => startDelete(task)}
       />

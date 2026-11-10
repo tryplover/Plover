@@ -182,3 +182,17 @@ export function vaultSearch(tasks: Task[], query: string): Task[] {
       t.steps.some((s) => s.title.toLowerCase().includes(q)),
   );
 }
+
+export function paginate<T>(
+  items: T[],
+  page: number,
+  size: number,
+): { items: T[]; page: number; pages: number } {
+  const pages = Math.max(1, Math.ceil(items.length / size));
+  const current = Math.min(Math.max(1, page), pages);
+  return {
+    items: items.slice((current - 1) * size, current * size),
+    page: current,
+    pages,
+  };
+}

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  paginate,
   cycleTaskTitles,
   dailyFocus,
   focusMs,
@@ -200,5 +201,22 @@ describe("vaultSearch", () => {
       "Email",
       "Other",
     ]);
+  });
+});
+
+describe("paginate", () => {
+  const items = Array.from({ length: 23 }, (_, i) => i);
+  it("returns one page of items and the page count", () => {
+    expect(paginate(items, 2, 10)).toEqual({
+      items: [10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+      page: 2,
+      pages: 3,
+    });
+    expect(paginate(items, 3, 10).items).toEqual([20, 21, 22]);
+  });
+  it("clamps out-of-range pages and treats an empty list as one page", () => {
+    expect(paginate(items, 9, 10).page).toBe(3);
+    expect(paginate(items, 0, 10).page).toBe(1);
+    expect(paginate([], 1, 10)).toEqual({ items: [], page: 1, pages: 1 });
   });
 });

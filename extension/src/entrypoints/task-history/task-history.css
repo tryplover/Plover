@@ -162,7 +162,8 @@
 }
 .stat-value {
   margin: 0;
-  font-size: 24px;
+  white-space: nowrap;
+  font-size: 22px;
   font-weight: 700;
 }
 .stats-section {
@@ -184,7 +185,10 @@
 .day-bar-area {
   display: flex;
   flex: 1;
-  align-items: flex-end;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
   width: 100%;
 }
 .day-bar {
@@ -196,6 +200,12 @@
 .day-bar-today {
   outline: 2px solid var(--color-text-primary);
   outline-offset: 1px;
+}
+.day-value {
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--color-text-secondary);
 }
 .day-label {
   font-size: 12px;
@@ -230,4 +240,14 @@
 .cycle-blocks summary {
   cursor: pointer;
   color: var(--color-text-secondary);
+}
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+.pager .plover-btn-text:disabled {
+  opacity: 0.35;
+  cursor: default;
 }

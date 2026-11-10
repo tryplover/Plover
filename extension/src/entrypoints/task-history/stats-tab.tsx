@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { formatDuration } from "@/features/tasks/history";
 import {
   cycleTaskTitles,
   dailyFocus,
   groupCycles,
+  paginate,
   rangeStart,
   summarize,
   type Cycle,
@@ -11,7 +12,8 @@ import {
 } from "@/features/stats/stats";
 import type { Session, Task } from "@/shared/types";
 
-const PAGE = 20;
+const PAGE_SIZE = 10;
+const MIN_CHART_SCALE_MS = 30 * 60_000;
 const RANGES: { value: StatsRange; label: string }[] = [
   { value: "today", label: "Today" },
   { value: "week", label: "This week" },
@@ -40,7 +42,7 @@ function segmentDuration(s: Session): number {
 
 function DayChart({ sessions, now }: { sessions: Session[]; now: number }) {
   const days = dailyFocus(sessions, now);
-  const max = Math.max(...days.map((d) => d.focusMs), 1);
+  const max = Math.max(...days.map((d) => d.focusMs), MIN_CHART_SCALE_MS);
   const today = days[days.length - 1]?.dayStart;
   return (
     <section className="stats-section">
@@ -53,10 +55,15 @@ function DayChart({ sessions, now }: { sessions: Session[]; now: number }) {
             title={`${d.label}: ${formatDuration(d.focusMs)}`}
           >
             <div className="day-bar-area">
+              {d.focusMs >= 60_000 && (
+                <span className="day-value" aria-hidden="true">
+                  {formatDuration(d.focusMs)}
+                </span>
+              )}
               <div
                 className={`day-bar${d.dayStart === today ? " day-bar-today" : ""}`}
                 style={{
-                  height: d.focusMs === 0 ? 2 : `${(d.focusMs / max) * 100}%`,
+                  height: d.focusMs === 0 ? 2 : `${(d.focusMs / max) * 82}%`,
                 }}
               />
             </div>
@@ -132,8 +139,9 @@ export function StatsTab({
   tasks: Task[];
   now: number;
 }) {
-  const [range, setRange] = useState<StatsRange>("today");
-  const [shown, setShown] = useState(PAGE);
+  const [range, setRange] = useState<StatsRange>("week");
+  const [page, setPage] = useState(1);
+  const cyclesRef = useRef<HTMLElement>(null);
   const summary = summarize(
     sessions,
     tasks,
@@ -141,6 +149,12 @@ export function StatsTab({
     Number.POSITIVE_INFINITY,
   );
   const cycles = groupCycles(sessions);
+  const pageOf = paginate(cycles, page, PAGE_SIZE);
+
+  function goTo(next: number) {
+    setPage(next);
+    cyclesRef.current?.scrollIntoView({ block: "start" });
+  }
 
   if (sessions.length === 0) {
     return (
@@ -190,21 +204,35 @@ export function StatsTab({
         {`${plural(summary.tasksDone, "task")} finished`}
       </p>
       <DayChart sessions={sessions} now={now} />
-      <section className="stats-section">
+      <section className="stats-section" ref={cyclesRef}>
         <h2 className="history-day">Cycles</h2>
         <ul className="history-list">
-          {cycles.slice(0, shown).map((c) => (
+          {pageOf.items.map((c) => (
             <CycleCard key={c.id} cycle={c} />
           ))}
         </ul>
-        {cycles.length > shown && (
-          <button
-            type="button"
-            className="plover-btn-text"
-            onClick={() => setShown(shown + PAGE)}
-          >
-            Show more
-          </button>
+        {pageOf.pages > 1 && (
+          <nav className="pager" aria-label="Cycles pages">
+            <button
+              type="button"
+              className="plover-btn-text"
+              disabled={pageOf.page === 1}
+              onClick={() => goTo(pageOf.page - 1)}
+            >
+              ← Previous
+            </button>
+            <span className="history-meta" aria-live="polite">
+              {`Page ${pageOf.page} of ${pageOf.pages}`}
+            </span>
+            <button
+              type="button"
+              className="plover-btn-text"
+              disabled={pageOf.page === pageOf.pages}
+              onClick={() => goTo(pageOf.page + 1)}
+            >
+              Next →
+            </button>
+          </nav>
         )}
       </section>
     </>
