@@ -42,27 +42,52 @@ export function onTimerEvent(fn: (e: TimerEvent) => Promise<void>): void {
 export async function applyTransition(
   t: TimerTransition,
   nowMs: number,
+  reason?: "skip",
 ): Promise<void> {
-  const [prev, phaseStartedAt, activeTaskId, sessions, transient] =
-    await Promise.all([
-      getLocal("timer"),
-      getLocal("phaseStartedAt"),
-      getLocal("activeTaskId"),
-      getLocal("sessions"),
-      getLocal("transient"),
-    ]);
+  const [
+    prev,
+    phaseStartedAt,
+    activeTaskId,
+    tasks,
+    cycleId,
+    phasePausedMs,
+    sessions,
+    transient,
+  ] = await Promise.all([
+    getLocal("timer"),
+    getLocal("phaseStartedAt"),
+    getLocal("activeTaskId"),
+    getLocal("tasks"),
+    getLocal("cycleId"),
+    getLocal("phasePausedMs"),
+    getLocal("sessions"),
+    getLocal("transient"),
+  ]);
+  const activeTaskTitle =
+    tasks.find((task) => task.id === activeTaskId)?.title ?? null;
 
   const book = bookkeep(
     prev,
     t,
-    { phaseStartedAt, activeTaskId, sessions, transient },
+    {
+      phaseStartedAt,
+      activeTaskId,
+      activeTaskTitle,
+      cycleId,
+      phasePausedMs,
+      sessions,
+      transient,
+    },
     nowMs,
     () => crypto.randomUUID(),
+    reason,
   );
 
   await setLocal({
     timer: t.state,
     phaseStartedAt: book.phaseStartedAt,
+    cycleId: book.cycleId,
+    phasePausedMs: book.phasePausedMs,
     sessions: book.sessions,
     transient: book.transient,
   });
@@ -97,7 +122,13 @@ export async function startTimerNow(
 
 export async function resumeTimerNow(): Promise<void> {
   const now = Date.now();
-  await applyTransition(resumeTimer(await getLocal("timer"), now), now);
+  const timer = await getLocal("timer");
+  if (timer.pausedAt !== null) {
+    await setLocal({
+      phasePausedMs: (await getLocal("phasePausedMs")) + now - timer.pausedAt,
+    });
+  }
+  await applyTransition(resumeTimer(timer, now), now);
 }
 
 async function openCheckIn(): Promise<void> {
@@ -135,7 +166,11 @@ export function registerTimerHandlers(): void {
     const now = Date.now();
     if (await settleOverdue(now)) return { ok: true };
     const config = timerConfig(await getSettings());
-    await applyTransition(skipPhase(await getLocal("timer"), config, now), now);
+    await applyTransition(
+      skipPhase(await getLocal("timer"), config, now),
+      now,
+      "skip",
+    );
     return { ok: true };
   });
 

@@ -166,4 +166,9 @@ export function registerTaskHandlers(): void {
     });
     return { ok: true };
   });
+
+  registerHandler("stats/clear", async () => {
+    await setLocal({ sessions: [] });
+    return { ok: true };
+  });
 }

@@ -47,6 +47,10 @@ export interface Session {
   startedAt: number;
   endedAt: number;
   completed: boolean;
+  cycleId?: string;
+  pausedMs?: number;
+  taskTitle?: string | null;
+  skipped?: boolean;
 }
 
 export interface FocusState {
@@ -75,6 +79,8 @@ export interface LocalState {
   activeTaskId: string | null;
   timer: TimerState;
   phaseStartedAt: number | null;
+  cycleId: string | null;
+  phasePausedMs: number;
   sessions: Session[];
   focus: FocusState;
   blockingOn: boolean;
