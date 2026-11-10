@@ -97,6 +97,56 @@ describe("focus mode", () => {
     expect((await getLocal("timer")).phaseEndsAt).toBe(T0 + 10 * MIN);
   });
 
+  describe("with no active task", () => {
+    const mk = (id: string, lastActiveAt: number, remainingMs?: number) => ({
+      id,
+      title: id,
+      createdAt: T0 - 10 * MIN,
+      lastActiveAt,
+      doneAt: null,
+      steps: [{ id: `${id}-s`, title: "Step", done: false }],
+      parked:
+        remainingMs === undefined
+          ? null
+          : { remainingMs, blocksCompleted: 2, parkedAt: T0 },
+    });
+
+    it("picks up the most recent open task and its parked time", async () => {
+      await setLocal({
+        tasks: [
+          mk("old", T0 - 5 * MIN, 20 * MIN),
+          mk("recent", T0 - MIN, 7 * MIN),
+          { ...mk("done", T0), doneAt: T0 },
+        ],
+      });
+      await dispatch({ type: "focus/set", on: true });
+      expect(await getLocal("activeTaskId")).toBe("recent");
+      const timer = await getLocal("timer");
+      expect(timer.phase).toBe("work");
+      expect(timer.phaseEndsAt).toBe(T0 + 7 * MIN);
+      expect(timer.blocksCompleted).toBe(2);
+      const tasks = await getLocal("tasks");
+      expect(tasks.find((t) => t.id === "recent")?.parked).toBeNull();
+      expect(tasks.find((t) => t.id === "old")?.parked).not.toBeNull();
+      expect((await getLocal("focus")).on).toBe(true);
+    });
+
+    it("shortens the picked-up block to endBy", async () => {
+      await setLocal({ tasks: [mk("recent", T0, 20 * MIN)] });
+      await dispatch({ type: "focus/set", on: true, endBy: T0 + 5 * MIN });
+      expect(await getLocal("activeTaskId")).toBe("recent");
+      expect((await getLocal("timer")).phaseEndsAt).toBe(T0 + 5 * MIN);
+    });
+
+    it("starts an anonymous block when no task is open", async () => {
+      await setLocal({ tasks: [{ ...mk("done", T0), doneAt: T0 }] });
+      await dispatch({ type: "focus/set", on: true });
+      expect(await getLocal("activeTaskId")).toBeNull();
+      expect((await getLocal("timer")).phase).toBe("work");
+      expect((await getLocal("timer")).phaseEndsAt).toBe(T0 + 25 * MIN);
+    });
+  });
+
   it("keeps a running timer and resumes a paused one", async () => {
     await dispatch({ type: "timer/start" });
     vi.setSystemTime(T0 + MIN);

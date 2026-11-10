@@ -20,6 +20,21 @@ import type { TimerEvent } from "@/features/timer/types";
 const MIN = 60_000;
 const T0 = 1_700_000_000_000;
 
+async function seedOpenTask() {
+  await setLocal({
+    tasks: [
+      {
+        id: "t1",
+        title: "T",
+        createdAt: T0,
+        doneAt: null,
+        steps: [{ id: "s1", title: "Step", done: false }],
+      },
+    ],
+    activeTaskId: "t1",
+  });
+}
+
 async function fireAlarm(name: string) {
   const alarm = await fakeBrowser.alarms.get(name);
   await fakeBrowser.alarms.onAlarm.trigger(
@@ -65,9 +80,33 @@ describe("timer commands", () => {
     expect((await getLocal("timer")).phaseEndsAt).toBe(T0 + 25 * MIN);
   });
 
+  it("alarm after the end sets no check-in when no task is active", async () => {
+    await dispatch({ type: "timer/start" });
+    vi.setSystemTime(T0 + 25 * MIN + 1000);
+    await fireAlarm("timer-phase");
+    expect((await getLocal("transient")).checkInPending).toBe(false);
+    expect(await getLocal("sessions")).toHaveLength(1);
+  });
+
+  it("alarm after the end sets no check-in when every step is done", async () => {
+    await seedOpenTask();
+    const tasks = await getLocal("tasks");
+    await setLocal({
+      tasks: tasks.map((t) => ({
+        ...t,
+        steps: t.steps.map((st) => ({ ...st, done: true })),
+      })),
+    });
+    await dispatch({ type: "timer/start" });
+    vi.setSystemTime(T0 + 25 * MIN + 1000);
+    await fireAlarm("timer-phase");
+    expect((await getLocal("transient")).checkInPending).toBe(false);
+  });
+
   it("alarm after the end moves to a short break, flags check-in and records a session", async () => {
     const events: TimerEvent[] = [];
     onTimerEvent(async (e) => void events.push(e));
+    await seedOpenTask();
     await dispatch({ type: "timer/start" });
     vi.setSystemTime(T0 + 25 * MIN + 1000);
     await fireAlarm("timer-phase");
@@ -217,6 +256,7 @@ describe("timer commands", () => {
   });
 
   it("serialises an alarm and a command fired together", async () => {
+    await seedOpenTask();
     await dispatch({ type: "timer/start" });
     vi.setSystemTime(T0 + 25 * MIN + 1000);
     await Promise.all([

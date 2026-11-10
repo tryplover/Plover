@@ -45,19 +45,23 @@ export async function applyTransition(
   t: TimerTransition,
   nowMs: number,
 ): Promise<void> {
-  const [prev, phaseStartedAt, activeTaskId, sessions, transient] =
+  const [prev, phaseStartedAt, activeTaskId, sessions, transient, tasks] =
     await Promise.all([
       getLocal("timer"),
       getLocal("phaseStartedAt"),
       getLocal("activeTaskId"),
       getLocal("sessions"),
       getLocal("transient"),
+      getLocal("tasks"),
     ]);
+  const hasOpenStep =
+    tasks.find((t) => t.id === activeTaskId)?.steps.some((s) => !s.done) ??
+    false;
 
   const book = bookkeep(
     prev,
     t,
-    { phaseStartedAt, activeTaskId, sessions, transient },
+    { phaseStartedAt, activeTaskId, hasOpenStep, sessions, transient },
     nowMs,
     () => crypto.randomUUID(),
   );
