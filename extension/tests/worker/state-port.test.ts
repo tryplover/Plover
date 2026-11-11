@@ -150,13 +150,20 @@ describe("registerStatePort", () => {
     onConnect(port as unknown as chrome.runtime.Port);
     await vi.waitFor(() => expect(posted).toHaveLength(1));
     expect((posted[0] as { buddyState: string }).buddyState).toBe("nudging");
-    await vi.waitFor(() => expect(posted).toHaveLength(2), { timeout: 2000 });
-    expect(posted[1]).toEqual({
-      buddyState: "idle",
-      nudgeText: null,
-      checkInPending: false,
-      clock: null,
-    });
+    // A timer can fire a moment before Date.now() passes nudgeUntil, which
+    // re-posts "nudging" once more before the calm snapshot.
+    await vi.waitFor(
+      () =>
+        expect(posted.at(-1)).toEqual({
+          buddyState: "idle",
+          nudgeText: null,
+          checkInPending: false,
+          clock: null,
+        }),
+      { timeout: 2000 },
+    );
+    for (const snap of posted.slice(0, -1))
+      expect((snap as { buddyState: string }).buddyState).toBe("nudging");
   });
 
   it("ignores ports with other names", async () => {

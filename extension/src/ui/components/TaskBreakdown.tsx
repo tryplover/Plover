@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { FormEvent, KeyboardEvent } from "react";
 import { conflictDuring } from "@/features/calendar/events";
 import { limitNotice } from "@/features/tasks/decompose";
+import { insertStepAfter } from "@/features/tasks/draft-steps";
 import { sendCommand } from "@/shared/messages";
 import type { CalendarEvent, Task } from "@/shared/types";
 import { ConflictOffer } from "@/ui/components/CalendarNext";
@@ -16,16 +18,69 @@ export function TaskBreakdown({
   events,
   workMinutes,
   now,
+  autoFocus = false,
 }: {
   events: CalendarEvent[];
   workMinutes: number;
   now: number;
+  autoFocus?: boolean;
 }) {
   const [title, setTitle] = useState("");
   const [steps, setSteps] = useState<DraftStep[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [conflict, setConflict] = useState<CalendarEvent | null>(null);
+  const titleRef = useRef<HTMLInputElement>(null);
+  const stepRefs = useRef(new Map<string, HTMLInputElement>());
+  const focusKey = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!autoFocus) return;
+    const active = document.activeElement;
+    if (!active || active === document.body) titleRef.current?.focus();
+  }, [autoFocus]);
+
+  useEffect(() => {
+    if (focusKey.current === null) return;
+    stepRefs.current.get(focusKey.current)?.focus();
+    focusKey.current = null;
+  }, [steps]);
+
+  function addStepAfter(index: number) {
+    const step = { key: newKey(), title: "" };
+    focusKey.current = step.key;
+    setSteps((cur) => insertStepAfter(cur ?? [], index, step));
+  }
+
+  function onStepKeyDown(e: KeyboardEvent<HTMLInputElement>, i: number) {
+    if (
+      e.key !== "Enter" ||
+      e.ctrlKey ||
+      e.metaKey ||
+      e.nativeEvent.isComposing
+    )
+      return;
+    e.preventDefault();
+    const isLast = i === (steps?.length ?? 0) - 1;
+    if (isLast && e.currentTarget.value.trim() === "") return;
+    addStepAfter(i);
+  }
+
+  function onStepsKeyDown(e: KeyboardEvent<HTMLFormElement>) {
+    if (e.key !== "Enter" || !(e.ctrlKey || e.metaKey)) return;
+    e.preventDefault();
+    if (!busy && title.trim()) void start();
+  }
+
+  function onTitleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (steps === null && !busy) void suggest();
+  }
+
+  function onStepsSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!busy && title.trim()) void start();
+  }
 
   async function suggest() {
     const text = title.trim();
@@ -105,41 +160,49 @@ export function TaskBreakdown({
   return (
     <div className="plover-breakdown">
       <p className="plover-heading">What are you working on?</p>
-      <input
-        type="text"
-        placeholder="e.g. Write the intro of my essay"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-      />
-      {steps === null ? (
-        <div className="plover-row">
-          <button
-            type="button"
-            className="plover-btn-compact"
-            disabled={busy || !title.trim()}
-            onClick={() => void suggest()}
-          >
-            {busy ? "Thinking..." : "Suggest steps"}
-          </button>
-          <button
-            type="button"
-            className="plover-btn-text"
-            disabled={busy || !title.trim()}
-            onClick={() => setSteps([])}
-          >
-            Write my own
-          </button>
-        </div>
-      ) : (
-        <>
+      <form onSubmit={onTitleSubmit}>
+        <input
+          ref={titleRef}
+          type="text"
+          placeholder="e.g. Write the intro of my essay"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+        {steps === null && (
+          <div className="plover-row">
+            <button
+              type="submit"
+              className="plover-btn-compact"
+              disabled={busy || !title.trim()}
+            >
+              {busy ? "Thinking..." : "Suggest steps"}
+            </button>
+            <button
+              type="button"
+              className="plover-btn-text"
+              disabled={busy || !title.trim()}
+              onClick={() => setSteps([])}
+            >
+              Write my own
+            </button>
+          </div>
+        )}
+      </form>
+      {steps !== null && (
+        <form onSubmit={onStepsSubmit} onKeyDown={onStepsKeyDown}>
           <ul className="plover-steps">
             {steps.map((s, i) => (
               <li key={s.key} className="plover-task-row">
                 <input
+                  ref={(el) => {
+                    if (el) stepRefs.current.set(s.key, el);
+                    else stepRefs.current.delete(s.key);
+                  }}
                   type="text"
                   aria-label={`Step ${i + 1}`}
                   value={s.title}
                   onChange={(e) => update(i, { title: e.target.value })}
+                  onKeyDown={(e) => onStepKeyDown(e, i)}
                 />
                 <button
                   type="button"
@@ -174,20 +237,19 @@ export function TaskBreakdown({
             <button
               type="button"
               className="plover-btn-text"
-              onClick={() => setSteps([...steps, { key: newKey(), title: "" }])}
+              onClick={() => addStepAfter(steps.length - 1)}
             >
               Add step
             </button>
             <button
-              type="button"
+              type="submit"
               className="plover-btn-brand"
               disabled={busy || !title.trim()}
-              onClick={() => void start()}
             >
               Start
             </button>
           </div>
-        </>
+        </form>
       )}
       {conflict && (
         <ConflictOffer
