@@ -118,7 +118,9 @@ export function SavedTasks({
       <p className="plover-eyebrow">Your tasks</p>
       {deleted && (
         <div className="plover-saved-row" role="status">
-          <p className="plover-saved-title">Deleted “{deleted.title}”</p>
+          <p className="plover-saved-title" title={deleted.title}>
+            Deleted “{deleted.title}”
+          </p>
           <button
             type="button"
             className="plover-btn-text"
@@ -131,7 +133,9 @@ export function SavedTasks({
       )}
       {finished && (
         <div className="plover-saved-row" role="status">
-          <p className="plover-saved-title">Done: “{finished.title}”</p>
+          <p className="plover-saved-title" title={finished.title}>
+            Done: “{finished.title}”
+          </p>
           <button
             type="button"
             className="plover-btn-text"
@@ -147,7 +151,9 @@ export function SavedTasks({
         <div key={task.id}>
           <div className="plover-saved-row">
             <div className="plover-saved-text">
-              <p className="plover-saved-title">{task.title}</p>
+              <p className="plover-saved-title" title={task.title}>
+                {task.title}
+              </p>
               <p className="plover-saved-meta">
                 {savedTaskCaption(task, blocksPerLongBreak)}
               </p>
