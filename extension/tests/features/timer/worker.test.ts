@@ -174,6 +174,51 @@ describe("timer commands", () => {
       completed: true,
       endedAt: T0 + 25 * MIN,
     });
+    expect(await getLocal("cycleId")).toBeNull();
+  });
+
+  it("records pause time, a shared cycle id, task title and skipped flag", async () => {
+    await setLocal({
+      tasks: [
+        {
+          id: "t1",
+          title: "Write report",
+          steps: [],
+          createdAt: 0,
+          doneAt: null,
+        },
+      ],
+      activeTaskId: "t1",
+    });
+    await dispatch({ type: "timer/start" });
+    const cycle = await getLocal("cycleId");
+    expect(cycle).not.toBeNull();
+    vi.setSystemTime(T0 + 5 * MIN);
+    await dispatch({ type: "timer/pause" });
+    vi.setSystemTime(T0 + 8 * MIN);
+    await dispatch({ type: "timer/resume" });
+    expect(await getLocal("phasePausedMs")).toBe(3 * MIN);
+    vi.setSystemTime(T0 + 30 * MIN);
+    await dispatch({ type: "timer/skip" });
+    vi.setSystemTime(T0 + 32 * MIN);
+    await dispatch({ type: "timer/skip" });
+    const sessions = await getLocal("sessions");
+    expect(sessions).toHaveLength(2);
+    expect(sessions[0]).toMatchObject({
+      phase: "work",
+      completed: true,
+      pausedMs: 3 * MIN,
+      cycleId: cycle,
+      taskTitle: "Write report",
+    });
+    expect(sessions[1]).toMatchObject({
+      phase: "shortBreak",
+      skipped: true,
+      cycleId: cycle,
+      pausedMs: 0,
+    });
+    expect(await getLocal("phasePausedMs")).toBe(0);
+    expect(await getLocal("cycleId")).toBe(cycle);
   });
 
   it("skip after the block ended only completes it", async () => {

@@ -119,7 +119,7 @@ tests/             mirrors src/
 | Store | Holds | Why |
 |---|---|---|
 | `chrome.storage.sync` → `settings` | `Settings` (below) | Follows the user across their signed-in browsers. Capped at ~100 KB total / 8 KB per item, so settings only. |
-| `chrome.storage.local` | `LocalState` (below), the Supabase session, the Google token | Tasks and history stay on this device (hard constraint). 10 MB is plenty. |
+| `chrome.storage.local` | `LocalState` (below), the Supabase session, the Google token | Tasks and history stay on this device (hard constraint). 10 MB is plenty: a session is ~150 B, so years of use fit, and `unlimitedStorage` (no install warning) is the fallback if ever needed. |
 | `localStorage` of extension pages | `plover-theme` cache | Lets each page paint in the right theme before React mounts. Convenience only. |
 
 No Plover server stores user data. `plover-server` sees only the task text sent for step suggestions; Supabase holds only the account. Uninstalling deletes local data.
@@ -127,7 +127,9 @@ No Plover server stores user data. `plover-server` sees only the task text sent 
 ### 3.2 Types (`shared/types.ts`)
 
 - **`Settings`:** `workMinutes` 25, `shortBreakMinutes` 5, `longBreakMinutes` 15, `blocksPerLongBreak` 4, `focusNudgeMinutes` 15, `blocklist` [], `buddyCorner` "bottom-right", `hiddenSites` [], `hideEverywhere` false, `theme` "system". `getSettings` spreads `DEFAULT_SETTINGS`, so new keys need no migration.
-- **`LocalState`:** `tasks`, `activeTaskId`, `timer` (`TimerState`: `phase`, `phaseEndsAt`, `blocksCompleted`, `pausedAt`), `phaseStartedAt`, `sessions` (completed or cut-short work blocks, for later stats), `focus`, `blockingOn`, `transient`, `needsSignIn`, `calendar` (`events`, `fetchedAt`), `calendarConnected`, `justFiveUntil` (timestamp or null; used by §9.8), `siteBannerDismissedUntil` (0; epoch ms until which the popup all-sites banner stays hidden).
+- **`LocalState`:** `tasks`, `activeTaskId`, `timer` (`TimerState`: `phase`, `phaseEndsAt`, `blocksCompleted`, `pausedAt`), `phaseStartedAt`, `cycleId` (null when idle), `phasePausedMs` (pause time in the current phase), `sessions` (every phase that ran, see below), `focus`, `blockingOn`, `transient`, `needsSignIn`, `calendar` (`events`, `fetchedAt`), `calendarConnected`, `justFiveUntil` (timestamp or null; used by §9.8), `siteBannerDismissedUntil` (0; epoch ms until which the popup all-sites banner stays hidden).
+- **`Session`:** `id`, `taskId`, `phase`, `startedAt`, `endedAt`, `completed`, plus optional `cycleId` (default `id`), `pausedMs` (default 0), `taskTitle` (so deleting a task keeps its stats; old sessions show "Untitled task") and `skipped`.
+- **Definitions:** a *session* is one timer phase that ran (work, short break or long break). A *cycle* is one sitting, from starting the timer from idle until it goes idle again (Stop, Save for later, Mark task done); its sessions share a `cycleId`. A *Pomodoro* is a completed work session. *Focus time* of a work session is `endedAt - startedAt - pausedMs`.
 - **`Task`:** `id`, `title`, `steps` (`{ id, title, done }`), `createdAt`, `doneAt`, optional `parked` (`ParkedTimer`: `remainingMs`, `blocksCompleted`, `parkedAt`) and `lastActiveAt`.
 - **`Transient`:** short-lived UI state: `checkInPending`, `checkInTaskId`, `nudgeText`/`nudgeUntil`, `celebrateUntil`, `extendOffer` (used by §9.8).
 
@@ -183,7 +185,7 @@ Every task is kept, with its steps and its place in the timer.
 ### 4.5 Pomodoro timer and check-in
 
 - Defaults 25 / 5 / 15, long break after every 4 work blocks; all configurable. Start, pause, resume, skip, stop from the panel or popup.
-- **State machine** (`features/timer/machine.ts`, pure): `startTimer`, `tick`, `pauseTimer`, `resumeTimer`, `skipPhase`, `stopTimer`, `delayPhase`, `remainingSeconds`. `startTimer` accepts `endBy` (shortened block) and `blocksCompleted` (resume). Transitions emit events; `bookkeep()` records sessions and sets the check-in.
+- **State machine** (`features/timer/machine.ts`, pure): `startTimer`, `tick`, `pauseTimer`, `resumeTimer`, `skipPhase`, `stopTimer`, `delayPhase`, `remainingSeconds`. `startTimer` accepts `endBy` (shortened block) and `blocksCompleted` (resume). Transitions emit events; `bookkeep()` records a session for every running phase that ends (breaks too, with `completed` true only when it ran to `phaseEndsAt`), manages `cycleId` and `phasePausedMs`, and sets the check-in. Skip is told apart by a `reason` the `timer/skip` handler passes (no event distinguishes it). Pause time is added to `phasePausedMs` on resume and excluded from focus time. A phase cut short after under 1 s (e.g. Stop right as a block ends, which settles into a break first) isn't recorded.
 - **Alarms** fire at `phaseEndsAt`; nothing ticks.
 - **Check-in:** at the end of each work block, "Which step did you finish?" in the panel and the buddy's bubble; answering ticks that step on the task the check-in belongs to. It only appears when the block's task has an open step (`hasOpenStep`, computed in `applyTransition`); an anonymous block or a task with every step done gets none. If no page with the buddy is visible, a system notification carries it.
 - **Toolbar badge** shows the minutes left (`features/timer/badge.ts`).
@@ -241,10 +243,12 @@ A six-segment progress bar (the newest segment fills and pops) and a Back button
 
 Opens in a tab from the **History** link in the popup and panel (`browser.tabs.create` on `task-history.html`; no `tabs` permission needed). The entrypoint is named `task-history` because WXT treats an entrypoint named `history` as a `chrome_url_overrides` page, which would replace the browser's own history page.
 
-- **Header:** totals over finished tasks: `12 tasks · 31 focus blocks · 13 h 5 m focused`.
-- **Day groups** (Today, Yesterday, then a date; the year is added for other years), newest first, grouped by local day of `doneAt`. Each task card shows title, `4 of 4 steps · 3 blocks · 1 h 15 m · 3:42 pm`, a **Steps** disclosure listing steps (done ones ticked), **Reopen** (`task/reopen`) and **Delete** (`task/delete`, with a 5-second **Undo** that re-saves via `task/save`).
-- **Stats** (`features/tasks/history.ts`, from `local.sessions`): `blocks` = completed work sessions for the task; `focusMs` = time of all work sessions for the task, completed or cut short.
-- **Clear history** asks inline, then sends `task/clearDone`. Empty state: "Nothing finished yet."
+A vault of everything done, with **Stats** (default) and **Tasks** tabs (`role="tablist"`). The header shows totals over finished tasks.
+
+- **Stats tab** (`features/stats/stats.ts`, pure, from `local.sessions`): a Today / This week (Monday start, the default) / All time switch; tiles for Focus time, Pomodoros, Breaks (short + long) and Cycles, and "N tasks finished"; a pure-CSS last-7-days focus chart (time above each bar, plus a visually-hidden table); and a newest-first cycles timeline, paginated 10 per page (**Previous** / "Page N of M" / **Next**, `paginate`). Each cycle card shows date and time range, counts, task names, a strip of its blocks (width by duration; skipped or cut-short at 50% opacity) and a **Blocks** disclosure listing each block with times.
+- **Tasks tab:** day groups (Today, Yesterday, then a date), newest first. Each card shows title, `4 of 4 steps · 3 blocks · 1 h 15 m · 3:42 pm` (`features/tasks/history.ts`; focus excludes paused time), a **Steps** disclosure, **Reopen** (`task/reopen`) and **Delete** (`task/delete`, with a 5-second **Undo** via `task/save`). A search field filters finished tasks by title or step (`vaultSearch`), showing a flat list.
+- **Export:** **Download CSV** and **Download JSON** build a `Blob` and click a temporary `<a download>`; no `downloads` permission.
+- **Clear history** asks inline, with "Also clear focus stats" (off by default). It sends `task/clearDone`, and `stats/clear` (sign-in gated; sets `sessions: []`) when checked. `task/delete` and `task/clearDone` never touch `sessions`.
 - A thin trusted view: reads with `useExtensionState()` and writes only through `sendCommand`. Existing tokens only, so dark mode works.
 
 ---
@@ -374,6 +378,7 @@ Settings → **Backup**: "Back up to your Google Drive" stores one `plover-backu
 - 2026-11-05: waitlist gate dropped; sign-up open.
 - 2026-11-07: Figma styling, dark mode, saved tasks, settings in a tab, smarter site input, buddy clock; this doc replaces the pivot spec and per-feature design files; the welcome page becomes a six-step walkthrough.
 - 2026-11-08: **Mark task done** on the running screen with Undo (`task/reopen`); History page replaces the popup's Done list.
+- 2026-11-10: History page becomes a stats and task vault: every phase is recorded with cycles and pause time; export and `stats/clear`.
 - 2026-11-10: end-to-end Playwright suite and `e2e.yml` workflow (§8.5).
 - 2026-11-10: focus mode picks up the most recent open task when none is active; the check-in only appears when the block's task has an open step (#529).
 - 2026-11-10: the popup banner and a Settings switch grant all-sites access without the welcome page (`siteAccess/dismissBanner`).
