@@ -28,6 +28,7 @@ test("popup: start, pause, skip, mark done, undo", async ({
   await p.getByRole("button", { name: "Pause" }).click();
   await expect(p.getByRole("button", { name: "Resume" }).first()).toBeVisible();
   await p.getByRole("button", { name: "Resume" }).first().click();
+  await p.waitForTimeout(1100);
   await p.getByRole("button", { name: "Skip" }).click();
   await expect(p.getByText("Short break")).toBeVisible();
   await shot(p, "popup-3-break");

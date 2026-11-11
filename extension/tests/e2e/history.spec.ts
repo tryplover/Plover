@@ -12,6 +12,7 @@ test("history: seeded tasks, steps, clear confirm", async ({
   const p = await context.newPage();
   await p.goto(`chrome-extension://${extensionId}/task-history.html`);
   await expect(p.getByText(/\d+ tasks · \d+ focus blocks/)).toBeVisible();
+  await p.getByRole("tab", { name: /Tasks/ }).click();
   await expect(p.getByText("Fix the login bug").first()).toBeVisible();
   await expect(p.getByText("Plan next week")).toHaveCount(0);
   await shot(p, "history-1-list");

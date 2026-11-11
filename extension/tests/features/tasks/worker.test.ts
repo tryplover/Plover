@@ -227,6 +227,43 @@ describe("task handlers", () => {
     expect((await getLocal("tasks")).map((t) => t.id)).toEqual(["t1"]);
   });
 
+  it("stats/clear empties sessions and keeps tasks", async () => {
+    await setLocal({
+      tasks: [task],
+      sessions: [
+        {
+          id: "s",
+          taskId: "t1",
+          phase: "work",
+          startedAt: 1,
+          endedAt: 2,
+          completed: true,
+        },
+      ],
+    });
+    await dispatch({ type: "stats/clear" });
+    expect(await getLocal("sessions")).toEqual([]);
+    expect((await getLocal("tasks")).map((t) => t.id)).toEqual(["t1"]);
+  });
+
+  it("clearDone and delete keep sessions", async () => {
+    const session = {
+      id: "s",
+      taskId: "t2",
+      phase: "work" as const,
+      startedAt: 1,
+      endedAt: 2,
+      completed: true,
+    };
+    await setLocal({
+      tasks: [{ ...task, id: "t2", doneAt: T0 }],
+      sessions: [session],
+    });
+    await dispatch({ type: "task/clearDone" });
+    await dispatch({ type: "task/delete", taskId: "t2" });
+    expect(await getLocal("sessions")).toEqual([session]);
+  });
+
   it("ticking the last step marks the task done but keeps it active", async () => {
     await run(task);
     await dispatch({ type: "step/toggle", taskId: "t1", stepId: "s1" });
