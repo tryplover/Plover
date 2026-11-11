@@ -17,6 +17,7 @@
     http page to see the buddy. There's no real network, so AI step suggestions fail by design.
 - ui_paths: [extension/src/ui/, extension/src/entrypoints/ (except background.ts), "*.css", "*.html", user-visible copy]
 - ui_draft_cap: 4
+- media_branch: pr-media   # screenshots/GIFs for UI PRs, embedded via raw.githubusercontent.com (repo is public)
 - personas: [procrastinating student, remote developer, meeting-heavy manager, first-time installer, keyboard-only / screen-reader user]
 - hard_constraints: [local-only data (no Plover cloud sync), content script reads nothing from the page, no browsing-history logging, no keystroke content, no invented character art, outbound hosts limited to DESIGN §6]
 - feedback_label: client-feedback
