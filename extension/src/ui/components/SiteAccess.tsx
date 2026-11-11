@@ -1,8 +1,17 @@
 import { useEffect, useState } from "react";
 import { browser } from "wxt/browser";
-import { originForUrl } from "@/features/site-access/origins";
+import { bannerState, originForUrl } from "@/features/site-access/origins";
+import { AllSitesBanner } from "@/ui/components/AllSitesBanner";
+import { useAllSitesAccess } from "@/ui/hooks/useSiteAccess";
 
-export function SiteAccess() {
+export function SiteAccess({
+  dismissedUntil,
+  now,
+}: {
+  dismissedUntil: number;
+  now: number;
+}) {
+  const allSites = useAllSitesAccess();
   const [origin, setOrigin] = useState<string | null>(null);
   const [granted, setGranted] = useState(true);
 
@@ -25,14 +34,21 @@ export function SiteAccess() {
     };
   }, []);
 
-  if (!origin || granted) return null;
+  const requestSite = () => {
+    if (origin)
+      void browser.permissions.request({ origins: [origin] }).then(setGranted);
+  };
+  const canOfferSite = origin !== null && !granted;
+
+  if (allSites === null) return null;
+  if (bannerState(allSites, dismissedUntil, now) === "show")
+    return <AllSitesBanner onSite={canOfferSite ? requestSite : undefined} />;
+  if (!canOfferSite || allSites) return null;
   return (
     <button
       type="button"
       className="plover-btn-text plover-link"
-      onClick={() =>
-        void browser.permissions.request({ origins: [origin] }).then(setGranted)
-      }
+      onClick={requestSite}
     >
       Show Plover on this site
     </button>

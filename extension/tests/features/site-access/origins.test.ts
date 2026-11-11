@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  DISMISS_MS,
+  bannerState,
   buddyMatches,
   hasHostAccess,
   originForUrl,
@@ -69,5 +71,24 @@ describe("hasHostAccess", () => {
 
   it("is false with no origins", () => {
     expect(hasHostAccess("youtube.com", [])).toBe(false);
+  });
+});
+
+describe("bannerState", () => {
+  it("shows when not granted and never dismissed", () => {
+    expect(bannerState(false, 0, 1000)).toBe("show");
+  });
+
+  it("hides when granted", () => {
+    expect(bannerState(true, 0, 1000)).toBe("hidden");
+  });
+
+  it("hides until the dismissal expires, then shows again", () => {
+    expect(bannerState(false, 5000, 4999)).toBe("hidden");
+    expect(bannerState(false, 5000, 5000)).toBe("show");
+  });
+
+  it("dismisses for a week", () => {
+    expect(DISMISS_MS).toBe(7 * 24 * 60 * 60 * 1000);
   });
 });

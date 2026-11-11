@@ -194,7 +194,9 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
       data-buddy={buddy}
     >
       <p className="plover-eyebrow">{eyebrow}</p>
-      {surface === "popup" && <SiteAccess />}
+      {surface === "popup" && (
+        <SiteAccess dismissedUntil={local.siteBannerDismissedUntil} now={now} />
+      )}
       {surface === "popup" && idle && (
         <div className="plover-buddy-large">
           <Buddy state={buddy} />
