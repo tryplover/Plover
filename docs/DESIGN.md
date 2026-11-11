@@ -197,6 +197,7 @@ Every task is kept, with its steps and its place in the timer.
 - While blocking is on (during focus mode, or turned on by hand), `declarativeNetRequest` dynamic rules (`features/blocking/rules.ts`) block those domains. It turns off when the session ends.
 - **Redirect vs plain block:** a redirect to the calm blocked page needs host access to the site; without it the rule is a plain block (Chrome's error page). Adding a site in Settings requests access for that domain so it gets the blocked page. That grant doesn't put the buddy on the site (the buddy ignores subdomain-wildcard origins).
 - The redirect carries the requested URL in the blocked page's hash (`blocked.html#<url>`, DNR `regexSubstitution`; open tabs get the same when blocking turns on) so the page can name the site and offer to continue after focus ends (#525). `blockedDestination` only accepts http(s). The URL stays in that tab; nothing is stored.
+- The blocked page's wording matches what blocking actually does (`blockedCopy`), and never promises an unblock that won't come. Focus mode keeps blocking on through breaks, so: "Blocked while focus mode is on" during a work block (with "Next break in mm:ss" as information, not an unblock) and when the timer is paused or idle; "Still blocked: focus mode is on" during a break; "Blocked until you turn blocking off" when blocking was turned on by hand (the button sends `blocking/set` off instead of `focus/set` off) (#545).
 - The extension never records visited sites; it only installs rules. Tabs already open on a blocked site are blocked on their next load.
 
 ### 4.7 Focus mode
@@ -380,3 +381,4 @@ Settings → **Backup**: "Back up to your Google Drive" stores one `plover-backu
 - 2026-11-10: focus mode picks up the most recent open task when none is active; the check-in only appears when the block's task has an open step (#529).
 - 2026-11-10: the popup banner and a Settings switch grant all-sites access without the welcome page (`siteAccess/dismissBanner`).
 - 2026-11-10: keyboard entry in task breakdown: Enter suggests steps, Enter in a step adds the next, Ctrl/Cmd+Enter starts, and the popup focuses the title box (#517).
+- 2026-11-11: the blocked page's heading, countdown and button match the real blocking state: breaks, paused focus and manual blocking no longer claim a focus block is ending (#545).

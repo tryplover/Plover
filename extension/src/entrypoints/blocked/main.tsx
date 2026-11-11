@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import { sendCommand } from "@/shared/messages";
 import { remainingSeconds } from "@/features/timer/machine";
 import { formatClock } from "@/ui/components/TimerControls";
+import { blockedCopy } from "@/features/blocking/blocked-copy";
 import { Buddy } from "@/ui/components/Buddy";
 import { deriveBuddyState } from "@/features/buddy/buddy-state";
 import { useExtensionState } from "@/ui/hooks/useExtensionState";
@@ -12,7 +13,6 @@ import "./blocked.css";
 function Blocked() {
   const { local, now, ready } = useExtensionState();
   if (!ready) return null;
-  const running = local.timer.phase !== "idle";
   if (!local.blockingOn) {
     return (
       <main className="blocked">
@@ -21,20 +21,28 @@ function Blocked() {
       </main>
     );
   }
+  const copy = blockedCopy(local);
   return (
     <main className="blocked">
       <Buddy state={deriveBuddyState(local, now)} />
-      <h1>This one&apos;s blocked until your focus block ends.</h1>
-      {running && (
+      <h1>{copy.heading}</h1>
+      {copy.countdownTo !== null && (
         <p className="blocked-clock">
+          <span className="blocked-clock-label">Next break in</span>
           {formatClock(remainingSeconds(local.timer, now))}
         </p>
       )}
       <button
         type="button"
-        onClick={() => void sendCommand({ type: "focus/set", on: false })}
+        onClick={() =>
+          void sendCommand(
+            copy.action === "endFocus"
+              ? { type: "focus/set", on: false }
+              : { type: "blocking/set", on: false },
+          )
+        }
       >
-        End focus early
+        {copy.action === "endFocus" ? "End focus early" : "Turn blocking off"}
       </button>
     </main>
   );
