@@ -137,6 +137,7 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
             events={local.calendar.events}
             workMinutes={settings.workMinutes}
             now={now}
+            autoFocus={surface === "popup" && !showSignIn}
           />
           <SavedTasks
             tasks={local.tasks}
