@@ -1,4 +1,4 @@
-import { test as base, chromium } from "@playwright/test";
+import { test as base, chromium, expect } from "@playwright/test";
 import type { BrowserContext, Page, Worker } from "@playwright/test";
 import fs from "node:fs";
 import http from "node:http";
@@ -73,6 +73,22 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
     let [sw] = context.serviceWorkers();
     if (!sw) sw = await context.waitForEvent("serviceworker");
     await sw.evaluate(() => chrome.storage.local.get(null));
+    // The worker registers the buddy script after it starts; a page opened
+    // before that never gets the buddy.
+    await expect
+      .poll(
+        () =>
+          sw.evaluate(
+            async () =>
+              (
+                await chrome.scripting.getRegisteredContentScripts({
+                  ids: ["plover-buddy"],
+                })
+              ).length,
+          ),
+        { timeout: 10_000 },
+      )
+      .toBe(1);
     await use(sw);
   },
   extensionId: async ({ serviceWorker }, use) => {
