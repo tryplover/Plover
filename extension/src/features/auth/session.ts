@@ -14,6 +14,7 @@ export const GATED_COMMANDS: Command["type"][] = [
   "task/reopen",
   "task/delete",
   "task/clearDone",
+  "stats/clear",
   "calendar/connect",
 ];
 

@@ -21,6 +21,8 @@ export const DEFAULT_LOCAL: LocalState = {
   activeTaskId: null,
   timer: IDLE_TIMER,
   phaseStartedAt: null,
+  cycleId: null,
+  phasePausedMs: 0,
   sessions: [],
   focus: { on: false, startedAt: null },
   blockingOn: false,

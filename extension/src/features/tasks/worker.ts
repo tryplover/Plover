@@ -42,7 +42,15 @@ export function registerTaskHandlers(): void {
       if (e instanceof DecomposeError && e.status === 401) {
         await enqueue(() => setLocal({ needsSignIn: true }));
       }
-      return { ok: true, data: { steps: [], aiFailed: true } };
+      const retryAfterSeconds =
+        e instanceof DecomposeError ? e.retryAfterSeconds : null;
+      return {
+        ok: true,
+        data:
+          retryAfterSeconds === null
+            ? { steps: [], aiFailed: true }
+            : { steps: [], aiFailed: true, limitedFor: retryAfterSeconds },
+      };
     }
   });
 
@@ -174,6 +182,11 @@ export function registerTaskHandlers(): void {
     await setLocal({
       tasks: (await getLocal("tasks")).filter((t) => t.doneAt === null),
     });
+    return { ok: true };
+  });
+
+  registerHandler("stats/clear", async () => {
+    await setLocal({ sessions: [] });
     return { ok: true };
   });
 }

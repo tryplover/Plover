@@ -10,7 +10,7 @@ export function taskStats(task: Task, sessions: Session[]): TaskStats {
   let focusMs = 0;
   for (const s of sessions) {
     if (s.taskId !== task.id || s.phase !== "work") continue;
-    focusMs += s.endedAt - s.startedAt;
+    focusMs += s.endedAt - s.startedAt - (s.pausedMs ?? 0);
     if (s.completed) blocks += 1;
   }
   return { blocks, focusMs };

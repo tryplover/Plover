@@ -44,32 +44,55 @@ export function onTimerEvent(fn: (e: TimerEvent) => Promise<void>): void {
 export async function applyTransition(
   t: TimerTransition,
   nowMs: number,
+  reason?: "skip",
 ): Promise<void> {
-  const [prev, phaseStartedAt, activeTaskId, sessions, transient, tasks] =
-    await Promise.all([
-      getLocal("timer"),
-      getLocal("phaseStartedAt"),
-      getLocal("activeTaskId"),
-      getLocal("sessions"),
-      getLocal("transient"),
-      getLocal("tasks"),
-    ]);
-  const hasOpenStep =
-    tasks.find((t) => t.id === activeTaskId)?.steps.some((s) => !s.done) ??
-    false;
+  const [
+    prev,
+    phaseStartedAt,
+    activeTaskId,
+    tasks,
+    cycleId,
+    phasePausedMs,
+    sessions,
+    transient,
+  ] = await Promise.all([
+    getLocal("timer"),
+    getLocal("phaseStartedAt"),
+    getLocal("activeTaskId"),
+    getLocal("tasks"),
+    getLocal("cycleId"),
+    getLocal("phasePausedMs"),
+    getLocal("sessions"),
+    getLocal("transient"),
+  ]);
+  const activeTask = tasks.find((task) => task.id === activeTaskId);
+  const activeTaskTitle = activeTask?.title ?? null;
+  const hasOpenStep = activeTask?.steps.some((s) => !s.done) ?? false;
 
   const book = bookkeep(
     prev,
     t,
-    { phaseStartedAt, activeTaskId, hasOpenStep, sessions, transient },
+    {
+      phaseStartedAt,
+      activeTaskId,
+      activeTaskTitle,
+      hasOpenStep,
+      cycleId,
+      phasePausedMs,
+      sessions,
+      transient,
+    },
     nowMs,
     () => crypto.randomUUID(),
+    reason,
   );
 
   const leftWork = t.state.phase !== "work";
   await setLocal({
     timer: t.state,
     phaseStartedAt: book.phaseStartedAt,
+    cycleId: book.cycleId,
+    phasePausedMs: book.phasePausedMs,
     sessions: book.sessions,
     transient: leftWork
       ? { ...book.transient, extendOffer: false }
@@ -129,10 +152,16 @@ async function settleJustFive(now: number): Promise<void> {
 
 export async function resumeTimerNow(): Promise<void> {
   const now = Date.now();
+  const timer = await getLocal("timer");
   const transient = await getLocal("transient");
   if (transient.extendOffer)
     await setLocal({ transient: { ...transient, extendOffer: false } });
-  await applyTransition(resumeTimer(await getLocal("timer"), now), now);
+  if (timer.pausedAt !== null) {
+    await setLocal({
+      phasePausedMs: (await getLocal("phasePausedMs")) + now - timer.pausedAt,
+    });
+  }
+  await applyTransition(resumeTimer(timer, now), now);
 }
 
 async function openCheckIn(): Promise<void> {
@@ -170,7 +199,11 @@ export function registerTimerHandlers(): void {
     const now = Date.now();
     if (await settleOverdue(now)) return { ok: true };
     const config = timerConfig(await getSettings());
-    await applyTransition(skipPhase(await getLocal("timer"), config, now), now);
+    await applyTransition(
+      skipPhase(await getLocal("timer"), config, now),
+      now,
+      "skip",
+    );
     return { ok: true };
   });
 

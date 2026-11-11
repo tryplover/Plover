@@ -47,6 +47,15 @@ describe("taskStats", () => {
     });
   });
 
+  it("subtracts paused time from focus time", () => {
+    const paused = { ...session("p", "work", 25, true), pausedMs: 5 * MIN };
+    expect(taskStats(task("p", 1), [paused])).toEqual({
+      blocks: 1,
+      focusMs: 20 * MIN,
+    });
+    expect(historyTotals([task("p", 1)], [paused]).focusMs).toBe(20 * MIN);
+  });
+
   it("is zero for a task with no sessions", () => {
     expect(taskStats(task("z", 1), sessions)).toEqual({
       blocks: 0,
