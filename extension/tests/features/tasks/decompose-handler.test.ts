@@ -38,7 +38,11 @@ describe("task/decompose", () => {
 
   it.each([
     ["500", () => Promise.resolve(ok({}, 500))],
-    ["429", () => Promise.resolve(ok({}, 429))],
+    [
+      "429 without the daily-limit body",
+      () =>
+        Promise.resolve(ok({ error: "rate-limit backend unavailable" }, 429)),
+    ],
     ["malformed json", () => Promise.resolve(ok("not json"))],
     ["network error", () => Promise.reject(new TypeError("offline"))],
   ])("falls back to aiFailed on %s", async (_n, impl) => {
@@ -46,6 +50,16 @@ describe("task/decompose", () => {
     expect(await dispatch({ type: "task/decompose", text: "g" })).toEqual({
       ok: true,
       data: { steps: [], aiFailed: true },
+    });
+  });
+
+  it("passes the retry time through when the daily limit is hit", async () => {
+    stubFetch(async () =>
+      ok({ error: "daily rate limit exceeded", retryAfterSeconds: 7200 }, 429),
+    );
+    expect(await dispatch({ type: "task/decompose", text: "g" })).toEqual({
+      ok: true,
+      data: { steps: [], aiFailed: true, limitedFor: 7200 },
     });
   });
 
