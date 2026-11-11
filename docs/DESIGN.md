@@ -380,3 +380,4 @@ Settings → **Backup**: "Back up to your Google Drive" stores one `plover-backu
 - 2026-11-10: focus mode picks up the most recent open task when none is active; the check-in only appears when the block's task has an open step (#529).
 - 2026-11-10: the popup banner and a Settings switch grant all-sites access without the welcome page (`siteAccess/dismissBanner`).
 - 2026-11-10: keyboard entry in task breakdown: Enter suggests steps, Enter in a step adds the next, Ctrl/Cmd+Enter starts, and the popup focuses the title box (#517).
+- 2026-11-11: the in-page panel keeps **Suggest steps** and **Write my own** on one line, and disabled buttons render at 70% opacity instead of 50% so their text stays above 3:1 contrast (#539).

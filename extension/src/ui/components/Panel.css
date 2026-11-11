@@ -280,3 +280,10 @@
   font-size: 22px;
   text-decoration: none;
 }
+
+.plover-breakdown .plover-row button {
+  white-space: nowrap;
+}
+.plover-surface-buddy .plover-breakdown .plover-row button {
+  padding: 0 14px;
+}
