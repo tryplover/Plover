@@ -17,6 +17,7 @@ Footguns specific to writing Vitest tests in this repo: mocking pitfalls and Typ
 | `TS2532: Object is possibly 'undefined'` on `result[0].kind`, and `result[0]!.kind` fails ESLint `no-non-null-assertion` | Destructure + optional chaining: `const [r0] = result; expect(r0?.kind).toBe(...)`                                                                                       |
 | ESLint `@typescript-eslint/no-empty-function` on stub methods in a `vi.mock` class (`start() {}`)                        | Use expression-bodied class fields: `start = () => undefined;` / `watch = async () => undefined;` (keep a real `class` body; Vitest 4 `new vi.fn(...)` mocks don't work) |
 | A real-timer test passes locally but fails on CI with `expected [ …(3) ] to have a length of 2` (e.g. `state-port.test.ts` nudge window) | `setTimeout(fn, until - now)` can fire a moment before `Date.now()` reaches `until`, so the code posts the old state once more. Don't assert an exact count of posts; `vi.waitFor` on the final value (`posted.at(-1)`) and check the earlier ones loosely |
+| e2e `expect(page.locator("plover-buddy")).toBeAttached()` times out on a fresh context, but only sometimes | The worker registers the buddy content script (`syncBuddyScript`) after it starts; a page opened before that never gets the buddy. The `serviceWorker` fixture polls `chrome.scripting.getRegisteredContentScripts({ids:["plover-buddy"]})` before handing off; keep that wait, and do the same for any new dynamically registered script |
 
 ## Details
 
