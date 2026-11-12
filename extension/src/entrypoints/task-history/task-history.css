@@ -211,6 +211,23 @@
   font-size: 12px;
   color: var(--color-text-secondary);
 }
+.history-step {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.history-step-mark {
+  flex: none;
+  width: 1em;
+  color: var(--color-text-secondary);
+}
+.history-step-done .history-step-mark {
+  color: var(--color-action-brand-bg);
+}
+.history-step-done .history-step-text {
+  color: var(--color-text-secondary);
+  text-decoration: line-through;
+}
 .history-clear {
   color: var(--color-status-error);
   border-color: color-mix(in srgb, var(--color-status-error) 45%, transparent);
