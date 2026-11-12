@@ -8,6 +8,7 @@
 
 - **Before building a feature:** read §1 (scope), §2 (architecture rules) and the section for the feature you're touching. If the feature isn't here, add a short section (or a "Planned" entry in §9) in the same PR as the code.
 - **When the design changes, this doc changes in the same PR.** New state, a new message, a new permission or host, a new surface, a change to what the content script receives, or a behaviour change a user would notice: update the matching section. CI enforces this for the load-bearing paths (§8.3).
+- **Taste and UI feedback lands in §5.2.** When the user gives feedback about look, feel, intuitiveness or UX, generalise it into an §5.2 interaction principle (not just a one-screen fix) in the same PR. This holds in every session, fresh cloud sessions included.
 - **Before calling work done:** review the diff against §2.3 (architecture rules) and §6 (permissions, network, privacy), the same way a reviewer will. The PR template has the checkbox.
 - `docs/plans/` holds short-lived implementation plans for agents. A plan is deleted once its work merges; anything worth keeping moves into this doc.
 
@@ -257,10 +258,24 @@ A vault of everything done, with **Stats** (default) and **Tasks** tabs (`role="
 
 ## 5. Visual design
 
+### 5.1 Tokens, components, motion
+
 - Source: the Figma file "Plover — Design Package" (`9ArqIcaIijDNziBxmFBgV9`), pages Foundations, Buddy and App MVP (screens: Idle, Break it down, Focus block, Check-in, Break, Calendar heads-up, Blocked site, Settings). It has no onboarding screens.
 - Tokens (`ui/tokens.css`): `--color-bg-page|surface|quiet`, `--color-text-primary|secondary|on-brand`, `--color-action-brand-bg|compact-bg|compact-fg`, `--color-border-control|decorative`, `--color-focus`, `--color-status-error`, `--radius-control|card|panel|pill`. Font: Lexend (bundled).
 - Components (`ui/base.css`): `.plover-btn-brand`, `.plover-btn-compact`, `.plover-btn-text`, `.plover-chip`, `.plover-eyebrow`, `.plover-heading`, `.plover-toggle`. New UI uses these before inventing new ones.
 - Motion respects `prefers-reduced-motion` everywhere (the buddy's animations already do).
+
+### 5.2 Interaction and clarity principles
+
+The bar every surface (popup, panel, options, blocked page, history) is held to. These come from real UI review of the MVP, and a diff that regresses on one is a bug, not a style nit — review new UI against this list the way you review against §2.3. **This section is where taste/UI feedback lands:** when the user critiques look, feel or intuitiveness, fold the lesson in here as a general principle in the same PR (see CLAUDE.md → Design-doc workflow).
+
+- **Separate chrome from content.** A user must be able to tell at a glance what is information and what is interactive, and what is _done_ versus what is still text. Put a divider, a surface/background change, or clear spacing between a task's content and its actions — never let resume / mark-done / delete sit as undifferentiated text beside the task. Completed state reads as completed (strikethrough, muted `--color-text-secondary`, a check), not as more prose.
+- **Actions look like actions.** Anything clickable is a real control (`.plover-btn-*`, `.plover-chip`, `.plover-toggle`), not bare text. A control's purpose is obvious from its icon and/or label; don't make the user guess what a button does.
+- **Color carries meaning.** Destructive actions (delete, clear history) use the error/danger color (`--color-status-error`) so the risk is visible before the click. Reserve the brand color for the primary action on a surface.
+- **Navigation is visible and multi-modal.** Don't hide movement behind a single input. A view that steps through items or days offers visible, clickable affordances (e.g. ‹ › side arrows on a day/week view), responds to the keyboard (arrow keys move the selection), and supports the gestures people already expect (swipe left/right to change day). If a view can be navigated, it says so on screen.
+- **Guide the eye.** Use selection/highlight state and lightweight cues (an arrow, a hint, a focus ring) to point at the next action. The current selection is always visible.
+- **Consistency and economy.** Controls that belong together share one row and one visual treatment — a control pair (e.g. two timer or day controls) sits on a single line, consistent with the pause control, rather than each inventing its own frame. Prefer one line over a stacked frame; keep layouts tight.
+- **Accessibility is table stakes.** Everything reachable by click is reachable by keyboard and announced to screen readers; selection and focus are never conveyed by color alone; motion respects `prefers-reduced-motion`.
 
 ---
 

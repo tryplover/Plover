@@ -107,53 +107,54 @@ function History() {
           >
             Download JSON
           </button>
+          {(doneTasks.length > 0 || local.sessions.length > 0) &&
+            !confirmClear && (
+              <button
+                type="button"
+                className="plover-btn-text history-clear"
+                onClick={() => setConfirmClear(true)}
+              >
+                Clear history
+              </button>
+            )}
         </div>
-        {(doneTasks.length > 0 || local.sessions.length > 0) &&
-          (confirmClear ? (
-            <>
-              <p>{`Delete all ${doneTasks.length} finished tasks? This can't be undone.`}</p>
-              <label className="history-check">
-                <input
-                  type="checkbox"
-                  checked={alsoStats}
-                  onChange={(e) => setAlsoStats(e.target.checked)}
-                />
-                Also clear focus stats
-              </label>
-              <div className="history-actions">
-                <button
-                  type="button"
-                  className="plover-btn-text"
-                  onClick={() => {
-                    setConfirmClear(false);
-                    void sendCommand({ type: "task/clearDone" });
-                    if (alsoStats) void sendCommand({ type: "stats/clear" });
-                    setAlsoStats(false);
-                  }}
-                >
-                  Clear
-                </button>
-                <button
-                  type="button"
-                  className="plover-btn-text"
-                  onClick={() => {
-                    setConfirmClear(false);
-                    setAlsoStats(false);
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </>
-          ) : (
-            <button
-              type="button"
-              className="plover-btn-text plover-link"
-              onClick={() => setConfirmClear(true)}
-            >
-              Clear history
-            </button>
-          ))}
+        {confirmClear && (doneTasks.length > 0 || local.sessions.length > 0) && (
+          <div className="history-clear-confirm">
+            <p>{`Delete all ${doneTasks.length} finished tasks? This can't be undone.`}</p>
+            <label className="history-check">
+              <input
+                type="checkbox"
+                checked={alsoStats}
+                onChange={(e) => setAlsoStats(e.target.checked)}
+              />
+              Also clear focus stats
+            </label>
+            <div className="history-actions">
+              <button
+                type="button"
+                className="plover-btn-text history-clear"
+                onClick={() => {
+                  setConfirmClear(false);
+                  void sendCommand({ type: "task/clearDone" });
+                  if (alsoStats) void sendCommand({ type: "stats/clear" });
+                  setAlsoStats(false);
+                }}
+              >
+                Clear
+              </button>
+              <button
+                type="button"
+                className="plover-btn-text"
+                onClick={() => {
+                  setConfirmClear(false);
+                  setAlsoStats(false);
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </footer>
     </main>
   );
