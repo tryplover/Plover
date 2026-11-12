@@ -181,6 +181,17 @@
 .plover-checkin-step:hover {
   background: var(--color-bg-quiet);
 }
+.plover-empty-hint {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+.plover-empty-hint .plover-btn-text {
+  padding: 0;
+  font: inherit;
+  color: inherit;
+}
 .plover-link {
   align-self: flex-start;
   padding: 0;
