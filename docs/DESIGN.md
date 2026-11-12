@@ -381,3 +381,4 @@ Settings → **Backup**: "Back up to your Google Drive" stores one `plover-backu
 - 2026-11-10: the popup banner and a Settings switch grant all-sites access without the welcome page (`siteAccess/dismissBanner`).
 - 2026-11-10: keyboard entry in task breakdown: Enter suggests steps, Enter in a step adds the next, Ctrl/Cmd+Enter starts, and the popup focuses the title box (#517).
 - 2026-11-11: task titles wrap to two lines (full title in a tooltip) in Your tasks and the Done/Deleted banners instead of truncating to one line; each task is a tinted card and the heading shows the count (#518).
+- 2026-11-11: the in-page panel keeps **Suggest steps** and **Write my own** on one line with 12px between them and the task box, and disabled buttons render at 70% opacity instead of 50% so their text stays above 3:1 contrast (#539).
