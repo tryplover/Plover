@@ -30,6 +30,11 @@
   flex-direction: column;
   gap: 16px;
 }
+.plover-breakdown form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 .plover-row {
   display: flex;
   align-items: center;
