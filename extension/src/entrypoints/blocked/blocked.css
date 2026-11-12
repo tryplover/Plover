@@ -29,3 +29,16 @@
   letter-spacing: 0;
   opacity: 0.7;
 }
+
+.blocked-site {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0.7;
+  overflow-wrap: anywhere;
+}
+.blocked-continue {
+  color: var(--color-text-primary);
+  font-weight: 500;
+  text-underline-position: from-font;
+}

@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent } from "react";
 import { normalizeDomain } from "@/features/blocking/domains";
+import {
+  isCloseKey,
+  isPanelCloseMessage,
+  shouldCloseOnPointer,
+} from "@/features/buddy/panel-dismiss";
 import { isBuddyVisible, nearestCorner } from "@/features/buddy/visibility";
 import { updateSettings } from "@/shared/storage";
 import type { BuddyCorner, Settings } from "@/shared/types";
@@ -22,7 +27,13 @@ function cornerStyle(corner: BuddyCorner): CSSProperties {
   };
 }
 
-export function BuddyApp({ panel }: { panel: PanelFrame }) {
+export function BuddyApp({
+  panel,
+  hostEl,
+}: {
+  panel: PanelFrame;
+  hostEl: HTMLElement;
+}) {
   const settings = useSyncedSettings();
   const [fullscreen, setFullscreen] = useState(
     () => document.fullscreenElement !== null,
@@ -36,15 +47,17 @@ export function BuddyApp({ panel }: { panel: PanelFrame }) {
 
   if (!settings || fullscreen || !isBuddyVisible(location.href, settings))
     return null;
-  return <BuddyView settings={settings} panel={panel} />;
+  return <BuddyView settings={settings} panel={panel} hostEl={hostEl} />;
 }
 
 function BuddyView({
   settings,
   panel,
+  hostEl,
 }: {
   settings: Settings;
   panel: PanelFrame;
+  hostEl: HTMLElement;
 }) {
   const snap = useBuddySnapshot();
   const [open, setOpen] = useState(false);
@@ -57,6 +70,29 @@ function BuddyView({
     else panel.hide();
   }, [open, drag, corner, panel]);
   useEffect(() => () => panel.hide(), [panel]);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    const onKey = (e: KeyboardEvent) => {
+      if (isCloseKey(e.key)) close();
+    };
+    const onPointer = (e: globalThis.PointerEvent) => {
+      if (shouldCloseOnPointer(e.composedPath(), hostEl, panel.frameElement()))
+        close();
+    };
+    const onMessage = (e: MessageEvent) => {
+      if (isPanelCloseMessage(e.data, e.source, panel.frameWindow())) close();
+    };
+    window.addEventListener("keydown", onKey, true);
+    window.addEventListener("pointerdown", onPointer, true);
+    window.addEventListener("message", onMessage);
+    return () => {
+      window.removeEventListener("keydown", onKey, true);
+      window.removeEventListener("pointerdown", onPointer, true);
+      window.removeEventListener("message", onMessage);
+    };
+  }, [open, hostEl, panel]);
 
   if (!snap) return null;
 

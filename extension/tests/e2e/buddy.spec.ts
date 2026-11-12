@@ -47,3 +47,34 @@ test("buddy: stays above a page's fixed elements", async ({
   await expect(p.locator('iframe[src*="panel.html"]')).toBeVisible();
   await shot(p, "buddy-3-above-fixed");
 });
+
+test("buddy: Escape and a click outside close the panel", async ({
+  context,
+  signIn,
+  testPage,
+}) => {
+  await signIn();
+  const p = await context.newPage();
+  await p.setViewportSize({ width: 1100, height: 800 });
+  await p.goto(testPage);
+  await expect(p.locator("plover-buddy")).toBeAttached({ timeout: 15_000 });
+  await p.waitForTimeout(1000);
+  const panel = p.locator('iframe[src*="panel.html"]');
+  const buddy = { x: 1100 - 16 - 32, y: 800 - 16 - 35 };
+
+  await p.mouse.click(buddy.x, buddy.y);
+  await expect(panel).toBeVisible();
+  await p.keyboard.press("Escape");
+  await expect(panel).toBeHidden();
+
+  await p.mouse.click(buddy.x, buddy.y);
+  await expect(panel).toBeVisible();
+  await p.mouse.click(100, 100);
+  await expect(panel).toBeHidden();
+
+  await p.mouse.click(buddy.x, buddy.y);
+  await expect(panel).toBeVisible();
+  await panel.contentFrame().locator("body").click();
+  await p.keyboard.press("Escape");
+  await expect(panel).toBeHidden();
+});

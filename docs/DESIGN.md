@@ -144,6 +144,7 @@ Optional fields on stored objects are read with defaults; there is no migration 
 - Rendered with WXT `createShadowRootUi` (closed shadow root, max z-index) so page CSS can't break it and it can't break the page. Hidden while the page is fullscreen.
 - **Drag** to move; it snaps to the nearest corner (`nearestCorner`), saved as `settings.buddyCorner`.
 - **Click** toggles the in-page panel (iframe, 320×480, placed next to the buddy's corner) and a small menu: **Hide on this site** (adds the hostname to `hiddenSites`) and **Hide everywhere**. Both are undone in Settings.
+- **Closing the panel:** clicking the buddy again, **Escape** (pressed on the page or inside the panel) or a click anywhere outside the buddy and panel closes it. While the panel is open the content script listens on `window` (capture, removed on close) for `keydown` (reads only `event.key`) and `pointerdown` (reads only `event.composedPath()` to test containment in the buddy host and panel iframe; never prevents the click, so the page still gets it). The panel page posts `{ type: "plover/panel-close" }` to its parent on Escape; the content script acts on it only when `event.source` is the panel iframe's window. Pure rules in `features/buddy/panel-dismiss.ts`.
 - **Speech bubble:** the focus nudge text, or "Which step did you finish?" while a check-in is pending. Clicking opens the panel.
 - **Clock:** while a phase runs, the buddy holds a small alarm clock with whole minutes left (seconds in the last minute): green rim for work, amber for breaks, faded when paused, hidden when idle. Purely presentational (`pointer-events: none`).
 - **Animation state** comes from `deriveBuddyState` (`features/buddy/buddy-state.ts`): celebrating > nudging (nudge or check-in) > focus/working (work phase) > break > idle.
@@ -197,7 +198,7 @@ Every task is kept, with its steps and its place in the timer.
 - A blocklist of domains in settings. The input is forgiving (`siteFromInput`): "youtube" → youtube.com, `yt`/`fb`/`ig`/`insta`/`x` shorthands, full URLs → their domain.
 - While blocking is on (during focus mode, or turned on by hand), `declarativeNetRequest` dynamic rules (`features/blocking/rules.ts`) block those domains. It turns off when the session ends.
 - **Redirect vs plain block:** a redirect to the calm blocked page needs host access to the site; without it the rule is a plain block (Chrome's error page). Adding a site in Settings requests access for that domain so it gets the blocked page. That grant doesn't put the buddy on the site (the buddy ignores subdomain-wildcard origins).
-- The redirect carries the requested URL in the blocked page's hash (`blocked.html#<url>`, DNR `regexSubstitution`; open tabs get the same when blocking turns on) so the page can name the site and offer to continue after focus ends (#525). `blockedDestination` only accepts http(s). The URL stays in that tab; nothing is stored.
+- The redirect carries the requested URL in the blocked page's hash (`blocked.html#<url>`, DNR `regexSubstitution`; open tabs get the same when blocking turns on) so the page can name the site and offer to continue after focus ends (#525). The page shows the site's host above the heading while it's blocked and, once blocking is off, a **Continue to <host>** link to the original URL. `blockedDestination` only accepts http(s). The URL stays in that tab; nothing is stored.
 - The blocked page's wording matches what blocking actually does (`blockedCopy`), and never promises an unblock that won't come. Focus mode keeps blocking on through breaks, so: "Blocked while focus mode is on" during a work block (with "Next break in mm:ss" as information, not an unblock) and when the timer is paused or idle; "Still blocked: focus mode is on" during a break; "Blocked until you turn blocking off" when blocking was turned on by hand (the button sends `blocking/set` off instead of `focus/set` off) (#545).
 - The extension never records visited sites; it only installs rules. Tabs already open on a blocked site are blocked on their next load.
 
@@ -209,7 +210,7 @@ One switch: starts or resumes the timer on the current task (when the timer is i
 
 - Google Calendar, `calendar.readonly`, primary calendar. OAuth with `chrome.identity.launchWebAuthFlow` (implicit token, works in every Chromium browser; `getAuthToken` is Chrome-only).
 - Events refresh every 15 minutes (alarm) into `local.calendar`; the panel shows the next event.
-- Starting or resuming a block that would overlap an event offers **shorten to end before it** or **start anyway** (`conflictDuring`, `ConflictOffer`).
+- Starting or resuming a block that would overlap an event offers **shorten to end before it** or **start anyway** (`conflictDuring`, `ConflictOffer`). From the Focus mode toggle the offer renders directly under that row, scrolls into view and takes keyboard focus on its first button; it is a labelled alert (`Calendar conflict with <event>`).
 - During focus, a heads-up 5 minutes before an event.
 - Nothing is written to the calendar.
 
@@ -355,11 +356,11 @@ Settings: **Weekly goal**, "Focus on N days a week" (default 4, or Off). A day c
 
 Settings → **Backup**: "Back up to your Google Drive" stores one `plover-backup.json` (tasks, sessions, settings) in the Drive **app data folder** (hidden, only Plover can read it) using the user's own Google token (`drive.appdata` scope via `launchWebAuthFlow`, like Calendar). Daily alarm plus **Back up now**; **Restore** merges by id. Plover's servers never see it, so "no Plover cloud sync" still holds. Host `www.googleapis.com` is already allowed. **Blocked on the owner:** add the `drive.appdata` scope to the Google OAuth consent screen.
 
----
-
 ### 9.17 In-progress tasks on the History page
 
 From #532. History shows only finished tasks, so weeks spent on unfinished work look empty. Add an **In progress** section to the History page listing open and parked tasks with the focus time and blocks spent on each so far (the same per-task totals the Tasks tab uses, over their sessions). Read-only; no new state.
+
+---
 
 ## 10. Open questions
 
@@ -390,4 +391,7 @@ From #532. History shows only finished tasks, so weeks spent on unfinished work 
 - 2026-11-11: the blocked page's heading, countdown and button match the real blocking state: breaks, paused focus and manual blocking no longer claim a focus block is ending (#545).
 - 2026-11-11: task titles wrap to two lines (full title in a tooltip) in Your tasks and the Done/Deleted banners instead of truncating to one line; each task is a tinted card and the heading shows the count (#518).
 - 2026-11-11: the in-page panel keeps **Suggest steps** and **Write my own** on one line with 12px between them and the task box, and disabled buttons render at 70% opacity instead of 50% so their text stays above 3:1 contrast (#539).
+- 2026-11-12: Escape (page or panel) and a click outside close the in-page panel; the content script reads only the key and the event path and checks `event.source` on the panel's close message (#524).
+- 2026-11-12: the Focus mode calendar-conflict offer sits right under the toggle, scrolls into view and takes focus, so it is no longer hidden below the fold in the popup (#530).
+- 2026-11-12: the blocked page names the blocked site and, after focus ends, offers **Continue to <host>** back to the original URL (#525).
 - 2026-11-12: **Add to list** in the steps editor saves a task without starting a block (`task/save` only) (#531).

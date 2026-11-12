@@ -91,6 +91,15 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
           onChange={toggleFocus}
         />
       </label>
+      {focusConflict && (
+        <ConflictOffer
+          event={focusConflict}
+          now={now}
+          takeFocus
+          onShorten={(endBy) => startFocus(endBy)}
+          onAnyway={() => startFocus()}
+        />
+      )}
       {!local.focus.on && (
         <label className="plover-toggle">
           Block sites now
@@ -102,14 +111,6 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
             }
           />
         </label>
-      )}
-      {focusConflict && (
-        <ConflictOffer
-          event={focusConflict}
-          now={now}
-          onShorten={(endBy) => startFocus(endBy)}
-          onAnyway={() => startFocus()}
-        />
       )}
     </>
   );
