@@ -127,7 +127,7 @@ No Plover server stores user data. `plover-server` sees only the task text sent 
 ### 3.2 Types (`shared/types.ts`)
 
 - **`Settings`:** `workMinutes` 25, `shortBreakMinutes` 5, `longBreakMinutes` 15, `blocksPerLongBreak` 4, `focusNudgeMinutes` 15, `blocklist` [], `buddyCorner` "bottom-right", `hiddenSites` [], `hideEverywhere` false, `theme` "system". `getSettings` spreads `DEFAULT_SETTINGS`, so new keys need no migration.
-- **`LocalState`:** `tasks`, `activeTaskId`, `timer` (`TimerState`: `phase`, `phaseEndsAt`, `blocksCompleted`, `pausedAt`), `phaseStartedAt`, `cycleId` (null when idle), `phasePausedMs` (pause time in the current phase), `sessions` (every phase that ran, see below), `focus`, `blockingOn`, `transient`, `needsSignIn`, `calendar` (`events`, `fetchedAt`), `calendarConnected`, `justFiveUntil` (timestamp or null; used by §9.8).
+- **`LocalState`:** `tasks`, `activeTaskId`, `timer` (`TimerState`: `phase`, `phaseEndsAt`, `blocksCompleted`, `pausedAt`), `phaseStartedAt`, `cycleId` (null when idle), `phasePausedMs` (pause time in the current phase), `sessions` (every phase that ran, see below), `focus`, `blockingOn`, `transient`, `needsSignIn`, `calendar` (`events`, `fetchedAt`), `calendarConnected`, `justFiveUntil` (timestamp or null; used by §9.8), `siteBannerDismissedUntil` (0; epoch ms until which the popup all-sites banner stays hidden).
 - **`Session`:** `id`, `taskId`, `phase`, `startedAt`, `endedAt`, `completed`, plus optional `cycleId` (default `id`), `pausedMs` (default 0), `taskTitle` (so deleting a task keeps its stats; old sessions show "Untitled task") and `skipped`.
 - **Definitions:** a *session* is one timer phase that ran (work, short break or long break). A *cycle* is one sitting, from starting the timer from idle until it goes idle again (Stop, Save for later, Mark task done); its sessions share a `cycleId`. A *Pomodoro* is a completed work session. *Focus time* of a work session is `endedAt - startedAt - pausedMs`.
 - **`Task`:** `id`, `title`, `steps` (`{ id, title, done }`), `createdAt`, `doneAt`, optional `parked` (`ParkedTimer`: `remainingMs`, `blocksCompleted`, `parkedAt`) and `lastActiveAt`.
@@ -155,11 +155,13 @@ Installing asks for **no** site access (no "read and change all your data" warni
 
 1. **Welcome page** (opened on `onInstalled` reason `install`) asks once for all sites from a click (user gesture required).
 2. **Runtime registration.** The content script isn't in the manifest; `syncBuddyScript()` registers it with `scripting.registerContentScripts` for the granted origins (`buddyMatches`), on install/update/startup (`reconcile`) and on `permissions.onAdded/onRemoved`, and `injectBuddy` injects it into tabs already open.
-3. **Per-site fallback.** On a page without access the popup offers "Show Plover on this site" (exact host).
-4. **Pages no extension can draw on:** `chrome://`, the Web Store, the new-tab page, the PDF viewer, other extensions' pages. The popup is the fallback there.
-5. **Blocking and access:** see §4.5.
+3. **Popup banner.** While `<all_urls>` isn't granted, the popup shows "Plover isn't on your pages yet." above the task input with **Show Plover on all sites** (permission request from the click), **Just this site** (the per-site request, only when the current tab can have one) and a **×** that sends `siteAccess/dismissBanner`, hiding the banner for 7 days (`siteBannerDismissedUntil`). The pure `bannerState(granted, dismissedUntil, now)` in `features/site-access/origins.ts` decides. It follows `permissions.onAdded/onRemoved`, so it disappears once access is granted and the worker registers the script.
+4. **Per-site fallback.** While the banner is hidden (dismissed) and all sites aren't granted, the popup offers "Show Plover on this site" (exact host). The banner replaces it while showing.
+5. **Settings.** The **Where Plover appears** section has a **Show Plover on all sites** switch that requests `<all_urls>` when turned on and removes it when turned off (following `permissions.onAdded/onRemoved`), next to **Hide the buddy everywhere** and **Sites without the buddy**.
+6. **Pages no extension can draw on:** `chrome://`, the Web Store, the new-tab page, the PDF viewer, other extensions' pages. The popup is the fallback there.
+7. **Blocking and access:** see §4.5.
 
-Chrome's own extension page shows only per-site toggles for optional permissions, so "all sites" can only be granted from inside Plover (today: the welcome page; planned: popup and Settings, §9.1).
+Chrome's own extension page shows only per-site toggles for optional permissions, so "all sites" can only be granted from inside Plover (the welcome page, the popup banner and Settings).
 
 ### 4.3 Task breakdown
 
@@ -173,7 +175,7 @@ Chrome's own extension page shows only per-site toggles for optional permissions
 
 Every task is kept, with its steps and its place in the timer.
 
-- **Idle screen** shows **Your tasks** (open tasks, most recently active first) with steps done, time left in its block and Pomodoro block, **Resume**, and a ⋯ menu (**Mark done**, **Delete** with a 5-second **Undo**). Finished tasks live on the History page (§4.13); the popup and panel show a **History** link once any task is done.
+- **Idle screen** shows **Your tasks** (open tasks, most recently active first) with steps done, time left in its block and Pomodoro block, **Resume**, and a ⋯ menu (**Mark done**, **Delete** with a 5-second **Undo**). The list sits under a thin rule, headed "Your tasks · N" (open tasks), and each task is a softly tinted card (`.plover-saved-task`, darker on hover) with its title at medium weight. A task title wraps to at most two lines (full title in a tooltip); in a list narrower than 340px (container query) the time, **Resume** and ⋯ move to a line under the title. The same two-line wrap applies to the title in the Done and Deleted banners. Finished tasks live on the History page (§4.13); the popup and panel show a **History** link once any task is done.
 - **While running:** **Save for later** parks the task. **Stop** parks too (stopping never throws time away). **Mark task done** (work and break phases) finishes the task: it sets `doneAt`, stops the timer through `stopAndPark` (which ends focus and blocking, as **Stop** does) and makes the buddy celebrate. Back on the idle screen, a `role="status"` banner `Done: "<title>"` offers **Undo** for 5 seconds (the same banner follows **Mark done** in the ⋯ menu); Undo sends `task/reopen`, which clears `doneAt` and returns the task to **Your tasks** without restarting the timer. The banner is Panel UI state, not worker state.
 - **Parking** (`parkedFrom`): a work phase saves its time left (measured at `pausedAt` when paused); under 30 s saves nothing; a break saves a full work block but keeps `blocksCompleted`. An overdue phase is settled first (`settleOverdue`).
 - **Resume** (`task/resume`): parks the current task if any, then starts a work block ending at `now + remainingMs` with the saved cycle position. A calendar conflict triggers the same "shorten or start anyway" offer as starting.
@@ -196,6 +198,7 @@ Every task is kept, with its steps and its place in the timer.
 - While blocking is on (during focus mode, or turned on by hand), `declarativeNetRequest` dynamic rules (`features/blocking/rules.ts`) block those domains. It turns off when the session ends.
 - **Redirect vs plain block:** a redirect to the calm blocked page needs host access to the site; without it the rule is a plain block (Chrome's error page). Adding a site in Settings requests access for that domain so it gets the blocked page. That grant doesn't put the buddy on the site (the buddy ignores subdomain-wildcard origins).
 - The redirect carries the requested URL in the blocked page's hash (`blocked.html#<url>`, DNR `regexSubstitution`; open tabs get the same when blocking turns on) so the page can name the site and offer to continue after focus ends (#525). `blockedDestination` only accepts http(s). The URL stays in that tab; nothing is stored.
+- The blocked page's wording matches what blocking actually does (`blockedCopy`), and never promises an unblock that won't come. Focus mode keeps blocking on through breaks, so: "Blocked while focus mode is on" during a work block (with "Next break in mm:ss" as information, not an unblock) and when the timer is paused or idle; "Still blocked: focus mode is on" during a break; "Blocked until you turn blocking off" when blocking was turned on by hand (the button sends `blocking/set` off instead of `focus/set` off) (#545).
 - The extension never records visited sites; it only installs rules. Tabs already open on a blocked site are blocked on their next load.
 
 ### 4.7 Focus mode
@@ -307,10 +310,6 @@ A Playwright suite in `extension/tests/e2e/` drives the built extension in headl
 
 Each entry is the agreed design in brief. Before building one, write a plan in `docs/plans/`, and move the entry into §4 when it ships.
 
-### 9.1 Buddy on all sites from the popup and Settings
-
-Today only the welcome page can grant all-sites access, so users who skip it approve sites one by one. **Popup:** when `<all_urls>` isn't granted, a banner above the task input: "Plover isn't on your pages yet. [Show Plover on all sites] Just this site", dismissible for 7 days (pure `bannerState(granted, dismissedUntil, now)` in `features/site-access/origins.ts`). **Settings:** a "Where Plover appears" section with a **Show Plover on all sites** toggle that requests or removes `<all_urls>` and follows `permissions.onAdded/onRemoved`, next to Hide everywhere and Sites without the buddy. No new permissions. Not doing: making access install-time (brings back the install warning).
-
 ### 9.2 End-of-task wrap-up
 
 Ticking the last open step (or **Mark done**, including the running-screen **Mark task done**) stops the timer, turns off focus and blocking, and shows a wrap-up: "Nice work on '…'. How did that session go?" with **Smooth / Okay / Tough**, an optional one-line note, **Done** or **Skip**. The eyebrow shows blocks and minutes for the task (from `sessions`). Stored as `task.reflection { mood, note, at }`, local only. `transient.wrapUpTaskId` drives the screen; commands `wrapup/answer`, `wrapup/skip`. Unticking within 10 s reopens and resumes. If a check-in answer completes the task, the wrap-up replaces the return to the timer. No stats in v1.
@@ -321,7 +320,7 @@ Turning blocking or focus on with an empty blocklist opens an inline editor inst
 
 ### 9.4 Settings page per Figma screen 8
 
-Grouped sections: **Focus** (steppers: work 5–90, breaks 1–30, nudge 5–60), **Blocking** (`BlockList`), **Where Plover appears** (§9.1), **Calendar** (connect; "Warn me before meetings" 5 / 10 / off as `settings.headsUpMinutes`, replacing the fixed 5-minute lead), **Appearance**, **Keyboard shortcut** (shows Alt+Shift+O, links to the shortcuts page), **Account**. Figma settings rows (label left, value right, 51px, divider). Desktop-era rows (Show on desktop, Sounds, 5 more minutes) are left out. Lands after 9.1 and 9.3 so it reuses their components.
+Grouped sections: **Focus** (steppers: work 5–90, breaks 1–30, nudge 5–60), **Blocking** (`BlockList`), **Where Plover appears** (§4.2), **Calendar** (connect; "Warn me before meetings" 5 / 10 / off as `settings.headsUpMinutes`, replacing the fixed 5-minute lead), **Appearance**, **Keyboard shortcut** (shows Alt+Shift+O, links to the shortcuts page), **Account**. Figma settings rows (label left, value right, 51px, divider). Desktop-era rows (Show on desktop, Sounds, 5 more minutes) are left out. Lands after 9.3 so it reuses their components.
 
 
 ### 9.8 "Just 5 minutes" start
@@ -381,5 +380,9 @@ Settings → **Backup**: "Back up to your Google Drive" stores one `plover-backu
 - 2026-11-10: History page becomes a stats and task vault: every phase is recorded with cycles and pause time; export and `stats/clear`.
 - 2026-11-10: end-to-end Playwright suite and `e2e.yml` workflow (§8.5).
 - 2026-11-10: focus mode picks up the most recent open task when none is active; the check-in only appears when the block's task has an open step (#529).
+- 2026-11-10: the popup banner and a Settings switch grant all-sites access without the welcome page (`siteAccess/dismissBanner`).
 - 2026-11-10: keyboard entry in task breakdown: Enter suggests steps, Enter in a step adds the next, Ctrl/Cmd+Enter starts, and the popup focuses the title box (#517).
 - 2026-11-10: popup accessibility: labelled task input, headings, per-row control names, status announcements for timer phases and check-in, focus after Write my own / Start / Settings Remove (#534, #535, #536).
+- 2026-11-11: the blocked page's heading, countdown and button match the real blocking state: breaks, paused focus and manual blocking no longer claim a focus block is ending (#545).
+- 2026-11-11: task titles wrap to two lines (full title in a tooltip) in Your tasks and the Done/Deleted banners instead of truncating to one line; each task is a tinted card and the heading shows the count (#518).
+- 2026-11-11: the in-page panel keeps **Suggest steps** and **Write my own** on one line with 12px between them and the task box, and disabled buttons render at 70% opacity instead of 50% so their text stays above 3:1 contrast (#539).

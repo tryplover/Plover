@@ -9,6 +9,7 @@ import { createRoot } from "react-dom/client";
 import { PRIVACY_POLICY_URL } from "@/shared/links";
 import { Buddy } from "@/ui/components/Buddy";
 import { useExtensionState } from "@/ui/hooks/useExtensionState";
+import { useSiteAccess } from "@/ui/hooks/useSiteAccess";
 import { applyStoredTheme } from "@/ui/theme";
 import {
   CalendarStep,
@@ -17,7 +18,6 @@ import {
   PinStep,
   SignInStep,
   SiteAccessStep,
-  useSiteAccess,
 } from "./steps";
 import "@/ui/base.css";
 import "./welcome.css";

@@ -2,6 +2,16 @@ import { httpHostname } from "@/shared/host";
 
 export const ALL_SITES = "<all_urls>";
 
+export const DISMISS_MS = 7 * 24 * 60 * 60 * 1000;
+
+export function bannerState(
+  granted: boolean,
+  dismissedUntil: number,
+  now: number,
+): "hidden" | "show" {
+  return granted || now < dismissedUntil ? "hidden" : "show";
+}
+
 // Subdomain-wildcard origins (*://*.d/*) come from blocklist grants, which
 // unlock the blocked page, not the buddy.
 export function buddyMatches(origins: string[]): string[] {

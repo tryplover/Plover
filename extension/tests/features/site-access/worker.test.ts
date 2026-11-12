@@ -5,7 +5,9 @@ import {
   registerSiteAccess,
   syncBuddyScript,
 } from "@/features/site-access/worker";
-import { setLocal, updateSettings } from "@/shared/storage";
+import { DISMISS_MS } from "@/features/site-access/origins";
+import { getLocal, setLocal, updateSettings } from "@/shared/storage";
+import { dispatch } from "@/worker/controller";
 import { enqueue } from "@/worker/queue";
 
 type PermsListener = (p: { origins?: string[] }) => void;
@@ -178,5 +180,19 @@ describe("openWelcome", () => {
       url: expect.stringMatching(/\/welcome\.html$/),
     });
     create.mockRestore();
+  });
+});
+
+describe("siteAccess/dismissBanner", () => {
+  it("snoozes the banner for a week, even when signed out", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(1_000_000);
+    registerSiteAccess();
+    const res = await dispatch({ type: "siteAccess/dismissBanner" });
+    vi.useRealTimers();
+    expect(res).toEqual({ ok: true });
+    expect(await getLocal("siteBannerDismissedUntil")).toBe(
+      1_000_000 + DISMISS_MS,
+    );
   });
 });
