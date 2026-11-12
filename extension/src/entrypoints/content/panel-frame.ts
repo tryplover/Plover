@@ -8,6 +8,8 @@ const PANEL_HEIGHT = 480;
 export interface PanelFrame {
   show(corner: BuddyCorner): void;
   hide(): void;
+  frameWindow(): Window | null;
+  frameElement(): HTMLIFrameElement | null;
 }
 
 function placeFrame(wrapper: HTMLElement, corner: BuddyCorner): void {
@@ -58,6 +60,12 @@ export function createPanelFrame(
     },
     hide() {
       frame.wrapper.style.display = "none";
+    },
+    frameWindow() {
+      return mounted ? frame.iframe.contentWindow : null;
+    },
+    frameElement() {
+      return mounted ? frame.iframe : null;
     },
     remove() {
       frame.remove();
