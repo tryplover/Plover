@@ -211,10 +211,24 @@
 .plover-saved {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid
+    color-mix(in srgb, var(--color-text-primary) 14%, transparent);
+  container-type: inline-size;
 }
 .plover-saved .plover-eyebrow {
-  margin-bottom: 8px;
+  margin-bottom: 4px;
+}
+.plover-saved-task {
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--color-text-primary) 6%, transparent);
+}
+.plover-saved-task:hover {
+  background: color-mix(in srgb, var(--color-text-primary) 10%, transparent);
+}
+.plover-saved-task .plover-saved-row:hover {
+  background: transparent;
 }
 .plover-saved-row {
   display: flex;
@@ -234,9 +248,14 @@
   min-width: 0;
 }
 .plover-saved-title {
+  font-weight: 500;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 .plover-saved-meta {
   font-size: 12px;
@@ -255,6 +274,21 @@
 .plover-saved-menu {
   justify-content: flex-end;
   padding: 0 12px;
+}
+@container (max-width: 340px) {
+  .plover-saved-row {
+    flex-wrap: wrap;
+    row-gap: 2px;
+  }
+  .plover-saved-text {
+    flex-basis: 100%;
+  }
+  .plover-saved-side {
+    flex: 1;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
 }
 
 .plover-banner {
