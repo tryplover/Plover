@@ -357,6 +357,14 @@ Settings → **Backup**: "Back up to your Google Drive" stores one `plover-backu
 
 ---
 
+### 9.16 Add a task to the list without starting it
+
+From #531. **Start** is the only way to create a task, so queuing several means Start then Save for later each time, which also records throwaway sessions. Add **Add to list** next to **Start** in the steps editor: it sends `task/save` without starting the timer and the task appears in **Your tasks** (no `parked`, so **Resume** starts a fresh block). No new state or commands. Keyboard: Ctrl/Cmd+Enter still starts; Add to list is a plain button.
+
+### 9.17 In-progress tasks on the History page
+
+From #532. History shows only finished tasks, so weeks spent on unfinished work look empty. Add an **In progress** section to the History page listing open and parked tasks with the focus time and blocks spent on each so far (the same per-task totals the Tasks tab uses, over their sessions). Read-only; no new state.
+
 ## 10. Open questions
 
 - **Blocking strictness:** end a blocked session with one click (current), or a small speed bump?
