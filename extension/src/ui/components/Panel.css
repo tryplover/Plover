@@ -22,7 +22,8 @@
   border-radius: var(--radius-panel);
   box-shadow: 0 16px 40px -12px rgba(36, 51, 41, 0.18);
 }
-.plover-panel p {
+.plover-panel p,
+.plover-panel h2 {
   margin: 0;
 }
 .plover-breakdown {

@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { browser } from "wxt/browser";
 import { siteFromInput } from "@/features/blocking/domains";
@@ -126,6 +126,26 @@ function DomainList({
 }) {
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [announcement, setAnnouncement] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const removeRefs = useRef(new Map<string, HTMLButtonElement>());
+  const focusAfter = useRef<{ domain: string | null } | null>(null);
+
+  useEffect(() => {
+    const target = focusAfter.current;
+    if (!target) return;
+    focusAfter.current = null;
+    const next = target.domain ? removeRefs.current.get(target.domain) : null;
+    (next ?? inputRef.current)?.focus();
+  }, [items]);
+
+  function remove(i: number) {
+    const domain = items[i];
+    if (domain === undefined) return;
+    focusAfter.current = { domain: items[i + 1] ?? items[i - 1] ?? null };
+    setAnnouncement(`Removed ${domain}`);
+    onChange(items.filter((x) => x !== domain));
+  }
 
   function add() {
     const domain = siteFromInput(draft);
@@ -136,7 +156,12 @@ function DomainList({
     setError(null);
     setDraft("");
     onAdd?.(domain);
-    if (!items.includes(domain)) onChange([...items, domain]);
+    if (items.includes(domain)) {
+      setAnnouncement(`${domain} is already on the list`);
+    } else {
+      setAnnouncement(`Added ${domain}`);
+      onChange([...items, domain]);
+    }
   }
 
   return (
@@ -144,6 +169,7 @@ function DomainList({
       <h2>{title}</h2>
       <div className="row">
         <input
+          ref={inputRef}
           type="text"
           value={draft}
           aria-label={title}
@@ -156,14 +182,22 @@ function DomainList({
         </button>
       </div>
       {error && <p role="alert">{error}</p>}
+      <p className="plover-sr" role="status" aria-live="polite">
+        {announcement}
+      </p>
       <ul className="domain-list">
-        {items.map((d) => (
+        {items.map((d, i) => (
           <li key={d}>
             <span>{d}</span>
             <button
+              ref={(el) => {
+                if (el) removeRefs.current.set(d, el);
+                else removeRefs.current.delete(d);
+              }}
               type="button"
               className="plover-btn-text"
-              onClick={() => onChange(items.filter((x) => x !== d))}
+              aria-label={`Remove ${d}`}
+              onClick={() => remove(i)}
             >
               Remove
             </button>

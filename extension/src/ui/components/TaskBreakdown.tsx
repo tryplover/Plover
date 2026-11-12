@@ -52,6 +52,12 @@ export function TaskBreakdown({
     setSteps((cur) => insertStepAfter(cur ?? [], index, step));
   }
 
+  function writeOwn() {
+    const step = { key: newKey(), title: "" };
+    focusKey.current = step.key;
+    setSteps([step]);
+  }
+
   function onStepKeyDown(e: KeyboardEvent<HTMLInputElement>, i: number) {
     if (
       e.key !== "Enter" ||
@@ -159,10 +165,13 @@ export function TaskBreakdown({
 
   return (
     <div className="plover-breakdown">
-      <p className="plover-heading">What are you working on?</p>
+      <label htmlFor="plover-task-title" className="plover-heading">
+        What are you working on?
+      </label>
       <form onSubmit={onTitleSubmit}>
         <input
           ref={titleRef}
+          id="plover-task-title"
           type="text"
           placeholder="e.g. Write the intro of my essay"
           value={title}
@@ -181,7 +190,7 @@ export function TaskBreakdown({
               type="button"
               className="plover-btn-text"
               disabled={busy || !title.trim()}
-              onClick={() => setSteps([])}
+              onClick={writeOwn}
             >
               Write my own
             </button>
@@ -207,7 +216,7 @@ export function TaskBreakdown({
                 <button
                   type="button"
                   className="plover-btn-text plover-icon-btn"
-                  aria-label="Move up"
+                  aria-label={`Move step ${i + 1} up`}
                   disabled={i === 0}
                   onClick={() => move(i, -1)}
                 >
@@ -216,7 +225,7 @@ export function TaskBreakdown({
                 <button
                   type="button"
                   className="plover-btn-text plover-icon-btn"
-                  aria-label="Move down"
+                  aria-label={`Move step ${i + 1} down`}
                   disabled={i === steps.length - 1}
                   onClick={() => move(i, 1)}
                 >
@@ -225,7 +234,7 @@ export function TaskBreakdown({
                 <button
                   type="button"
                   className="plover-btn-text plover-icon-btn"
-                  aria-label="Delete step"
+                  aria-label={`Delete step ${i + 1}: ${s.title.trim() || "empty"}`}
                   onClick={() => setSteps(steps.filter((_, idx) => idx !== i))}
                 >
                   ×

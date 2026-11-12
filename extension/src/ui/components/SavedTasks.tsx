@@ -115,9 +115,9 @@ export function SavedTasks({
 
   return (
     <div className="plover-saved">
-      <p className="plover-eyebrow">
+      <h2 className="plover-eyebrow">
         Your tasks{open.length > 0 && ` · ${open.length}`}
-      </p>
+      </h2>
       {deleted && (
         <div className="plover-saved-row" role="status">
           <p className="plover-saved-title" title={deleted.title}>

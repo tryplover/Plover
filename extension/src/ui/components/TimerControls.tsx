@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { sendCommand } from "@/shared/messages";
 import { remainingSeconds } from "@/features/timer/machine";
@@ -21,13 +22,19 @@ export function TimerControls({
   now,
   buddy,
   canPark = false,
+  autoFocusPause = false,
 }: {
   timer: TimerState;
   now: number;
   buddy?: ReactNode;
   canPark?: boolean;
+  autoFocusPause?: boolean;
 }) {
   const paused = timer.pausedAt !== null;
+  const pauseRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (autoFocusPause && document.hasFocus()) pauseRef.current?.focus();
+  }, [autoFocusPause]);
   return (
     <div className="plover-timer">
       <div className="plover-timer-row">
@@ -41,6 +48,7 @@ export function TimerControls({
       </div>
       <div className="plover-row">
         <button
+          ref={pauseRef}
           type="button"
           className="plover-btn-compact"
           onClick={() =>
