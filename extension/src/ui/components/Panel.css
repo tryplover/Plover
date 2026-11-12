@@ -327,3 +327,14 @@
 .plover-surface-buddy .plover-breakdown .plover-row button {
   padding: 0 14px;
 }
+.plover-breakdown .plover-row .plover-btn-text {
+  padding: 0 8px;
+}
+.plover-surface-buddy .plover-breakdown .plover-row .plover-btn-text {
+  padding: 0 6px;
+}
+.plover-breakdown .plover-row:has(> .plover-btn-brand) {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  row-gap: 8px;
+}
