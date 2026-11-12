@@ -4,7 +4,7 @@ import {
   groupDoneByDay,
   taskStats,
 } from "@/features/tasks/history";
-import { vaultSearch } from "@/features/stats/stats";
+import { inProgressTasks, vaultSearch } from "@/features/stats/stats";
 import { sendCommand } from "@/shared/messages";
 import type { Session, Task } from "@/shared/types";
 
@@ -82,6 +82,26 @@ function TaskCard({
   );
 }
 
+function InProgressCard({
+  task,
+  blocks,
+  focusMs,
+}: {
+  task: Task;
+  blocks: number;
+  focusMs: number;
+}) {
+  const stepsDone = task.steps.filter((s) => s.done).length;
+  return (
+    <li className="history-card">
+      <p className="history-title">{task.title}</p>
+      <p className="history-meta">
+        {`${stepsDone} of ${task.steps.length} steps · ${plural(blocks, "block")} · ${formatDuration(focusMs)} so far`}
+      </p>
+    </li>
+  );
+}
+
 export function TasksTab({
   tasks,
   sessions,
@@ -108,6 +128,8 @@ export function TasksTab({
   const matches = vaultSearch(tasks, query).sort(
     (a, b) => (b.doneAt ?? 0) - (a.doneAt ?? 0),
   );
+
+  const inProgress = inProgressTasks(tasks, query);
 
   function startDelete(task: Task) {
     if (undoTimer.current) clearTimeout(undoTimer.current);
@@ -154,8 +176,8 @@ export function TasksTab({
       <input
         type="text"
         className="history-search"
-        placeholder="Search past tasks"
-        aria-label="Search past tasks"
+        placeholder="Search tasks"
+        aria-label="Search tasks"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />
@@ -176,6 +198,29 @@ export function TasksTab({
         <p className="history-status" role="status">
           {notice}
         </p>
+      )}
+      {inProgress.length > 0 && (
+        <section
+          className="history-group"
+          aria-labelledby="history-in-progress"
+        >
+          <h2 className="history-day" id="history-in-progress">
+            In progress
+          </h2>
+          <ul className="history-list">
+            {inProgress.map((task) => {
+              const stats = taskStats(task, sessions);
+              return (
+                <InProgressCard
+                  key={task.id}
+                  task={task}
+                  blocks={stats.blocks}
+                  focusMs={stats.focusMs}
+                />
+              );
+            })}
+          </ul>
+        </section>
       )}
       {groups.length === 0 && !deleted && (
         <p className="history-empty">

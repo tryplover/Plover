@@ -93,6 +93,24 @@ export function seedHistory(now: number) {
       t += 90 * MIN;
     }
   }
+  const openStart = now - 6 * 3600000;
+  [
+    [0, 25 * MIN, true],
+    [40 * MIN, 25 * MIN, true],
+    [80 * MIN, 14 * MIN, false],
+  ].forEach(([offset, len, completed], i) => {
+    sessions.push({
+      id: `open-s${i}`,
+      taskId: "open-1",
+      phase: "work",
+      startedAt: openStart + (offset as number),
+      endedAt: openStart + (offset as number) + (len as number),
+      completed,
+      cycleId: "cycle-open",
+      pausedMs: 0,
+      taskTitle: "Plan next week",
+    });
+  });
   tasks.push({
     id: "open-1",
     title: "Plan next week",

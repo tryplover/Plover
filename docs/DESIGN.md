@@ -249,7 +249,7 @@ Opens in a tab from the **History** link in the popup and panel (`browser.tabs.c
 A vault of everything done, with **Stats** (default) and **Tasks** tabs (`role="tablist"`). The header shows totals over finished tasks.
 
 - **Stats tab** (`features/stats/stats.ts`, pure, from `local.sessions`): a Today / This week (Monday start, the default) / All time switch; tiles for Focus time, Pomodoros, Breaks (short + long) and Cycles, and "N tasks finished"; a pure-CSS last-7-days focus chart (time above each bar, plus a visually-hidden table); and a newest-first cycles timeline, paginated 10 per page (**Previous** / "Page N of M" / **Next**, `paginate`). Each cycle card shows date and time range, counts, task names, a strip of its blocks (width by duration; skipped or cut-short at 50% opacity) and a **Blocks** disclosure listing each block with times.
-- **Tasks tab:** day groups (Today, Yesterday, then a date), newest first. Each card shows title, `4 of 4 steps · 3 blocks · 1 h 15 m · 3:42 pm` (`features/tasks/history.ts`; focus excludes paused time), a **Steps** disclosure, **Reopen** (`task/reopen`) and **Delete** (`task/delete`, with a 5-second **Undo** via `task/save`). A search field filters finished tasks by title or step (`vaultSearch`), showing a flat list.
+- **Tasks tab:** an **In progress** section (`role="region"`, hidden when there are no open tasks) sits above the finished list: open tasks, parked ones included, most recently active first (`lastActiveAt ?? createdAt`, `inProgressTasks`). Each card shows title and `1 of 3 steps · 2 blocks · 1 h 4 m so far` (same `taskStats` totals over that task's `taskId` sessions); read-only, no actions. Below it, day groups (Today, Yesterday, then a date), newest first. Each card shows title, `4 of 4 steps · 3 blocks · 1 h 15 m · 3:42 pm` (`features/tasks/history.ts`; focus excludes paused time), a **Steps** disclosure, **Reopen** (`task/reopen`) and **Delete** (`task/delete`, with a 5-second **Undo** via `task/save`). A search field ("Search tasks") filters both In progress and finished tasks by title or step (`inProgressTasks`, `vaultSearch`), showing finished matches as a flat list.
 - **Export:** **Download CSV** and **Download JSON** build a `Blob` and click a temporary `<a download>`; no `downloads` permission.
 - **Clear history** asks inline, with "Also clear focus stats" (off by default). It sends `task/clearDone`, and `stats/clear` (sign-in gated; sets `sessions: []`) when checked. `task/delete` and `task/clearDone` never touch `sessions`.
 - A thin trusted view: reads with `useExtensionState()` and writes only through `sendCommand`. Existing tokens only, so dark mode works.
@@ -360,10 +360,6 @@ Settings → **Backup**: "Back up to your Google Drive" stores one `plover-backu
 
 From #531. **Start** is the only way to create a task, so queuing several means Start then Save for later each time, which also records throwaway sessions. Add **Add to list** next to **Start** in the steps editor: it sends `task/save` without starting the timer and the task appears in **Your tasks** (no `parked`, so **Resume** starts a fresh block). No new state or commands. Keyboard: Ctrl/Cmd+Enter still starts; Add to list is a plain button.
 
-### 9.17 In-progress tasks on the History page
-
-From #532. History shows only finished tasks, so weeks spent on unfinished work look empty. Add an **In progress** section to the History page listing open and parked tasks with the focus time and blocks spent on each so far (the same per-task totals the Tasks tab uses, over their sessions). Read-only; no new state.
-
 ---
 
 ## 10. Open questions
@@ -398,3 +394,4 @@ From #532. History shows only finished tasks, so weeks spent on unfinished work 
 - 2026-11-12: Escape (page or panel) and a click outside close the in-page panel; the content script reads only the key and the event path and checks `event.source` on the panel's close message (#524).
 - 2026-11-12: the Focus mode calendar-conflict offer sits right under the toggle, scrolls into view and takes focus, so it is no longer hidden below the fold in the popup (#530).
 - 2026-11-12: the blocked page names the blocked site and, after focus ends, offers **Continue to <host>** back to the original URL (#525).
+- 2026-11-12: the History Tasks tab lists open and parked tasks under **In progress** with steps, blocks and focus time so far (#532).

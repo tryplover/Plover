@@ -14,8 +14,21 @@ test("history: seeded tasks, steps, clear confirm", async ({
   await expect(p.getByText(/\d+ tasks · \d+ focus blocks/)).toBeVisible();
   await p.getByRole("tab", { name: /Tasks/ }).click();
   await expect(p.getByText("Fix the login bug").first()).toBeVisible();
-  await expect(p.getByText("Plan next week")).toHaveCount(0);
+  const inProgress = p.getByRole("region", { name: "In progress" });
+  await expect(inProgress).toBeVisible();
+  await expect(inProgress.getByText("Plan next week")).toBeVisible();
+  await expect(
+    inProgress.getByText("0 of 1 steps · 2 blocks · 1 h 4 m so far"),
+  ).toBeVisible();
   await shot(p, "history-1-list");
+
+  await p.getByRole("textbox", { name: "Search tasks" }).fill("plan next");
+  await expect(inProgress.getByText("Plan next week")).toBeVisible();
+  await expect(p.getByText("Fix the login bug")).toHaveCount(0);
+  await p.getByRole("textbox", { name: "Search tasks" }).fill("login");
+  await expect(inProgress).toHaveCount(0);
+  await expect(p.getByText("Fix the login bug").first()).toBeVisible();
+  await p.getByRole("textbox", { name: "Search tasks" }).fill("");
 
   await p.getByRole("button", { name: /Steps/ }).first().click();
   await expect(p.locator(".history-steps").first()).toBeVisible();
