@@ -249,8 +249,8 @@ without a model call; Gemini only suggests steps during task breakdown.
   `push: main` run does a plain `pnpm test` to avoid paying for
   coverage overhead on a run with no PR left to gate. Ubuntu-only for now (add
   macOS/Windows when packaging matters). Each `push: main` run also bumps the patch version and publishes the zip as a
-  GitHub pre-release; `store-weekly.yml` submits the newest one to the Web Store
-  every Monday (see `docs/RELEASING.md`).
+  GitHub pre-release; `store-daily.yml` submits the newest one to the Web Store
+  every day (see `docs/RELEASING.md`).
 - **Pre-commit** runs `lint-staged` via husky → eslint --fix + prettier --write
   on staged `extension/**/*.{ts,tsx,json,md,yml,yaml,css,html}`.
 - **Coverage gate:** soft 60% (lines/branches/functions/statements) **only on**

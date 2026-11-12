@@ -1,8 +1,8 @@
-name: Weekly store release
+name: Daily store release
 
 on:
   schedule:
-    - cron: "0 14 * * 1"
+    - cron: "0 14 * * *"
   workflow_dispatch:
 
 concurrency:

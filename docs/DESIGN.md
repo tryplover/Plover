@@ -297,7 +297,7 @@ On PRs, if the diff touches a load-bearing path and not `docs/DESIGN.md`, the ch
 ### 8.4 Release
 
 - `release.yml`: a `vX.Y.Z` tag (or manual run) runs the checks, builds the store zip with production `WXT_*` values, verifies the manifest (version matches; no `host_permissions`; no static `content_scripts`), attaches the zip to a GitHub release and, once store credentials exist, uploads and submits it.
-- `store-weekly.yml`: every Monday 14:00 UTC, submits the newest pre-release to the Web Store.
+- `store-daily.yml`: every day 14:00 UTC, submits the newest pre-release to the Web Store.
 - Details and one-time setup: `docs/RELEASING.md`. Running locally: `docs/RUNNING.md`.
 
 ### 8.5 End-to-end tests (`.github/workflows/e2e.yml`)
