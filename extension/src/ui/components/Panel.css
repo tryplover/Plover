@@ -206,11 +206,24 @@
 .plover-saved {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid
+    color-mix(in srgb, var(--color-text-primary) 14%, transparent);
   container-type: inline-size;
 }
 .plover-saved .plover-eyebrow {
-  margin-bottom: 8px;
+  margin-bottom: 4px;
+}
+.plover-saved-task {
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--color-text-primary) 6%, transparent);
+}
+.plover-saved-task:hover {
+  background: color-mix(in srgb, var(--color-text-primary) 10%, transparent);
+}
+.plover-saved-task .plover-saved-row:hover {
+  background: transparent;
 }
 .plover-saved-row {
   display: flex;
@@ -230,6 +243,7 @@
   min-width: 0;
 }
 .plover-saved-title {
+  font-weight: 500;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;

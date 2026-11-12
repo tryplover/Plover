@@ -115,7 +115,9 @@ export function SavedTasks({
 
   return (
     <div className="plover-saved">
-      <p className="plover-eyebrow">Your tasks</p>
+      <p className="plover-eyebrow">
+        Your tasks{open.length > 0 && ` · ${open.length}`}
+      </p>
       {deleted && (
         <div className="plover-saved-row" role="status">
           <p className="plover-saved-title" title={deleted.title}>
@@ -148,7 +150,7 @@ export function SavedTasks({
       )}
       {notice && <p className="plover-saved-meta">{notice}</p>}
       {open.map((task) => (
-        <div key={task.id}>
+        <div key={task.id} className="plover-saved-task">
           <div className="plover-saved-row">
             <div className="plover-saved-text">
               <p className="plover-saved-title" title={task.title}>
