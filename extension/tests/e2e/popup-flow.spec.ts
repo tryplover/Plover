@@ -62,3 +62,45 @@ test("popup: start, pause, skip, mark done, undo", async ({
   await expect(p.getByText("Your tasks")).toBeVisible();
   await expect(p.getByText(title).first()).toBeVisible();
 });
+
+test("popup: add to list without starting", async ({
+  context,
+  extensionId,
+  serviceWorker,
+  signIn,
+}) => {
+  await signIn();
+  const title = "Plan the science fair project";
+  const p = await context.newPage();
+  await p.setViewportSize({ width: 420, height: 720 });
+  await p.goto(`chrome-extension://${extensionId}/popup.html`);
+  await p
+    .getByRole("textbox", { name: "What are you working on?" })
+    .pressSequentially(title);
+  await p.getByRole("button", { name: "Write my own" }).click();
+  await p.getByRole("textbox", { name: "Step 1" }).fill("Pick a topic");
+  await p.getByRole("button", { name: "Add step" }).click();
+  await p.locator('input[aria-label^="Step "]').last().fill("List materials");
+  await p.getByRole("button", { name: "Add to list" }).click();
+
+  await expect(p.getByText("Your tasks")).toBeVisible();
+  await expect(p.getByText(title).first()).toBeVisible();
+  await expect(p.getByText("Focus block", { exact: true })).toHaveCount(0);
+  await expect(
+    p.getByRole("textbox", { name: "What are you working on?" }),
+  ).toHaveValue("");
+
+  const local = await serviceWorker.evaluate(() =>
+    chrome.storage.local.get(["tasks", "activeTaskId", "timer"]),
+  );
+  const tasks = local.tasks as {
+    title: string;
+    doneAt: number | null;
+    parked?: unknown;
+  }[];
+  const saved = tasks.find((t) => t.title === title);
+  expect(saved?.doneAt).toBeNull();
+  expect(saved?.parked).toBeUndefined();
+  expect(local.activeTaskId ?? null).toBeNull();
+  expect((local.timer as { phase: string }).phase).toBe("idle");
+});
