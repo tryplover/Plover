@@ -193,16 +193,12 @@ export function SavedTasks({
               id={`plover-saved-menu-${task.id}`}
               className="plover-row plover-saved-menu"
             >
-              <button
-                type="button"
-                className="plover-btn-text"
-                onClick={() => markDone(task)}
-              >
+              <button type="button" onClick={() => markDone(task)}>
                 Mark done
               </button>
               <button
                 type="button"
-                className="plover-btn-text"
+                className="plover-saved-delete"
                 onClick={() => startDelete(task)}
               >
                 Delete

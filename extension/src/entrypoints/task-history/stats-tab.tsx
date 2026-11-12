@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import type { KeyboardEvent } from "react";
 import { formatDuration } from "@/features/tasks/history";
 import {
   cycleTaskTitles,
@@ -40,37 +41,114 @@ function segmentDuration(s: Session): number {
   return Math.max(0, s.endedAt - s.startedAt - (s.pausedMs ?? 0));
 }
 
+const DAY_MS = 24 * 60 * 60_000;
+
 function DayChart({ sessions, now }: { sessions: Session[]; now: number }) {
   const days = dailyFocus(sessions, now);
   const max = Math.max(...days.map((d) => d.focusMs), MIN_CHART_SCALE_MS);
-  const today = days[days.length - 1]?.dayStart;
+  const [selected, setSelected] = useState(days.length - 1);
+  const colRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  function move(to: number) {
+    const i = Math.max(0, Math.min(days.length - 1, to));
+    setSelected(i);
+    colRefs.current[i]?.focus();
+  }
+
+  function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    const map: Record<string, number> = {
+      ArrowLeft: selected - 1,
+      ArrowRight: selected + 1,
+      Home: 0,
+      End: days.length - 1,
+    };
+    if (!(e.key in map)) return;
+    e.preventDefault();
+    move(map[e.key] as number);
+  }
+
+  const sel = days[selected];
+  const pomodoros = sel
+    ? sessions.filter(
+        (s) =>
+          s.phase === "work" &&
+          s.completed &&
+          s.startedAt >= sel.dayStart &&
+          s.startedAt < sel.dayStart + DAY_MS,
+      ).length
+    : 0;
+  const fullDate = sel
+    ? new Date(sel.dayStart).toLocaleDateString(undefined, {
+        weekday: "long",
+        month: "short",
+        day: "numeric",
+      })
+    : "";
+
   return (
     <section className="stats-section">
       <h2 className="history-day">Last 7 days</h2>
-      <div className="day-chart" role="img" aria-label="Focus time per day">
-        {days.map((d) => (
-          <div
-            key={d.dayStart}
-            className="day-col"
-            title={`${d.label}: ${formatDuration(d.focusMs)}`}
-          >
-            <div className="day-bar-area">
-              {d.focusMs >= 60_000 && (
-                <span className="day-value" aria-hidden="true">
-                  {formatDuration(d.focusMs)}
-                </span>
-              )}
-              <div
-                className={`day-bar${d.dayStart === today ? " day-bar-today" : ""}`}
-                style={{
-                  height: d.focusMs === 0 ? 2 : `${(d.focusMs / max) * 82}%`,
-                }}
-              />
-            </div>
-            <span className="day-label">{d.label}</span>
-          </div>
-        ))}
+      <div className="day-chart-nav">
+        <button
+          type="button"
+          className="day-nav"
+          aria-label="Previous day"
+          disabled={selected === 0}
+          onClick={() => move(selected - 1)}
+        >
+          ‹
+        </button>
+        <div
+          className="day-chart"
+          role="group"
+          aria-label="Focus time per day"
+          onKeyDown={onKeyDown}
+        >
+          {days.map((d, i) => (
+            <button
+              key={d.dayStart}
+              type="button"
+              ref={(el) => {
+                colRefs.current[i] = el;
+              }}
+              className={`day-col${i === selected ? " day-col-selected" : ""}`}
+              aria-pressed={i === selected}
+              aria-label={`${d.label}: ${formatDuration(d.focusMs)}`}
+              onClick={() => setSelected(i)}
+            >
+              <div className="day-bar-area">
+                {d.focusMs >= 60_000 && (
+                  <span className="day-value" aria-hidden="true">
+                    {formatDuration(d.focusMs)}
+                  </span>
+                )}
+                <div
+                  className={`day-bar${i === selected ? " day-bar-selected" : ""}`}
+                  style={{
+                    height: d.focusMs === 0 ? 2 : `${(d.focusMs / max) * 82}%`,
+                  }}
+                />
+              </div>
+              <span className="day-label">{d.label}</span>
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          className="day-nav"
+          aria-label="Next day"
+          disabled={selected === days.length - 1}
+          onClick={() => move(selected + 1)}
+        >
+          ›
+        </button>
       </div>
+      {sel && (
+        <p className="day-detail" aria-live="polite">
+          <span className="day-detail-date">{fullDate}</span>
+          {` · ${formatDuration(sel.focusMs)} focus · ${plural(pomodoros, "pomodoro")}`}
+        </p>
+      )}
       <table className="history-sr">
         <caption>Focus time per day</caption>
         <tbody>

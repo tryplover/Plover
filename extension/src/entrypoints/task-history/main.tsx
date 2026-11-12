@@ -107,10 +107,20 @@ function History() {
           >
             Download JSON
           </button>
+          {(doneTasks.length > 0 || local.sessions.length > 0) &&
+            !confirmClear && (
+              <button
+                type="button"
+                className="plover-btn-text history-clear"
+                onClick={() => setConfirmClear(true)}
+              >
+                Clear history
+              </button>
+            )}
         </div>
-        {(doneTasks.length > 0 || local.sessions.length > 0) &&
-          (confirmClear ? (
-            <>
+        {confirmClear &&
+          (doneTasks.length > 0 || local.sessions.length > 0) && (
+            <div className="history-clear-confirm">
               <p>{`Delete all ${doneTasks.length} finished tasks? This can't be undone.`}</p>
               <label className="history-check">
                 <input
@@ -123,7 +133,7 @@ function History() {
               <div className="history-actions">
                 <button
                   type="button"
-                  className="plover-btn-text"
+                  className="plover-btn-text history-clear"
                   onClick={() => {
                     setConfirmClear(false);
                     void sendCommand({ type: "task/clearDone" });
@@ -144,16 +154,8 @@ function History() {
                   Cancel
                 </button>
               </div>
-            </>
-          ) : (
-            <button
-              type="button"
-              className="plover-btn-text plover-link"
-              onClick={() => setConfirmClear(true)}
-            >
-              Clear history
-            </button>
-          ))}
+            </div>
+          )}
       </footer>
     </main>
   );
