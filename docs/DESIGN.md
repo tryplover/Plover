@@ -209,7 +209,7 @@ One switch: starts or resumes the timer on the current task (when the timer is i
 
 - Google Calendar, `calendar.readonly`, primary calendar. OAuth with `chrome.identity.launchWebAuthFlow` (implicit token, works in every Chromium browser; `getAuthToken` is Chrome-only).
 - Events refresh every 15 minutes (alarm) into `local.calendar`; the panel shows the next event.
-- Starting or resuming a block that would overlap an event offers **shorten to end before it** or **start anyway** (`conflictDuring`, `ConflictOffer`).
+- Starting or resuming a block that would overlap an event offers **shorten to end before it** or **start anyway** (`conflictDuring`, `ConflictOffer`). From the Focus mode toggle the offer renders directly under that row, scrolls into view and takes keyboard focus on its first button; it is a labelled alert (`Calendar conflict with <event>`).
 - During focus, a heads-up 5 minutes before an event.
 - Nothing is written to the calendar.
 
@@ -386,3 +386,4 @@ Settings → **Backup**: "Back up to your Google Drive" stores one `plover-backu
 - 2026-11-11: the blocked page's heading, countdown and button match the real blocking state: breaks, paused focus and manual blocking no longer claim a focus block is ending (#545).
 - 2026-11-11: task titles wrap to two lines (full title in a tooltip) in Your tasks and the Done/Deleted banners instead of truncating to one line; each task is a tinted card and the heading shows the count (#518).
 - 2026-11-11: the in-page panel keeps **Suggest steps** and **Write my own** on one line with 12px between them and the task box, and disabled buttons render at 70% opacity instead of 50% so their text stays above 3:1 contrast (#539).
+- 2026-11-12: the Focus mode calendar-conflict offer sits right under the toggle, scrolls into view and takes focus, so it is no longer hidden below the fold in the popup (#530).
