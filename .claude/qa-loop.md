@@ -17,6 +17,11 @@
     http page to see the buddy. There's no real network, so AI step suggestions fail by design.
 - ui_paths: [extension/src/ui/, extension/src/entrypoints/ (except background.ts), "*.css", "*.html", user-visible copy]
 - ui_draft_cap: 4
+- owner_approval: "a comment or review whose body is `lgtm` (any case), posted by GitHub user `liyuxiao2` on one of the loop's PRs"
+    # The owner set this in chat on 2026-11-12: "when i say lgtm, please merge".
+    # On owner_approval: bring the PR up to date with main, rerun checks, mark it ready if it's a draft,
+    # merge once CI is green on the head (squash; stacked PRs need the owner's Merge click).
+    # A lgtm from anyone else, or any other wording, does not count.
 - media_branch: pr-media   # screenshots/GIFs for UI PRs, embedded via raw.githubusercontent.com (repo is public)
 - personas: [procrastinating student, remote developer, meeting-heavy manager, first-time installer, keyboard-only / screen-reader user]
 - hard_constraints: [local-only data (no Plover cloud sync), content script reads nothing from the page, no browsing-history logging, no keystroke content, no invented character art, outbound hosts limited to DESIGN §6]
@@ -25,4 +30,5 @@
 - cadence: hourly scheduled task into the session; chain items back-to-back
 - extra_rules: [CLAUDE.md plan-then-delegate, DESIGN.md updated in the same PR (CI enforces it; `no-design-change` label for pure refactors)]
 - blocked:
+  - "#546 timer after a break with nobody there: the owner must choose wait-for-start or pause-on-unanswered-check-in"
   - "DESIGN §9.15 Drive backup: the owner must add the drive.appdata scope to the Google OAuth consent screen"
