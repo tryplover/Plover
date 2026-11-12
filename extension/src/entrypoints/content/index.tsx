@@ -14,9 +14,9 @@ export default defineContentScript({
       position: "overlay",
       zIndex: 2147483647,
       mode: "closed",
-      onMount: (container) => {
+      onMount: (container, _shadow, host) => {
         const root = createRoot(container);
-        root.render(<BuddyApp panel={panel} />);
+        root.render(<BuddyApp panel={panel} hostEl={host} />);
         return root;
       },
       onRemove: (root) => root?.unmount(),
