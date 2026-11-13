@@ -95,3 +95,52 @@ test("history: reachable and consistent with focus time but no finished task", a
     "1",
   );
 });
+
+test("history: tabs move with arrow keys, Home and End as one Tab stop", async ({
+  context,
+  extensionId,
+  signIn,
+  seed,
+}) => {
+  await signIn();
+  await seed(seedHistory(Date.now()));
+  const p = await context.newPage();
+  await p.goto(`chrome-extension://${extensionId}/task-history.html`);
+  const tablist = p.getByRole("tablist", { name: "History view" });
+  const stats = p.getByRole("tab", { name: "Stats", exact: true });
+  const tasks = p.getByRole("tab", { name: "Tasks", exact: true });
+  await expect(tablist).toBeVisible();
+
+  await stats.focus();
+  await p.keyboard.press("ArrowRight");
+  await expect(tasks).toBeFocused();
+  await expect(tasks).toHaveAttribute("aria-selected", "true");
+  await expect(p.getByText("Fix the login bug").first()).toBeVisible();
+
+  await p.keyboard.press("ArrowRight");
+  await expect(stats).toBeFocused();
+  await expect(stats).toHaveAttribute("aria-selected", "true");
+
+  await p.keyboard.press("ArrowLeft");
+  await expect(tasks).toBeFocused();
+  await expect(tasks).toHaveAttribute("aria-selected", "true");
+
+  await p.keyboard.press("Home");
+  await expect(stats).toBeFocused();
+  await expect(stats).toHaveAttribute("aria-selected", "true");
+
+  await p.keyboard.press("End");
+  await expect(tasks).toBeFocused();
+  await expect(tasks).toHaveAttribute("aria-selected", "true");
+
+  await p.keyboard.press("Home");
+  await expect(stats).toBeFocused();
+  await p.keyboard.press("Tab");
+  await expect(tasks).not.toBeFocused();
+  await expect(tasks).toHaveAttribute("tabindex", "-1");
+  await expect(stats).toHaveAttribute("tabindex", "0");
+  await expect(p.locator("#history-panel")).toHaveAttribute(
+    "aria-labelledby",
+    "tab-stats",
+  );
+});
