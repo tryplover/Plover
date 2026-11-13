@@ -130,7 +130,7 @@ export function resumeTimer(state: TimerState, nowMs: number): TimerTransition {
       pausedAt: null,
       phaseEndsAt: state.phaseEndsAt + pausedFor,
     },
-    events: [],
+    events: [{ type: "resumed" }],
   };
 }
 

@@ -10,10 +10,7 @@ import {
   setLocal,
 } from "@/shared/storage";
 import { onAlarm } from "@/worker/alarms";
-import {
-  CALENDAR_HEADSUP_ALARM,
-  scheduleHeadsUp,
-} from "@/features/calendar/worker";
+import { scheduleHeadsUp } from "@/features/calendar/worker";
 import { setBlocking, reapplyBlocking } from "@/features/blocking/worker";
 import { registerHandler } from "@/worker/controller";
 import { enqueue } from "@/worker/queue";
@@ -54,8 +51,8 @@ async function setFocus(on: boolean, endBy?: number): Promise<void> {
     return;
   }
   await browser.alarms.clear(NUDGE_ALARM);
-  await browser.alarms.clear(CALENDAR_HEADSUP_ALARM);
   await setLocal({ focus: { on: false, startedAt: null } });
+  await scheduleHeadsUp();
   await setBlocking(false);
 }
 

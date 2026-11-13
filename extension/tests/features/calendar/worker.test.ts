@@ -6,6 +6,8 @@ vi.mock("@/features/auth/session", async (orig) => ({
   isSignedIn: async () => true,
 }));
 import { dispatch } from "@/worker/controller";
+import { registerFocusHandlers } from "@/features/focus/worker";
+import { registerTimerHandlers } from "@/features/timer/worker";
 import { registerCalendarHandlers } from "@/features/calendar/worker";
 import { getLocal, setLocal } from "@/shared/storage";
 
@@ -51,6 +53,15 @@ beforeEach(() => {
     launchWebAuthFlow,
     getRedirectURL: () => REDIRECT,
   });
+  Object.assign(fakeBrowser, {
+    declarativeNetRequest: {
+      getDynamicRules: async () => [],
+      updateDynamicRules: async () => undefined,
+    },
+    permissions: { getAll: async () => ({ origins: [] }) },
+  });
+  registerTimerHandlers();
+  registerFocusHandlers();
   registerCalendarHandlers();
 });
 
@@ -292,5 +303,98 @@ describe("heads-up", () => {
     expect(await fakeBrowser.alarms.get("calendar-headsup")).toBeUndefined();
     await connectWithEvent(0, true);
     expect(await fakeBrowser.alarms.get("calendar-headsup")).toBeUndefined();
+  });
+});
+
+describe("meeting-aware work blocks", () => {
+  async function connectWithEvent(startOffset: number) {
+    launchWebAuthFlow.mockResolvedValue(redirectWith("tok"));
+    respondWith([apiEvent("a", "Stand-up", T0 + startOffset)]);
+    await dispatch({ type: "calendar/connect" });
+  }
+
+  async function seedTask() {
+    await setLocal({
+      tasks: [
+        {
+          id: "t1",
+          title: "T",
+          createdAt: T0,
+          doneAt: null,
+          steps: [{ id: "s1", title: "Step", done: false }],
+        },
+      ],
+      activeTaskId: "t1",
+    });
+  }
+
+  it("schedules the heads-up for a running work block outside focus and clears it on stop", async () => {
+    await connectWithEvent(20 * MIN);
+    expect(await fakeBrowser.alarms.get("calendar-headsup")).toBeUndefined();
+    await dispatch({ type: "timer/start" });
+    expect(
+      (await fakeBrowser.alarms.get("calendar-headsup"))?.scheduledTime,
+    ).toBe(T0 + 15 * MIN);
+    await dispatch({ type: "timer/stop" });
+    expect(await fakeBrowser.alarms.get("calendar-headsup")).toBeUndefined();
+  });
+
+  it("keeps the heads-up for a running block when focus ends", async () => {
+    await connectWithEvent(20 * MIN);
+    await dispatch({ type: "focus/set", on: true });
+    await dispatch({ type: "focus/set", on: false });
+    expect(
+      (await fakeBrowser.alarms.get("calendar-headsup"))?.scheduledTime,
+    ).toBe(T0 + 15 * MIN);
+  });
+
+  it("does not nudge when the block is paused at fire time", async () => {
+    await connectWithEvent(20 * MIN);
+    await dispatch({ type: "timer/start" });
+    await dispatch({ type: "timer/pause" });
+    vi.setSystemTime(T0 + 15 * MIN);
+    await fireAlarm("calendar-headsup");
+    expect((await getLocal("transient")).nudgeText).toBeNull();
+  });
+
+  it("re-arms the heads-up on resume after the alarm was lost while paused", async () => {
+    await connectWithEvent(40 * MIN);
+    await dispatch({ type: "timer/start" });
+    await dispatch({ type: "timer/pause" });
+    await fakeBrowser.alarms.clear("calendar-headsup");
+    vi.setSystemTime(T0 + 2 * MIN);
+    await dispatch({ type: "timer/resume" });
+    expect(
+      (await fakeBrowser.alarms.get("calendar-headsup"))?.scheduledTime,
+    ).toBe(T0 + 35 * MIN);
+  });
+
+  it("parks the task instead of starting a break that runs into a meeting", async () => {
+    await seedTask();
+    await connectWithEvent(28 * MIN);
+    await dispatch({ type: "timer/start" });
+    vi.setSystemTime(T0 + 25 * MIN);
+    await fireAlarm("timer-phase");
+    expect((await getLocal("timer")).phase).toBe("idle");
+    const tasks = await getLocal("tasks");
+    expect(tasks[0]?.parked).toBeTruthy();
+    expect(await getLocal("activeTaskId")).toBeNull();
+    const t = await getLocal("transient");
+    expect(t.checkInPending).toBe(true);
+    expect(t.nudgeText).toBe("Stand-up is next. Saved for later.");
+    expect(
+      Object.keys(fakeBrowser.notifications.getAllCreateOptions()),
+    ).toContain("checkin");
+  });
+
+  it("starts the break normally when the meeting is further out", async () => {
+    await seedTask();
+    await connectWithEvent(60 * MIN);
+    await dispatch({ type: "timer/start" });
+    vi.setSystemTime(T0 + 25 * MIN);
+    await fireAlarm("timer-phase");
+    expect((await getLocal("timer")).phase).toBe("shortBreak");
+    expect(await getLocal("activeTaskId")).toBe("t1");
+    expect((await getLocal("transient")).nudgeText).toBeNull();
   });
 });
