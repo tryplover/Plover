@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { CSSProperties, PointerEvent } from "react";
+import type { CSSProperties, MouseEvent, PointerEvent } from "react";
 import { normalizeDomain } from "@/features/blocking/domains";
 import {
   isCloseKey,
@@ -137,11 +137,10 @@ function BuddyView({
     }
   }
 
-  function onClick() {
-    if (suppressClick.current) {
-      suppressClick.current = false;
-      return;
-    }
+  function onClick(e: MouseEvent) {
+    const afterDrag = suppressClick.current;
+    suppressClick.current = false;
+    if (afterDrag && e.detail !== 0) return;
     setOpen((o) => !o);
   }
 
