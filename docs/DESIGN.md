@@ -362,7 +362,7 @@ The first time the popup or panel opens in a new week (Monday start) after a wee
 
 ### 9.13 Plan a focus block from the calendar
 
-With the calendar connected and the timer idle, when the next event is ≥ `workMinutes` away (looking 3 h ahead), the calendar line reads "You're free until 11:00." and **Start** uses that window; when it's shorter, it offers a shortened block that ends 2 min before the event (existing conflict offer). Pure `freeWindow(events, now, horizonMs)` in `features/calendar/`.
+With the calendar connected and the timer idle, when the next event is ≥ `workMinutes` away (looking 3 h ahead), the calendar line reads "You're free until 11:00." and **Start** uses that window; when it's shorter, it offers a shortened block that ends 1 min before the event (existing conflict offer, `shortenTarget`). Pure `freeWindow(events, now, horizonMs)` in `features/calendar/`.
 
 ### 9.14 Soft weekly goal
 
