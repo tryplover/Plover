@@ -5,6 +5,7 @@ import {
   dailyFocus,
   focusMs,
   groupCycles,
+  inProgressTasks,
   rangeStart,
   summarize,
   toCsv,
@@ -201,6 +202,46 @@ describe("vaultSearch", () => {
       "Email",
       "Other",
     ]);
+  });
+});
+
+describe("inProgressTasks", () => {
+  const open = (
+    id: string,
+    over: Partial<Task> = {},
+    steps: string[] = [],
+  ): Task => ({ ...task(id, null, steps), ...over });
+
+  it("lists only open tasks, parked included, most recently active first", () => {
+    const tasks = [
+      open("old", { createdAt: 10 }),
+      open("recent", { createdAt: 1, lastActiveAt: 50 }),
+      open("parked", {
+        createdAt: 2,
+        lastActiveAt: 30,
+        parked: { remainingMs: 1, blocksCompleted: 0, parkedAt: 30 },
+      }),
+      task("done", 99),
+    ];
+    expect(inProgressTasks(tasks, "").map((t) => t.id)).toEqual([
+      "recent",
+      "parked",
+      "old",
+    ]);
+  });
+
+  it("filters by title or step text like vaultSearch", () => {
+    const tasks = [
+      open("Write Report"),
+      open("Email", {}, ["Draft REPORT intro"]),
+      open("Other", {}, ["x"]),
+      task("Done report", 5),
+    ];
+    expect(inProgressTasks(tasks, " report ").map((t) => t.id)).toEqual([
+      "Write Report",
+      "Email",
+    ]);
+    expect(inProgressTasks(tasks, "nope")).toEqual([]);
   });
 });
 

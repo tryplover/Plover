@@ -172,15 +172,27 @@ export function toCsv(sessions: Session[]): string {
   ].join("\n");
 }
 
-export function vaultSearch(tasks: Task[], query: string): Task[] {
-  const done = tasks.filter((t) => t.doneAt !== null);
-  const q = query.trim().toLowerCase();
-  if (q === "") return done;
-  return done.filter(
-    (t) =>
-      t.title.toLowerCase().includes(q) ||
-      t.steps.some((s) => s.title.toLowerCase().includes(q)),
+function matchesQuery(t: Task, q: string): boolean {
+  return (
+    q === "" ||
+    t.title.toLowerCase().includes(q) ||
+    t.steps.some((s) => s.title.toLowerCase().includes(q))
   );
+}
+
+export function vaultSearch(tasks: Task[], query: string): Task[] {
+  const q = query.trim().toLowerCase();
+  return tasks.filter((t) => t.doneAt !== null && matchesQuery(t, q));
+}
+
+export function inProgressTasks(tasks: Task[], query: string): Task[] {
+  const q = query.trim().toLowerCase();
+  return tasks
+    .filter((t) => t.doneAt === null && matchesQuery(t, q))
+    .sort(
+      (a, b) =>
+        (b.lastActiveAt ?? b.createdAt) - (a.lastActiveAt ?? a.createdAt),
+    );
 }
 
 export function paginate<T>(
