@@ -16,19 +16,6 @@ export function taskStats(task: Task, sessions: Session[]): TaskStats {
   return { blocks, focusMs };
 }
 
-export function historyTotals(
-  doneTasks: Task[],
-  sessions: Session[],
-): { tasks: number; blocks: number; focusMs: number } {
-  const totals = { tasks: doneTasks.length, blocks: 0, focusMs: 0 };
-  for (const t of doneTasks) {
-    const stats = taskStats(t, sessions);
-    totals.blocks += stats.blocks;
-    totals.focusMs += stats.focusMs;
-  }
-  return totals;
-}
-
 export function formatDuration(ms: number): string {
   const minutes = Math.floor(ms / 60_000);
   if (minutes < 60) return `${minutes} m`;
