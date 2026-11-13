@@ -214,7 +214,8 @@ One switch: starts or resumes the timer on the current task (when the timer is i
 - Google Calendar, `calendar.readonly`, primary calendar. OAuth with `chrome.identity.launchWebAuthFlow` (implicit token, works in every Chromium browser; `getAuthToken` is Chrome-only).
 - Events refresh every 15 minutes (alarm) into `local.calendar`; the panel shows the next event.
 - Starting or resuming a block that would overlap an event offers **Shorten to N min** (the whole minutes until 1 minute before the event, `shortenMinutes`; the line above names the event) or **Start anyway** (`conflictDuring`, `ConflictOffer`). From the Focus mode toggle the offer renders directly under that row, scrolls into view and takes keyboard focus on its first button; it is a labelled alert (`Calendar conflict with <event>`).
-- During focus, a heads-up 5 minutes before an event.
+- During any running work block (focus or not), a heads-up 5 minutes before an event: the buddy's bubble, "<event> starts in 5 min". `scheduleHeadsUp` requires the calendar connected and focus on or an unpaused work phase; it re-runs on `phase-started`, `resumed` and `stopped` timer events and when focus turns off, and the alarm handler re-checks the same gate.
+- When a work block ends and the next non-all-day event starts before the break would end (`breakRunsInto`), the worker parks the task (`stopAndPark`, as **Save for later** does) instead of starting the break, and the buddy says "<event> is next. Saved for later." The check-in for the block that just ended is kept: it stays pending and its notification is re-sent, because the park's `stopped` event clears it. It runs as a timer-event listener inside the command queue, so it never re-enqueues.
 - Nothing is written to the calendar.
 
 ### 4.9 Accounts and auth
@@ -373,15 +374,6 @@ Settings: **Weekly goal**, "Focus on N days a week" (default 4, or Off). A day c
 
 Settings → **Backup**: "Back up to your Google Drive" stores one `plover-backup.json` (tasks, sessions, settings) in the Drive **app data folder** (hidden, only Plover can read it) using the user's own Google token (`drive.appdata` scope via `launchWebAuthFlow`, like Calendar). Daily alarm plus **Back up now**; **Restore** merges by id. Plover's servers never see it, so "no Plover cloud sync" still holds. Host `www.googleapis.com` is already allowed. **Blocked on the owner:** add the `drive.appdata` scope to the Google OAuth consent screen.
 
-### 9.16 Meeting-aware blocks outside focus mode
-
-From #577. The 5-minute calendar heads-up only runs in focus mode, so a block started with **Start anyway** gives no warning, and a block shortened to end before a meeting rolls straight into a break that runs into it. Two changes, both in the worker:
-
-- `scheduleHeadsUp` and its alarm handler run whenever a **work phase** is running and the calendar is connected, focus on or off (today both return early unless focus is on). The heads-up stays what it is now: the buddy's bubble, "<event> starts in 5 min" (`showNudge`).
-- When a work block ends and the next non-all-day event starts before the break would end, the worker parks the task (`stopAndPark`, as **Save for later** does) instead of starting the break, and the buddy says "<event> is next. Saved for later." The check-in still shows for the block that just ended.
-
-No new permissions, hosts or stored state beyond the existing alarm. Pure `breakRunsInto(event, breakEndsAt)` in `features/calendar/events.ts`.
-
 ### 9.17 History: focus by task for a day
 
 From #579. With many short blocks a day, the cycle cards repeat task names and show "0 pomodoros" for cut-short blocks. On the Stats tab, under the last-7-days chart, a **By task** list for the selected day (the chart's selected bar, today by default): one row per task with that day's focus time (cut-short blocks included, paused time excluded) and block count, sorted by time, plus an "Untitled task" row only for sessions without a task. Read-only, from `sessions`; pure `focusByTask(sessions, dayStart, dayEnd)` in `features/stats/stats.ts`.
@@ -429,3 +421,4 @@ From #579. With many short blocks a day, the cycle cards repeat task names and s
 - 2026-11-13: the on-page buddy is a focusable button: Tab reaches it, Enter/Space opens the panel (#573).
 - 2026-11-13: the meeting-conflict offer says how long the shortened block will be, "Shorten to 17 min" (#578).
 - 2026-11-13: History's Stats/Tasks tabs switch with the arrow keys and are one Tab stop (#585).
+- 2026-11-13: the 5-minute meeting heads-up shows during any work block, not only in focus mode, and a block that ends right before a meeting saves the task instead of starting a break (#577).

@@ -65,6 +65,18 @@ export function nextUpcoming(
   return events.find((e) => !e.allDay && e.start > nowMs) ?? null;
 }
 
+export function breakRunsInto(
+  events: CalendarEvent[],
+  breakStartedAt: number,
+  breakEndsAt: number,
+): CalendarEvent | null {
+  return (
+    events.find(
+      (e) => !e.allDay && e.start >= breakStartedAt && e.start < breakEndsAt,
+    ) ?? null
+  );
+}
+
 const MIN_MS = 60_000;
 
 export function shortenTarget(
