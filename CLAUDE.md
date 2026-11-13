@@ -51,11 +51,20 @@ Note: `docs/plans/` contains _generated implementation plans_ used as input to s
    or behaviour a user would notice, update the matching `docs/DESIGN.md`
    section **in the same PR**. When a planned feature ships, move it from §9
    into §4.
-3. **Review the diff against the doc** before claiming done, and have review
+3. **Capture taste/UI feedback as a durable rule.** When the user gives
+   feedback about look, feel, intuitiveness or UX — affordances, visual
+   separation, gestures/navigation, colour meaning, consistency, "I can't tell
+   what's a button" — treat it as a standard, not a one-off fix. Fold the
+   principle into `docs/DESIGN.md` §5.2 (Interaction and clarity principles) in
+   the same PR as the UI change, generalising it so it applies beyond the one
+   screen the user pointed at. If §5.2 already covers it, sharpen that bullet
+   instead of duplicating. This applies in every session, including fresh cloud
+   sessions, before reporting the UI change done.
+4. **Review the diff against the doc** before claiming done, and have review
    subagents do the same: architecture rules (§2.3), permissions/network/privacy
    (§6), scope (§1.5), and whether the doc still describes the code. Report
    anything the doc and the diff disagree on.
-4. **CI enforces it:** the `Design doc` check fails a PR that touches a
+5. **CI enforces it:** the `Design doc` check fails a PR that touches a
    load-bearing path (manifest, worker, background/content entrypoints,
    shared types/messages/storage, `features/*/worker.ts`) without touching
    `docs/DESIGN.md`. For a refactor or bug fix that doesn't change the design,

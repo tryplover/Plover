@@ -181,6 +181,14 @@
   align-items: center;
   gap: 4px;
   min-width: 0;
+  height: auto;
+  padding: 4px 0 0;
+  border: none;
+  border-radius: var(--radius-control);
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
 }
 .day-bar-area {
   display: flex;
@@ -210,6 +218,74 @@
 .day-label {
   font-size: 12px;
   color: var(--color-text-secondary);
+}
+.day-chart-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.day-chart-nav .day-chart {
+  flex: 1;
+  min-width: 0;
+}
+.day-nav {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1.5px solid var(--color-border-control);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.day-nav:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.day-bar-selected {
+  outline: 2px solid var(--color-text-primary);
+  outline-offset: 1px;
+}
+.day-col-selected .day-label {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+.day-detail {
+  margin: 12px 0 0;
+  font-size: 14px;
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+.day-detail-date {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+.history-step {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.history-step-mark {
+  flex: none;
+  width: 1em;
+  color: var(--color-text-secondary);
+}
+.history-step-done .history-step-mark {
+  color: var(--color-action-brand-bg);
+}
+.history-step-done .history-step-text {
+  color: var(--color-text-secondary);
+  text-decoration: line-through;
+}
+.history-clear {
+  color: var(--color-status-error);
+  border-color: color-mix(in srgb, var(--color-status-error) 45%, transparent);
+}
+.history-clear-confirm {
+  margin-top: 12px;
 }
 .cycle-strip {
   display: flex;

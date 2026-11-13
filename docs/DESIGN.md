@@ -8,6 +8,7 @@
 
 - **Before building a feature:** read §1 (scope), §2 (architecture rules) and the section for the feature you're touching. If the feature isn't here, add a short section (or a "Planned" entry in §9) in the same PR as the code.
 - **When the design changes, this doc changes in the same PR.** New state, a new message, a new permission or host, a new surface, a change to what the content script receives, or a behaviour change a user would notice: update the matching section. CI enforces this for the load-bearing paths (§8.3).
+- **Taste and UI feedback lands in §5.2.** When the user gives feedback about look, feel, intuitiveness or UX, generalise it into an §5.2 interaction principle (not just a one-screen fix) in the same PR. This holds in every session, fresh cloud sessions included.
 - **Before calling work done:** review the diff against §2.3 (architecture rules) and §6 (permissions, network, privacy), the same way a reviewer will. The PR template has the checkbox.
 - `docs/plans/` holds short-lived implementation plans for agents. A plan is deleted once its work merges; anything worth keeping moves into this doc.
 
@@ -188,7 +189,7 @@ Every task is kept, with its steps and its place in the timer.
 - Defaults 25 / 5 / 15, long break after every 4 work blocks; all configurable. Start, pause, resume, skip, stop from the panel or popup.
 - **State machine** (`features/timer/machine.ts`, pure): `startTimer`, `tick`, `pauseTimer`, `resumeTimer`, `skipPhase`, `stopTimer`, `delayPhase`, `remainingSeconds`. `startTimer` accepts `endBy` (shortened block) and `blocksCompleted` (resume). Transitions emit events; `bookkeep()` records a session for every running phase that ends (breaks too, with `completed` true only when it ran to `phaseEndsAt`), manages `cycleId` and `phasePausedMs`, and sets the check-in. Skip is told apart by a `reason` the `timer/skip` handler passes (no event distinguishes it). Pause time is added to `phasePausedMs` on resume and excluded from focus time. A phase cut short after under 1 s (e.g. Stop right as a block ends, which settles into a break first) isn't recorded.
 - **Alarms** fire at `phaseEndsAt`; nothing ticks.
-- **Check-in:** at the end of each work block, "Which step did you finish?" in the panel and the buddy's bubble; answering ticks that step on the task the check-in belongs to. It only appears when the block's task has an open step (`hasOpenStep`, computed in `applyTransition`); an anonymous block or a task with every step done gets none. If no page with the buddy is visible, a system notification carries it.
+- **Check-in:** at the end of each work block, "Which step did you finish?" in the panel and the buddy's bubble; answering ticks that step on the task the check-in belongs to. While it is pending, the check-in replaces the task's step list in the running view (the task title stays, **Mark task done** is hidden), so each step shows once and the timer controls stay above the fold. It only appears when the block's task has an open step (`hasOpenStep`, computed in `applyTransition`); an anonymous block or a task with every step done gets none. If no page with the buddy is visible, a system notification carries it.
 - **Announcements and focus:** the panel keeps an always-mounted visually hidden `role="status"` region (`.plover-sr`) that announces phase changes ("Focus block started", "Short break started", "Paused", "Resumed"; never clock ticks). The check-in heading takes focus when it appears (if the document has focus; otherwise a `role="alert"` announces it), and **Start** moves focus to **Pause**.
 - **Toolbar badge** shows the minutes left (`features/timer/badge.ts`).
 - Keyboard shortcut **Alt+Shift+O** opens the popup (`_execute_action`; users change it at `chrome://extensions/shortcuts`).
@@ -200,6 +201,7 @@ Every task is kept, with its steps and its place in the timer.
 - **Redirect vs plain block:** a redirect to the calm blocked page needs host access to the site; without it the rule is a plain block (Chrome's error page). Adding a site in Settings requests access for that domain so it gets the blocked page. That grant doesn't put the buddy on the site (the buddy ignores subdomain-wildcard origins).
 - The redirect carries the requested URL in the blocked page's hash (`blocked.html#<url>`, DNR `regexSubstitution`; open tabs get the same when blocking turns on) so the page can name the site and offer to continue after focus ends (#525). The page shows the site's host above the heading while it's blocked and, once blocking is off, a **Continue to <host>** link to the original URL. `blockedDestination` only accepts http(s). The URL stays in that tab; nothing is stored.
 - The blocked page's wording matches what blocking actually does (`blockedCopy`), and never promises an unblock that won't come. Focus mode keeps blocking on through breaks, so: "Blocked while focus mode is on" during a work block (with "Next break in mm:ss" as information, not an unblock) and when the timer is paused or idle; "Still blocked: focus mode is on" during a break; "Blocked until you turn blocking off" when blocking was turned on by hand (the button sends `blocking/set` off instead of `focus/set` off) (#545).
+- With an empty blocklist the popup and in-page panel show "No sites to block yet · Add sites" under the Focus mode / Block sites now toggles (on or off) so the toggles don't silently do nothing; **Add sites** opens `options.html#blocked-sites`, and the options page focuses and scrolls to the Blocked sites field when that hash is present. The hint disappears once any site is added (#567).
 - The extension never records visited sites; it only installs rules. Tabs already open on a blocked site are blocked on their next load.
 
 ### 4.7 Focus mode
@@ -258,10 +260,24 @@ A vault of everything done, with **Stats** (default) and **Tasks** tabs (`role="
 
 ## 5. Visual design
 
+### 5.1 Tokens, components, motion
+
 - Source: the Figma file "Plover — Design Package" (`9ArqIcaIijDNziBxmFBgV9`), pages Foundations, Buddy and App MVP (screens: Idle, Break it down, Focus block, Check-in, Break, Calendar heads-up, Blocked site, Settings). It has no onboarding screens.
 - Tokens (`ui/tokens.css`): `--color-bg-page|surface|quiet`, `--color-text-primary|secondary|on-brand`, `--color-action-brand-bg|compact-bg|compact-fg`, `--color-border-control|decorative`, `--color-focus`, `--color-status-error`, `--radius-control|card|panel|pill`. Font: Lexend (bundled).
 - Components (`ui/base.css`): `.plover-btn-brand`, `.plover-btn-compact`, `.plover-btn-text`, `.plover-chip`, `.plover-eyebrow`, `.plover-heading`, `.plover-toggle`. New UI uses these before inventing new ones.
 - Motion respects `prefers-reduced-motion` everywhere (the buddy's animations already do).
+
+### 5.2 Interaction and clarity principles
+
+The bar every surface (popup, panel, options, blocked page, history) is held to. These come from real UI review of the MVP, and a diff that regresses on one is a bug, not a style nit — review new UI against this list the way you review against §2.3. **This section is where taste/UI feedback lands:** when the user critiques look, feel or intuitiveness, fold the lesson in here as a general principle in the same PR (see CLAUDE.md → Design-doc workflow).
+
+- **Separate chrome from content.** A user must be able to tell at a glance what is information and what is interactive, and what is _done_ versus what is still text. Put a divider, a surface/background change, or clear spacing between a task's content and its actions — never let resume / mark-done / delete sit as undifferentiated text beside the task. Completed state reads as completed (strikethrough, muted `--color-text-secondary`, a check), not as more prose.
+- **Actions look like actions.** Anything clickable is a real control (`.plover-btn-*`, `.plover-chip`, `.plover-toggle`), not bare text. A control's purpose is obvious from its icon and/or label; don't make the user guess what a button does. `.plover-btn-text` renders as underlined text and reads as a link: keep it for inline, in-sentence actions, and give standalone action rows (footers, card menus) the bordered button look.
+- **Color carries meaning.** Destructive actions (delete, clear history) use the error/danger color (`--color-status-error`) so the risk is visible before the click. Reserve the brand color for the primary action on a surface.
+- **Navigation is visible and multi-modal.** Don't hide movement behind a single input. A view that steps through items or days offers visible, clickable affordances (e.g. ‹ › side arrows on a day/week view), responds to the keyboard (arrow keys move the selection), and supports the gestures people already expect (swipe left/right to change day). If a view can be navigated, it says so on screen.
+- **Guide the eye.** Use selection/highlight state and lightweight cues (an arrow, a hint, a focus ring) to point at the next action. The current selection is always visible.
+- **Consistency and economy.** Controls that belong together share one row and one visual treatment — a control pair (e.g. two timer or day controls) sits on a single line, consistent with the pause control, rather than each inventing its own frame. Prefer one line over a stacked frame; keep layouts tight.
+- **Accessibility is table stakes.** Everything reachable by click is reachable by keyboard and announced to screen readers; selection and focus are never conveyed by color alone; motion respects `prefers-reduced-motion`.
 
 ---
 
@@ -391,4 +407,6 @@ Settings → **Backup**: "Back up to your Google Drive" stores one `plover-backu
 - 2026-11-12: the Focus mode calendar-conflict offer sits right under the toggle, scrolls into view and takes focus, so it is no longer hidden below the fold in the popup (#530).
 - 2026-11-12: the blocked page names the blocked site and, after focus ends, offers **Continue to <host>** back to the original URL (#525).
 - 2026-11-12: **Add to list** in the steps editor saves a task without starting a block (`task/save` only) (#531).
+- 2026-11-12: empty-blocklist hint under the Focus mode and Block sites now toggles, deep-linking to Settings > Blocked sites (#567).
+- 2026-11-12: while a check-in is pending it replaces the task's step list in the panel and popup (no duplicate checkboxes, no Mark task done), keeping the timer controls above the fold (#566).
 - 2026-11-12: the History Tasks tab lists open and parked tasks under **In progress** with steps, blocks and focus time so far (#532).
