@@ -5,6 +5,7 @@ import {
   nextUpcoming,
   parseEvents,
   resolveShorten,
+  shortenMinutes,
   shortenTarget,
 } from "@/features/calendar/events";
 
@@ -134,6 +135,28 @@ describe("nextUpcoming / shortenTarget", () => {
     );
     expect(shortenTarget(ev("c", T0 + 90_000, T0 + 9 * MIN), T0)).toBeNull();
     expect(shortenTarget(ev("d", T0 + 30_000, T0 + 9 * MIN), T0)).toBeNull();
+  });
+});
+
+describe("shortenMinutes", () => {
+  const ev = (id: string, start: number, end: number) => ({
+    id,
+    title: id,
+    start,
+    end,
+    allDay: false,
+  });
+
+  it("is the whole minutes the shortened block would run", () => {
+    expect(shortenMinutes(ev("a", T0 + 18 * MIN, T0 + 40 * MIN), T0)).toBe(17);
+    expect(
+      shortenMinutes(ev("b", T0 + 18 * MIN, T0 + 40 * MIN), T0 + 20_000),
+    ).toBe(16);
+    expect(shortenMinutes(ev("c", T0 + 2 * MIN, T0 + 9 * MIN), T0)).toBe(1);
+  });
+
+  it("is null when the event is too close to shorten", () => {
+    expect(shortenMinutes(ev("d", T0 + 90_000, T0 + 9 * MIN), T0)).toBeNull();
   });
 });
 

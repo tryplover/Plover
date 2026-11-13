@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   nextEvent,
   resolveShorten,
-  shortenTarget,
+  shortenMinutes,
 } from "@/features/calendar/events";
 import type { CalendarEvent } from "@/shared/types";
 
@@ -40,7 +40,8 @@ export function ConflictOffer({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [tooClose, setTooClose] = useState(false);
-  const canShorten = !tooClose && shortenTarget(event, now) !== null;
+  const minutes = shortenMinutes(event, now);
+  const canShorten = !tooClose && minutes !== null;
 
   useEffect(() => {
     if (!takeFocus) return;
@@ -64,9 +65,7 @@ export function ConflictOffer({
       aria-label={`Calendar conflict with ${event.title}`}
     >
       <p>{event.title} starts during your block.</p>
-      {!canShorten && (tooClose || shortenTarget(event, now) === null) && (
-        <p>Too close to {event.title} to shorten.</p>
-      )}
+      {!canShorten && <p>Too close to {event.title} to shorten.</p>}
       <div className="plover-row">
         {canShorten && (
           <button
@@ -74,7 +73,7 @@ export function ConflictOffer({
             className="plover-btn-compact"
             onClick={shorten}
           >
-            Shorten to end before {event.title}
+            Shorten to {minutes} min
           </button>
         )}
         <button type="button" className="plover-btn-text" onClick={onAnyway}>

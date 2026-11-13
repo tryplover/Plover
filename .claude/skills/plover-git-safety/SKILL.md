@@ -31,6 +31,7 @@ Footguns around concurrent git usage, subagent worktrees, multiple local checkou
 | `design/...` files "don't exist" (Read/ls fail) though `git ls-files design` lists them; `git ls-files -v` shows `S`                                                                                             | The main checkout uses sparse checkout with `!/design/` (`git sparse-checkout list`). Read with `git show HEAD:design/<path>`, or `git sparse-checkout disable` if you need to edit them — don't assume they were deleted                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `git commit` fails with `error: 1Password: failed to fill whole buffer` / `fatal: failed to write commit object` (often from an implementation subagent) | Commits are SSH-signed through the 1Password agent, which was locked or timed out on its approval prompt. Don't disable signing or edit git config. Leave the files staged, ask the user to unlock 1Password, then retry the same `git commit`; it succeeds once unlocked. Tell subagents to report a signing failure and stop rather than work around it |
 | `gh api -X GET search/issues -f q="repo:tryplover/Plover <terms>"` fails with HTTP 422 "Query must include 'is:issue' or 'is:pull-request'" | Add `is:issue` (or `is:pull-request`) to `q`, e.g. `q="repo:tryplover/Plover is:issue buddy keyboard"`; search both when checking for duplicates |
+| Merging `main` into a PR branch conflicts in `docs/DESIGN.md`, and "keep both sides" leaves duplicate §4 bullets (old and new wording of the same rule) | Keep-both is only right for §11 changelog lines. For any other hunk, take the newer wording from main and re-apply only this branch's own edit; grep the section for duplicates before committing |
 
 ## Details
 
@@ -105,3 +106,7 @@ The `D:/GitHub/Plover` checkout has `core.sparseCheckout=true` with patterns `/*
 ### Issue search needs `is:issue`
 
 The search API now rejects `search/issues` queries that don't say whether they want issues or pull requests (HTTP 422). The QA loop's duplicate check hit this on 2026-11-13: every query failed until `is:issue` was added.
+
+### Resolving DESIGN.md merge conflicts
+
+Several PRs each append a §11 changelog line, so merging `main` into a branch often conflicts there, and keeping both sides is correct. On 2026-11-13 a §4.1 conflict (the panel bullets edited by both #574 and #576) was resolved the same way and left the old "320×480" **Click** and **Closing the panel** bullets beside the new ones. Only auto-resolve hunks whose lines are all changelog entries (`- 20…`); resolve anything else by hand, then grep the section for duplicates.

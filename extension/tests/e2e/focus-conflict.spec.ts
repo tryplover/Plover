@@ -38,7 +38,7 @@ test("focus toggle: conflict offer scrolls into view and takes focus", async ({
   await p.setViewportSize({ width: 380, height: 600 });
   await p.goto(`chrome-extension://${extensionId}/popup.html`);
   await p.getByRole("checkbox", { name: "Focus mode" }).click();
-  const shorten = p.getByRole("button", { name: /Shorten to end before/ });
+  const shorten = p.getByRole("button", { name: /^Shorten to \d+ min$/ });
   await expect(shorten).toBeFocused();
   await expect(
     p.getByRole("alert", { name: "Calendar conflict with Team sync" }),
