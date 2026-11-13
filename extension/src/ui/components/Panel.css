@@ -274,7 +274,19 @@
 }
 .plover-saved-menu {
   justify-content: flex-end;
-  padding: 0 12px;
+  gap: 8px;
+  margin: 0 12px;
+  padding: 10px 0 12px;
+  border-top: 1px solid var(--color-border-decorative);
+}
+.plover-saved-menu button {
+  height: 36px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+.plover-saved-delete {
+  color: var(--color-status-error);
+  border-color: color-mix(in srgb, var(--color-status-error) 45%, transparent);
 }
 @container (max-width: 340px) {
   .plover-saved-row {
