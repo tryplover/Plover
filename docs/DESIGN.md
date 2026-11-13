@@ -214,7 +214,8 @@ One switch: starts or resumes the timer on the current task (when the timer is i
 - Google Calendar, `calendar.readonly`, primary calendar. OAuth with `chrome.identity.launchWebAuthFlow` (implicit token, works in every Chromium browser; `getAuthToken` is Chrome-only).
 - Events refresh every 15 minutes (alarm) into `local.calendar`; the panel shows the next event.
 - Starting or resuming a block that would overlap an event offers **Shorten to N min** (the whole minutes until 1 minute before the event, `shortenMinutes`; the line above names the event) or **Start anyway** (`conflictDuring`, `ConflictOffer`). From the Focus mode toggle the offer renders directly under that row, scrolls into view and takes keyboard focus on its first button; it is a labelled alert (`Calendar conflict with <event>`).
-- During focus, a heads-up 5 minutes before an event.
+- During any running work block (focus or not), a heads-up 5 minutes before an event: the buddy's bubble, "<event> starts in 5 min". `scheduleHeadsUp` requires the calendar connected and focus on or an unpaused work phase; it re-runs on `phase-started`, `resumed` and `stopped` timer events and when focus turns off, and the alarm handler re-checks the same gate.
+- When a work block ends and the next non-all-day event starts before the break would end (`breakRunsInto`), the worker parks the task (`stopAndPark`, as **Save for later** does) instead of starting the break, and the buddy says "<event> is next. Saved for later." The check-in for the block that just ended is kept: it stays pending and its notification is re-sent, because the park's `stopped` event clears it. It runs as a timer-event listener inside the command queue, so it never re-enqueues.
 - Nothing is written to the calendar.
 
 ### 4.9 Accounts and auth
@@ -249,9 +250,9 @@ A six-segment progress bar (the newest segment fills and pops) and a Back button
 
 Opens in a tab from the **History** link in the popup and panel (`browser.tabs.create` on `task-history.html`; no `tabs` permission needed). The entrypoint is named `task-history` because WXT treats an entrypoint named `history` as a `chrome_url_overrides` page, which would replace the browser's own history page.
 
-A vault of everything done, with **Stats** (default) and **Tasks** tabs (`role="tablist"`). The header is an all-time summary, `N tasks finished · M focus blocks · X focused`, from `summarize` over all sessions with range from 0 (the same numbers as the Stats tab's All time tiles), so work on unfinished tasks counts.
+A vault of everything done, with **Stats** (default) and **Tasks** tabs (`role="tablist"`; arrow keys, Home and End switch tabs, roving tabindex). The header is an all-time summary, `N tasks finished · M focus blocks · X focused`, from `summarize` over all sessions with range from 0 (the same numbers as the Stats tab's All time tiles), so work on unfinished tasks counts.
 
-- **Stats tab** (`features/stats/stats.ts`, pure, from `local.sessions`): a Today / This week (Monday start, the default) / All time switch; tiles for Focus time, Pomodoros, Breaks (short + long) and Cycles, and "N tasks finished"; a pure-CSS last-7-days focus chart (time above each bar, plus a visually-hidden table); and a newest-first cycles timeline, paginated 10 per page (**Previous** / "Page N of M" / **Next**, `paginate`). Each cycle card shows date and time range, counts, task names, a strip of its blocks (width by duration; skipped or cut-short at 50% opacity) and a **Blocks** disclosure listing each block with times.
+- **Stats tab** (`features/stats/stats.ts`, pure, from `local.sessions`): a Today / This week (Monday start, the default) / All time switch; tiles for Focus time, Pomodoros, Breaks (short + long) and Cycles, and "N tasks finished"; a pure-CSS last-7-days focus chart (time above each bar) with a **By task** list for the selected bar (today by default): one row per task with that day's focus time (cut-short blocks included, paused time excluded) and block count (every work block, cut-short ones too, unlike the Tasks tab's completed-block count), sorted by time, using the same calendar-day bounds as the bar (`dailyFocus` gives each day's `dayStart` and `dayEnd`, so DST days line up), sessions without a task grouped as "Untitled task" (`focusByTask`), plus a visually-hidden table; and a newest-first cycles timeline, paginated 10 per page (**Previous** / "Page N of M" / **Next**, `paginate`). Each cycle card shows date and time range, counts, task names, a strip of its blocks (width by duration; skipped or cut-short at 50% opacity) and a **Blocks** disclosure listing each block with times.
 - **Tasks tab:** an **In progress** section (`role="region"`, hidden when there are no open tasks) sits above the finished list: open tasks, parked ones included, most recently active first (`lastActiveAt ?? createdAt`, `inProgressTasks`). Each card shows title and `1 of 3 steps · 2 blocks · 1 h 4 m so far` (same `taskStats` totals over that task's `taskId` sessions); read-only, no actions. Below it, day groups (Today, Yesterday, then a date), newest first. Each card shows title, `4 of 4 steps · 3 blocks · 1 h 15 m · 3:42 pm` (`features/tasks/history.ts`; focus excludes paused time), a **Steps** disclosure, **Reopen** (`task/reopen`) and **Delete** (`task/delete`, with a 5-second **Undo** via `task/save`). A search field ("Search tasks") filters both In progress and finished tasks by title or step (`inProgressTasks`, `vaultSearch`), showing finished matches as a flat list.
 - **Export:** **Download CSV** and **Download JSON** build a `Blob` and click a temporary `<a download>`; no `downloads` permission.
 - **Clear history** asks inline, with "Also clear focus stats" (off by default). It sends `task/clearDone`, and `stats/clear` (sign-in gated; sets `sessions: []`) when checked. `task/delete` and `task/clearDone` never touch `sessions`.
@@ -373,19 +374,6 @@ Settings: **Weekly goal**, "Focus on N days a week" (default 4, or Off). A day c
 
 Settings → **Backup**: "Back up to your Google Drive" stores one `plover-backup.json` (tasks, sessions, settings) in the Drive **app data folder** (hidden, only Plover can read it) using the user's own Google token (`drive.appdata` scope via `launchWebAuthFlow`, like Calendar). Daily alarm plus **Back up now**; **Restore** merges by id. Plover's servers never see it, so "no Plover cloud sync" still holds. Host `www.googleapis.com` is already allowed. **Blocked on the owner:** add the `drive.appdata` scope to the Google OAuth consent screen.
 
-### 9.16 Meeting-aware blocks outside focus mode
-
-From #577. The 5-minute calendar heads-up only runs in focus mode, so a block started with **Start anyway** gives no warning, and a block shortened to end before a meeting rolls straight into a break that runs into it. Two changes, both in the worker:
-
-- `scheduleHeadsUp` and its alarm handler run whenever a **work phase** is running and the calendar is connected, focus on or off (today both return early unless focus is on). The heads-up stays what it is now: the buddy's bubble, "<event> starts in 5 min" (`showNudge`).
-- When a work block ends and the next non-all-day event starts before the break would end, the worker parks the task (`stopAndPark`, as **Save for later** does) instead of starting the break, and the buddy says "<event> is next. Saved for later." The check-in still shows for the block that just ended.
-
-No new permissions, hosts or stored state beyond the existing alarm. Pure `breakRunsInto(event, breakEndsAt)` in `features/calendar/events.ts`.
-
-### 9.17 History: focus by task for a day
-
-From #579. With many short blocks a day, the cycle cards repeat task names and show "0 pomodoros" for cut-short blocks. On the Stats tab, under the last-7-days chart, a **By task** list for the selected day (the chart's selected bar, today by default): one row per task with that day's focus time (cut-short blocks included, paused time excluded) and block count, sorted by time, plus an "Untitled task" row only for sessions without a task. Read-only, from `sessions`; pure `focusByTask(sessions, dayStart, dayEnd)` in `features/stats/stats.ts`.
-
 ---
 
 ## 10. Open questions
@@ -428,4 +416,7 @@ From #579. With many short blocks a day, the cycle cards repeat task names and s
 - 2026-11-13: the History link shows once any focus time is recorded, and the History header counts all focus blocks, not only finished tasks' (#572).
 - 2026-11-13: the on-page buddy is a focusable button: Tab reaches it, Enter/Space opens the panel (#573).
 - 2026-11-13: the meeting-conflict offer says how long the shortened block will be, "Shorten to 17 min" (#578).
+- 2026-11-13: History's Stats/Tasks tabs switch with the arrow keys and are one Tab stop (#585).
+- 2026-11-13: the 5-minute meeting heads-up shows during any work block, not only in focus mode, and a block that ends right before a meeting saves the task instead of starting a break (#577).
+- 2026-11-13: the History Stats tab lists focus time by task for the selected day, cut-short blocks included (#579).
 - 2026-11-13: answering the check-in and Undo move focus to the next control and announce what happened (#584).
