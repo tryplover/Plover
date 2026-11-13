@@ -2,7 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { sendCommand } from "@/shared/messages";
 import type { Task } from "@/shared/types";
 
-export function CheckIn({ task }: { task: Task | undefined }) {
+export function CheckIn({
+  task,
+  onAnswered,
+}: {
+  task: Task | undefined;
+  onAnswered: (message: string) => void;
+}) {
   const open = task?.steps.filter((s) => !s.done) ?? [];
   const headingRef = useRef<HTMLHeadingElement>(null);
   const [focused] = useState(() => document.hasFocus());
@@ -24,9 +30,15 @@ export function CheckIn({ task }: { task: Task | undefined }) {
           key={s.id}
           type="button"
           className="plover-checkin-step"
-          onClick={() =>
-            void sendCommand({ type: "checkin/answer", stepId: s.id })
-          }
+          onClick={() => {
+            const next = open.find((o) => o.id !== s.id);
+            onAnswered(
+              next
+                ? `${s.title} done. Next: ${next.title}.`
+                : `${s.title} done.`,
+            );
+            void sendCommand({ type: "checkin/answer", stepId: s.id });
+          }}
         >
           {s.title}
         </button>
@@ -34,9 +46,10 @@ export function CheckIn({ task }: { task: Task | undefined }) {
       <button
         type="button"
         className="plover-btn-text"
-        onClick={() =>
-          void sendCommand({ type: "checkin/answer", stepId: null })
-        }
+        onClick={() => {
+          onAnswered("Check-in skipped.");
+          void sendCommand({ type: "checkin/answer", stepId: null });
+        }}
       >
         None yet
       </button>

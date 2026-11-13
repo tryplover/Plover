@@ -17,6 +17,7 @@ export function SavedTasks({
   now,
   justDone,
   onJustDoneExpired,
+  onRestored,
 }: {
   tasks: Task[];
   activeTaskId: string | null;
@@ -26,6 +27,7 @@ export function SavedTasks({
   now: number;
   justDone: { id: string; title: string } | null;
   onJustDoneExpired: () => void;
+  onRestored: (task: { id: string; title: string }) => void;
 }) {
   const [menuId, setMenuId] = useState<string | null>(null);
   const [conflict, setConflict] = useState<{
@@ -72,8 +74,10 @@ export function SavedTasks({
   function undoDone() {
     if (doneTimer.current) clearTimeout(doneTimer.current);
     doneTimer.current = null;
-    if (finished)
+    if (finished) {
+      onRestored(finished);
       void sendCommand({ type: "task/reopen", taskId: finished.id });
+    }
     setFinished(null);
     onJustDoneExpired();
   }
@@ -109,7 +113,10 @@ export function SavedTasks({
   function undoDelete() {
     if (undoTimer.current) clearTimeout(undoTimer.current);
     undoTimer.current = null;
-    if (deleted) void sendCommand({ type: "task/save", task: deleted });
+    if (deleted) {
+      onRestored(deleted);
+      void sendCommand({ type: "task/save", task: deleted });
+    }
     setDeleted(null);
   }
 
@@ -171,6 +178,7 @@ export function SavedTasks({
                   type="button"
                   className="plover-btn-text"
                   aria-label={`Resume ${task.title}`}
+                  data-focus-target={`resume-${task.id}`}
                   onClick={() => tryResume(task)}
                 >
                   Resume

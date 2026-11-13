@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { browser } from "wxt/browser";
 import { conflictDuring } from "@/features/calendar/events";
 import { deriveBuddyState } from "@/features/buddy/buddy-state";
@@ -41,7 +41,63 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
     null,
   );
 
-  const announcement = useTimerAnnouncement(local.timer, ready);
+  const timerAnnouncement = useTimerAnnouncement(local.timer, ready);
+  const [note, setNote] = useState("");
+  const focusTarget = useRef<{
+    name: string;
+    tasks: typeof local.tasks;
+    timerKey: string;
+  } | null>(null);
+  const [focusTick, setFocusTick] = useState(0);
+  const noteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const timerKey = `${local.timer.phase}:${local.timer.pausedAt !== null}`;
+  const [prevTimerKey, setPrevTimerKey] = useState(timerKey);
+  if (prevTimerKey !== timerKey) {
+    setPrevTimerKey(timerKey);
+    setNote("");
+  }
+  const announcement = note || timerAnnouncement;
+
+  function announce(message: string, target: string) {
+    if (noteTimer.current) clearTimeout(noteTimer.current);
+    if (message === note) {
+      setNote("");
+      noteTimer.current = setTimeout(() => setNote(message), 100);
+    } else {
+      setNote(message);
+    }
+    focusTarget.current = { name: target, tasks: local.tasks, timerKey };
+    setFocusTick((n) => n + 1);
+  }
+
+  useEffect(() => {
+    if (!note) return;
+    const t = setTimeout(() => setNote(""), 5000);
+    return () => clearTimeout(t);
+  }, [note]);
+
+  useEffect(
+    () => () => {
+      if (noteTimer.current) clearTimeout(noteTimer.current);
+    },
+    [],
+  );
+
+  useEffect(() => {
+    const target = focusTarget.current;
+    if (!target) return;
+    const el = panelRef.current?.querySelector<HTMLElement>(
+      `[data-focus-target="${target.name}"]`,
+    );
+    if (el) {
+      el.focus();
+      focusTarget.current = null;
+    } else if (target.tasks !== local.tasks || target.timerKey !== timerKey) {
+      focusTarget.current = null;
+    }
+  }, [focusTick, local.tasks, timerKey]);
+
   const idle = local.timer.phase === "idle";
   const [prevIdle, setPrevIdle] = useState<boolean | null>(null);
   const [justStarted, setJustStarted] = useState(false);
@@ -141,7 +197,12 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
   const body = (
     <>
       {nudge && <p className="plover-nudge">{nudge}</p>}
-      {local.transient.checkInPending && idle && <CheckIn task={checkInTask} />}
+      {local.transient.checkInPending && idle && (
+        <CheckIn
+          task={checkInTask}
+          onAnswered={(message) => announce(message, "task-input")}
+        />
+      )}
       {showSignIn && <SignIn />}
       {local.needsSignIn && !idle && (
         <div className="plover-banner">
@@ -177,6 +238,9 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
             now={now}
             justDone={justDone}
             onJustDoneExpired={() => setJustDone(null)}
+            onRestored={(task) =>
+              announce(`Restored “${task.title}”.`, `resume-${task.id}`)
+            }
           />
           {focusSwitch}
         </div>
@@ -184,7 +248,10 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
         <>
           {titledTask && <h2 className="plover-task">{titledTask.title}</h2>}
           {local.transient.checkInPending ? (
-            <CheckIn task={checkInTask} />
+            <CheckIn
+              task={checkInTask}
+              onAnswered={(message) => announce(message, "timer")}
+            />
           ) : (
             activeTask && <ActiveSteps task={activeTask} />
           )}
@@ -224,6 +291,7 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
 
   return (
     <div
+      ref={panelRef}
       className={`plover-panel plover-surface-${surface}`}
       data-buddy={buddy}
     >
