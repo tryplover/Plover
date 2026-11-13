@@ -56,3 +56,41 @@ test("settings: site list names, focus and announcements", async ({
   await p.getByRole("button", { name: "Remove reddit.com" }).click();
   await expect(input).toBeFocused();
 });
+
+test("empty blocklist hint in the popup links to Settings and goes away", async ({
+  context,
+  extensionId,
+  serviceWorker,
+  signIn,
+}) => {
+  await signIn();
+  const popup = await context.newPage();
+  await popup.setViewportSize({ width: 420, height: 720 });
+  await popup.goto(`chrome-extension://${extensionId}/popup.html`);
+  const hint = popup.getByText("No sites to block yet");
+  await expect(hint).toBeVisible();
+  await expect(hint).toHaveText("No sites to block yet · Add sites");
+  await shot(popup, "settings-3-empty-blocklist-hint");
+
+  const opened = context.waitForEvent("page");
+  await popup.getByRole("button", { name: "Add sites" }).click();
+  const options = await opened;
+  await expect(options).toHaveURL(/options\.html#blocked-sites$/);
+  const input = options.getByRole("textbox", { name: "Blocked sites" });
+  await expect(input).toBeFocused();
+  await input.fill("youtube.com");
+  await input.press("Enter");
+  await expect(
+    options.getByRole("button", { name: "Remove youtube.com" }),
+  ).toBeVisible();
+
+  await expect(hint).toBeHidden();
+  await expect
+    .poll(async () =>
+      serviceWorker.evaluate(async () => {
+        const { settings } = await chrome.storage.sync.get("settings");
+        return (settings as { blocklist?: string[] } | undefined)?.blocklist;
+      }),
+    )
+    .toEqual(["youtube.com"]);
+});

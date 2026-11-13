@@ -115,6 +115,22 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
           />
         </label>
       )}
+      {settings.blocklist.length === 0 && (
+        <p className="plover-empty-hint">
+          No sites to block yet ·{" "}
+          <button
+            type="button"
+            className="plover-btn-text"
+            onClick={() =>
+              void browser.tabs.create({
+                url: browser.runtime.getURL("/options.html#blocked-sites"),
+              })
+            }
+          >
+            Add sites
+          </button>
+        </p>
+      )}
     </>
   );
 

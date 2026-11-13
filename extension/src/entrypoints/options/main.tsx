@@ -114,11 +114,13 @@ const THEMES: { value: Theme; label: string }[] = [
 ];
 
 function DomainList({
+  id,
   title,
   items,
   onChange,
   onAdd,
 }: {
+  id?: string;
   title: string;
   items: string[];
   onChange: (next: string[]) => void;
@@ -130,6 +132,13 @@ function DomainList({
   const inputRef = useRef<HTMLInputElement>(null);
   const removeRefs = useRef(new Map<string, HTMLButtonElement>());
   const focusAfter = useRef<{ domain: string | null } | null>(null);
+
+  useEffect(() => {
+    if (id && location.hash === `#${id}`) {
+      inputRef.current?.scrollIntoView({ block: "center" });
+      inputRef.current?.focus();
+    }
+  }, [id]);
 
   useEffect(() => {
     const target = focusAfter.current;
@@ -170,6 +179,7 @@ function DomainList({
       <div className="row">
         <input
           ref={inputRef}
+          id={id}
           type="text"
           value={draft}
           aria-label={title}
@@ -268,6 +278,7 @@ function Options() {
       </section>
 
       <DomainList
+        id="blocked-sites"
         title="Blocked sites"
         items={settings.blocklist}
         onChange={(blocklist) => save({ blocklist })}
