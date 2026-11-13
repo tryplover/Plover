@@ -109,7 +109,7 @@
   gap: 16px;
 }
 .plover-timer .plover-row {
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: space-between;
   gap: 4px;
 }
