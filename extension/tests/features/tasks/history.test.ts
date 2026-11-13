@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   formatDuration,
   groupDoneByDay,
-  historyTotals,
   taskStats,
 } from "@/features/tasks/history";
 import type { Session, Task } from "@/shared/types";
@@ -53,28 +52,12 @@ describe("taskStats", () => {
       blocks: 1,
       focusMs: 20 * MIN,
     });
-    expect(historyTotals([task("p", 1)], [paused]).focusMs).toBe(20 * MIN);
   });
 
   it("is zero for a task with no sessions", () => {
     expect(taskStats(task("z", 1), sessions)).toEqual({
       blocks: 0,
       focusMs: 0,
-    });
-  });
-});
-
-describe("historyTotals", () => {
-  it("sums stats over the done tasks", () => {
-    const sessions = [
-      session("a", "work", 25, true),
-      session("b", "work", 20, false),
-      session("c", "work", 25, true),
-    ];
-    expect(historyTotals([task("a", 1), task("b", 1)], sessions)).toEqual({
-      tasks: 2,
-      blocks: 1,
-      focusMs: 45 * MIN,
     });
   });
 });

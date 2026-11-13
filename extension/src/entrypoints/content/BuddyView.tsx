@@ -4,6 +4,7 @@ import { normalizeDomain } from "@/features/blocking/domains";
 import {
   isCloseKey,
   isPanelCloseMessage,
+  isPanelHeightMessage,
   shouldCloseOnPointer,
 } from "@/features/buddy/panel-dismiss";
 import { isBuddyVisible, nearestCorner } from "@/features/buddy/visibility";
@@ -83,7 +84,10 @@ function BuddyView({
         close();
     };
     const onMessage = (e: MessageEvent) => {
-      if (isPanelCloseMessage(e.data, e.source, panel.frameWindow())) close();
+      const frameWindow = panel.frameWindow();
+      if (isPanelCloseMessage(e.data, e.source, frameWindow)) close();
+      else if (isPanelHeightMessage(e.data, e.source, frameWindow))
+        panel.setContentHeight(e.data.height);
     };
     window.addEventListener("keydown", onKey, true);
     window.addEventListener("pointerdown", onPointer, true);
