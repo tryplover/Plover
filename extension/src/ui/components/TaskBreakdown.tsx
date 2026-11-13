@@ -196,6 +196,7 @@ export function TaskBreakdown({
         <input
           ref={titleRef}
           id="plover-task-title"
+          data-focus-target="task-input"
           type="text"
           placeholder="e.g. Write the intro of my essay"
           value={title}

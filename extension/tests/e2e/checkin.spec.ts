@@ -79,3 +79,53 @@ test("check-in replaces the step list and keeps the timer controls above the fol
   await expect(p.getByRole("checkbox", { name: "Reproduce it" })).toBeChecked();
   await expect(p.getByRole("button", { name: "Mark task done" })).toBeVisible();
 });
+
+test("idle check-in: focus lands on the task box and a later start is not yanked", async ({
+  context,
+  extensionId,
+  signIn,
+  seed,
+}) => {
+  await signIn();
+  const now = Date.now();
+  await seed({
+    tasks: [
+      {
+        id: "t1",
+        title: "Fix the login bug",
+        steps: [{ id: "s1", title: "Reproduce it", done: false }],
+        createdAt: now - 60_000,
+        doneAt: null,
+        parked: null,
+        lastActiveAt: now - 60_000,
+      },
+    ],
+    activeTaskId: null,
+    transient: {
+      checkInPending: true,
+      checkInTaskId: "t1",
+      nudgeText: null,
+      nudgeUntil: 0,
+      celebrateUntil: 0,
+      extendOffer: false,
+    },
+  });
+  const p = await context.newPage();
+  await p.setViewportSize({ width: 380, height: 600 });
+  await p.goto(`chrome-extension://${extensionId}/popup.html`);
+  await expect(
+    p.getByRole("heading", { name: "Which step did you finish?" }),
+  ).toBeVisible();
+  await p.getByRole("button", { name: "None yet" }).focus();
+  await p.keyboard.press("Space");
+  await expect(
+    p.getByRole("heading", { name: "Which step did you finish?" }),
+  ).toHaveCount(0);
+  await expect(
+    p.getByRole("textbox", { name: "What are you working on?" }),
+  ).toBeFocused();
+  await expect(p.locator(".plover-sr")).toHaveText("Check-in skipped.");
+
+  await p.getByRole("button", { name: "Resume Fix the login bug" }).click();
+  await expect(p.getByRole("button", { name: "Pause" })).toBeFocused();
+});

@@ -43,7 +43,13 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
 
   const timerAnnouncement = useTimerAnnouncement(local.timer, ready);
   const [note, setNote] = useState("");
-  const [focusTarget, setFocusTarget] = useState<string | null>(null);
+  const focusTarget = useRef<{
+    name: string;
+    tasks: typeof local.tasks;
+    timerKey: string;
+  } | null>(null);
+  const [focusTick, setFocusTick] = useState(0);
+  const noteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const timerKey = `${local.timer.phase}:${local.timer.pausedAt !== null}`;
   const [prevTimerKey, setPrevTimerKey] = useState(timerKey);
@@ -54,19 +60,43 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
   const announcement = note || timerAnnouncement;
 
   function announce(message: string, target: string) {
-    setNote(message);
-    setFocusTarget(target);
+    if (noteTimer.current) clearTimeout(noteTimer.current);
+    if (message === note) {
+      setNote("");
+      noteTimer.current = setTimeout(() => setNote(message), 100);
+    } else {
+      setNote(message);
+    }
+    focusTarget.current = { name: target, tasks: local.tasks, timerKey };
+    setFocusTick((n) => n + 1);
   }
 
   useEffect(() => {
-    if (!focusTarget) return;
+    if (!note) return;
+    const t = setTimeout(() => setNote(""), 5000);
+    return () => clearTimeout(t);
+  }, [note]);
+
+  useEffect(
+    () => () => {
+      if (noteTimer.current) clearTimeout(noteTimer.current);
+    },
+    [],
+  );
+
+  useEffect(() => {
+    const target = focusTarget.current;
+    if (!target) return;
     const el = panelRef.current?.querySelector<HTMLElement>(
-      `[data-focus-target="${focusTarget}"]`,
+      `[data-focus-target="${target.name}"]`,
     );
-    if (!el) return;
-    el.focus();
-    setFocusTarget(null);
-  }, [focusTarget, local.tasks, local.timer.phase]);
+    if (el) {
+      el.focus();
+      focusTarget.current = null;
+    } else if (target.tasks !== local.tasks || target.timerKey !== timerKey) {
+      focusTarget.current = null;
+    }
+  }, [focusTick, local.tasks, timerKey]);
 
   const idle = local.timer.phase === "idle";
   const [prevIdle, setPrevIdle] = useState<boolean | null>(null);
@@ -170,7 +200,7 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
       {local.transient.checkInPending && idle && (
         <CheckIn
           task={checkInTask}
-          onAnswered={(message) => announce(message, "timer")}
+          onAnswered={(message) => announce(message, "task-input")}
         />
       )}
       {showSignIn && <SignIn />}

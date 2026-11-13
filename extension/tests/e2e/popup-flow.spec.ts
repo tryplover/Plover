@@ -108,3 +108,62 @@ test("popup: add to list without starting", async ({
   expect(local.activeTaskId ?? null).toBeNull();
   expect((local.timer as { phase: string }).phase).toBe("idle");
 });
+
+test("popup: repeated Undo of the same task is announced each time", async ({
+  context,
+  extensionId,
+  signIn,
+  seed,
+}) => {
+  await signIn();
+  const now = Date.now();
+  await seed({
+    tasks: [
+      {
+        id: "t1",
+        title: "Plan the science fair project",
+        steps: [],
+        createdAt: now - 60_000,
+        doneAt: null,
+        parked: null,
+        lastActiveAt: now - 60_000,
+      },
+    ],
+  });
+  const p = await context.newPage();
+  await p.setViewportSize({ width: 420, height: 720 });
+  await p.goto(`chrome-extension://${extensionId}/popup.html`);
+  await expect(p.getByText("Your tasks")).toBeVisible();
+  const status = p.locator(".plover-sr");
+  const message = "Restored “Plan the science fair project”.";
+  await p.evaluate(() => {
+    const w = window as unknown as { seen: string[] };
+    w.seen = [];
+    new MutationObserver(() =>
+      w.seen.push(document.querySelector(".plover-sr")?.textContent ?? ""),
+    ).observe(document.body, {
+      childList: true,
+      characterData: true,
+      subtree: true,
+    });
+  });
+  for (let i = 0; i < 2; i++) {
+    await p
+      .getByRole("button", {
+        name: "More actions for Plan the science fair project",
+      })
+      .click();
+    await p.getByRole("button", { name: "Delete" }).click();
+    await p.getByRole("button", { name: "Undo" }).click();
+    await expect(status).toHaveText(message);
+    await expect(
+      p.getByRole("button", { name: "Resume Plan the science fair project" }),
+    ).toBeFocused();
+  }
+  const seen = await p.evaluate(
+    () => (window as unknown as { seen: string[] }).seen,
+  );
+  const changes = seen.filter((t, i) => t !== seen[i - 1]);
+  expect(changes.filter((t) => t === message)).toHaveLength(2);
+  expect(changes).toContain("");
+});
