@@ -19,6 +19,7 @@ Footguns specific to writing Vitest tests in this repo: mocking pitfalls and Typ
 | ESLint `@typescript-eslint/no-empty-function` on stub methods in a `vi.mock` class (`start() {}`)                        | Use expression-bodied class fields: `start = () => undefined;` / `watch = async () => undefined;` (keep a real `class` body; Vitest 4 `new vi.fn(...)` mocks don't work) |
 | A real-timer test passes locally but fails on CI with `expected [ …(3) ] to have a length of 2` (e.g. `state-port.test.ts` nudge window) | `setTimeout(fn, until - now)` can fire a moment before `Date.now()` reaches `until`, so the code posts the old state once more. Don't assert an exact count of posts; `vi.waitFor` on the final value (`posted.at(-1)`) and check the earlier ones loosely |
 | e2e `expect(page.locator("plover-buddy")).toBeAttached()` times out on a fresh context, but only sometimes | The worker registers the buddy content script (`syncBuddyScript`) after it starts; a page opened before that never gets the buddy. The `serviceWorker` fixture polls `chrome.scripting.getRegisteredContentScripts({ids:["plover-buddy"]})` before handing off; keep that wait, and do the same for any new dynamically registered script |
+| `prettier --check` fails on a new or edited test file (`pnpm lint` passes) | `pnpm lint` is ESLint only, so formatting is not checked there. Run `pnpm --filter ./extension exec prettier --write <explicit touched files>` before the verification chain; never run prettier on `docs/DESIGN.md` |
 | Playwright `locator.check()` on a toggle times out with "Clicking the checkbox did not change its state" | The toggle is controlled: the worker decides, and it can stay unchecked (e.g. Focus mode waiting on a calendar-conflict offer). Use `.click()` and assert the resulting UI, not the checked state |
 
 ## Details
@@ -54,3 +55,9 @@ When `r0` is undefined, `r0?.kind` is `undefined` and the `toBe(...)` assertion 
 **Symptom:** `registerStatePort > re-posts when a nudge window expires` failed once on a `push: main` run (`expected [ …(3) ] to have a length of 2 but got 3`), then passed on the next run and every local run.
 **Root cause:** the port schedules its next push with `setTimeout(push, nudgeUntil - now)`. A timer can fire a little before `Date.now()` passes `nudgeUntil`, so that push still sees the nudge as open and posts `nudging` again before the calm snapshot. On a slow runner the extra post lands before the test checks.
 **Fix:** wait for the final value instead of a count: `await vi.waitFor(() => expect(posted.at(-1)).toEqual(calm))`, then check that every earlier post is the old state.
+
+### New test files fail prettier while lint is green
+
+**Symptom:** `pnpm --filter ./extension exec prettier --check tests/e2e/history.spec.ts` reports "Code style issues found", while `pnpm lint` exits 0.
+**Root cause:** the lint script runs ESLint only. Prettier runs on staged files via lint-staged at commit time, so an unformatted file passes every root script until someone checks formatting by hand.
+**Fix:** format the explicit list of touched files, e.g. `pnpm --filter ./extension exec prettier --write tests/e2e/history.spec.ts tests/features/stats/stats.test.ts`, then re-run `prettier --check` on the same list. Do not pass a directory glob (see `plover-git-safety`).

@@ -95,3 +95,63 @@ test("history: reachable and consistent with focus time but no finished task", a
     "1",
   );
 });
+
+test("history: By task lists focus per task for the selected day", async ({
+  context,
+  extensionId,
+  signIn,
+  seed,
+}) => {
+  await signIn();
+  const midnight = new Date();
+  midnight.setHours(0, 0, 0, 0);
+  const at = (h: number, m = 0) => midnight.getTime() + (h * 60 + m) * 60000;
+  const work = (
+    id: string,
+    taskId: string,
+    taskTitle: string,
+    start: number,
+    minutes: number,
+    completed = true,
+  ) => ({
+    id,
+    taskId,
+    phase: "work",
+    startedAt: start,
+    endedAt: start + minutes * 60000,
+    completed,
+    cycleId: id,
+    pausedMs: 0,
+    taskTitle,
+  });
+  await seed({
+    tasks: [],
+    sessions: [
+      work("w1", "t1", "Write report", at(9), 25),
+      {
+        ...work("b1", "t1", "Write report", at(9, 25), 5),
+        phase: "shortBreak",
+      },
+      work("w2", "t1", "Write report", at(10), 25),
+      work("w3", "t1", "Write report", at(11), 12, false),
+      work("w4", "t2", "Email", at(13), 25),
+    ],
+  });
+  const p = await context.newPage();
+  await p.goto(`chrome-extension://${extensionId}/task-history.html`);
+
+  const list = p.locator(".by-task li");
+  await expect(p.getByRole("heading", { name: "By task" })).toBeVisible();
+  await expect(list).toHaveCount(2);
+  await expect(list.nth(0)).toContainText("Write report");
+  await expect(list.nth(0)).toContainText("1 h 2 m · 3 blocks");
+  await expect(list.nth(1)).toContainText("Email");
+  await expect(list.nth(1)).toContainText("25 m · 1 block");
+  await shot(p, "history-4-by-task");
+
+  await p.getByRole("button", { name: "Previous day" }).click();
+  await expect(p.getByText("No focus this day.")).toBeVisible();
+  await expect(list).toHaveCount(0);
+  await p.getByRole("button", { name: "Next day" }).click();
+  await expect(list).toHaveCount(2);
+});

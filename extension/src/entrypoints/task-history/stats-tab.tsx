@@ -4,6 +4,7 @@ import { formatDuration } from "@/features/tasks/history";
 import {
   cycleTaskTitles,
   dailyFocus,
+  focusByTask,
   groupCycles,
   paginate,
   rangeStart,
@@ -77,6 +78,9 @@ function DayChart({ sessions, now }: { sessions: Session[]; now: number }) {
           s.startedAt < sel.dayStart + DAY_MS,
       ).length
     : 0;
+  const byTask = sel
+    ? focusByTask(sessions, sel.dayStart, sel.dayStart + DAY_MS)
+    : [];
   const fullDate = sel
     ? new Date(sel.dayStart).toLocaleDateString(undefined, {
         weekday: "long",
@@ -148,6 +152,27 @@ function DayChart({ sessions, now }: { sessions: Session[]; now: number }) {
           <span className="day-detail-date">{fullDate}</span>
           {` · ${formatDuration(sel.focusMs)} focus · ${plural(pomodoros, "pomodoro")}`}
         </p>
+      )}
+      {sel && (
+        <section className="by-task-section">
+          <h3 className="history-day">By task</h3>
+          {byTask.length === 0 ? (
+            <p className="by-task-empty">No focus this day.</p>
+          ) : (
+            <ul className="by-task">
+              {byTask.map((row) => (
+                <li key={row.taskId ?? "untitled"}>
+                  <span className="by-task-title" title={row.title}>
+                    {row.title}
+                  </span>
+                  <span className="by-task-value">
+                    {`${formatDuration(row.focusMs)} · ${plural(row.blocks, "block")}`}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       )}
       <table className="history-sr">
         <caption>Focus time per day</caption>

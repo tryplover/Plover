@@ -251,7 +251,7 @@ Opens in a tab from the **History** link in the popup and panel (`browser.tabs.c
 
 A vault of everything done, with **Stats** (default) and **Tasks** tabs (`role="tablist"`). The header is an all-time summary, `N tasks finished · M focus blocks · X focused`, from `summarize` over all sessions with range from 0 (the same numbers as the Stats tab's All time tiles), so work on unfinished tasks counts.
 
-- **Stats tab** (`features/stats/stats.ts`, pure, from `local.sessions`): a Today / This week (Monday start, the default) / All time switch; tiles for Focus time, Pomodoros, Breaks (short + long) and Cycles, and "N tasks finished"; a pure-CSS last-7-days focus chart (time above each bar, plus a visually-hidden table); and a newest-first cycles timeline, paginated 10 per page (**Previous** / "Page N of M" / **Next**, `paginate`). Each cycle card shows date and time range, counts, task names, a strip of its blocks (width by duration; skipped or cut-short at 50% opacity) and a **Blocks** disclosure listing each block with times.
+- **Stats tab** (`features/stats/stats.ts`, pure, from `local.sessions`): a Today / This week (Monday start, the default) / All time switch; tiles for Focus time, Pomodoros, Breaks (short + long) and Cycles, and "N tasks finished"; a pure-CSS last-7-days focus chart (time above each bar) with a **By task** list for the selected bar (today by default): one row per task with that day's focus time (cut-short blocks included, paused time excluded) and block count, sorted by time, sessions without a task grouped as "Untitled task" (`focusByTask`), plus a visually-hidden table; and a newest-first cycles timeline, paginated 10 per page (**Previous** / "Page N of M" / **Next**, `paginate`). Each cycle card shows date and time range, counts, task names, a strip of its blocks (width by duration; skipped or cut-short at 50% opacity) and a **Blocks** disclosure listing each block with times.
 - **Tasks tab:** an **In progress** section (`role="region"`, hidden when there are no open tasks) sits above the finished list: open tasks, parked ones included, most recently active first (`lastActiveAt ?? createdAt`, `inProgressTasks`). Each card shows title and `1 of 3 steps · 2 blocks · 1 h 4 m so far` (same `taskStats` totals over that task's `taskId` sessions); read-only, no actions. Below it, day groups (Today, Yesterday, then a date), newest first. Each card shows title, `4 of 4 steps · 3 blocks · 1 h 15 m · 3:42 pm` (`features/tasks/history.ts`; focus excludes paused time), a **Steps** disclosure, **Reopen** (`task/reopen`) and **Delete** (`task/delete`, with a 5-second **Undo** via `task/save`). A search field ("Search tasks") filters both In progress and finished tasks by title or step (`inProgressTasks`, `vaultSearch`), showing finished matches as a flat list.
 - **Export:** **Download CSV** and **Download JSON** build a `Blob` and click a temporary `<a download>`; no `downloads` permission.
 - **Clear history** asks inline, with "Also clear focus stats" (off by default). It sends `task/clearDone`, and `stats/clear` (sign-in gated; sets `sessions: []`) when checked. `task/delete` and `task/clearDone` never touch `sessions`.
@@ -382,10 +382,6 @@ From #577. The 5-minute calendar heads-up only runs in focus mode, so a block st
 
 No new permissions, hosts or stored state beyond the existing alarm. Pure `breakRunsInto(event, breakEndsAt)` in `features/calendar/events.ts`.
 
-### 9.17 History: focus by task for a day
-
-From #579. With many short blocks a day, the cycle cards repeat task names and show "0 pomodoros" for cut-short blocks. On the Stats tab, under the last-7-days chart, a **By task** list for the selected day (the chart's selected bar, today by default): one row per task with that day's focus time (cut-short blocks included, paused time excluded) and block count, sorted by time, plus an "Untitled task" row only for sessions without a task. Read-only, from `sessions`; pure `focusByTask(sessions, dayStart, dayEnd)` in `features/stats/stats.ts`.
-
 ---
 
 ## 10. Open questions
@@ -428,3 +424,4 @@ From #579. With many short blocks a day, the cycle cards repeat task names and s
 - 2026-11-13: the History link shows once any focus time is recorded, and the History header counts all focus blocks, not only finished tasks' (#572).
 - 2026-11-13: the on-page buddy is a focusable button: Tab reaches it, Enter/Space opens the panel (#573).
 - 2026-11-13: the meeting-conflict offer says how long the shortened block will be, "Shorten to 17 min" (#578).
+- 2026-11-13: the History Stats tab lists focus time by task for the selected day, cut-short blocks included (#579).

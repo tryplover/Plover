@@ -114,6 +114,51 @@ export function dailyFocus(
   return out;
 }
 
+export interface TaskFocus {
+  taskId: string | null;
+  title: string;
+  focusMs: number;
+  blocks: number;
+}
+
+const UNTITLED = "Untitled task";
+
+export function focusByTask(
+  sessions: Session[],
+  dayStart: number,
+  dayEnd: number,
+): TaskFocus[] {
+  const groups = new Map<
+    string | null,
+    { taskId: string | null; focusMs: number; blocks: number; latest: Session }
+  >();
+  for (const s of sessions) {
+    if (s.phase !== "work") continue;
+    if (s.startedAt < dayStart || s.startedAt >= dayEnd) continue;
+    const g = groups.get(s.taskId);
+    if (!g) {
+      groups.set(s.taskId, {
+        taskId: s.taskId,
+        focusMs: focusMs(s),
+        blocks: 1,
+        latest: s,
+      });
+      continue;
+    }
+    g.focusMs += focusMs(s);
+    g.blocks += 1;
+    if (s.startedAt >= g.latest.startedAt) g.latest = s;
+  }
+  return [...groups.values()]
+    .map((g) => ({
+      taskId: g.taskId,
+      title: g.taskId === null ? UNTITLED : (g.latest.taskTitle ?? UNTITLED),
+      focusMs: g.focusMs,
+      blocks: g.blocks,
+    }))
+    .sort((a, b) => b.focusMs - a.focusMs || a.title.localeCompare(b.title));
+}
+
 export function groupCycles(sessions: Session[]): Cycle[] {
   const byId = new Map<string, Session[]>();
   for (const s of sessions) {
