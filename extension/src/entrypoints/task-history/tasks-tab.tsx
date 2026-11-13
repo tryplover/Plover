@@ -45,7 +45,15 @@ function TaskCard({
       {open && (
         <ul className="history-steps" id={`history-steps-${task.id}`}>
           {task.steps.map((s) => (
-            <li key={s.id}>{s.done ? `✓ ${s.title}` : s.title}</li>
+            <li
+              key={s.id}
+              className={`history-step${s.done ? " history-step-done" : ""}`}
+            >
+              <span className="history-step-mark" aria-hidden="true">
+                {s.done ? "✓" : "○"}
+              </span>
+              <span className="history-step-text">{s.title}</span>
+            </li>
           ))}
         </ul>
       )}
