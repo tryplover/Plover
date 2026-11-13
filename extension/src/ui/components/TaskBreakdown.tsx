@@ -128,6 +128,39 @@ export function TaskBreakdown({
     });
   }
 
+  function buildTask(text: string, draft: DraftStep[]): Task {
+    return {
+      id: newKey(),
+      title: text,
+      steps: draft
+        .map((s) => s.title.trim())
+        .filter((t) => t.length > 0)
+        .map((t) => ({ id: newKey(), title: t, done: false })),
+      createdAt: Date.now(),
+      doneAt: null,
+    };
+  }
+
+  async function addToList() {
+    const text = title.trim();
+    if (!text || !steps) return;
+    setConflict(null);
+    setBusy(true);
+    setNotice(null);
+    const saved = await sendCommand({
+      type: "task/save",
+      task: buildTask(text, steps),
+    });
+    setBusy(false);
+    if (!saved.ok) {
+      setNotice(saved.error);
+      return;
+    }
+    setTitle("");
+    setSteps(null);
+    titleRef.current?.focus();
+  }
+
   async function start(endBy?: number, checked = false) {
     const text = title.trim();
     if (!text || !steps) return;
@@ -140,16 +173,7 @@ export function TaskBreakdown({
       }
     }
     setConflict(null);
-    const task: Task = {
-      id: newKey(),
-      title: text,
-      steps: steps
-        .map((s) => s.title.trim())
-        .filter((t) => t.length > 0)
-        .map((t) => ({ id: newKey(), title: t, done: false })),
-      createdAt: Date.now(),
-      doneAt: null,
-    };
+    const task = buildTask(text, steps);
     setBusy(true);
     setNotice(null);
     const saved = await sendCommand({ type: "task/save", task });
@@ -249,6 +273,14 @@ export function TaskBreakdown({
               onClick={() => addStepAfter(steps.length - 1)}
             >
               Add step
+            </button>
+            <button
+              type="button"
+              className="plover-btn-text"
+              disabled={busy || !title.trim()}
+              onClick={() => void addToList()}
+            >
+              Add to list
             </button>
             <button
               type="submit"
