@@ -75,6 +75,14 @@ export function shortenTarget(
   return endBy - nowMs >= MIN_MS ? endBy : null;
 }
 
+export function shortenMinutes(
+  event: CalendarEvent,
+  nowMs: number,
+): number | null {
+  const endBy = shortenTarget(event, nowMs);
+  return endBy === null ? null : Math.floor((endBy - nowMs) / MIN_MS);
+}
+
 export function resolveShorten(
   event: CalendarEvent,
   nowMs: number,
