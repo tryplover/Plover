@@ -144,6 +144,7 @@ Optional fields on stored objects are read with defaults; there is no migration 
 
 - Rendered with WXT `createShadowRootUi` (closed shadow root, max z-index) so page CSS can't break it and it can't break the page. Hidden while the page is fullscreen.
 - **Drag** to move; it snaps to the nearest corner (`nearestCorner`), saved as `settings.buddyCorner`.
+- **Keyboard:** the buddy is a real `<button aria-label="Plover" aria-expanded>`: Tab focuses it (visible focus ring), Enter or Space opens the panel and menu, Escape closes it and focus stays on the buddy. Opening is handled only in the button's `click`; pointer handlers just track the drag and a drag suppresses the click that follows, so a mouse click toggles once and a drag never opens.
 - **Click** toggles the in-page panel (iframe, 320×480, placed next to the buddy's corner) and a small menu: **Hide on this site** (adds the hostname to `hiddenSites`) and **Hide everywhere**. Both are undone in Settings.
 - **Closing the panel:** clicking the buddy again, **Escape** (pressed on the page or inside the panel) or a click anywhere outside the buddy and panel closes it. While the panel is open the content script listens on `window` (capture, removed on close) for `keydown` (reads only `event.key`) and `pointerdown` (reads only `event.composedPath()` to test containment in the buddy host and panel iframe; never prevents the click, so the page still gets it). The panel page posts `{ type: "plover/panel-close" }` to its parent on Escape; the content script acts on it only when `event.source` is the panel iframe's window. Pure rules in `features/buddy/panel-dismiss.ts`.
 - **Speech bubble:** the focus nudge text, or "Which step did you finish?" while a check-in is pending. Clicking opens the panel.
@@ -410,3 +411,4 @@ Settings → **Backup**: "Back up to your Google Drive" stores one `plover-backu
 - 2026-11-12: empty-blocklist hint under the Focus mode and Block sites now toggles, deep-linking to Settings > Blocked sites (#567).
 - 2026-11-12: while a check-in is pending it replaces the task's step list in the panel and popup (no duplicate checkboxes, no Mark task done), keeping the timer controls above the fold (#566).
 - 2026-11-12: the History Tasks tab lists open and parked tasks under **In progress** with steps, blocks and focus time so far (#532).
+- 2026-11-13: the on-page buddy is a focusable button: Tab reaches it, Enter/Space opens the panel (#573).
