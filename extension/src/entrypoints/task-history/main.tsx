@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { KeyboardEvent } from "react";
 import { createRoot } from "react-dom/client";
 import { summarize, toCsv } from "@/features/stats/stats";
 import { formatDuration } from "@/features/tasks/history";
@@ -11,6 +12,8 @@ import "@/ui/base.css";
 import "./task-history.css";
 
 type Tab = "stats" | "tasks";
+
+const TABS: readonly Tab[] = ["stats", "tasks"];
 
 function plural(n: number, word: string): string {
   return `${n} ${word}${n === 1 ? "" : "s"}`;
@@ -42,6 +45,33 @@ function History() {
   );
   const stamp = new Date(now).toLocaleDateString("en-CA");
 
+  function onTabKeyDown(e: KeyboardEvent<HTMLButtonElement>, value: Tab) {
+    const last = TABS.length - 1;
+    const index = TABS.indexOf(value);
+    let next: number;
+    switch (e.key) {
+      case "ArrowLeft":
+        next = index === 0 ? last : index - 1;
+        break;
+      case "ArrowRight":
+        next = index === last ? 0 : index + 1;
+        break;
+      case "Home":
+        next = 0;
+        break;
+      case "End":
+        next = last;
+        break;
+      default:
+        return;
+    }
+    const target = TABS[next];
+    if (!target) return;
+    e.preventDefault();
+    setTab(target);
+    document.getElementById(`tab-${target}`)?.focus();
+  }
+
   function exportJson() {
     download(
       `plover-sessions-${stamp}.json`,
@@ -67,8 +97,12 @@ function History() {
           {`${plural(totals.tasksDone, "task")} finished · ${plural(totals.pomodoros, "focus block")} · ${formatDuration(totals.focusMs)} focused`}
         </p>
       </header>
-      <div className="segmented history-tabs" role="tablist">
-        {(["stats", "tasks"] as const).map((value) => (
+      <div
+        className="segmented history-tabs"
+        role="tablist"
+        aria-label="History view"
+      >
+        {TABS.map((value) => (
           <button
             key={value}
             type="button"
@@ -76,8 +110,10 @@ function History() {
             id={`tab-${value}`}
             aria-selected={tab === value}
             aria-controls="history-panel"
+            tabIndex={tab === value ? 0 : -1}
             className="segment"
             onClick={() => setTab(value)}
+            onKeyDown={(e) => onTabKeyDown(e, value)}
           >
             {value === "stats" ? "Stats" : "Tasks"}
           </button>
