@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { CSSProperties, PointerEvent } from "react";
+import type { CSSProperties, MouseEvent, PointerEvent } from "react";
 import { normalizeDomain } from "@/features/blocking/domains";
 import {
   isCloseKey,
@@ -64,6 +64,7 @@ function BuddyView({
   const [open, setOpen] = useState(false);
   const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
   const start = useRef<{ x: number; y: number; moved: boolean } | null>(null);
+  const suppressClick = useRef(false);
   const corner = settings.buddyCorner;
 
   useEffect(() => {
@@ -103,6 +104,7 @@ function BuddyView({
   function onPointerDown(e: PointerEvent) {
     if (e.button !== 0) return;
     e.currentTarget.setPointerCapture(e.pointerId);
+    suppressClick.current = false;
     start.current = { x: e.clientX, y: e.clientY, moved: false };
   }
 
@@ -126,6 +128,7 @@ function BuddyView({
     start.current = null;
     if (!s) return;
     if (s.moved) {
+      suppressClick.current = true;
       setDrag(null);
       void updateSettings({
         buddyCorner: nearestCorner(
@@ -135,9 +138,14 @@ function BuddyView({
           window.innerHeight,
         ),
       });
-    } else {
-      setOpen((o) => !o);
     }
+  }
+
+  function onClick(e: MouseEvent) {
+    const afterDrag = suppressClick.current;
+    suppressClick.current = false;
+    if (afterDrag && e.detail !== 0) return;
+    setOpen((o) => !o);
   }
 
   function onPointerCancel() {
@@ -191,7 +199,12 @@ function BuddyView({
           {bubble}
         </button>
       )}
-      <div
+      <button
+        type="button"
+        className="plover-buddy-button"
+        aria-label="Plover"
+        aria-expanded={open}
+        onClick={onClick}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -201,7 +214,7 @@ function BuddyView({
           <Buddy state={snap.buddyState} />
           {snap.clock && !drag && <BuddyClock clock={snap.clock} />}
         </div>
-      </div>
+      </button>
     </div>
   );
 }
