@@ -376,7 +376,7 @@ Settings → **Backup**: "Back up to your Google Drive" stores one `plover-backu
 
 From #577. The 5-minute calendar heads-up only runs in focus mode, so a block started with **Start anyway** gives no warning, and a block shortened to end before a meeting rolls straight into a break that runs into it. Two changes, both in the worker:
 
-- `scheduleHeadsUp` runs whenever a **work phase** is running and the calendar is connected (focus on or off). Outside focus the heads-up is the buddy's bubble text only, no sound; in focus it is unchanged.
+- `scheduleHeadsUp` and its alarm handler run whenever a **work phase** is running and the calendar is connected, focus on or off (today both return early unless focus is on). The heads-up stays what it is now: the buddy's bubble, "<event> starts in 5 min" (`showNudge`).
 - When a work block ends and the next non-all-day event starts before the break would end, the worker parks the task (`stopAndPark`, as **Save for later** does) instead of starting the break, and the buddy says "<event> is next. Saved for later." The check-in still shows for the block that just ended.
 
 No new permissions, hosts or stored state beyond the existing alarm. Pure `breakRunsInto(event, breakEndsAt)` in `features/calendar/events.ts`.
