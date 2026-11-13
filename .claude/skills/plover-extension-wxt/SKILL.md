@@ -55,6 +55,7 @@ Footguns specific to `extension/` (package `plover-extension`, WXT 0.21, Vitest 
 | "Start my first task" opens the popup and it vanishes at once | `action.openPopup()` succeeded, then the page called `window.close()`; closing the tab the popup belongs to closes the popup too (Chrome 156) | Call `openPopup()` and leave the tab open; fall back to `window.close()` only if `openPopup()` throws |
 | A Puppeteer check of an extension page in `chrome-mv3-dev` logs "calling ReactDOMClient.createRoot() on a container that has already been passed to createRoot()" and finds duplicated elements | WXT dev mode's HMR runs the entry module twice in that page | Check UI against a production build (`pnpm build`, load `.output/chrome-mv3`); the warning doesn't happen there |
 | Headless e2e: buddy never draws, or `Missing .output/chrome-mv3` | Production build has no `host_permissions`; the buddy needs `<all_urls>` | `tests/e2e/fixtures.ts` copies the build and adds `host_permissions: ["<all_urls>"]`; run `pnpm build` before `pnpm e2e` |
+| In-page panel iframe never shrinks to its content (height stays at the iframe size) | `min-height: 100vh` on the panel root equals the iframe height, so a ResizeObserver on `#root` always reports the iframe height | Only the popup surface sets `min-height: 100vh`; the buddy surface must size to content |
 
 ## Details
 

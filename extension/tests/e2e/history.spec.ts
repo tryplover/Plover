@@ -11,7 +11,9 @@ test("history: seeded tasks, steps, clear confirm", async ({
   await seed(seedHistory(Date.now()));
   const p = await context.newPage();
   await p.goto(`chrome-extension://${extensionId}/task-history.html`);
-  await expect(p.getByText(/\d+ tasks · \d+ focus blocks/)).toBeVisible();
+  await expect(
+    p.getByText(/\d+ tasks finished · \d+ focus blocks/),
+  ).toBeVisible();
   await p.getByRole("tab", { name: /Tasks/ }).click();
   await expect(p.getByText("Fix the login bug").first()).toBeVisible();
   const inProgress = p.getByRole("region", { name: "In progress" });
@@ -40,4 +42,56 @@ test("history: seeded tasks, steps, clear confirm", async ({
   await p.getByRole("button", { name: "Cancel" }).click();
   await expect(p.getByRole("button", { name: "Cancel" })).toHaveCount(0);
   await expect(p.getByRole("button", { name: "Clear history" })).toBeVisible();
+});
+
+test("history: reachable and consistent with focus time but no finished task", async ({
+  context,
+  extensionId,
+  signIn,
+  seed,
+}) => {
+  await signIn();
+  const now = Date.now();
+  await seed({
+    tasks: [
+      {
+        id: "open-1",
+        title: "Plan next week",
+        steps: [{ id: "o1", title: "List deadlines", done: false }],
+        createdAt: now - 3600000,
+        doneAt: null,
+        parked: null,
+        lastActiveAt: now - 3600000,
+      },
+    ],
+    sessions: [
+      {
+        id: "s0",
+        taskId: "open-1",
+        phase: "work",
+        startedAt: now - 30 * 60000,
+        endedAt: now - 5 * 60000,
+        completed: true,
+        cycleId: "c0",
+        pausedMs: 0,
+        taskTitle: "Plan next week",
+      },
+    ],
+  });
+  const popup = await context.newPage();
+  await popup.goto(`chrome-extension://${extensionId}/popup.html`);
+  await expect(popup.getByRole("button", { name: "History" })).toBeVisible();
+
+  const p = await context.newPage();
+  await p.goto(`chrome-extension://${extensionId}/task-history.html`);
+  await expect(
+    p.getByText("0 tasks finished · 1 focus block · 25 m focused"),
+  ).toBeVisible();
+  await p.getByText("All time", { exact: true }).click();
+  await expect(
+    p.locator(".stat-tile", { hasText: "Focus time" }),
+  ).toContainText("25 m");
+  await expect(p.locator(".stat-tile", { hasText: "Pomodoros" })).toContainText(
+    "1",
+  );
 });

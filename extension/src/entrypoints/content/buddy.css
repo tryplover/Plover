@@ -49,7 +49,8 @@
   background: light-dark(#f1ece0, #3a5143);
 }
 .plover-buddy-menu button:focus-visible,
-.plover-bubble:focus-visible {
+.plover-bubble:focus-visible,
+.plover-buddy-button:focus-visible {
   outline: 2px solid #5e7f6b;
   outline-offset: 2px;
 }
@@ -69,6 +70,17 @@
 .plover-row {
   display: flex;
   gap: 6px;
+}
+.plover-buddy-button {
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  border-radius: 12px;
 }
 .plover-buddy-figure {
   position: relative;

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
-import { toCsv } from "@/features/stats/stats";
-import { formatDuration, historyTotals } from "@/features/tasks/history";
+import { summarize, toCsv } from "@/features/stats/stats";
+import { formatDuration } from "@/features/tasks/history";
 import { sendCommand } from "@/shared/messages";
 import { useExtensionState } from "@/ui/hooks/useExtensionState";
 import { applyStoredTheme } from "@/ui/theme";
@@ -34,7 +34,12 @@ function History() {
   if (!ready) return null;
 
   const doneTasks = local.tasks.filter((t) => t.doneAt !== null);
-  const totals = historyTotals(doneTasks, local.sessions);
+  const totals = summarize(
+    local.sessions,
+    local.tasks,
+    0,
+    Number.POSITIVE_INFINITY,
+  );
   const stamp = new Date(now).toLocaleDateString("en-CA");
 
   function exportJson() {
@@ -59,7 +64,7 @@ function History() {
         <p className="plover-eyebrow">History</p>
         <h1 className="plover-heading">What you've done</h1>
         <p className="history-summary">
-          {`${plural(totals.tasks, "task")} · ${plural(totals.blocks, "focus block")} · ${formatDuration(totals.focusMs)} focused`}
+          {`${plural(totals.tasksDone, "task")} finished · ${plural(totals.pomodoros, "focus block")} · ${formatDuration(totals.focusMs)} focused`}
         </p>
       </header>
       <div className="segmented history-tabs" role="tablist">
