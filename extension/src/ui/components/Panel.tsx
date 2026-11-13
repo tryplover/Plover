@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { browser } from "wxt/browser";
 import { conflictDuring } from "@/features/calendar/events";
 import { deriveBuddyState } from "@/features/buddy/buddy-state";
@@ -41,7 +41,33 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
     null,
   );
 
-  const announcement = useTimerAnnouncement(local.timer, ready);
+  const timerAnnouncement = useTimerAnnouncement(local.timer, ready);
+  const [note, setNote] = useState("");
+  const [focusTarget, setFocusTarget] = useState<string | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const timerKey = `${local.timer.phase}:${local.timer.pausedAt !== null}`;
+  const [prevTimerKey, setPrevTimerKey] = useState(timerKey);
+  if (prevTimerKey !== timerKey) {
+    setPrevTimerKey(timerKey);
+    setNote("");
+  }
+  const announcement = note || timerAnnouncement;
+
+  function announce(message: string, target: string) {
+    setNote(message);
+    setFocusTarget(target);
+  }
+
+  useEffect(() => {
+    if (!focusTarget) return;
+    const el = panelRef.current?.querySelector<HTMLElement>(
+      `[data-focus-target="${focusTarget}"]`,
+    );
+    if (!el) return;
+    el.focus();
+    setFocusTarget(null);
+  }, [focusTarget, local.tasks, local.timer.phase]);
+
   const idle = local.timer.phase === "idle";
   const [prevIdle, setPrevIdle] = useState<boolean | null>(null);
   const [justStarted, setJustStarted] = useState(false);
@@ -141,7 +167,12 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
   const body = (
     <>
       {nudge && <p className="plover-nudge">{nudge}</p>}
-      {local.transient.checkInPending && idle && <CheckIn task={checkInTask} />}
+      {local.transient.checkInPending && idle && (
+        <CheckIn
+          task={checkInTask}
+          onAnswered={(message) => announce(message, "timer")}
+        />
+      )}
       {showSignIn && <SignIn />}
       {local.needsSignIn && !idle && (
         <div className="plover-banner">
@@ -177,6 +208,9 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
             now={now}
             justDone={justDone}
             onJustDoneExpired={() => setJustDone(null)}
+            onRestored={(task) =>
+              announce(`Restored “${task.title}”.`, `resume-${task.id}`)
+            }
           />
           {focusSwitch}
         </div>
@@ -184,7 +218,10 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
         <>
           {titledTask && <h2 className="plover-task">{titledTask.title}</h2>}
           {local.transient.checkInPending ? (
-            <CheckIn task={checkInTask} />
+            <CheckIn
+              task={checkInTask}
+              onAnswered={(message) => announce(message, "timer")}
+            />
           ) : (
             activeTask && <ActiveSteps task={activeTask} />
           )}
@@ -224,6 +261,7 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
 
   return (
     <div
+      ref={panelRef}
       className={`plover-panel plover-surface-${surface}`}
       data-buddy={buddy}
     >

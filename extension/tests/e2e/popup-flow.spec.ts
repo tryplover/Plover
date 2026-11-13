@@ -61,6 +61,10 @@ test("popup: start, pause, skip, mark done, undo", async ({
   await p.getByRole("button", { name: "Undo" }).first().click();
   await expect(p.getByText("Your tasks")).toBeVisible();
   await expect(p.getByText(title).first()).toBeVisible();
+  await expect(
+    p.getByRole("button", { name: `Resume ${title}` }),
+  ).toBeFocused();
+  await expect(p.locator(".plover-sr")).toHaveText(`Restored “${title}”.`);
 });
 
 test("popup: add to list without starting", async ({

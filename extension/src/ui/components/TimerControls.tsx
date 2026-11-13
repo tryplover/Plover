@@ -49,6 +49,7 @@ export function TimerControls({
       <div className="plover-row">
         <button
           ref={pauseRef}
+          data-focus-target="timer"
           type="button"
           className="plover-btn-compact"
           onClick={() =>

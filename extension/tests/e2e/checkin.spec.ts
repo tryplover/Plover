@@ -67,10 +67,15 @@ test("check-in replaces the step list and keeps the timer controls above the fol
   expect(box.y + box.height).toBeLessThanOrEqual(600);
   await shot(p, "checkin-single-list");
 
-  await p.getByRole("button", { name: "Reproduce it" }).click();
+  await p.getByRole("button", { name: "Reproduce it" }).focus();
+  await p.keyboard.press("Space");
   await expect(
     p.getByRole("heading", { name: "Which step did you finish?" }),
   ).toHaveCount(0);
+  await expect(p.getByRole("button", { name: "Pause" })).toBeFocused();
+  await expect(p.locator(".plover-sr")).toHaveText(
+    "Reproduce it done. Next: Write a failing test.",
+  );
   await expect(p.getByRole("checkbox", { name: "Reproduce it" })).toBeChecked();
   await expect(p.getByRole("button", { name: "Mark task done" })).toBeVisible();
 });
