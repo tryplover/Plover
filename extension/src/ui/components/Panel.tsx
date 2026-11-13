@@ -58,6 +58,9 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
     local.tasks,
     local.transient.checkInTaskId ?? local.activeTaskId,
   );
+  const titledTask = local.transient.checkInPending
+    ? (checkInTask ?? activeTask)
+    : activeTask;
   const buddy = deriveBuddyState(local, now);
 
   function toggleFocus() {
@@ -138,7 +141,7 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
   const body = (
     <>
       {nudge && <p className="plover-nudge">{nudge}</p>}
-      {local.transient.checkInPending && <CheckIn task={checkInTask} />}
+      {local.transient.checkInPending && idle && <CheckIn task={checkInTask} />}
       {showSignIn && <SignIn />}
       {local.needsSignIn && !idle && (
         <div className="plover-banner">
@@ -179,9 +182,13 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
         </div>
       ) : (
         <>
-          {activeTask && <h2 className="plover-task">{activeTask.title}</h2>}
-          {activeTask && <ActiveSteps task={activeTask} />}
-          {activeTask && (
+          {titledTask && <h2 className="plover-task">{titledTask.title}</h2>}
+          {local.transient.checkInPending ? (
+            <CheckIn task={checkInTask} />
+          ) : (
+            activeTask && <ActiveSteps task={activeTask} />
+          )}
+          {activeTask && !local.transient.checkInPending && (
             <button
               type="button"
               className="plover-btn-text"
