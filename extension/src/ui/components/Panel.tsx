@@ -247,7 +247,8 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
       >
         Settings
       </button>
-      {local.tasks.some((t) => t.doneAt !== null) && (
+      {(local.sessions.length > 0 ||
+        local.tasks.some((t) => t.doneAt !== null)) && (
         <button
           type="button"
           className="plover-btn-text plover-link"

@@ -95,6 +95,13 @@ describe("summarize", () => {
     });
   });
 
+  it("counts work on unfinished tasks toward all-time blocks and focus", () => {
+    const open = [session({ id: "x", taskId: "open" })];
+    expect(
+      summarize(open, [task("open", null)], 0, Number.POSITIVE_INFINITY),
+    ).toMatchObject({ pomodoros: 1, focusMs: 25 * MIN, tasksDone: 0 });
+  });
+
   it("counts everything for all time", () => {
     const all = summarize(sessions, tasks, 0, Infinity);
     expect(all.cycles).toBe(3);
