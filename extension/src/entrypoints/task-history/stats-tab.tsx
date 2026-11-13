@@ -42,8 +42,6 @@ function segmentDuration(s: Session): number {
   return Math.max(0, s.endedAt - s.startedAt - (s.pausedMs ?? 0));
 }
 
-const DAY_MS = 24 * 60 * 60_000;
-
 function DayChart({ sessions, now }: { sessions: Session[]; now: number }) {
   const days = dailyFocus(sessions, now);
   const max = Math.max(...days.map((d) => d.focusMs), MIN_CHART_SCALE_MS);
@@ -69,18 +67,8 @@ function DayChart({ sessions, now }: { sessions: Session[]; now: number }) {
   }
 
   const sel = days[selected];
-  const pomodoros = sel
-    ? sessions.filter(
-        (s) =>
-          s.phase === "work" &&
-          s.completed &&
-          s.startedAt >= sel.dayStart &&
-          s.startedAt < sel.dayStart + DAY_MS,
-      ).length
-    : 0;
-  const byTask = sel
-    ? focusByTask(sessions, sel.dayStart, sel.dayStart + DAY_MS)
-    : [];
+  const pomodoros = sel?.pomodoros ?? 0;
+  const byTask = sel ? focusByTask(sessions, sel.dayStart, sel.dayEnd) : [];
   const fullDate = sel
     ? new Date(sel.dayStart).toLocaleDateString(undefined, {
         weekday: "long",

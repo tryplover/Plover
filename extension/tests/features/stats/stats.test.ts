@@ -128,6 +128,9 @@ describe("dailyFocus", () => {
     expect(days).toHaveLength(7);
     expect(days[0]?.dayStart).toBe(at(5, 0));
     expect(days[6]?.dayStart).toBe(at(11, 0));
+    expect(days[6]?.dayEnd).toBe(at(12, 0));
+    for (let i = 0; i < 6; i++)
+      expect(days[i]?.dayEnd).toBe(days[i + 1]?.dayStart);
     expect(days[6]).toMatchObject({ focusMs: 25 * MIN, pomodoros: 1 });
     expect(days[5]).toMatchObject({ focusMs: 10 * MIN, pomodoros: 0 });
     expect(days[0]?.focusMs).toBe(0);

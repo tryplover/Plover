@@ -14,6 +14,7 @@ export interface Summary {
 export interface DayFocus {
   label: string;
   dayStart: number;
+  dayEnd: number;
   focusMs: number;
   pomodoros: number;
 }
@@ -107,6 +108,7 @@ export function dailyFocus(
     out.push({
       label: day.toLocaleDateString(undefined, { weekday: "short" }),
       dayStart: day.getTime(),
+      dayEnd: next.getTime(),
       focusMs: inDay.reduce((sum, s) => sum + focusMs(s), 0),
       pomodoros: inDay.filter((s) => s.completed).length,
     });
