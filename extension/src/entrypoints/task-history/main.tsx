@@ -89,7 +89,6 @@ function History() {
         <div className="history-actions">
           <button
             type="button"
-            className="plover-btn-text"
             onClick={() =>
               download(
                 `plover-sessions-${stamp}.csv`,
@@ -100,17 +99,23 @@ function History() {
           >
             Download CSV
           </button>
-          <button
-            type="button"
-            className="plover-btn-text"
-            onClick={exportJson}
-          >
+          <button type="button" onClick={exportJson}>
             Download JSON
           </button>
+          {(doneTasks.length > 0 || local.sessions.length > 0) &&
+            !confirmClear && (
+              <button
+                type="button"
+                className="history-clear"
+                onClick={() => setConfirmClear(true)}
+              >
+                Clear history
+              </button>
+            )}
         </div>
-        {(doneTasks.length > 0 || local.sessions.length > 0) &&
-          (confirmClear ? (
-            <>
+        {confirmClear &&
+          (doneTasks.length > 0 || local.sessions.length > 0) && (
+            <div className="history-clear-confirm">
               <p>{`Delete all ${doneTasks.length} finished tasks? This can't be undone.`}</p>
               <label className="history-check">
                 <input
@@ -123,7 +128,7 @@ function History() {
               <div className="history-actions">
                 <button
                   type="button"
-                  className="plover-btn-text"
+                  className="history-clear"
                   onClick={() => {
                     setConfirmClear(false);
                     void sendCommand({ type: "task/clearDone" });
@@ -135,7 +140,6 @@ function History() {
                 </button>
                 <button
                   type="button"
-                  className="plover-btn-text"
                   onClick={() => {
                     setConfirmClear(false);
                     setAlsoStats(false);
@@ -144,16 +148,8 @@ function History() {
                   Cancel
                 </button>
               </div>
-            </>
-          ) : (
-            <button
-              type="button"
-              className="plover-btn-text plover-link"
-              onClick={() => setConfirmClear(true)}
-            >
-              Clear history
-            </button>
-          ))}
+            </div>
+          )}
       </footer>
     </main>
   );

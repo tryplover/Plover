@@ -211,6 +211,13 @@
   font-size: 12px;
   color: var(--color-text-secondary);
 }
+.history-clear {
+  color: var(--color-status-error);
+  border-color: color-mix(in srgb, var(--color-status-error) 45%, transparent);
+}
+.history-clear-confirm {
+  margin-top: 12px;
+}
 .cycle-strip {
   display: flex;
   gap: 2px;
