@@ -9,7 +9,11 @@ import {
   storeToken,
 } from "@/features/calendar/client";
 import { breakRunsInto, nextUpcoming } from "@/features/calendar/events";
-import { onTimerEvent, stopAndPark } from "@/features/timer/worker";
+import {
+  notifyCheckIn,
+  onTimerEvent,
+  stopAndPark,
+} from "@/features/timer/worker";
 import type { CalendarEvent } from "@/shared/types";
 import { DEFAULT_LOCAL, getLocal, setLocal } from "@/shared/storage";
 import { onAlarm } from "@/worker/alarms";
@@ -126,7 +130,7 @@ export function registerCalendarHandlers(): void {
     await showNudge(`${next.title} starts in 5 min`, now);
   });
   onTimerEvent(async (e) => {
-    if (e.type === "stopped") return scheduleHeadsUp();
+    if (e.type === "stopped" || e.type === "resumed") return scheduleHeadsUp();
     if (e.type !== "phase-started") return;
     await scheduleHeadsUp();
     if (e.phase === "work") return;
@@ -140,6 +144,7 @@ export function registerCalendarHandlers(): void {
     const meeting = breakRunsInto(calendar.events, now, timer.phaseEndsAt);
     if (!meeting) return;
     await stopAndPark(now);
+    if ((await getLocal("transient")).checkInPending) await notifyCheckIn();
     await showNudge(`${meeting.title} is next. Saved for later.`, now);
   });
 }

@@ -23,7 +23,8 @@ export type TimerEvent =
       blocksCompleted: number;
     }
   | { type: "work-block-completed"; blocksCompleted: number }
-  | { type: "stopped"; blocksCompleted: number };
+  | { type: "stopped"; blocksCompleted: number }
+  | { type: "resumed" };
 
 export interface TimerTransition {
   state: TimerState;

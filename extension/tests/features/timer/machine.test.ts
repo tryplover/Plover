@@ -198,6 +198,15 @@ describe("pause and resume", () => {
     expect(pauseTimer(once, T0 + 8 * MIN).state).toBe(once);
   });
 
+  it("emits resumed only when it actually resumes", () => {
+    const { state } = startTimer(config, T0);
+    const paused = pauseTimer(state, T0 + 5 * MIN).state;
+    expect(resumeTimer(paused, T0 + 8 * MIN).events).toEqual([
+      { type: "resumed" },
+    ]);
+    expect(resumeTimer(state, T0 + MIN).events).toEqual([]);
+  });
+
   it("ignores resume when not paused and pause when idle", () => {
     const { state } = startTimer(config, T0);
     expect(resumeTimer(state, T0 + MIN).state).toBe(state);

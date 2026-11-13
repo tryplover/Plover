@@ -357,6 +357,18 @@ describe("meeting-aware work blocks", () => {
     expect((await getLocal("transient")).nudgeText).toBeNull();
   });
 
+  it("re-arms the heads-up on resume after the alarm was lost while paused", async () => {
+    await connectWithEvent(40 * MIN);
+    await dispatch({ type: "timer/start" });
+    await dispatch({ type: "timer/pause" });
+    await fakeBrowser.alarms.clear("calendar-headsup");
+    vi.setSystemTime(T0 + 2 * MIN);
+    await dispatch({ type: "timer/resume" });
+    expect(
+      (await fakeBrowser.alarms.get("calendar-headsup"))?.scheduledTime,
+    ).toBe(T0 + 35 * MIN);
+  });
+
   it("parks the task instead of starting a break that runs into a meeting", async () => {
     await seedTask();
     await connectWithEvent(28 * MIN);
@@ -370,6 +382,9 @@ describe("meeting-aware work blocks", () => {
     const t = await getLocal("transient");
     expect(t.checkInPending).toBe(true);
     expect(t.nudgeText).toBe("Stand-up is next. Saved for later.");
+    expect(
+      Object.keys(fakeBrowser.notifications.getAllCreateOptions()),
+    ).toContain("checkin");
   });
 
   it("starts the break normally when the meeting is further out", async () => {
