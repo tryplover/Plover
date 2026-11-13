@@ -1,19 +1,23 @@
 import type { ContentScriptContext } from "wxt/utils/content-script-context";
 import type { BuddyCorner } from "@/shared/types";
-import { BUDDY_HEIGHT, GAP, MARGIN, MENU_HEIGHT } from "./layout";
+import {
+  DEFAULT_PANEL_HEIGHT,
+  panelHeight,
+} from "@/features/buddy/panel-height";
+import { MARGIN, PANEL_OFFSET } from "./layout";
 
 const PANEL_WIDTH = 320;
-const PANEL_HEIGHT = 480;
 
 export interface PanelFrame {
   show(corner: BuddyCorner): void;
   hide(): void;
+  setContentHeight(px: number): void;
   frameWindow(): Window | null;
   frameElement(): HTMLIFrameElement | null;
 }
 
 function placeFrame(wrapper: HTMLElement, corner: BuddyCorner): void {
-  const offset = `${MARGIN + BUDDY_HEIGHT + GAP + MENU_HEIGHT + GAP}px`;
+  const offset = `${PANEL_OFFSET}px`;
   const vertical = corner.startsWith("top") ? "top" : "bottom";
   const horizontal = corner.endsWith("left") ? "left" : "right";
   wrapper.style.top = "";
@@ -22,6 +26,10 @@ function placeFrame(wrapper: HTMLElement, corner: BuddyCorner): void {
   wrapper.style.right = "";
   wrapper.style[vertical] = offset;
   wrapper.style[horizontal] = `${MARGIN}px`;
+}
+
+function fit(content: number): number {
+  return panelHeight(content, window.innerHeight, PANEL_OFFSET, MARGIN);
 }
 
 export function createPanelFrame(
@@ -39,7 +47,7 @@ export function createPanelFrame(
       });
       Object.assign(iframe.style, {
         width: `${PANEL_WIDTH}px`,
-        height: `${PANEL_HEIGHT}px`,
+        height: `${fit(DEFAULT_PANEL_HEIGHT)}px`,
         border: "0",
         borderRadius: "12px",
         boxShadow: "0 4px 24px rgba(0, 0, 0, 0.2)",
@@ -49,6 +57,11 @@ export function createPanelFrame(
     },
   });
   let mounted = false;
+  let content = DEFAULT_PANEL_HEIGHT;
+  const apply = () => {
+    frame.iframe.style.height = `${fit(content)}px`;
+  };
+  window.addEventListener("resize", apply);
   return {
     show(corner) {
       if (!mounted) {
@@ -61,6 +74,10 @@ export function createPanelFrame(
     hide() {
       frame.wrapper.style.display = "none";
     },
+    setContentHeight(px) {
+      content = px;
+      apply();
+    },
     frameWindow() {
       return mounted ? frame.iframe.contentWindow : null;
     },
@@ -68,6 +85,7 @@ export function createPanelFrame(
       return mounted ? frame.iframe : null;
     },
     remove() {
+      window.removeEventListener("resize", apply);
       frame.remove();
       mounted = false;
     },

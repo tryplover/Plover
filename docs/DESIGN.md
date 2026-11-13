@@ -144,8 +144,8 @@ Optional fields on stored objects are read with defaults; there is no migration 
 
 - Rendered with WXT `createShadowRootUi` (closed shadow root, max z-index) so page CSS can't break it and it can't break the page. Hidden while the page is fullscreen.
 - **Drag** to move; it snaps to the nearest corner (`nearestCorner`), saved as `settings.buddyCorner`.
-- **Click** toggles the in-page panel (iframe, 320×480, placed next to the buddy's corner) and a small menu: **Hide on this site** (adds the hostname to `hiddenSites`) and **Hide everywhere**. Both are undone in Settings.
-- **Closing the panel:** clicking the buddy again, **Escape** (pressed on the page or inside the panel) or a click anywhere outside the buddy and panel closes it. While the panel is open the content script listens on `window` (capture, removed on close) for `keydown` (reads only `event.key`) and `pointerdown` (reads only `event.composedPath()` to test containment in the buddy host and panel iframe; never prevents the click, so the page still gets it). The panel page posts `{ type: "plover/panel-close" }` to its parent on Escape; the content script acts on it only when `event.source` is the panel iframe's window. Pure rules in `features/buddy/panel-dismiss.ts`.
+- **Click** toggles the in-page panel (iframe, 320px wide; its height follows its content up to the space beside the buddy's corner, then it scrolls) and a small menu: **Hide on this site** (adds the hostname to `hiddenSites`) and **Hide everywhere**. Both are undone in Settings.
+- **Closing the panel:** clicking the buddy again, **Escape** (pressed on the page or inside the panel) or a click anywhere outside the buddy and panel closes it. While the panel is open the content script listens on `window` (capture, removed on close) for `keydown` (reads only `event.key`) and `pointerdown` (reads only `event.composedPath()` to test containment in the buddy host and panel iframe; never prevents the click, so the page still gets it). The panel page posts `{ type: "plover/panel-close" }` to its parent on Escape; the content script acts on it only when `event.source` is the panel iframe's window. The panel page also posts `{ type: "plover/panel-height", height }` (its root element's height, via `ResizeObserver`); the content script accepts it under the same `event.source` check, only for a finite positive height, and sizes the iframe to `panelHeight(height, window.innerHeight)` (min 200px, max the viewport space beside the buddy), re-applied on window `resize`. Reading `window.innerHeight` is layout, not page content. Pure rules in `features/buddy/panel-dismiss.ts` and `features/buddy/panel-height.ts`.
 - **Speech bubble:** the focus nudge text, or "Which step did you finish?" while a check-in is pending. Clicking opens the panel.
 - **Clock:** while a phase runs, the buddy holds a small alarm clock with whole minutes left (seconds in the last minute): green rim for work, amber for breaks, faded when paused, hidden when idle. Purely presentational (`pointer-events: none`).
 - **Animation state** comes from `deriveBuddyState` (`features/buddy/buddy-state.ts`): celebrating > nudging (nudge or check-in) > focus/working (work phase) > break > idle.
@@ -362,7 +362,7 @@ The first time the popup or panel opens in a new week (Monday start) after a wee
 
 ### 9.13 Plan a focus block from the calendar
 
-With the calendar connected and the timer idle, when the next event is ≥ `workMinutes` away (looking 3 h ahead), the calendar line reads "You're free until 11:00." and **Start** uses that window; when it's shorter, it offers a shortened block that ends 2 min before the event (existing conflict offer). Pure `freeWindow(events, now, horizonMs)` in `features/calendar/`.
+With the calendar connected and the timer idle, when the next event is ≥ `workMinutes` away (looking 3 h ahead), the calendar line reads "You're free until 11:00." and **Start** uses that window; when it's shorter, it offers a shortened block that ends 1 min before the event (existing conflict offer, `shortenTarget`). Pure `freeWindow(events, now, horizonMs)` in `features/calendar/`.
 
 ### 9.14 Soft weekly goal
 
@@ -371,6 +371,19 @@ Settings: **Weekly goal**, "Focus on N days a week" (default 4, or Off). A day c
 ### 9.15 Optional backup to the user's Google Drive
 
 Settings → **Backup**: "Back up to your Google Drive" stores one `plover-backup.json` (tasks, sessions, settings) in the Drive **app data folder** (hidden, only Plover can read it) using the user's own Google token (`drive.appdata` scope via `launchWebAuthFlow`, like Calendar). Daily alarm plus **Back up now**; **Restore** merges by id. Plover's servers never see it, so "no Plover cloud sync" still holds. Host `www.googleapis.com` is already allowed. **Blocked on the owner:** add the `drive.appdata` scope to the Google OAuth consent screen.
+
+### 9.16 Meeting-aware blocks outside focus mode
+
+From #577. The 5-minute calendar heads-up only runs in focus mode, so a block started with **Start anyway** gives no warning, and a block shortened to end before a meeting rolls straight into a break that runs into it. Two changes, both in the worker:
+
+- `scheduleHeadsUp` and its alarm handler run whenever a **work phase** is running and the calendar is connected, focus on or off (today both return early unless focus is on). The heads-up stays what it is now: the buddy's bubble, "<event> starts in 5 min" (`showNudge`).
+- When a work block ends and the next non-all-day event starts before the break would end, the worker parks the task (`stopAndPark`, as **Save for later** does) instead of starting the break, and the buddy says "<event> is next. Saved for later." The check-in still shows for the block that just ended.
+
+No new permissions, hosts or stored state beyond the existing alarm. Pure `breakRunsInto(event, breakEndsAt)` in `features/calendar/events.ts`.
+
+### 9.17 History: focus by task for a day
+
+From #579. With many short blocks a day, the cycle cards repeat task names and show "0 pomodoros" for cut-short blocks. On the Stats tab, under the last-7-days chart, a **By task** list for the selected day (the chart's selected bar, today by default): one row per task with that day's focus time (cut-short blocks included, paused time excluded) and block count, sorted by time, plus an "Untitled task" row only for sessions without a task. Read-only, from `sessions`; pure `focusByTask(sessions, dayStart, dayEnd)` in `features/stats/stats.ts`.
 
 ---
 
@@ -410,4 +423,5 @@ Settings → **Backup**: "Back up to your Google Drive" stores one `plover-backu
 - 2026-11-12: empty-blocklist hint under the Focus mode and Block sites now toggles, deep-linking to Settings > Blocked sites (#567).
 - 2026-11-12: while a check-in is pending it replaces the task's step list in the panel and popup (no duplicate checkboxes, no Mark task done), keeping the timer controls above the fold (#566).
 - 2026-11-12: the History Tasks tab lists open and parked tasks under **In progress** with steps, blocks and focus time so far (#532).
+- 2026-11-13: the in-page panel grows to fit its content (up to the viewport) so the timer controls aren't hidden below the fold (#571).
 - 2026-11-13: the History link shows once any focus time is recorded, and the History header counts all focus blocks, not only finished tasks' (#572).
