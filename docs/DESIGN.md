@@ -362,7 +362,7 @@ The first time the popup or panel opens in a new week (Monday start) after a wee
 
 ### 9.13 Plan a focus block from the calendar
 
-With the calendar connected and the timer idle, when the next event is ≥ `workMinutes` away (looking 3 h ahead), the calendar line reads "You're free until 11:00." and **Start** uses that window; when it's shorter, it offers a shortened block that ends 2 min before the event (existing conflict offer). Pure `freeWindow(events, now, horizonMs)` in `features/calendar/`.
+With the calendar connected and the timer idle, when the next event is ≥ `workMinutes` away (looking 3 h ahead), the calendar line reads "You're free until 11:00." and **Start** uses that window; when it's shorter, it offers a shortened block that ends 1 min before the event (existing conflict offer, `shortenTarget`). Pure `freeWindow(events, now, horizonMs)` in `features/calendar/`.
 
 ### 9.14 Soft weekly goal
 
@@ -371,6 +371,19 @@ Settings: **Weekly goal**, "Focus on N days a week" (default 4, or Off). A day c
 ### 9.15 Optional backup to the user's Google Drive
 
 Settings → **Backup**: "Back up to your Google Drive" stores one `plover-backup.json` (tasks, sessions, settings) in the Drive **app data folder** (hidden, only Plover can read it) using the user's own Google token (`drive.appdata` scope via `launchWebAuthFlow`, like Calendar). Daily alarm plus **Back up now**; **Restore** merges by id. Plover's servers never see it, so "no Plover cloud sync" still holds. Host `www.googleapis.com` is already allowed. **Blocked on the owner:** add the `drive.appdata` scope to the Google OAuth consent screen.
+
+### 9.16 Meeting-aware blocks outside focus mode
+
+From #577. The 5-minute calendar heads-up only runs in focus mode, so a block started with **Start anyway** gives no warning, and a block shortened to end before a meeting rolls straight into a break that runs into it. Two changes, both in the worker:
+
+- `scheduleHeadsUp` and its alarm handler run whenever a **work phase** is running and the calendar is connected, focus on or off (today both return early unless focus is on). The heads-up stays what it is now: the buddy's bubble, "<event> starts in 5 min" (`showNudge`).
+- When a work block ends and the next non-all-day event starts before the break would end, the worker parks the task (`stopAndPark`, as **Save for later** does) instead of starting the break, and the buddy says "<event> is next. Saved for later." The check-in still shows for the block that just ended.
+
+No new permissions, hosts or stored state beyond the existing alarm. Pure `breakRunsInto(event, breakEndsAt)` in `features/calendar/events.ts`.
+
+### 9.17 History: focus by task for a day
+
+From #579. With many short blocks a day, the cycle cards repeat task names and show "0 pomodoros" for cut-short blocks. On the Stats tab, under the last-7-days chart, a **By task** list for the selected day (the chart's selected bar, today by default): one row per task with that day's focus time (cut-short blocks included, paused time excluded) and block count, sorted by time, plus an "Untitled task" row only for sessions without a task. Read-only, from `sessions`; pure `focusByTask(sessions, dayStart, dayEnd)` in `features/stats/stats.ts`.
 
 ---
 
