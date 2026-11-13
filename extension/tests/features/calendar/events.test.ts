@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  breakRunsInto,
   conflictDuring,
   nextEvent,
   nextUpcoming,
@@ -175,5 +176,37 @@ describe("resolveShorten", () => {
 
   it("reports tooClose for a click 30 s before the event", () => {
     expect(resolveShorten(ev, ev.start - 30_000)).toEqual({ tooClose: true });
+  });
+});
+
+describe("breakRunsInto", () => {
+  const ev = (id: string, start: number, allDay = false) => ({
+    id,
+    title: id,
+    start,
+    end: start + 30 * MIN,
+    allDay,
+  });
+
+  it("returns null with no events", () => {
+    expect(breakRunsInto([], T0, T0 + 5 * MIN)).toBeNull();
+  });
+
+  it("ignores all-day events", () => {
+    expect(
+      breakRunsInto([ev("d", T0 + MIN, true)], T0, T0 + 5 * MIN),
+    ).toBeNull();
+  });
+
+  it("returns an event starting mid-break or exactly now", () => {
+    expect(breakRunsInto([ev("a", T0 + 3 * MIN)], T0, T0 + 5 * MIN)?.id).toBe(
+      "a",
+    );
+    expect(breakRunsInto([ev("n", T0)], T0, T0 + 5 * MIN)?.id).toBe("n");
+  });
+
+  it("excludes events starting at or after the break end, or already running", () => {
+    expect(breakRunsInto([ev("e", T0 + 5 * MIN)], T0, T0 + 5 * MIN)).toBeNull();
+    expect(breakRunsInto([ev("r", T0 - MIN)], T0, T0 + 5 * MIN)).toBeNull();
   });
 });

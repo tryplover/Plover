@@ -8,7 +8,8 @@ import {
   requestToken,
   storeToken,
 } from "@/features/calendar/client";
-import { nextUpcoming } from "@/features/calendar/events";
+import { breakRunsInto, nextUpcoming } from "@/features/calendar/events";
+import { onTimerEvent, stopAndPark } from "@/features/timer/worker";
 import type { CalendarEvent } from "@/shared/types";
 import { DEFAULT_LOCAL, getLocal, setLocal } from "@/shared/storage";
 import { onAlarm } from "@/worker/alarms";
@@ -30,14 +31,22 @@ async function clearConnection(): Promise<void> {
   });
 }
 
-export async function scheduleHeadsUp(): Promise<void> {
-  await browser.alarms.clear(CALENDAR_HEADSUP_ALARM);
-  const [focus, connected, calendar] = await Promise.all([
+async function headsUpWanted(): Promise<boolean> {
+  const [focus, connected, timer] = await Promise.all([
     getLocal("focus"),
     getLocal("calendarConnected"),
-    getLocal("calendar"),
+    getLocal("timer"),
   ]);
-  if (!focus.on || !connected) return;
+  return (
+    connected &&
+    (focus.on || (timer.phase === "work" && timer.pausedAt === null))
+  );
+}
+
+export async function scheduleHeadsUp(): Promise<void> {
+  await browser.alarms.clear(CALENDAR_HEADSUP_ALARM);
+  if (!(await headsUpWanted())) return;
+  const calendar = await getLocal("calendar");
   const now = Date.now();
   const next = nextUpcoming(calendar.events, now);
   if (!next) return;
@@ -109,14 +118,28 @@ export function registerCalendarHandlers(): void {
   onAlarm(REFRESH_ALARM, refreshCalendar, { queued: false });
 
   onAlarm(CALENDAR_HEADSUP_ALARM, async () => {
-    const [focus, calendar] = await Promise.all([
-      getLocal("focus"),
-      getLocal("calendar"),
-    ]);
-    if (!focus.on) return;
+    if (!(await headsUpWanted())) return;
+    const calendar = await getLocal("calendar");
     const now = Date.now();
     const next = nextUpcoming(calendar.events, now);
     if (!next) return;
     await showNudge(`${next.title} starts in 5 min`, now);
+  });
+  onTimerEvent(async (e) => {
+    if (e.type === "stopped") return scheduleHeadsUp();
+    if (e.type !== "phase-started") return;
+    await scheduleHeadsUp();
+    if (e.phase === "work") return;
+    if (!(await getLocal("calendarConnected"))) return;
+    const [timer, calendar] = await Promise.all([
+      getLocal("timer"),
+      getLocal("calendar"),
+    ]);
+    if (timer.phase === "idle") return;
+    const now = Date.now();
+    const meeting = breakRunsInto(calendar.events, now, timer.phaseEndsAt);
+    if (!meeting) return;
+    await stopAndPark(now);
+    await showNudge(`${meeting.title} is next. Saved for later.`, now);
   });
 }
