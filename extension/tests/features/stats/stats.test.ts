@@ -3,6 +3,7 @@ import {
   paginate,
   cycleTaskTitles,
   dailyFocus,
+  focusByTask,
   focusMs,
   groupCycles,
   inProgressTasks,
@@ -127,6 +128,9 @@ describe("dailyFocus", () => {
     expect(days).toHaveLength(7);
     expect(days[0]?.dayStart).toBe(at(5, 0));
     expect(days[6]?.dayStart).toBe(at(11, 0));
+    expect(days[6]?.dayEnd).toBe(at(12, 0));
+    for (let i = 0; i < 6; i++)
+      expect(days[i]?.dayEnd).toBe(days[i + 1]?.dayStart);
     expect(days[6]).toMatchObject({ focusMs: 25 * MIN, pomodoros: 1 });
     expect(days[5]).toMatchObject({ focusMs: 10 * MIN, pomodoros: 0 });
     expect(days[0]?.focusMs).toBe(0);
@@ -266,5 +270,100 @@ describe("paginate", () => {
     expect(paginate(items, 9, 10).page).toBe(3);
     expect(paginate(items, 0, 10).page).toBe(1);
     expect(paginate([], 1, 10)).toEqual({ items: [], page: 1, pages: 1 });
+  });
+});
+
+describe("focusByTask", () => {
+  const dayStart = at(11, 0);
+  const dayEnd = at(12, 0);
+  const work = (
+    id: string,
+    taskId: string | null,
+    startH: number,
+    minutes: number,
+    over: Partial<Session> = {},
+  ) =>
+    session({
+      id,
+      taskId,
+      startedAt: at(11, startH),
+      endedAt: at(11, startH) + minutes * MIN,
+      ...over,
+    });
+
+  it("groups work blocks by task with focus time and block count, most focus first", () => {
+    const sessions = [
+      work("a1", "t1", 9, 25, { taskTitle: "Write report" }),
+      work("a2", "t1", 10, 25, { taskTitle: "Write report" }),
+      work("b1", "t2", 11, 25, { taskTitle: "Email" }),
+    ];
+    expect(focusByTask(sessions, dayStart, dayEnd)).toEqual([
+      { taskId: "t1", title: "Write report", focusMs: 50 * MIN, blocks: 2 },
+      { taskId: "t2", title: "Email", focusMs: 25 * MIN, blocks: 1 },
+    ]);
+  });
+
+  it("counts cut-short blocks and excludes breaks and other days", () => {
+    const sessions = [
+      work("a1", "t1", 9, 12, { taskTitle: "Write", completed: false }),
+      work("a2", "t1", 10, 25, { taskTitle: "Write" }),
+      session({
+        id: "brk",
+        taskId: "t1",
+        phase: "shortBreak",
+        startedAt: at(11, 11),
+        endedAt: at(11, 11, 5),
+      }),
+      session({
+        id: "yesterday",
+        taskId: "t1",
+        startedAt: at(10, 9),
+        endedAt: at(10, 9, 25),
+        taskTitle: "Write",
+      }),
+    ];
+    expect(focusByTask(sessions, dayStart, dayEnd)).toEqual([
+      { taskId: "t1", title: "Write", focusMs: 37 * MIN, blocks: 2 },
+    ]);
+  });
+
+  it("excludes paused time from focus", () => {
+    const sessions = [
+      work("a1", "t1", 9, 25, { taskTitle: "Write", pausedMs: 5 * MIN }),
+    ];
+    expect(focusByTask(sessions, dayStart, dayEnd)).toEqual([
+      { taskId: "t1", title: "Write", focusMs: 20 * MIN, blocks: 1 },
+    ]);
+  });
+
+  it("groups sessions without a task into one Untitled task row", () => {
+    const sessions = [
+      work("n1", null, 9, 25),
+      work("n2", null, 10, 10, { taskTitle: null }),
+      work("t1", "t1", 11, 30, { taskTitle: "Write" }),
+    ];
+    expect(focusByTask(sessions, dayStart, dayEnd)).toEqual([
+      { taskId: null, title: "Untitled task", focusMs: 35 * MIN, blocks: 2 },
+      { taskId: "t1", title: "Write", focusMs: 30 * MIN, blocks: 1 },
+    ]);
+  });
+
+  it("uses the most recent session's title for a task", () => {
+    const sessions = [
+      work("old", "t1", 9, 25, { taskTitle: "Old name" }),
+      work("new", "t1", 10, 25, { taskTitle: "New name" }),
+    ];
+    expect(focusByTask(sessions, dayStart, dayEnd)[0]?.title).toBe("New name");
+  });
+
+  it("breaks focus ties by title and returns nothing for an empty day", () => {
+    const sessions = [
+      work("b", "tb", 9, 25, { taskTitle: "Beta" }),
+      work("a", "ta", 10, 25, { taskTitle: "Alpha" }),
+    ];
+    expect(focusByTask(sessions, dayStart, dayEnd).map((r) => r.title)).toEqual(
+      ["Alpha", "Beta"],
+    );
+    expect(focusByTask([], dayStart, dayEnd)).toEqual([]);
   });
 });
