@@ -11,11 +11,11 @@ Pushing a tag `vX.Y.Z` runs `.github/workflows/release.yml`. The tag is the vers
 5. Creates a GitHub release in this repo with the zip attached (kept for the record and rollback).
 6. Uploads the zip to the Chrome Web Store and submits it for review, if the store credentials are set.
 
-## Every merge and weekly store releases
+## Every merge and daily store releases
 
 - **Every merge to `main`:** the **Build and version** job in `.github/workflows/ci.yml` runs after typecheck, lint and tests pass. It bumps the patch of the highest `vX.Y.Z` tag (`v0.1.4` becomes `v0.1.5`), builds the zip with that version and publishes it as a GitHub **pre-release**. Nothing goes to the store. Its tag is pushed with the workflow token, so it doesn't trigger `release.yml`.
-- **Every Monday 14:00 UTC:** `.github/workflows/store-weekly.yml` takes the newest release. If it's still a pre-release, the workflow uploads that zip to the Web Store, submits it for review and marks it as the latest full release. If nothing new was merged, it does nothing.
-- **Hotfix:** Actions → Weekly store release → Run workflow submits the newest build straight away.
+- **Every day 14:00 UTC:** `.github/workflows/store-daily.yml` takes the newest release. If it's still a pre-release, the workflow uploads that zip to the Web Store, submits it for review and marks it as the latest full release. If nothing new was merged since the last store release, it does nothing.
+- **Hotfix:** Actions → Daily store release → Run workflow submits the newest build straight away.
 - **Minor or major bump:** cut a release by hand (below) with the new number, e.g. `v0.2.0`. Merges after that continue from `v0.2.1`.
 
 Web Store review usually takes a few hours to a few days. The listing stays **unlisted** (only people with the link can install). Set that once in the developer dashboard.
