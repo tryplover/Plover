@@ -11,12 +11,11 @@ Pushing a tag `vX.Y.Z` runs `.github/workflows/release.yml`. The tag is the vers
 5. Creates a GitHub release in this repo with the zip attached (kept for the record and rollback).
 6. Uploads the zip to the Chrome Web Store and submits it for review, if the store credentials are set.
 
-## Every merge and daily store releases
+## Merges and releases
 
-- **Every merge to `main`:** the **Build and version** job in `.github/workflows/ci.yml` runs after typecheck, lint and tests pass. It bumps the patch of the highest `vX.Y.Z` tag (`v0.1.4` becomes `v0.1.5`), builds the zip with that version and publishes it as a GitHub **pre-release**. Nothing goes to the store. Its tag is pushed with the workflow token, so it doesn't trigger `release.yml`.
-- **Every day 14:00 UTC:** `.github/workflows/store-daily.yml` takes the newest release. If it's still a pre-release, the workflow uploads that zip to the Web Store, submits it for review and marks it as the latest full release. If nothing new was merged since the last store release, it does nothing.
-- **Hotfix:** Actions → Daily store release → Run workflow submits the newest build straight away.
-- **Minor or major bump:** cut a release by hand (below) with the new number, e.g. `v0.2.0`. Merges after that continue from `v0.2.1`.
+- **Every merge to `main`:** the **Build test zip** job in `.github/workflows/ci.yml` runs after typecheck, lint and tests pass. It builds the extension with production values and attaches the unpacked build to that CI run as an artifact named `plover-test-<commit>`, kept for 30 days. It has no version number, makes no GitHub release and never goes to the store. To try it: open the run in the Actions tab, download the artifact, unzip it, then `chrome://extensions` → Developer mode → Load unpacked.
+- **A store release happens only when someone tags one** (below). Choose when: several merges can go out in one release, and the version may skip numbers. The store only needs each upload to be higher than the last.
+- Tags `v0.1.1`–`v0.1.54` were made by the old per-merge versioning and are taken. Continue from `v0.2.0`.
 
 Web Store review usually takes a few hours to a few days. The listing stays **unlisted** (only people with the link can install). Set that once in the developer dashboard.
 
@@ -33,16 +32,16 @@ git pull
 ```
 
 ```bash
-git tag v0.1.0
+git tag v0.2.0
 ```
 
 ```bash
-git push origin v0.1.0
+git push origin v0.2.0
 ```
 
 Then watch the **Release** run in the Actions tab.
 
-Alternative: Actions → Release → Run workflow, with a version (no leading `v`) and a store mode:
+Alternative: Actions → Release → Run workflow, with a version (no leading `v`, e.g. `0.2.0`) and a store mode:
 
 - `none`: build and archive only.
 - `upload`: upload the zip to the store, do not submit for review.

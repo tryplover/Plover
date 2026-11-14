@@ -307,7 +307,7 @@ pnpm workspace with one package, `extension/` (WXT + React 19, TypeScript strict
 
 ### 8.2 CI (`.github/workflows/ci.yml`)
 
-Every PR and push to `main`: install → typecheck → lint → test (coverage on PRs; soft 60% gate on `features`, `shared`, `worker`). Each push to `main` also bumps the patch version and publishes the zip as a GitHub pre-release.
+Every PR and push to `main`: install → typecheck → lint → test (coverage on PRs; soft 60% gate on `features`, `shared`, `worker`). Each push to `main` also builds an unversioned test build and attaches it to the run as an artifact (30 days); it is not released or sent to the store.
 
 ### 8.3 Design-doc check (`.github/workflows/design-doc.yml`)
 
@@ -316,7 +316,7 @@ On PRs, if the diff touches a load-bearing path and not `docs/DESIGN.md`, the ch
 ### 8.4 Release
 
 - `release.yml`: a `vX.Y.Z` tag (or manual run) runs the checks, builds the store zip with production `WXT_*` values, verifies the manifest (version matches; no `host_permissions`; no static `content_scripts`), attaches the zip to a GitHub release and, once store credentials exist, uploads and submits it.
-- `store-daily.yml`: every day 14:00 UTC, submits the newest pre-release to the Web Store.
+- Versions are chosen by hand: nothing reaches the store without a tag.
 - Details and one-time setup: `docs/RELEASING.md`. Running locally: `docs/RUNNING.md`.
 
 ### 8.5 End-to-end tests (`.github/workflows/e2e.yml`)
