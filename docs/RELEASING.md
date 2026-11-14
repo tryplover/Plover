@@ -41,6 +41,8 @@ git push origin v0.2.0
 
 Then watch the **Release** run in the Actions tab.
 
+Or ask Claude to "release Plover": the `plover-release` skill (`.claude/skills/plover-release/`) checks main, proposes the next version, pushes the tag and reports the store result.
+
 Alternative: Actions → Release → Run workflow, with a version (no leading `v`, e.g. `0.2.0`) and a store mode:
 
 - `none`: build and archive only.

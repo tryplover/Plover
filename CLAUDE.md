@@ -284,6 +284,7 @@ symptom — grep an error string or symptom and invoke the matching skill:
 | `plover-git-safety`      | subagent-worktree file tools, concurrent-checkout HEAD swaps, second checkout, PR base-branch                                                                                                                                     |
 | `plover-auth`            | Auth unified on Supabase (Bearer token to `plover-server`); 401 sequencing across repos                                                                                                                                           |
 | `plover-extension-wxt`   | WXT vitest plugin import path, tsconfig include breaking auto-imports/JSX, `wxt prepare` on first install, no-empty-function in background stub, storage.local access level + state port, fakeBrowser gaps, corepack pnpm timeout |
+| `plover-release`         | Cutting a store release: green-main check, next version, tag push, reading the Release run, store-secret warnings |
 
 **Contract (replaces the old "add a lesson" rule):** when you hit an error,
 surprise, or wrong-first-attempt a future Claude could avoid, add it to the most
