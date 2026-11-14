@@ -22,12 +22,11 @@ dashboard only the account owner can reach; everything else is in a repo.
 
 ## 2. Production build
 
-CI builds every version, so don't build or bump versions by hand. Each merge to
-`main` gets the next patch version and publishes the store zip as a GitHub
-pre-release, and the newest one is submitted to the store every Monday. For the
-first upload, download the zip from the newest pre-release on the
-[releases page](https://github.com/tryplover/Plover/releases). Load
-`chrome-mv3` unpacked once, and click through sign-in, task breakdown, a short
+Don't build store zips by hand. Push a `vX.Y.Z` tag and `release.yml` builds
+the zip and attaches it to a GitHub release on the
+[releases page](https://github.com/tryplover/Plover/releases). Each merge to
+`main` also leaves an unversioned test build on its CI run. Load a build
+unpacked once, and click through sign-in, task breakdown, a short
 focus block, blocking and Calendar before uploading. See
 [docs/RELEASING.md](../RELEASING.md) for the build values (repository secrets)
 and the release flow.
