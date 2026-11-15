@@ -25,6 +25,7 @@ describe("settings", () => {
       blocksPerLongBreak: 4,
       focusNudgeMinutes: 15,
       buddyCorner: "bottom-right",
+      buddySize: "medium",
       theme: "system",
     });
   });

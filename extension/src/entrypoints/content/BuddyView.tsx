@@ -7,13 +7,14 @@ import {
   isPanelHeightMessage,
   shouldCloseOnPointer,
 } from "@/features/buddy/panel-dismiss";
+import { BUDDY_DIMENSIONS } from "@/features/buddy/size";
 import { isBuddyVisible, nearestCorner } from "@/features/buddy/visibility";
 import { updateSettings } from "@/shared/storage";
 import type { BuddyCorner, Settings } from "@/shared/types";
 import { Buddy } from "@/ui/components/Buddy";
 import { useBuddySnapshot } from "@/ui/hooks/useBuddySnapshot";
 import { BuddyClock } from "./BuddyClock";
-import { BUDDY_HEIGHT, BUDDY_WIDTH, MARGIN } from "./layout";
+import { MARGIN } from "./layout";
 import type { PanelFrame } from "./panel-frame";
 import { useSyncedSettings } from "./use-synced-settings";
 
@@ -66,11 +67,13 @@ function BuddyView({
   const start = useRef<{ x: number; y: number; moved: boolean } | null>(null);
   const suppressClick = useRef(false);
   const corner = settings.buddyCorner;
+  const size = settings.buddySize;
+  const dims = BUDDY_DIMENSIONS[size];
 
   useEffect(() => {
-    if (open && !drag) panel.show(corner);
+    if (open && !drag) panel.show(corner, size);
     else panel.hide();
-  }, [open, drag, corner, panel]);
+  }, [open, drag, corner, size, panel]);
   useEffect(() => () => panel.hide(), [panel]);
 
   useEffect(() => {
@@ -118,8 +121,8 @@ function BuddyView({
       return;
     s.moved = true;
     setDrag({
-      x: e.clientX - BUDDY_WIDTH / 2,
-      y: e.clientY - BUDDY_HEIGHT / 2,
+      x: e.clientX - dims.width / 2,
+      y: e.clientY - dims.height / 2,
     });
   }
 
@@ -210,7 +213,15 @@ function BuddyView({
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerCancel}
       >
-        <div className="plover-buddy-figure">
+        <div
+          className="plover-buddy-figure"
+          style={
+            {
+              "--plover-buddy-w": `${dims.width}px`,
+              "--plover-buddy-h": `${dims.height}px`,
+            } as CSSProperties
+          }
+        >
           <Buddy state={snap.buddyState} />
           {snap.clock && !drag && <BuddyClock clock={snap.clock} />}
         </div>
