@@ -3,3 +3,7 @@ body {
   margin: 0;
   background: var(--color-bg-surface);
 }
+html {
+  overflow-x: hidden;
+  scrollbar-width: none;
+}
