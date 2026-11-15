@@ -1,6 +1,6 @@
 .plover-buddy {
-  width: 64px;
-  height: 70px;
+  width: var(--plover-buddy-w, 64px);
+  height: var(--plover-buddy-h, 70px);
   cursor: grab;
   touch-action: none;
 }

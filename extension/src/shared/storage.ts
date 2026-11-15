@@ -11,6 +11,7 @@ export const DEFAULT_SETTINGS: Settings = {
   focusNudgeMinutes: 15,
   blocklist: [],
   buddyCorner: "bottom-right",
+  buddySize: "medium",
   hiddenSites: [],
   hideEverywhere: false,
   theme: "system",

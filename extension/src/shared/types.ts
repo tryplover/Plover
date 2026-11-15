@@ -5,6 +5,8 @@ export type BuddyCorner =
 
 export type Theme = "system" | "light" | "dark";
 
+export type BuddySize = "small" | "medium" | "large";
+
 export interface Settings {
   workMinutes: number;
   shortBreakMinutes: number;
@@ -13,6 +15,7 @@ export interface Settings {
   focusNudgeMinutes: number;
   blocklist: string[];
   buddyCorner: BuddyCorner;
+  buddySize: BuddySize;
   hiddenSites: string[];
   hideEverywhere: boolean;
   theme: Theme;

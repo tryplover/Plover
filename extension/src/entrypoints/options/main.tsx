@@ -6,7 +6,7 @@ import { ALL_SITES, siteOrigin } from "@/features/site-access/origins";
 import { sendCommand } from "@/shared/messages";
 import { clampInput } from "@/shared/number-input";
 import { updateSettings } from "@/shared/storage";
-import type { Settings, Theme } from "@/shared/types";
+import type { BuddySize, Settings, Theme } from "@/shared/types";
 import { useExtensionState } from "@/ui/hooks/useExtensionState";
 import { useSiteAccess } from "@/ui/hooks/useSiteAccess";
 import { applyStoredTheme } from "@/ui/theme";
@@ -111,6 +111,12 @@ const THEMES: { value: Theme; label: string }[] = [
   { value: "system", label: "System" },
   { value: "light", label: "Light" },
   { value: "dark", label: "Dark" },
+];
+
+const SIZES: { value: BuddySize; label: string }[] = [
+  { value: "small", label: "Small" },
+  { value: "medium", label: "Medium" },
+  { value: "large", label: "Large" },
 ];
 
 function DomainList({
@@ -303,6 +309,23 @@ function Options() {
                 : browser.permissions.request({ origins: [ALL_SITES] }))
             }
           />
+        </div>
+        <div className="field">
+          <span>Buddy size</span>
+          <div className="segmented" role="radiogroup" aria-label="Buddy size">
+            {SIZES.map(({ value, label }) => (
+              <label key={value} className="segment">
+                <input
+                  type="radio"
+                  name="buddySize"
+                  value={value}
+                  checked={settings.buddySize === value}
+                  onChange={() => save({ buddySize: value })}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
         </div>
         <label className="field">
           <input
