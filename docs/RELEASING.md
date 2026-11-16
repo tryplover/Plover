@@ -17,7 +17,7 @@ Pushing a tag `vX.Y.Z` runs `.github/workflows/release.yml`. The tag is the vers
 - **A store release happens only when someone tags one** (below). Choose when: several merges can go out in one release, and the version may skip numbers. The store only needs each upload to be higher than the last.
 - Tags `v0.1.1`–`v0.1.54` were made by the old per-merge versioning and are taken. Continue from `v0.2.0`.
 
-Web Store review usually takes a few hours to a few days. The listing stays **unlisted** (only people with the link can install). Set that once in the developer dashboard.
+Web Store review usually takes a few hours to a few days. The listing is **Public** (it shows in store search). Visibility is set in the developer dashboard, not by a release.
 
 ## Cut a release
 
@@ -64,7 +64,7 @@ Alternative: Actions → Release → Run workflow, with a version (no leading `v
    2. Download the zip from the GitHub release.
    3. In the developer dashboard, create a new item and upload the zip.
    4. Fill in the listing: description, screenshots, privacy policy URL `https://tryplover.com/privacy`, and a justification for each permission and for optional all-sites access. The buddy draws itself and reads nothing on the page (`docs/DESIGN.md` §4.2 and §6).
-   5. Set **Visibility: Unlisted**, then submit for review.
+   5. Set **Visibility: Public**, then submit for review.
    6. Copy the **extension ID** and the **publisher ID** from the dashboard.
 
 4. **Redirect URLs for the store ID.** Add these so sign-in and Calendar work in the store build:

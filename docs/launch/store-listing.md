@@ -19,9 +19,8 @@ submission. Chrome also shows `name` in the extensions menu; `short_name` and
 the toolbar tooltip (`manifest.default_title` in the popup's `index.html`) stay
 "Plover".
 
-**Search:** an **unlisted** item does not show in store search. The keywords
-below only work once the listing is **Public**. While it is unlisted, this copy
-only changes how many people with the link install.
+**Search:** the listing is **Public**, so it shows in store search and the
+keywords below apply.
 
 ## Title
 
@@ -87,7 +86,7 @@ Chrome, Microsoft Edge, Brave, Arc and other Chromium browsers. Press Alt+Shift+
 Privacy policy: https://tryplover.com/privacy
 ```
 
-**Category:** Productivity. **Language:** English.
+**Category:** Workflow and planning (under the Productivity group). **Language:** English.
 
 ## Screenshots (1280×800)
 

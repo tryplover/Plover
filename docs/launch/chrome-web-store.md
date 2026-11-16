@@ -1,7 +1,7 @@
 # Chrome Web Store launch checklist
 
 Everything needed to take the extension on `main` from a local build to an
-unlisted Chrome Web Store listing. Items marked **(you)** happen in a
+public Chrome Web Store listing. Items marked **(you)** happen in a
 dashboard only the account owner can reach; everything else is in a repo.
 
 ## 1. Before building
@@ -118,7 +118,7 @@ unrelated to the single purpose, and not used for creditworthiness or lending.
 
 ## 7. Submit
 
-- [ ] **(you)** Distribution → Visibility: **Unlisted**.
+- [ ] **(you)** Distribution → Visibility: **Public**.
 - [ ] **(you)** Submit for review. Broad optional host access can add review
       time; the justifications above are what the reviewer reads.
 - [ ] After approval, share the listing link (and add it to tryplover.com

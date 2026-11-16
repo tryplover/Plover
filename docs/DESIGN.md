@@ -36,7 +36,7 @@ A solo knowledge worker or student on long, self-directed tasks (essays, problem
 
 ### 1.4 Launch
 
-An **unlisted** Chrome Web Store listing linked from tryplover.com. Sign-in is required; sign-up is open (the waitlist gate was dropped on 2026-11-05). All Chromium browsers (Chrome, Edge, Brave, Arc); Edge users install from the Chrome Web Store. The manifest `name` is the store title, written for store search ("Plover: Cute Pomodoro Timer, Site Blocker & Focus Buddy"), and `description` is the store summary; `short_name` and the toolbar tooltip (`manifest.default_title` on the popup) stay "Plover". Listing copy: `docs/launch/store-listing.md`.
+A **public** Chrome Web Store listing (it shows in store search), linked from tryplover.com. Store category: Workflow and planning (under Productivity). Sign-in is required; sign-up is open (the waitlist gate was dropped on 2026-11-05). All Chromium browsers (Chrome, Edge, Brave, Arc); Edge users install from the Chrome Web Store. The manifest `name` is the store title, written for store search ("Plover: Cute Pomodoro Timer, Site Blocker & Focus Buddy"), and `description` is the store summary; `short_name` and the toolbar tooltip (`manifest.default_title` on the popup) stay "Plover". Listing copy: `docs/launch/store-listing.md`.
 
 ### 1.5 Scope
 
@@ -424,3 +424,4 @@ Settings → **Backup**: "Back up to your Google Drive" stores one `plover-backu
 - 2026-11-13: answering the check-in and Undo move focus to the next control and announce what happened (#584).
 - 2026-11-15: the in-page panel fits its frame with no scrollbars: the timer action row wraps instead of overflowing sideways.
 - 2026-11-15: buddy size (Small, Medium, Large) in Settings; the on-page buddy resizes live and the panel follows its height.
+- 2026-11-16: the store listing is Public, not Unlisted; the store copy is written for store search.
