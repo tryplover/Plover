@@ -1,9 +1,10 @@
 import type { UserManifest } from "wxt";
 
 export const manifest = {
-  name: "Plover",
+  name: "Plover: Cute Pomodoro Timer, Site Blocker & Focus Buddy",
+  short_name: "Plover",
   description:
-    "A cute work buddy that keeps you company while you focus: task steps, a Pomodoro timer and site blocking.",
+    "Work next to a cute buddy, not alone. Plover is a little bird that acts as your Pomodoro timer, site blocker and task planner.",
   permissions: [
     "storage",
     "alarms",

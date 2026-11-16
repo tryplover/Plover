@@ -71,32 +71,13 @@ verification.
 
 ## 5. Store listing
 
-**Name:** Plover
+Title, summary, description, category, screenshots and promo tile:
+[store-listing.md](store-listing.md). The title and summary come from the
+manifest; the rest is pasted into the dashboard.
 
-**Summary** (from the manifest, ≤132 characters): A cute work buddy that keeps
-you company while you focus: task steps, a Pomodoro timer and site blocking.
-
-**Category:** Productivity. **Language:** English.
-
-**Description:**
-
-> Plover is a small work buddy that lives in your browser.
->
-> - Break a big task into small steps. Plover suggests them, and you can edit
->   every one or write your own.
-> - Run a Pomodoro timer. At the end of each work block, tick off the step
->   you finished.
-> - Block distracting sites while you work. Focus mode starts the timer,
->   turns on blocking and keeps the buddy quiet, all in one switch.
-> - See your next Google Calendar event so a focus block doesn't run into a
->   meeting (optional, read-only).
-> - The buddy sits in a corner of the sites you choose and keeps you company.
->   It never reads the page.
->
-> Your tasks stay in your browser. Plover needs a free account to sign in.
-
-**Graphics:** 128×128 icon (`extension/public/icon/128.png`), at least one
-1280×800 screenshot, and a 440×280 small promo tile.
+**Graphics:** 128×128 icon (`extension/public/icon/128.png`), five 1280×800
+screenshots and a 440×280 small promo tile (plan in
+[store-listing.md](store-listing.md)).
 
 ## 6. Privacy practices tab
 

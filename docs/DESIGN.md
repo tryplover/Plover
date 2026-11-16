@@ -36,7 +36,7 @@ A solo knowledge worker or student on long, self-directed tasks (essays, problem
 
 ### 1.4 Launch
 
-An **unlisted** Chrome Web Store listing linked from tryplover.com. Sign-in is required; sign-up is open (the waitlist gate was dropped on 2026-11-05). All Chromium browsers (Chrome, Edge, Brave, Arc); Edge users install from the Chrome Web Store.
+An **unlisted** Chrome Web Store listing linked from tryplover.com. Sign-in is required; sign-up is open (the waitlist gate was dropped on 2026-11-05). All Chromium browsers (Chrome, Edge, Brave, Arc); Edge users install from the Chrome Web Store. The manifest `name` is the store title, written for store search ("Plover: Cute Pomodoro Timer, Site Blocker & Focus Buddy"), and `description` is the store summary; `short_name` and the toolbar tooltip (`manifest.default_title` on the popup) stay "Plover". Listing copy: `docs/launch/store-listing.md`.
 
 ### 1.5 Scope
 
