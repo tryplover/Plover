@@ -50,7 +50,7 @@ names changes.
 Plover is a cute focus buddy that keeps you company while you work in your browser. Tell it what you need to do and it breaks the job into small steps, runs a Pomodoro timer and blocks the sites that pull you away.
 
 PLOVER IS PRIVATE
-• Install asks for no site access. You choose where the buddy appears.
+• Plover asks for no site access when you install it. You choose where the buddy appears.
 • It never reads the page you are on and never logs your browsing history.
 • Your to-do list and history stay on your device.
 • Free account: sign in with Google or email in seconds.
@@ -58,19 +58,19 @@ PLOVER IS PRIVATE
 WHAT YOU GET
 
 ✦ Break big tasks into small steps
-Type "Write the intro of my history essay." You get a short, clear plan. Edit, reorder or delete any item, or write your own steps in.
+Type "Write the intro of my history essay." You get a short, clear plan. Edit or delete any step, or write your own.
 
 ✦ Pomodoro timer with a gentle check-in
-25-minute work sessions, 5-minute breaks and a long break after every 4 rounds by default but easy to change. When a session ends, Plover asks which step you finished, and one click ticks it off.
+Work for 25 minutes, rest for 5, and take a 15-minute break after every 4 rounds. Easily editable inside of settings. When a session ends, Plover asks which step you finished, and one click ticks it off.
 
 ✦ Website blocker for deep work
 Add YouTube, Reddit, X, Instagram or anything else to your list. While you work, those sites show a blocked page instead.
 
 ✦ Focus mode in one switch
-Starting focus mode starts the timer, turns on blocking and makes Plover quietly sit at the side of your screen, waiting on you to finish up your tasks.
+Starting focus mode starts the timer and turns on blocking, making Plover quietly sit at the side of your screen, waiting on you to finish up your tasks.
 
 ✦ A study buddy on every page
-Plover sits in a corner of your pages and holds a little clock. It's a little pet that's there to help you work. Think of it as a virtual body double. Feel free to drag it to any corner, pick its size or hide it away if needed.
+Plover sits in a corner of the page and holds a clock with your time left. Think of it as a virtual body double: someone to work next to. Drag it to any corner, pick its size, or hide it on any site.
 
 ✦ Google Calendar heads-up (optional, read-only)
 Connect your calendar to get a warning before a session runs into a meeting, making sure you're always prepared for upcoming events.
