@@ -32,6 +32,7 @@ Footguns around concurrent git usage, subagent worktrees, multiple local checkou
 | `git commit` fails with `error: 1Password: failed to fill whole buffer` / `fatal: failed to write commit object` (often from an implementation subagent) | Commits are SSH-signed through the 1Password agent, which was locked or timed out on its approval prompt. Don't disable signing or edit git config. Leave the files staged, ask the user to unlock 1Password, then retry the same `git commit`; it succeeds once unlocked. Tell subagents to report a signing failure and stop rather than work around it |
 | `gh api -X GET search/issues -f q="repo:tryplover/Plover <terms>"` fails with HTTP 422 "Query must include 'is:issue' or 'is:pull-request'" | Add `is:issue` (or `is:pull-request`) to `q`, e.g. `q="repo:tryplover/Plover is:issue buddy keyboard"`; search both when checking for duplicates |
 | Merging `main` into a PR branch conflicts in `docs/DESIGN.md`, and "keep both sides" leaves duplicate §4 bullets (old and new wording of the same rule) | Keep-both is only right for §11 changelog lines. For any other hunk, take the newer wording from main and re-apply only this branch's own edit; grep the section for duplicates before committing |
+| `gh pr create` exits with code 4 and prints nothing | The PR may still have been created. Run `gh pr list --head <branch> --state all` before retrying, or you open a duplicate |
 
 ## Details
 

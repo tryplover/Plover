@@ -16,7 +16,7 @@ Pushing a tag submits a build to the public store listing. Treat it as outward-f
 1. **Sync:** `git fetch origin --tags`.
 2. **Check main is green:** `gh run list --branch main --workflow ci.yml --limit 1` must show `success` for the current `origin/main` commit. If it's failing or still running, stop and say so.
 3. **Check there is something to ship:** `git log <last-tag>..origin/main --oneline`. If it's empty, say there's nothing new and stop.
-4. **Pick the version:** take the highest tag (`git tag -l 'v*' --sort=-v:refname | head -1`) and bump the patch (`v0.2.0` → `v0.2.1`). Bump the minor only when the user asks. Tell the user the version and a one-line summary of what's in it (group the commit subjects), and wait for a yes.
+4. **Pick the version:** take the highest semver tag (`git tag -l 'v0.*' 'v[1-9].*' --sort=-v:refname | head -1`; plain `'v*'` returns old desktop nightly tags like `v2026.07.23-0402`) and bump the patch (`v0.2.0` → `v0.2.1`). Bump the minor only when the user asks. Tell the user the version and a one-line summary of what's in it (group the commit subjects), and wait for a yes.
 5. **Tag and push:** `git tag -a vX.Y.Z origin/main -m "Plover vX.Y.Z"`, then `git push origin vX.Y.Z`. Tag `origin/main`, never a local branch.
 6. **Watch the run:** `gh run list --workflow release.yml --limit 1` for the run ID, then `gh run watch <id> --exit-status` in the background.
 7. **Read the outcome:** `gh run view <id>` (annotations) and `gh release view vX.Y.Z --json assets`.
@@ -33,3 +33,4 @@ Pushing a tag submits a build to the public store listing. Treat it as outward-f
 | Something broke in a released version | The store can't install an older version | Revert on `main`, then release a new, higher version |
 | A test build from a CI run shows version 0.0.0 | Test builds are unversioned on purpose | Expected; only tags get real numbers |
 | `manifest version is …, expected …` or `host_permissions must not be set` | Manifest check in `release.yml` | A real problem in the code on `main`. Fix it on `main` and tag a new version; don't delete and re-push a tag |
+| `git tag -l 'v*' --sort=-v:refname` returns `v2026.07.23-0402` | Old desktop-era nightly tags (`v2026.06.18`–`v2026.07.23`) sort above `v0.x` | Ignore them; filter with `'v0.*' 'v[1-9].*'`. Never base the next version on a `v2026.*` tag |
