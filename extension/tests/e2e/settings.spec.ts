@@ -94,3 +94,32 @@ test("empty blocklist hint in the popup links to Settings and goes away", async 
     )
     .toEqual(["youtube.com"]);
 });
+
+test("settings: start the next block automatically toggle", async ({
+  context,
+  extensionId,
+  serviceWorker,
+  signIn,
+}) => {
+  await signIn();
+  const p = await context.newPage();
+  await p.goto(`chrome-extension://${extensionId}/options.html`);
+  const toggle = p.getByRole("switch", {
+    name: "Start the next block automatically",
+  });
+  await expect(toggle).toHaveAttribute("aria-checked", "false");
+  await expect(
+    p.getByText("Off: Plover waits for you after each break."),
+  ).toBeVisible();
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-checked", "true");
+  await expect
+    .poll(() =>
+      serviceWorker.evaluate(async () => {
+        const { settings } = await chrome.storage.sync.get("settings");
+        return (settings as { autoStartWork?: boolean } | undefined)
+          ?.autoStartWork;
+      }),
+    )
+    .toBe(true);
+});

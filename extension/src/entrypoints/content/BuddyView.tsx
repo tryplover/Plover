@@ -20,6 +20,7 @@ import { useSyncedSettings } from "./use-synced-settings";
 
 const DRAG_THRESHOLD = 4;
 const CHECKIN_TEXT = "Which step did you finish?";
+const READY_TEXT = "Ready for the next block?";
 
 function cornerStyle(corner: BuddyCorner): CSSProperties {
   return {
@@ -161,7 +162,11 @@ function BuddyView({
     ? { left: drag.x, top: drag.y }
     : cornerStyle(corner);
   const below = corner.startsWith("top");
-  const bubble = snap.checkInPending ? CHECKIN_TEXT : snap.nudgeText;
+  const bubble = snap.checkInPending
+    ? CHECKIN_TEXT
+    : snap.awaitingStart
+      ? READY_TEXT
+      : snap.nudgeText;
 
   return (
     <div

@@ -15,6 +15,7 @@ export const DEFAULT_SETTINGS: Settings = {
   hiddenSites: [],
   hideEverywhere: false,
   theme: "system",
+  autoStartWork: false,
 };
 
 export const DEFAULT_LOCAL: LocalState = {
@@ -34,6 +35,7 @@ export const DEFAULT_LOCAL: LocalState = {
     nudgeUntil: 0,
     celebrateUntil: 0,
     extendOffer: false,
+    awaitingStart: false,
   },
   justFiveUntil: null,
   needsSignIn: true,

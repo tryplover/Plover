@@ -2,6 +2,7 @@ import { browser } from "wxt/browser";
 import { isBuddyVisible } from "@/features/buddy/visibility";
 import { parkedFrom } from "@/features/tasks/parking";
 import { getLocal, getSettings, setLocal, timerConfig } from "@/shared/storage";
+import type { Transient } from "@/shared/types";
 import {
   pauseTimer,
   resumeTimer,
@@ -39,6 +40,31 @@ const listeners: ((e: TimerEvent) => Promise<void>)[] = [];
 
 export function onTimerEvent(fn: (e: TimerEvent) => Promise<void>): void {
   listeners.push(fn);
+}
+
+async function waitForStart(): Promise<boolean> {
+  const [settings, transient] = await Promise.all([
+    getSettings(),
+    getLocal("transient"),
+  ]);
+  return !settings.autoStartWork || transient.checkInPending;
+}
+
+function startsWaiting(t: TimerTransition): boolean {
+  return (
+    t.state.phase === "work" &&
+    t.state.pausedAt !== null &&
+    t.events.some((e) => e.type === "phase-started")
+  );
+}
+
+function awaitingAfter(t: TimerTransition, before: Transient): boolean {
+  if (startsWaiting(t)) return true;
+  return (
+    before.awaitingStart &&
+    t.state.phase === "work" &&
+    t.state.pausedAt !== null
+  );
 }
 
 export async function applyTransition(
@@ -88,15 +114,18 @@ export async function applyTransition(
   );
 
   const leftWork = t.state.phase !== "work";
+  const awaitingStart = awaitingAfter(t, book.transient);
   await setLocal({
     timer: t.state,
     phaseStartedAt: book.phaseStartedAt,
     cycleId: book.cycleId,
     phasePausedMs: book.phasePausedMs,
     sessions: book.sessions,
-    transient: leftWork
-      ? { ...book.transient, extendOffer: false }
-      : book.transient,
+    transient: {
+      ...book.transient,
+      awaitingStart,
+      ...(leftWork && { extendOffer: false }),
+    },
     ...(leftWork ? { justFiveUntil: null } : {}),
   });
   if (leftWork) await browser.alarms.clear(JUST_FIVE_ALARM);
@@ -108,7 +137,7 @@ export async function applyTransition(
   } else {
     await browser.alarms.create(PHASE_ALARM, { when: t.state.phaseEndsAt });
   }
-  await updateBadge(t.state, nowMs);
+  await updateBadge(t.state, nowMs, awaitingStart);
 
   for (const event of t.events) {
     for (const fn of listeners) await fn(event);
@@ -156,7 +185,9 @@ export async function resumeTimerNow(): Promise<void> {
   const transient = await getLocal("transient");
   if (transient.extendOffer)
     await setLocal({ transient: { ...transient, extendOffer: false } });
-  if (timer.pausedAt !== null) {
+  if (transient.awaitingStart) {
+    await setLocal({ phaseStartedAt: now, phasePausedMs: 0 });
+  } else if (timer.pausedAt !== null) {
     await setLocal({
       phasePausedMs: (await getLocal("phasePausedMs")) + now - timer.pausedAt,
     });
@@ -229,13 +260,19 @@ export function registerTimerHandlers(): void {
   onAlarm(PHASE_ALARM, async () => {
     const now = Date.now();
     const config = timerConfig(await getSettings());
-    await applyTransition(tick(await getLocal("timer"), config, now), now);
+    const wait = await waitForStart();
+    await applyTransition(
+      tick(await getLocal("timer"), config, now, { waitForStart: wait }),
+      now,
+    );
   });
 }
 
 async function settleOverdue(now: number): Promise<boolean> {
   const config = timerConfig(await getSettings());
-  const t = tick(await getLocal("timer"), config, now);
+  const t = tick(await getLocal("timer"), config, now, {
+    waitForStart: await waitForStart(),
+  });
   if (t.events.length === 0) return false;
   await applyTransition(t, now);
   return true;
@@ -278,7 +315,12 @@ export async function stopAndPark(now: number): Promise<void> {
 export async function reconcileTimer(): Promise<void> {
   const now = Date.now();
   const config = timerConfig(await getSettings());
-  await applyTransition(tick(await getLocal("timer"), config, now), now);
+  await applyTransition(
+    tick(await getLocal("timer"), config, now, {
+      waitForStart: await waitForStart(),
+    }),
+    now,
+  );
   const until = await getLocal("justFiveUntil");
   if (until === null) return;
   if (until > now) {

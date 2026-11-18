@@ -70,6 +70,7 @@ function advance(
   state: TimerState,
   config: TimerConfig,
   nowMs: number,
+  waitForStart: boolean,
 ): TimerTransition {
   if (state.phase === "work") {
     const blocksCompleted = state.blocksCompleted + 1;
@@ -94,13 +95,17 @@ function advance(
     config,
     nowMs,
   );
-  return { state: nextState, events: [event] };
+  return {
+    state: waitForStart ? { ...nextState, pausedAt: nowMs } : nextState,
+    events: [event],
+  };
 }
 
 export function tick(
   state: TimerState,
   config: TimerConfig,
   nowMs: number,
+  opts: { waitForStart?: boolean } = {},
 ): TimerTransition {
   if (
     !isRunning(state) ||
@@ -109,7 +114,7 @@ export function tick(
   ) {
     return { state, events: [] };
   }
-  return advance(state, config, nowMs);
+  return advance(state, config, nowMs, opts.waitForStart ?? false);
 }
 
 export function pauseTimer(state: TimerState, nowMs: number): TimerTransition {

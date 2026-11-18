@@ -91,6 +91,7 @@ describe("task handlers", () => {
         nudgeUntil: 0,
         celebrateUntil: 0,
         extendOffer: false,
+        awaitingStart: false,
       },
     });
     await fakeBrowser.notifications.create("checkin", {
@@ -116,6 +117,7 @@ describe("task handlers", () => {
         nudgeUntil: 0,
         celebrateUntil: 0,
         extendOffer: false,
+        awaitingStart: false,
       },
     });
     await dispatch({ type: "checkin/answer", stepId: null });

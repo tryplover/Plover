@@ -363,6 +363,7 @@ describe("check-in cleanup", () => {
         nudgeUntil: 0,
         celebrateUntil: 0,
         extendOffer: false,
+        awaitingStart: false,
       },
     });
     await fakeBrowser.notifications.create("checkin", {
@@ -516,5 +517,140 @@ describe("just 5 min", () => {
     expect((await fakeBrowser.alarms.get("just-five"))?.scheduledTime).toBe(
       T0 + 5 * MIN,
     );
+  });
+});
+
+describe("waiting after a break", () => {
+  async function toBreakEnd(opts: { autoStartWork?: boolean } = {}) {
+    if (opts.autoStartWork)
+      await fakeBrowser.storage.sync.set({
+        settings: { autoStartWork: true },
+      });
+    await seedOpenTask();
+    await dispatch({ type: "timer/start" });
+    vi.setSystemTime(T0 + 25 * MIN);
+    await fireAlarm("timer-phase");
+    vi.setSystemTime(T0 + 30 * MIN);
+  }
+
+  it("by default the next block waits: paused at its start, awaitingStart set, no alarm or badge", async () => {
+    const badge = vi.spyOn(fakeBrowser.action, "setBadgeText");
+    await toBreakEnd();
+    await fireAlarm("timer-phase");
+    const timer = await getLocal("timer");
+    expect(timer).toMatchObject({
+      phase: "work",
+      pausedAt: T0 + 30 * MIN,
+      phaseEndsAt: T0 + 55 * MIN,
+    });
+    expect((await getLocal("transient")).awaitingStart).toBe(true);
+    expect(await fakeBrowser.alarms.get("timer-phase")).toBeUndefined();
+    expect(badge).toHaveBeenLastCalledWith({ text: "" });
+  });
+
+  it("autoStartWork with the check-in answered starts the block running", async () => {
+    await toBreakEnd({ autoStartWork: true });
+    await setLocal({
+      transient: { ...(await getLocal("transient")), checkInPending: false },
+    });
+    await fireAlarm("timer-phase");
+    expect(await getLocal("timer")).toMatchObject({
+      phase: "work",
+      pausedAt: null,
+      phaseEndsAt: T0 + 55 * MIN,
+    });
+    expect((await getLocal("transient")).awaitingStart).toBe(false);
+  });
+
+  it("autoStartWork still waits when the check-in is unanswered", async () => {
+    await toBreakEnd({ autoStartWork: true });
+    expect((await getLocal("transient")).checkInPending).toBe(true);
+    await fireAlarm("timer-phase");
+    expect((await getLocal("timer")).pausedAt).toBe(T0 + 30 * MIN);
+    expect((await getLocal("transient")).awaitingStart).toBe(true);
+  });
+
+  it("Start after 2 h runs a full block and History records the real start with no paused time", async () => {
+    const badge = vi.spyOn(fakeBrowser.action, "setBadgeText");
+    await toBreakEnd();
+    await fireAlarm("timer-phase");
+    vi.setSystemTime(T0 + 30 * MIN + 120 * MIN);
+    await dispatch({ type: "timer/resume" });
+    const timer = await getLocal("timer");
+    expect(timer.pausedAt).toBeNull();
+    expect(timer.phaseEndsAt).toBe(T0 + 150 * MIN + 25 * MIN);
+    expect((await getLocal("transient")).awaitingStart).toBe(false);
+    expect((await fakeBrowser.alarms.get("timer-phase"))?.scheduledTime).toBe(
+      timer.phaseEndsAt,
+    );
+    expect(badge).toHaveBeenLastCalledWith({ text: "25" });
+
+    vi.setSystemTime(timer.phaseEndsAt);
+    await fireAlarm("timer-phase");
+    const sessions = await getLocal("sessions");
+    expect(sessions.map((x) => [x.phase, x.completed])).toEqual([
+      ["work", true],
+      ["shortBreak", true],
+      ["work", true],
+    ]);
+    expect(sessions[1]).toMatchObject({
+      startedAt: T0 + 25 * MIN,
+      endedAt: T0 + 30 * MIN,
+    });
+    expect(sessions[2]).toMatchObject({
+      startedAt: T0 + 150 * MIN,
+      endedAt: T0 + 175 * MIN,
+      pausedMs: 0,
+    });
+  });
+
+  it("stopping while waiting records no work session and clears the flag", async () => {
+    await toBreakEnd();
+    await fireAlarm("timer-phase");
+    vi.setSystemTime(T0 + 300 * MIN);
+    await dispatch({ type: "timer/stop" });
+    const sessions = await getLocal("sessions");
+    expect(sessions.map((x) => x.phase)).toEqual(["work", "shortBreak"]);
+    expect((await getLocal("transient")).awaitingStart).toBe(false);
+    expect((await getLocal("timer")).phase).toBe("idle");
+  });
+
+  it("skipping while waiting clears the flag and records nothing for the unstarted block", async () => {
+    await toBreakEnd();
+    await fireAlarm("timer-phase");
+    await dispatch({ type: "timer/skip" });
+    expect((await getLocal("transient")).awaitingStart).toBe(false);
+    expect((await getLocal("sessions")).map((x) => x.phase)).toEqual([
+      "work",
+      "shortBreak",
+    ]);
+  });
+
+  it("a worker waking 3 days after the break ended adds no work session", async () => {
+    await toBreakEnd();
+    vi.setSystemTime(T0 + 3 * 24 * 60 * MIN);
+    await reconcileTimer();
+    const sessions = await getLocal("sessions");
+    expect(sessions.filter((x) => x.phase === "work")).toHaveLength(1);
+    expect((await getLocal("timer")).pausedAt).toBe(T0 + 3 * 24 * 60 * MIN);
+    expect((await getLocal("transient")).awaitingStart).toBe(true);
+  });
+
+  it("with autoStartWork and an answered check-in, waking 3 days late adds at most one block", async () => {
+    await toBreakEnd({ autoStartWork: true });
+    await setLocal({
+      transient: { ...(await getLocal("transient")), checkInPending: false },
+    });
+    const wake = T0 + 3 * 24 * 60 * MIN;
+    vi.setSystemTime(wake);
+    await reconcileTimer();
+    await reconcileTimer();
+    const sessions = await getLocal("sessions");
+    expect(sessions.filter((x) => x.phase === "work")).toHaveLength(1);
+    expect(await getLocal("timer")).toMatchObject({
+      phase: "work",
+      pausedAt: null,
+      phaseEndsAt: wake + 25 * MIN,
+    });
   });
 });

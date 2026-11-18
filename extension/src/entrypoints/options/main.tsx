@@ -281,6 +281,23 @@ function Options() {
             />
           ))}
         </div>
+        <div className="field">
+          <span id="auto-start-label">Start the next block automatically</span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={settings.autoStartWork}
+            aria-labelledby="auto-start-label"
+            aria-describedby="auto-start-hint"
+            className="switch"
+            onClick={() => save({ autoStartWork: !settings.autoStartWork })}
+          />
+        </div>
+        <p className="hint" id="auto-start-hint">
+          {settings.autoStartWork
+            ? "On: Plover starts the next block after a break, unless you haven't checked in."
+            : "Off: Plover waits for you after each break."}
+        </p>
       </section>
 
       <DomainList
