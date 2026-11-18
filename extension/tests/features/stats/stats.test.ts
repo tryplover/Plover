@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  clockLabel,
+  cycleRangeLabel,
   paginate,
   cycleTaskTitles,
   dailyFocus,
@@ -365,5 +367,51 @@ describe("focusByTask", () => {
       ["Alpha", "Beta"],
     );
     expect(focusByTask([], dayStart, dayEnd)).toEqual([]);
+  });
+});
+
+describe("cycleRangeLabel", () => {
+  const dateOf = (ms: number) =>
+    new Date(ms).toLocaleDateString(undefined, {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    });
+  const timeOf = (ms: number) =>
+    new Date(ms).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+
+  it("shows one date and a time range within the same day", () => {
+    const start = at(11, 13, 8);
+    const end = at(11, 13, 55);
+    expect(cycleRangeLabel(start, end)).toBe(
+      `${dateOf(start)} · ${timeOf(start)}–${timeOf(end)}`,
+    );
+  });
+
+  it("shows both dates when the cycle spans several days", () => {
+    const start = at(13, 13, 8);
+    const end = at(16, 13, 55);
+    expect(cycleRangeLabel(start, end)).toBe(
+      `${dateOf(start)}, ${timeOf(start)} – ${dateOf(end)}, ${timeOf(end)}`,
+    );
+  });
+
+  it("shows both dates for a cycle that crosses midnight by a few minutes", () => {
+    const start = at(11, 23, 58);
+    const end = at(12, 0, 3);
+    expect(cycleRangeLabel(start, end)).toBe(
+      `${dateOf(start)}, ${timeOf(start)} – ${dateOf(end)}, ${timeOf(end)}`,
+    );
+  });
+});
+
+describe("clockLabel", () => {
+  it("formats a time of day with the locale default", () => {
+    expect(clockLabel(at(11, 13, 5))).toBe(
+      new Date(at(11, 13, 5)).toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit",
+      }),
+    );
   });
 });
