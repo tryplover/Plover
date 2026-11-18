@@ -562,6 +562,27 @@ describe("waiting after a break", () => {
     expect((await getLocal("transient")).awaitingStart).toBe(false);
   });
 
+  it("autoStartWork still waits after a long break, capping an unattended run at one set", async () => {
+    await fakeBrowser.storage.sync.set({
+      settings: { autoStartWork: true, blocksPerLongBreak: 1 },
+    });
+    await seedOpenTask();
+    await dispatch({ type: "timer/start" });
+    vi.setSystemTime(T0 + 25 * MIN);
+    await fireAlarm("timer-phase");
+    expect((await getLocal("timer")).phase).toBe("longBreak");
+    await setLocal({
+      transient: { ...(await getLocal("transient")), checkInPending: false },
+    });
+    vi.setSystemTime(T0 + 40 * MIN);
+    await fireAlarm("timer-phase");
+    expect(await getLocal("timer")).toMatchObject({
+      phase: "work",
+      pausedAt: T0 + 40 * MIN,
+    });
+    expect((await getLocal("transient")).awaitingStart).toBe(true);
+  });
+
   it("autoStartWork still waits when the check-in is unanswered", async () => {
     await toBreakEnd({ autoStartWork: true });
     expect((await getLocal("transient")).checkInPending).toBe(true);

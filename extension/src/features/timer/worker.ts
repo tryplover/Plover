@@ -43,11 +43,16 @@ export function onTimerEvent(fn: (e: TimerEvent) => Promise<void>): void {
 }
 
 async function waitForStart(): Promise<boolean> {
-  const [settings, transient] = await Promise.all([
+  const [settings, transient, timer] = await Promise.all([
     getSettings(),
     getLocal("transient"),
+    getLocal("timer"),
   ]);
-  return !settings.autoStartWork || transient.checkInPending;
+  return (
+    !settings.autoStartWork ||
+    transient.checkInPending ||
+    timer.phase === "longBreak"
+  );
 }
 
 function startsWaiting(t: TimerTransition): boolean {

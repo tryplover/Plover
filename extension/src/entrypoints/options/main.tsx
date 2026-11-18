@@ -295,7 +295,7 @@ function Options() {
         </div>
         <p className="hint" id="auto-start-hint">
           {settings.autoStartWork
-            ? "On: Plover starts the next block after a break, unless you haven't checked in."
+            ? "On: Plover starts the next block after a short break, unless you haven't checked in."
             : "Off: Plover waits for you after each break."}
         </p>
       </section>
