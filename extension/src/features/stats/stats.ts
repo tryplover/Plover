@@ -39,6 +39,28 @@ function startOfDay(ms: number): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
+export function clockLabel(ms: number): string {
+  return new Date(ms).toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function dateLabel(ms: number): string {
+  return new Date(ms).toLocaleDateString(undefined, {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+}
+
+export function cycleRangeLabel(startedAt: number, endedAt: number): string {
+  if (startOfDay(startedAt).getTime() === startOfDay(endedAt).getTime()) {
+    return `${dateLabel(startedAt)} · ${clockLabel(startedAt)}–${clockLabel(endedAt)}`;
+  }
+  return `${dateLabel(startedAt)}, ${clockLabel(startedAt)} – ${dateLabel(endedAt)}, ${clockLabel(endedAt)}`;
+}
+
 export function rangeStart(range: StatsRange, now: number): number {
   if (range === "all") return 0;
   const today = startOfDay(now);

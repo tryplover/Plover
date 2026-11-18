@@ -2,6 +2,8 @@ import { useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import { formatDuration } from "@/features/tasks/history";
 import {
+  clockLabel,
+  cycleRangeLabel,
   cycleTaskTitles,
   dailyFocus,
   focusByTask,
@@ -29,13 +31,6 @@ const PHASE_LABEL: Record<Session["phase"], string> = {
 
 function plural(n: number, word: string): string {
   return `${n} ${word}${n === 1 ? "" : "s"}`;
-}
-
-function time(ms: number): string {
-  return new Date(ms).toLocaleTimeString([], {
-    hour: "numeric",
-    minute: "2-digit",
-  });
 }
 
 function segmentDuration(s: Session): number {
@@ -179,18 +174,15 @@ function DayChart({ sessions, now }: { sessions: Session[]; now: number }) {
 
 function CycleCard({ cycle }: { cycle: Cycle }) {
   const titles = cycleTaskTitles(cycle);
-  const date = new Date(cycle.startedAt).toLocaleDateString(undefined, {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  });
   const total = cycle.segments.reduce(
     (sum, s) => sum + Math.max(s.endedAt - s.startedAt, 1),
     0,
   );
   return (
     <li className="history-card">
-      <p className="history-title">{`${date} · ${time(cycle.startedAt)}–${time(cycle.endedAt)}`}</p>
+      <p className="history-title">
+        {cycleRangeLabel(cycle.startedAt, cycle.endedAt)}
+      </p>
       <p className="history-meta">
         {`${plural(cycle.pomodoros, "pomodoro")} · ${plural(cycle.breaks, "break")} · ${formatDuration(cycle.focusMs)} focus`}
       </p>
@@ -212,7 +204,7 @@ function CycleCard({ cycle }: { cycle: Cycle }) {
         <ul className="history-steps">
           {cycle.segments.map((s) => (
             <li key={s.id}>
-              {`${PHASE_LABEL[s.phase]} · ${time(s.startedAt)}–${time(s.endedAt)} · ${formatDuration(segmentDuration(s))}${s.skipped ? " (skipped)" : ""}`}
+              {`${PHASE_LABEL[s.phase]} · ${clockLabel(s.startedAt)}–${clockLabel(s.endedAt)} · ${formatDuration(segmentDuration(s))}${s.skipped ? " (skipped)" : ""}`}
             </li>
           ))}
         </ul>
