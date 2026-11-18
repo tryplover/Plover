@@ -24,8 +24,9 @@ async function snapshotAt(
       buddyState: deriveBuddyState({ timer, focus, transient }, now),
       nudgeText: transient.nudgeUntil > now ? transient.nudgeText : null,
       checkInPending: transient.checkInPending,
+      awaitingStart: transient.awaitingStart,
       clock:
-        timer.phase === "idle"
+        timer.phase === "idle" || transient.awaitingStart
           ? null
           : {
               phase: timer.phase,

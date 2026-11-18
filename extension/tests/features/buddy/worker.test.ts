@@ -28,6 +28,7 @@ describe("showNudge", () => {
         checkInPending: true,
         celebrateUntil: T0 + 5,
         extendOffer: false,
+        awaitingStart: false,
       },
     });
     await showNudge("hello", T0);

@@ -9,8 +9,9 @@ const BADGE_ALARM = "badge";
 export async function updateBadge(
   timer: TimerState,
   nowMs: number,
+  awaitingStart = false,
 ): Promise<void> {
-  if (timer.phase === "idle") {
+  if (timer.phase === "idle" || awaitingStart) {
     await browser.alarms.clear(BADGE_ALARM);
     await browser.action.setBadgeText({ text: "" });
     return;

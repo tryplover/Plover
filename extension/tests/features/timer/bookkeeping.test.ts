@@ -11,6 +11,7 @@ const TRANSIENT: Transient = {
   nudgeUntil: 42,
   celebrateUntil: 7,
   extendOffer: false,
+  awaitingStart: false,
 };
 const SESSION: Session = {
   id: "old",
@@ -469,5 +470,86 @@ describe("bookkeep", () => {
       bookkeep(workRunning, same, stored({ phasePausedMs: 5 }), NOW, newId)
         .phasePausedMs,
     ).toBe(5);
+  });
+
+  it("records the break as completed when the next block starts waiting, and the waiting block starts its clock at the break end", () => {
+    const prev: TimerState = {
+      phase: "shortBreak",
+      phaseEndsAt: NOW - 500,
+      blocksCompleted: 1,
+      pausedAt: null,
+    };
+    const t: TimerTransition = {
+      state: {
+        phase: "work",
+        phaseEndsAt: NOW + 25 * 60_000,
+        blocksCompleted: 1,
+        pausedAt: NOW,
+      },
+      events: [
+        {
+          type: "phase-started",
+          phase: "work",
+          plannedSeconds: 1500,
+          blocksCompleted: 1,
+        },
+      ],
+    };
+    const out = bookkeep(
+      prev,
+      t,
+      stored({ phaseStartedAt: NOW - 300_000 }),
+      NOW,
+      newId,
+    );
+    expect(out.sessions.at(-1)).toMatchObject({
+      phase: "shortBreak",
+      completed: true,
+      startedAt: NOW - 300_000,
+      endedAt: NOW - 500,
+    });
+    expect(out.phaseStartedAt).toBe(NOW);
+    expect(out.phasePausedMs).toBe(0);
+  });
+
+  it("records nothing when a waiting block is stopped or skipped", () => {
+    const waiting: TimerState = {
+      phase: "work",
+      phaseEndsAt: NOW + 25 * 60_000,
+      blocksCompleted: 1,
+      pausedAt: NOW - 7_200_000,
+    };
+    const stop: TimerTransition = {
+      state: {
+        phase: "idle",
+        phaseEndsAt: 0,
+        blocksCompleted: 0,
+        pausedAt: null,
+      },
+      events: [{ type: "stopped", blocksCompleted: 1 }],
+    };
+    const skip: TimerTransition = {
+      state: {
+        phase: "shortBreak",
+        phaseEndsAt: NOW + 300_000,
+        blocksCompleted: 1,
+        pausedAt: null,
+      },
+      events: [
+        {
+          type: "phase-started",
+          phase: "shortBreak",
+          plannedSeconds: 300,
+          blocksCompleted: 1,
+        },
+      ],
+    };
+    const base = stored({ phaseStartedAt: NOW - 7_200_000 });
+    expect(bookkeep(waiting, stop, base, NOW, newId).sessions).toEqual([
+      SESSION,
+    ]);
+    expect(bookkeep(waiting, skip, base, NOW, newId, "skip").sessions).toEqual([
+      SESSION,
+    ]);
   });
 });

@@ -19,7 +19,12 @@ import { useExtensionState } from "@/ui/hooks/useExtensionState";
 import { useTimerAnnouncement } from "@/ui/hooks/useTimerAnnouncement";
 import "./Panel.css";
 
-function eyebrowFor(phase: TimerPhase, focusOn: boolean): string {
+function eyebrowFor(
+  phase: TimerPhase,
+  focusOn: boolean,
+  awaitingStart: boolean,
+): string {
+  if (awaitingStart) return "Next block";
   switch (phase) {
     case "idle":
       return "Plover · Today";
@@ -41,7 +46,11 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
     null,
   );
 
-  const timerAnnouncement = useTimerAnnouncement(local.timer, ready);
+  const timerAnnouncement = useTimerAnnouncement(
+    local.timer,
+    ready,
+    local.transient.awaitingStart,
+  );
   const [note, setNote] = useState("");
   const focusTarget = useRef<{
     name: string;
@@ -193,7 +202,11 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
   const showSignIn = local.needsSignIn && idle;
   const nudge =
     local.transient.nudgeUntil > now ? local.transient.nudgeText : null;
-  const eyebrow = eyebrowFor(local.timer.phase, local.focus.on);
+  const eyebrow = eyebrowFor(
+    local.timer.phase,
+    local.focus.on,
+    local.transient.awaitingStart,
+  );
   const body = (
     <>
       {nudge && <p className="plover-nudge">{nudge}</p>}
@@ -275,6 +288,7 @@ export function Panel({ surface }: { surface: "popup" | "buddy" }) {
             now={now}
             canPark={activeTask !== undefined}
             autoFocusPause={justStarted}
+            awaitingStart={local.transient.awaitingStart}
             buddy={
               surface === "popup" ? (
                 <div className="plover-buddy-small">

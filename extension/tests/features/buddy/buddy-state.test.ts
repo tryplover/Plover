@@ -20,6 +20,7 @@ const calm = {
   nudgeUntil: 0,
   celebrateUntil: 0,
   extendOffer: false,
+  awaitingStart: false,
 };
 const off = { on: false, startedAt: null };
 const on = { on: true, startedAt: NOW };
@@ -101,5 +102,15 @@ describe("deriveBuddyState", () => {
         ),
       ).toBe("break");
     }
+  });
+
+  it("waiting for Start is calm, not working or focus", () => {
+    const transient = { ...calm, awaitingStart: true };
+    expect(
+      deriveBuddyState(
+        { timer: running("work", NOW), focus: on, transient },
+        NOW,
+      ),
+    ).toBe("idle");
   });
 });
