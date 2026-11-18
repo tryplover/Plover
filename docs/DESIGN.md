@@ -428,4 +428,5 @@ Settings → **Backup**: "Back up to your Google Drive" stores one `plover-backu
 - 2026-11-15: the in-page panel fits its frame with no scrollbars: the timer action row wraps instead of overflowing sideways.
 - 2026-11-15: buddy size (Small, Medium, Large) in Settings; the on-page buddy resizes live and the panel follows its height.
 - 2026-11-16: the store listing is Public, not Unlisted; the store copy is written for store search.
+- 2026-11-18: after a break the timer waits for Start, or starts automatically when the setting is on and the last check-in was answered, so it no longer runs blocks nobody is there for (#546).
 - 2026-11-18: History cycle cards show both dates when a cycle spans more than one day.
