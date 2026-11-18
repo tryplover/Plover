@@ -108,6 +108,61 @@ describe("tick", () => {
     ]);
   });
 
+  it("waits for Start after a break: work paused at its start, still phase-started", () => {
+    const brk = endOfPhase(startTimer(config, T0).state).state;
+    const { state, events } = tick(brk, config, brk.phaseEndsAt, {
+      waitForStart: true,
+    });
+    expect(state).toEqual({
+      phase: "work",
+      phaseEndsAt: brk.phaseEndsAt + 25 * MIN,
+      blocksCompleted: 1,
+      pausedAt: brk.phaseEndsAt,
+    });
+    expect(events).toEqual([
+      {
+        type: "phase-started",
+        phase: "work",
+        plannedSeconds: 25 * 60,
+        blocksCompleted: 1,
+      },
+    ]);
+    expect(remainingSeconds(state, brk.phaseEndsAt + 5 * MIN)).toBe(25 * 60);
+  });
+
+  it("does not wait when a work block ends, even with waitForStart", () => {
+    const { state } = tick(
+      startTimer(config, T0).state,
+      config,
+      T0 + 25 * MIN,
+      { waitForStart: true },
+    );
+    expect(state.phase).toBe("shortBreak");
+    expect(state.pausedAt).toBeNull();
+  });
+
+  it("a waiting block started 2 h later still runs a full work block", () => {
+    const brk = endOfPhase(startTimer(config, T0).state).state;
+    const waiting = tick(brk, config, brk.phaseEndsAt, {
+      waitForStart: true,
+    }).state;
+    const startAt = brk.phaseEndsAt + 120 * MIN;
+    const { state, events } = resumeTimer(waiting, startAt);
+    expect(state.pausedAt).toBeNull();
+    expect(state.phaseEndsAt).toBe(startAt + 25 * MIN);
+    expect(events).toEqual([{ type: "resumed" }]);
+  });
+
+  it("does not tick out of the waiting state", () => {
+    const brk = endOfPhase(startTimer(config, T0).state).state;
+    const waiting = tick(brk, config, brk.phaseEndsAt, {
+      waitForStart: true,
+    }).state;
+    expect(
+      tick(waiting, config, waiting.phaseEndsAt + 99 * MIN).events,
+    ).toEqual([]);
+  });
+
   it("gives the long break after every 4th completed work block", () => {
     let state = startTimer(config, T0).state;
     const breaks: string[] = [];

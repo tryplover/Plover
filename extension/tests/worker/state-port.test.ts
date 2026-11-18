@@ -42,11 +42,31 @@ describe("buildSnapshot", () => {
       buddyState: "idle",
       nudgeText: null,
       checkInPending: false,
+      awaitingStart: false,
       clock: null,
     });
     const json = JSON.stringify(snap);
     for (const leaked of ["secret", "Write the essay", "Outline", "Dentist"])
       expect(json).not.toContain(leaked);
+  });
+
+  it("hides the clock and flags awaitingStart while waiting for the next block", async () => {
+    await fakeBrowser.storage.local.set({
+      timer: {
+        phase: "work",
+        phaseEndsAt: 2_000_000,
+        blocksCompleted: 1,
+        pausedAt: 1_000_000,
+      },
+      transient: { ...DEFAULT_LOCAL.transient, awaitingStart: true },
+    });
+    expect(await buildSnapshot()).toEqual({
+      buddyState: "idle",
+      nudgeText: null,
+      checkInPending: false,
+      awaitingStart: true,
+      clock: null,
+    });
   });
 
   it("shows the nudge text only while the nudge window is open", async () => {
@@ -61,6 +81,7 @@ describe("buildSnapshot", () => {
       buddyState: "nudging",
       nudgeText: "Still on it?",
       checkInPending: false,
+      awaitingStart: false,
       clock: null,
     });
     vi.setSystemTime(1_000_500);
@@ -93,6 +114,7 @@ describe("buildSnapshot", () => {
       buddyState: "nudging",
       nudgeText: null,
       checkInPending: true,
+      awaitingStart: false,
       clock: null,
     });
   });
@@ -133,6 +155,7 @@ describe("registerStatePort", () => {
       buddyState: "nudging",
       nudgeText: null,
       checkInPending: true,
+      awaitingStart: false,
       clock: null,
     });
   });
@@ -158,6 +181,7 @@ describe("registerStatePort", () => {
           buddyState: "idle",
           nudgeText: null,
           checkInPending: false,
+          awaitingStart: false,
           clock: null,
         }),
       { timeout: 2000 },

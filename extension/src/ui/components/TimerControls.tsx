@@ -11,6 +11,8 @@ const PHASE_LABEL = {
   longBreak: "Long break",
 } as const;
 
+const READY_LABEL = "Ready for the next block?";
+
 export function formatClock(totalSeconds: number): string {
   const m = Math.floor(totalSeconds / 60);
   const s = totalSeconds % 60;
@@ -23,18 +25,23 @@ export function TimerControls({
   buddy,
   canPark = false,
   autoFocusPause = false,
+  awaitingStart = false,
 }: {
   timer: TimerState;
   now: number;
   buddy?: ReactNode;
   canPark?: boolean;
   autoFocusPause?: boolean;
+  awaitingStart?: boolean;
 }) {
   const paused = timer.pausedAt !== null;
   const pauseRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (autoFocusPause && document.hasFocus()) pauseRef.current?.focus();
   }, [autoFocusPause]);
+  useEffect(() => {
+    if (awaitingStart && document.hasFocus()) pauseRef.current?.focus();
+  }, [awaitingStart]);
   return (
     <div className="plover-timer">
       <div className="plover-timer-row">
@@ -42,7 +49,9 @@ export function TimerControls({
           <p className="plover-clock" aria-live="off">
             {formatClock(remainingSeconds(timer, now))}
           </p>
-          <p className="plover-phase">{PHASE_LABEL[timer.phase]}</p>
+          <p className="plover-phase">
+            {awaitingStart ? READY_LABEL : PHASE_LABEL[timer.phase]}
+          </p>
         </div>
         {buddy}
       </div>
@@ -56,15 +65,17 @@ export function TimerControls({
             void sendCommand({ type: paused ? "timer/resume" : "timer/pause" })
           }
         >
-          {paused ? "Resume" : "Pause"}
+          {awaitingStart ? "Start" : paused ? "Resume" : "Pause"}
         </button>
-        <button
-          type="button"
-          className="plover-btn-text"
-          onClick={() => void sendCommand({ type: "timer/skip" })}
-        >
-          Skip
-        </button>
+        {!awaitingStart && (
+          <button
+            type="button"
+            className="plover-btn-text"
+            onClick={() => void sendCommand({ type: "timer/skip" })}
+          >
+            Skip
+          </button>
+        )}
         {canPark && (
           <button
             type="button"

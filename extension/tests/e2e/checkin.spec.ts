@@ -39,6 +39,7 @@ test("check-in replaces the step list and keeps the timer controls above the fol
       nudgeUntil: 0,
       celebrateUntil: 0,
       extendOffer: false,
+      awaitingStart: false,
     },
   });
   const p = await context.newPage();
@@ -108,6 +109,7 @@ test("idle check-in: focus lands on the task box and a later start is not yanked
       nudgeUntil: 0,
       celebrateUntil: 0,
       extendOffer: false,
+      awaitingStart: false,
     },
   });
   const p = await context.newPage();

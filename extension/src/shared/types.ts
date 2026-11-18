@@ -19,6 +19,7 @@ export interface Settings {
   hiddenSites: string[];
   hideEverywhere: boolean;
   theme: Theme;
+  autoStartWork: boolean;
 }
 
 export interface Step {
@@ -68,6 +69,7 @@ export interface Transient {
   nudgeUntil: number;
   celebrateUntil: number;
   extendOffer: boolean;
+  awaitingStart: boolean;
 }
 
 export interface CalendarEvent {
